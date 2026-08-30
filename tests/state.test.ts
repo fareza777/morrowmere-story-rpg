@@ -44,4 +44,19 @@ describe('chronicle state', () => {
     expect(Number.isFinite(result.mercy)).toBe(true);
     expect(Number.isFinite(result.corruption)).toBe(true);
   });
+
+  it.each([
+    ['destroy-crown', 'crown-destroyed'],
+    ['restore-crown', 'crown-restored'],
+    ['refuse-crown', 'crown-refused'],
+  ] as const)('records the final Crown decision before %s combat', (choiceId, expectedFlag) => {
+    const initial = startNewRun({ heroClass: 'warrior', seed: 1943 });
+    const finale = { ...initial, routeIndex: 11 };
+    const result = gameReducer(finale, { type: 'CHOOSE', choiceId });
+
+    expect(finale.route[11]?.choices).toHaveLength(3);
+    expect(result.flags).toContain(expectedFlag);
+    expect(result.screen).toBe('combat');
+    expect(result.combat?.enemy.isBoss).toBe(true);
+  });
 });

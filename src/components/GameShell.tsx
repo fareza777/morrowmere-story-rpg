@@ -18,13 +18,14 @@ interface GameShellProps {
 export function GameShell({ state, dispatch }: GameShellProps) {
   const node = state.route[state.routeIndex];
   const combatArt = state.combat?.enemy.artFamily;
+  const combatEnemyId = state.combat?.enemy.id;
   const style = { '--text-scale': state.settings.textScale } as CSSProperties;
   const closeOverlay = () => dispatch({ type: 'CLOSE_OVERLAY' });
 
   return (
     <div className={`game-shell ${state.settings.highContrast ? 'is-high-contrast' : ''} ${state.settings.reducedMotion ? 'is-reduced-motion' : ''}`} style={style}>
       <TopHud state={state} dispatch={dispatch} />
-      {(state.screen === 'story' || state.screen === 'combat') && node && <SceneArt region={node.region} sceneKey={node.sceneKey} enemyArtFamily={combatArt} />}
+      {(state.screen === 'story' || state.screen === 'combat') && node && <SceneArt region={node.region} sceneKey={node.sceneKey} enemyId={combatEnemyId} enemyArtFamily={combatArt} />}
       <main className="game-main">
         {state.screen === 'story' && <StoryPanel state={state} dispatch={dispatch} />}
         {state.screen === 'combat' && <CombatPanel state={state} dispatch={dispatch} />}

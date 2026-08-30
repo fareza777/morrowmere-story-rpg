@@ -29,8 +29,15 @@
 .hud-nav button { inline-size: 42px; block-size: 42px; display: grid; place-items: center; border: 1px solid transparent; border-radius: var(--radius); background: transparent; color: var(--paper-1); }
 .hud-nav button:hover { border-color: var(--line); background: var(--ink-2); }
 .scene-art { position: relative; block-size: clamp(210px, 31dvh, 330px); margin: 0; overflow: hidden; background: var(--ink-2); }
-.scene-art img { inline-size: 100%; block-size: 100%; object-fit: cover; display: block; }
+.scene-art img { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: var(--scene-x, 50%) var(--scene-y, 50%); display: block; filter: hue-rotate(var(--scene-hue, 0deg)) contrast(var(--scene-contrast, 1.05)) saturate(0.82); transform: scaleX(var(--scene-mirror, 1)) scale(var(--scene-scale, 1)); }
 .scene-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(9 10 10 / 0.08) 35%, var(--ink-0) 100%), linear-gradient(90deg, rgb(9 10 10 / 0.3), transparent 45%); }
+.scene-art[data-weather="black-rain"] .scene-scrim { background: repeating-linear-gradient(104deg, transparent 0 15px, rgb(205 215 204 / 0.08) 16px 17px), linear-gradient(180deg, rgb(9 10 10 / 0.05), var(--ink-0)); }
+.scene-art[data-weather="silver-moths"] .scene-scrim { background: radial-gradient(circle at 28% 30%, rgb(225 217 170 / 0.2) 0 1px, transparent 2px), radial-gradient(circle at 70% 42%, rgb(225 217 170 / 0.15) 0 2px, transparent 3px), linear-gradient(180deg, transparent 35%, var(--ink-0)); background-size: 31px 27px, 47px 41px, auto; }
+.scene-art[data-weather="ashfall"] .scene-scrim { background: radial-gradient(circle, rgb(224 211 191 / 0.2) 0 1px, transparent 2px), linear-gradient(180deg, rgb(83 61 46 / 0.08), var(--ink-0)); background-size: 22px 25px, auto; }
+.scene-art[data-weather="mist"] .scene-scrim { background: linear-gradient(175deg, transparent 20%, rgb(190 197 187 / 0.2) 52%, transparent 70%), linear-gradient(180deg, transparent 35%, var(--ink-0)); }
+.scene-art[data-lighting="witchlight"] img { filter: hue-rotate(calc(var(--scene-hue, 0deg) + 13deg)) contrast(var(--scene-contrast, 1.05)) saturate(0.9); }
+.scene-art[data-lighting="ember"] img { filter: sepia(0.24) hue-rotate(calc(var(--scene-hue, 0deg) - 9deg)) contrast(var(--scene-contrast, 1.05)) saturate(0.95); }
+.scene-art[data-lighting="moonless"] img { filter: hue-rotate(var(--scene-hue, 0deg)) contrast(var(--scene-contrast, 1.05)) brightness(0.72) saturate(0.7); }
 .game-main { min-block-size: calc(69dvh - 68px); }
 .story-panel, .combat-panel, .reward-panel, .end-panel { padding: 0.8rem 1rem calc(1.5rem + var(--safe-bottom)); }
 .story-panel > header { margin-block-start: -2.2rem; position: relative; }

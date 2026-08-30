@@ -1,4 +1,4 @@
-import type { FactionStanding } from '../types';
+import type { EventChoice, FactionStanding } from '../types';
 
 export interface EndingContext {
   readonly flags: readonly string[];
@@ -52,3 +52,27 @@ export const FINALE = {
   title: 'The Throne That Kneels',
   text: 'At the heart of the Keep, the empty throne turns and kneels before the Iron Tooth in your chest. Three armies wait outside. Beneath the stone, something older waits for a command.',
 };
+
+export const FINALE_CHOICES: readonly EventChoice[] = Object.freeze([
+  {
+    id: 'destroy-crown',
+    label: 'Break the Crown',
+    detail: 'End its command, whatever order dies with it.',
+    effect: { addFlags: ['crown-destroyed'], corruption: -1 },
+    outcome: 'The throne screams as the first iron tooth cracks.',
+  },
+  {
+    id: 'restore-crown',
+    label: 'Wear the Crown',
+    detail: 'Take its power and impose your answer on the realm.',
+    effect: { addFlags: ['crown-restored'], corruption: 2 },
+    outcome: 'The throne bows lower and the bells begin to learn your voice.',
+  },
+  {
+    id: 'refuse-crown',
+    label: 'Refuse Every Throne',
+    detail: 'Leave its power unfinished and trust the living to choose.',
+    effect: { addFlags: ['crown-refused'], mercy: 1 },
+    outcome: 'For one breath, Morrowmere contains no command at all.',
+  },
+]);

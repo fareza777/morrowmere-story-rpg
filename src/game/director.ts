@@ -1,5 +1,5 @@
 import { EVENTS, type StoryEvent } from './content/events';
-import { FINALE, LIEUTENANTS, PROLOGUE } from './content/story';
+import { FINALE, FINALE_CHOICES, LIEUTENANTS, PROLOGUE } from './content/story';
 import { createRng } from './rng';
 import type { EventChoice, FactionStanding, HeroClass, RegionId } from './types';
 
@@ -134,6 +134,6 @@ export function buildRoute(context: DirectorContext): RouteNode[] {
   nodes.push({ id: 'route-8-furnace-confessor', index: 8, kind: 'lieutenant', region: 'embervault', family: 'furnace-confessor', title: LIEUTENANTS.embervault.title, text: LIEUTENANTS.embervault.text, sceneKey: 'embervault|confessor|cinders|furnace', choices: CONTINUE_CHOICE, enemyArchetypeId: 'abbey-golem' });
   addStory('crownless-keep');
   addStory('crownless-keep');
-  nodes.push({ id: 'route-11-finale', index: 11, kind: 'finale', region: 'crownless-keep', family: 'finale', title: FINALE.title, text: FINALE.text, sceneKey: 'crownless-keep|throne|black-rain|night', choices: CONTINUE_CHOICE, enemyArchetypeId: 'crown-devil' });
+  nodes.push({ id: 'route-11-finale', index: 11, kind: 'finale', region: 'crownless-keep', family: 'finale', title: FINALE.title, text: FINALE.text, sceneKey: 'crownless-keep|throne|black-rain|night', choices: FINALE_CHOICES, enemyArchetypeId: 'crown-devil' });
   return nodes;
 }
