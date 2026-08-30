@@ -1,0 +1,23 @@
+* { box-sizing: border-box; }
+html { min-inline-size: 320px; background: var(--ink-0); }
+body { margin: 0; min-inline-size: 320px; min-block-size: 100dvh; background: var(--ink-0); color: var(--paper-0); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; text-rendering: optimizeLegibility; }
+button, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 3px; }
+button:disabled { cursor: not-allowed; opacity: 0.42; }
+h1, h2, h3, p { margin-block-start: 0; }
+h1, h2 { font-family: "Palatino Linotype", Palatino, Georgia, serif; font-weight: 600; letter-spacing: -0.025em; }
+h1 { font-size: clamp(1.8rem, 8vw, 3.4rem); line-height: 1.05; }
+h2 { font-size: 1.35rem; }
+.eyebrow { margin-block-end: 0.65rem; color: var(--accent-strong); font-size: 0.72rem; font-weight: 750; letter-spacing: 0.18em; line-height: 1.4; text-transform: uppercase; }
+.button { min-block-size: 52px; inline-size: 100%; border: 1px solid transparent; border-radius: var(--radius); padding: 0.8rem 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; font-weight: 750; line-height: 1.2; transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease; }
+.button:active:not(:disabled), .choice-button:active:not(:disabled), .combat-actions button:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
+.button-primary { background: var(--accent); color: #17140e; }
+.button-primary:hover { background: var(--accent-strong); }
+.button-secondary { border-color: var(--line-strong); background: rgb(9 10 10 / 0.72); color: var(--paper-0); }
+.icon-button { inline-size: 48px; block-size: 48px; border: 1px solid var(--line); border-radius: var(--radius); display: grid; place-items: center; background: var(--ink-1); }
+.field { display: grid; gap: 0.45rem; }
+.field > span { font-weight: 750; }
+.field input { min-block-size: 52px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--ink-1); color: var(--paper-0); padding-inline: 0.9rem; }
+.field small, .empty-state { color: var(--paper-2); line-height: 1.55; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }

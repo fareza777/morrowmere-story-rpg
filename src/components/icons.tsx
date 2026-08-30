@@ -1,0 +1,16 @@
+export {
+  ArrowLeft,
+  ArrowRight,
+  Backpack,
+  BookOpenText,
+  Check,
+  GearSix,
+  Heart,
+  Lightning,
+  MapTrifold,
+  Shield,
+  Skull,
+  Sparkle,
+  Sword,
+  X,
+} from '@phosphor-icons/react';

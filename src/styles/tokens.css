@@ -1,0 +1,22 @@
+:root {
+  color-scheme: dark;
+  --ink-0: #090a0a;
+  --ink-1: #111312;
+  --ink-2: #191c1a;
+  --ink-3: #252925;
+  --paper-0: #f2eee5;
+  --paper-1: #d8d2c6;
+  --paper-2: #aaa69e;
+  --accent: #d7b878;
+  --accent-strong: #efd59b;
+  --danger: #c35f52;
+  --witchlight: #8fa9a0;
+  --line: rgb(215 184 120 / 0.28);
+  --line-strong: rgb(215 184 120 / 0.52);
+  --shadow: 0 18px 50px rgb(2 4 3 / 0.52);
+  --radius: 6px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --layer-hud: 10;
+  --layer-overlay: 30;
+}
