@@ -62,3 +62,36 @@ export interface RewardContext {
   readonly level: number;
   readonly seed: number;
 }
+
+export interface FactionStanding {
+  readonly abbey: number;
+  readonly freeHost: number;
+  readonly conclave: number;
+}
+
+export type SkillStat = 'strength' | 'cunning' | 'will';
+
+export interface EventEffect {
+  readonly attack?: number;
+  readonly armor?: number;
+  readonly ward?: number;
+  readonly health?: number;
+  readonly focus?: number;
+  readonly supplies?: number;
+  readonly gold?: number;
+  readonly mercy?: number;
+  readonly corruption?: number;
+  readonly addFlags?: readonly string[];
+  readonly faction?: Partial<FactionStanding>;
+  readonly startCombat?: string;
+  readonly rewardTag?: string;
+}
+
+export interface EventChoice {
+  readonly id: string;
+  readonly label: string;
+  readonly detail: string;
+  readonly check?: { readonly stat: SkillStat; readonly difficulty: number };
+  readonly effect: EventEffect;
+  readonly outcome: string;
+}
