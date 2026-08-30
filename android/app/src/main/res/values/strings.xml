@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MORROWMERE</string>
+    <string name="title_activity_main">MORROWMERE</string>
+    <string name="package_name">com.morrowmere.game</string>
+    <string name="custom_url_scheme">com.morrowmere.game</string>
+</resources>

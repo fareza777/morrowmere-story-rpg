@@ -11,3 +11,5 @@ test-results/
 android/.gradle/
 android/local.properties
 android/app/build/
+release/*.apk
+release/*.aab
