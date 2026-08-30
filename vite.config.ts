@@ -8,5 +8,6 @@ export default defineConfig({
     globals: true,
     setupFiles: './vitest.setup.ts',
     css: true,
+    execArgv: ['--no-webstorage'],
   },
 });
