@@ -19,11 +19,21 @@ export function GameShell({ state, dispatch }: GameShellProps) {
   const node = state.route[state.routeIndex];
   const combatArt = state.combat?.enemy.artFamily;
   const combatEnemyId = state.combat?.enemy.id;
+  const narrationText = state.screen === 'story' && node
+    ? `Narration: ${node.title}. ${node.text}`
+    : state.screen === 'combat' && state.combat
+      ? `Narration: ${state.combat.enemy.name}. Enemy intent: ${state.combat.intentText}`
+      : state.screen === 'reward'
+        ? 'Narration: Victory. Choose what the road leaves behind.'
+        : state.screen === 'ending' && state.ending
+          ? `Narration: ${state.ending.title}. ${state.ending.verdict}`
+          : '';
   const style = { '--text-scale': state.settings.textScale } as CSSProperties;
   const closeOverlay = () => dispatch({ type: 'CLOSE_OVERLAY' });
 
   return (
     <div className={`game-shell ${state.settings.highContrast ? 'is-high-contrast' : ''} ${state.settings.reducedMotion ? 'is-reduced-motion' : ''}`} style={style}>
+      {state.settings.narration && <div className="sr-only" aria-live="polite" aria-atomic="true">{narrationText}</div>}
       <TopHud state={state} dispatch={dispatch} />
       {(state.screen === 'story' || state.screen === 'combat') && node && <SceneArt region={node.region} sceneKey={node.sceneKey} enemyId={combatEnemyId} enemyArtFamily={combatArt} />}
       <main className="game-main">

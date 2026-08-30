@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a complete, English-only, offline Android-ready text RPG with a replayable 30–60 minute campaign, exactly 200 bestiary entries, tactical combat, persistent choices, and highly readable mobile UI.
+**Goal:** Build a complete, English-only, offline Android-ready text RPG with a replayable 30 to 60 minute campaign, exactly 200 bestiary entries, tactical combat, persistent choices, and highly readable mobile UI.
 
 **Architecture:** Pure TypeScript modules own deterministic game rules and generated catalogs; a React reducer exposes typed commands to a portrait-first interface. Vite emits the offline web application and Capacitor packages the same output for Android.
 

@@ -1,8 +1,8 @@
-# Morrowmere: A Sword & Sorcery Chronicle — Game Design
+# Morrowmere: A Sword & Sorcery Chronicle | Game Design
 
 ## Product definition
 
-Morrowmere is an English-only, offline-first, portrait-oriented text adventure RPG for Android. It combines a consequential authored narrative with replayable procedural routes, tactical turn-based combat, equipment builds, faction reputation, codex discovery, and multiple endings. The first release must be a complete 30–60 minute campaign that remains replayable after the first victory.
+Morrowmere is an English-only, offline-first, portrait-oriented text adventure RPG for Android. It combines a consequential authored narrative with replayable procedural routes, tactical turn-based combat, equipment builds, faction reputation, codex discovery, and multiple endings. The first release must be a complete 30 to 60 minute campaign that remains replayable after the first victory.
 
 The public-facing title is **MORROWMERE** with the subtitle **A Sword & Sorcery Chronicle**. The Android application ID is `com.morrowmere.game`.
 

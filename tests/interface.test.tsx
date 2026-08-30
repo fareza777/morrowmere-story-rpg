@@ -61,4 +61,12 @@ describe('portrait game interface', () => {
     expect(screen.getByText('Red Mercy')).toBeVisible();
     expect(screen.getByText('1 / 12 carried')).toBeVisible();
   });
+
+  it('announces the active scene when narration is enabled', () => {
+    const run = startNewRun({ heroClass: 'warden', seed: 71 });
+    const state = { ...run, settings: { ...run.settings, narration: true } };
+    render(<GameShell state={state} dispatch={() => undefined} />);
+
+    expect(screen.getByText(/Narration: When the Black Rain Rings/)).toHaveAttribute('aria-live', 'polite');
+  });
 });
