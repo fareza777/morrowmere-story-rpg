@@ -40,7 +40,7 @@ The authored spine follows three questions:
 - Which faction deserves the Crown's power: the Iron Abbey, the Orcish Free Host, or the Pale Conclave?
 - Is the player carrying a relic, a prisoner, or a piece of themselves?
 
-Five endings cover restoration, destruction, faction victory for each of the three powers, and a hidden refusal ending. The ending resolver uses explicit world flags and faction values rather than a single last choice.
+Six endings cover restoration, destruction, faction victory for each of the three powers, and a hidden refusal ending. The ending resolver uses explicit world flags and faction values rather than a single last choice.
 
 ## Procedural narrative model
 

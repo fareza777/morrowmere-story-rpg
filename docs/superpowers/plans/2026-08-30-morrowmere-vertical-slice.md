@@ -105,7 +105,7 @@ expect(new Set(ENEMIES.map((enemy) => enemy.name))).toHaveLength(200);
 - Consumes: `SeededRng`, shared `GameFlags`, `FactionStanding`, and `InventoryTag` contracts.
 - Produces: `buildRoute(context: DirectorContext): RouteNode[]`, `chooseNextEvent(context: DirectorContext): StoryEvent`, `resolveEnding(state: GameState): Ending`.
 
-- [ ] **Step 1: Write tests proving a seed reproduces the same 12-node route, no event family repeats within three nodes, unmet prerequisites never appear, earlier mercy creates a callback, and each of the five ending IDs is reachable.**
+- [ ] **Step 1: Write tests proving a seed reproduces the same 12-node route, no event family repeats within three nodes, unmet prerequisites never appear, earlier mercy creates a callback, and each of the six ending IDs is reachable.**
 - [ ] **Step 2: Run the director and ending tests and verify they fail due to missing modules.**
 - [ ] **Step 3: Add 36 typed event templates, four region definitions, story fragments, three factions, follow-up hooks, weighted tension rules, and the explicit ending resolver.**
 - [ ] **Step 4: Add a combinatorial test that enumerates valid actor/location/weather slots and asserts at least 250 distinct rendered scene keys.**
