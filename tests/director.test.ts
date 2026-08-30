@@ -69,9 +69,9 @@ describe('procedural story director', () => {
     expect(event.id).toBe('gloamwood-goblin-debt');
   });
 
-  it('authors thirty-six templates with over 250 controlled scene variants', () => {
-    expect(EVENTS).toHaveLength(36);
-    expect(new Set(EVENTS.map((event) => event.id)).size).toBe(36);
-    expect(new Set(SCENE_VARIANT_KEYS).size).toBeGreaterThanOrEqual(250);
+  it('authors forty-eight templates with over 350 controlled scene variants', () => {
+    expect(EVENTS).toHaveLength(48);
+    expect(new Set(EVENTS.map((event) => event.id)).size).toBe(48);
+    expect(new Set(SCENE_VARIANT_KEYS).size).toBeGreaterThanOrEqual(350);
   });
 });

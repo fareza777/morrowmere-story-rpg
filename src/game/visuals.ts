@@ -1,4 +1,5 @@
 import type { RegionId } from './types';
+import { EVENTS } from './content/events';
 
 const REGIONS: readonly RegionId[] = ['gloamwood', 'drowned-road', 'embervault', 'crownless-keep'];
 const PLATES_PER_REGION = 3;
@@ -6,6 +7,7 @@ const WEATHERS = ['black-rain', 'silver-moths', 'ashfall', 'mist', 'clear'] as c
 const LIGHTING = ['moonless', 'witchlight', 'ember', 'storm', 'dawn'] as const;
 const X_POSITIONS = [38, 44, 50, 56, 62] as const;
 const Y_POSITIONS = [34, 40, 46, 52, 58] as const;
+const EVENT_IDS = new Set(EVENTS.map((event) => event.id));
 
 export const BACKGROUND_VARIANT_COUNT = REGIONS.length * PLATES_PER_REGION * WEATHERS.length * LIGHTING.length;
 
@@ -53,9 +55,10 @@ function makeVisual(
   const weather = WEATHERS[weatherIndex];
   const lighting = LIGHTING[lightingIndex];
   const treatment = enemyId ? `enemy:${enemyId}` : `background:${region}:${plate}:${weather}:${lighting}`;
+  const sceneId = identity.split('|')[0] ?? '';
   return {
     visualKey: treatment,
-    backgroundSource: `/assets/backgrounds/${region}.webp`,
+    backgroundSource: EVENT_IDS.has(sceneId) ? `/assets/events/${sceneId}.webp` : `/assets/backgrounds/${region}.webp`,
     ...(enemyArtFamily ? { enemySource: `/assets/enemies/${enemyArtFamily}.webp` } : {}),
     plate,
     weather,

@@ -43,7 +43,7 @@ export function GameShell({ state, dispatch }: GameShellProps) {
         {state.screen === 'defeat' && <section className="end-panel"><p className="eyebrow">Chronicle ended</p><h1>The road keeps your name.</h1><p>Your choices remain in this save, but this run has ended beneath the black rain.</p></section>}
         {state.screen === 'ending' && state.ending && <section className="end-panel"><p className="eyebrow">Epilogue</p><h1>{state.ending.title}</h1><strong>{state.ending.verdict}</strong><p>{state.ending.epilogue}</p></section>}
       </main>
-      {state.overlay === 'inventory' && <InventorySheet state={state} onClose={closeOverlay} />}
+      {state.overlay === 'inventory' && <InventorySheet state={state} dispatch={dispatch} onClose={closeOverlay} />}
       {state.overlay === 'chronicle' && <ChronicleSheet state={state} onClose={closeOverlay} />}
       {state.overlay === 'bestiary' && <BestiarySheet state={state} onClose={closeOverlay} />}
       {state.overlay === 'settings' && <SettingsSheet settings={state.settings} dispatch={dispatch} onClose={closeOverlay} />}

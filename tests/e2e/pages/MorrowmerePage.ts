@@ -21,6 +21,7 @@ export class MorrowmerePage {
 
   async beginMageChronicle() {
     await this.newChronicle.click();
+    await this.page.getByRole('button', { name: 'Skip introduction' }).click();
     await this.page.getByRole('button', { name: /Mage/i }).click();
     await this.page.getByRole('button', { name: 'Begin Chronicle' }).click();
   }

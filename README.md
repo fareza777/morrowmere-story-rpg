@@ -9,13 +9,15 @@ MORROWMERE is a complete English-language, portrait-first sword and sorcery text
 | Playable classes | 3 |
 | Bestiary entries | 200 |
 | Base items | 60 |
-| Authored event templates | 36 |
-| Procedural text scene keys | 288 |
+| Authored event templates | 48 |
+| Procedural text scene keys | 384 |
 | Nodes per chronicle | 12 |
 | Regions | 4 |
 | Endings | 6 |
-| Generated source art plates | 17 |
+| Generated source art plates | 70 |
+| Unique event backgrounds | 48 |
 | Enumerated environment combinations | 300 |
+| Offline SFX cues | 10 |
 
 Every run works without a network connection. The Android build requests no sensitive, runtime, or network permissions, includes no advertising or analytics SDK, and stores progress only on the device. AndroidX adds one signature-level internal receiver permission during packaging; it is not exposed to the player.
 
@@ -50,11 +52,12 @@ The device-test APK and unsigned release bundle are copied to `release/` in the 
 
 - `src/game/content`: enemies, items, events, story, and endings
 - `src/game/director.ts`: seeded twelve-node chronicle routing
-- `src/game/combat.ts`: deterministic combat with visible enemy intents
+- `src/game/combat.ts`: seeded miss, hit, critical, guard, magic, healing, and visible-intent combat
+- `src/game/audio.ts`: offline synthesized combat and interface sound effects
 - `src/game/state.ts`: pure game-state transitions
 - `src/game/persistence.ts`: schema-validated local save slots and import/export helpers
 - `src/game/visuals.ts`: deterministic scene and enemy treatment compositor
-- `src/components`: portrait game screens, HUD, sheets, combat, and accessibility controls
+- `src/components`: splash, three-step onboarding, portrait game screens, HUD, equipment, combat, and accessibility controls
 - `public/assets`: optimized original generated art
 - `android`: Capacitor 8 Android project targeting API 36
 - `store-listing`: upload-ready icon, feature graphic, screenshots, and English listing copy

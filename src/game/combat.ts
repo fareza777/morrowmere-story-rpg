@@ -127,6 +127,25 @@ function tickStatuses(statuses: readonly StatusEffect[]): StatusEffect[] {
     .filter((status) => status.duration > 0);
 }
 
+type AttackOutcome = 'miss' | 'hit' | 'critical';
+
+function rollAttackOutcome(
+  rng: ReturnType<typeof createRng>,
+  missChance: number,
+  criticalChance: number,
+): AttackOutcome {
+  const roll = rng.int(1, 100);
+  if (roll <= missChance) return 'miss';
+  if (roll > 100 - criticalChance) return 'critical';
+  return 'hit';
+}
+
+function variedPower(rng: ReturnType<typeof createRng>, power: number, outcome: AttackOutcome): number {
+  const variation = rng.int(88, 115) / 100;
+  const criticalMultiplier = outcome === 'critical' ? 1.75 : 1;
+  return Math.max(1, Math.round(power * variation * criticalMultiplier));
+}
+
 export function resolveCombatAction(state: CombatState, action: CombatAction): CombatResult {
   if (state.outcome !== 'active') return { state, events: [] };
   if (action.type === 'flee' && state.enemy.isBoss) {
@@ -139,34 +158,43 @@ export function resolveCombatAction(state: CombatState, action: CombatAction): C
   let enemy: EnemyCombatant = { ...state.enemy };
 
   if (action.type === 'attack') {
-    const variance = rng.int(0, 2);
-    const damage = calculateDamage({
-      power: player.strength + player.attackBonus + 3 + variance,
-      kind: 'physical',
-      armor: enemy.armor,
-      ward: enemy.ward,
-      guarding: enemy.guarding,
-    });
-    enemy = { ...enemy, health: Math.max(0, enemy.health - damage), guarding: false };
-    events.push(`You strike for ${damage} damage.`);
+    const outcome = rollAttackOutcome(rng, Math.max(4, 11 - Math.floor(player.cunning / 2)), Math.min(26, 8 + player.cunning));
+    if (outcome === 'miss') {
+      events.push('Your attack misses. Steel finds only rain.');
+    } else {
+      const damage = calculateDamage({
+        power: variedPower(rng, player.strength + player.attackBonus + 4, outcome),
+        kind: 'physical',
+        armor: enemy.armor,
+        ward: enemy.ward,
+        guarding: enemy.guarding,
+      });
+      enemy = { ...enemy, health: Math.max(0, enemy.health - damage), guarding: false };
+      events.push(outcome === 'critical' ? `Critical hit! You strike for ${damage} damage.` : `You strike for ${damage} damage.`);
+    }
   } else if (action.type === 'guard') {
     player = { ...player, guarding: true };
     events.push('You raise your guard and brace for the announced attack.');
   } else if (action.type === 'technique') {
     const focusCost = 3;
     if (player.focus < focusCost) return { state, events: ['You do not have enough Focus.'] };
-    const isSorcery = player.class === 'mage' || action.techniqueId === 'witchfire';
-    const base = isSorcery ? player.will + 7 : player.strength + player.cunning + 3;
-    const damage = calculateDamage({
-      power: base,
-      kind: isSorcery ? 'sorcery' : 'physical',
-      armor: enemy.armor,
-      ward: enemy.ward,
-      guarding: enemy.guarding,
-    });
     player = { ...player, focus: player.focus - focusCost };
-    enemy = { ...enemy, health: Math.max(0, enemy.health - damage), guarding: false };
-    events.push(`Your technique deals ${damage} damage.`);
+    const isSorcery = player.class === 'mage' || action.techniqueId === 'witchfire';
+    const outcome = rollAttackOutcome(rng, 3, Math.min(30, 12 + (isSorcery ? player.will : player.cunning)));
+    if (outcome === 'miss') {
+      events.push('Your technique misses as the enemy slips clear.');
+    } else {
+      const base = isSorcery ? player.will + 7 : player.strength + player.cunning + 3;
+      const damage = calculateDamage({
+        power: variedPower(rng, base, outcome),
+        kind: isSorcery ? 'sorcery' : 'physical',
+        armor: enemy.armor,
+        ward: enemy.ward,
+        guarding: enemy.guarding,
+      });
+      enemy = { ...enemy, health: Math.max(0, enemy.health - damage), guarding: false };
+      events.push(outcome === 'critical' ? `Critical hit! Your technique deals ${damage} damage.` : `Your technique deals ${damage} damage.`);
+    }
   } else if (action.type === 'item') {
     if (!player.inventory.includes(action.itemId)) return { state, events: ['That item is not in your pack.'] };
     player = {
@@ -210,15 +238,25 @@ export function resolveCombatAction(state: CombatState, action: CombatAction): C
   } else {
     const kind = state.enemyIntent === 'hex' ? 'sorcery' : 'physical';
     const bonus = state.enemyIntent === 'heavy' ? 4 : state.enemyIntent === 'hex' ? 2 : 0;
-    const damage = calculateDamage({
-      power: enemy.attack + bonus,
-      kind,
-      armor: player.armor,
-      ward: player.ward,
-      guarding: player.guarding,
-    });
-    player = { ...player, health: Math.max(0, player.health - damage) };
-    events.push(`${enemy.name} deals ${damage} ${kind} damage.`);
+    const missChance = state.enemyIntent === 'heavy' ? 16 : state.enemyIntent === 'hex' ? 7 : 9;
+    const criticalChance = state.enemyIntent === 'heavy' ? 16 : state.enemyIntent === 'hex' ? 11 : 9;
+    const outcome = rollAttackOutcome(rng, missChance, criticalChance);
+    if (outcome === 'miss') {
+      events.push(`${enemy.name} misses you.`);
+    } else {
+      const power = outcome === 'critical' ? Math.ceil((enemy.attack + bonus) * 1.65) : enemy.attack + bonus;
+      const damage = calculateDamage({
+        power,
+        kind,
+        armor: player.armor,
+        ward: player.ward,
+        guarding: player.guarding,
+      });
+      player = { ...player, health: Math.max(0, player.health - damage) };
+      events.push(outcome === 'critical'
+        ? `Critical enemy hit! ${enemy.name} deals ${damage} ${kind} damage.`
+        : `${enemy.name} deals ${damage} ${kind} damage.`);
+    }
   }
 
   player = { ...player, guarding: false, statuses: tickStatuses(player.statuses) };

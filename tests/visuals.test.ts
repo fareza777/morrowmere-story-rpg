@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ENEMIES } from '../src/game/content/enemies';
+import { EVENTS } from '../src/game/content/events';
 import {
   BACKGROUND_VARIANT_COUNT,
   composeSceneVisual,
@@ -31,6 +32,17 @@ describe('procedural visual compositor', () => {
   it('returns identical composition values for the same scene key', () => {
     const input = { region: 'embervault' as const, sceneKey: 'furnace|magus|cinders|red' };
     expect(composeSceneVisual(input)).toEqual(composeSceneVisual(input));
+  });
+
+  it('maps every authored event to its own shipped background plate', () => {
+    const sources = EVENTS.map((event) => composeSceneVisual({
+      region: event.region,
+      sceneKey: `${event.id}|actor|location|weather`,
+    }).backgroundSource);
+
+    expect(new Set(sources).size).toBe(EVENTS.length);
+    expect(sources.every((source) => source.startsWith('/assets/events/'))).toBe(true);
+    expect(sources.every((source) => existsSync(join(process.cwd(), 'public', source)))).toBe(true);
   });
 
   it('ships every visual source referenced by the compositor', () => {

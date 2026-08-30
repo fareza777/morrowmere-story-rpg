@@ -12,6 +12,8 @@ describe('portrait game interface', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
+    expect(screen.getByRole('heading', { name: 'Your chronicle remembers' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
     expect(screen.getByRole('heading', { name: 'Choose your path' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: /Mage/i }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
@@ -40,12 +42,14 @@ describe('portrait game interface', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
+    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
 
     await user.click(screen.getByRole('button', { name: 'Open settings' }));
 
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
     expect(screen.getByRole('slider', { name: 'Text size' })).toHaveValue('100');
+    expect(screen.getByRole('checkbox', { name: 'Sound effects' })).toBeVisible();
     expect(screen.getByRole('checkbox', { name: 'Reduce motion' })).toBeVisible();
   });
 
@@ -53,6 +57,7 @@ describe('portrait game interface', () => {
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
+    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
 
     await user.click(screen.getByRole('button', { name: 'Open inventory' }));

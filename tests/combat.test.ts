@@ -55,4 +55,36 @@ describe('combat rules', () => {
     expect(result.state.outcome).toBe('active');
     expect(result.events.join(' ')).toContain('There is no road out');
   });
+
+  it('produces deterministic misses and critical hits across seeded attacks', () => {
+    const initial = createCombat(createHero('warrior'), ENEMIES[0], 41);
+    const outcomes = Array.from({ length: 160 }, (_, seed) => {
+      const state: CombatState = {
+        ...initial,
+        rngState: seed + 1,
+        enemyIntent: 'guard',
+        enemy: { ...initial.enemy, health: 999, maxHealth: 999 },
+      };
+      return resolveCombatAction(state, { type: 'attack' }).events.join(' ');
+    });
+
+    expect(outcomes.some((entry) => entry.includes('misses'))).toBe(true);
+    expect(outcomes.some((entry) => entry.includes('Critical hit'))).toBe(true);
+  });
+
+  it('allows enemy attacks to miss or critically hit from seeded rolls', () => {
+    const initial = createCombat(createHero('warrior'), ENEMIES[0], 41);
+    const outcomes = Array.from({ length: 180 }, (_, seed) => {
+      const state: CombatState = {
+        ...initial,
+        rngState: seed + 1,
+        enemyIntent: 'heavy',
+        enemy: { ...initial.enemy, health: 999, maxHealth: 999 },
+      };
+      return resolveCombatAction(state, { type: 'guard' }).events.join(' ');
+    });
+
+    expect(outcomes.some((entry) => entry.includes('misses you'))).toBe(true);
+    expect(outcomes.some((entry) => entry.includes('Critical enemy hit'))).toBe(true);
+  });
 });

@@ -17,9 +17,11 @@ test('captures actual 9:16 game screens', async ({ page }) => {
   const game = new MorrowmerePage(page);
   await game.gotoFresh();
   await expect(game.title).toBeVisible();
+  await expect(page.locator('.launch-splash')).toBeHidden();
   await page.screenshot({ path: join(output, '01-title.png') });
 
   await game.newChronicle.click();
+  await page.getByRole('button', { name: 'Skip introduction' }).click();
   await page.getByRole('button', { name: 'Begin Chronicle' }).click();
   await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
   await page.screenshot({ path: join(output, '02-story.png') });

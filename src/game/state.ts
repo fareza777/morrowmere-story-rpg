@@ -1,9 +1,9 @@
 import { createCombat, resolveCombatAction, type CombatAction, type CombatState, type HeroState } from './combat';
 import { ENEMIES } from './content/enemies';
-import { generateItemReward } from './content/items';
+import { generateItemReward, ITEMS } from './content/items';
 import { resolveEnding, type Ending } from './content/story';
 import { buildRoute, type RouteNode } from './director';
-import type { EventEffect, FactionStanding, HeroClass, ItemDefinition } from './types';
+import type { EventEffect, FactionStanding, HeroClass, ItemCategory, ItemDefinition } from './types';
 
 export interface GameSettings {
   readonly textScale: number;
@@ -52,6 +52,8 @@ export type GameCommand =
   | { readonly type: 'ADVANCE' }
   | { readonly type: 'COMBAT'; readonly action: CombatAction }
   | { readonly type: 'CLAIM_REWARD'; readonly itemId: string }
+  | { readonly type: 'EQUIP_ITEM'; readonly itemId: string }
+  | { readonly type: 'UNEQUIP_ITEM'; readonly itemId: string }
   | { readonly type: 'OPEN_OVERLAY'; readonly overlay: Exclude<GameOverlay, null> }
   | { readonly type: 'CLOSE_OVERLAY' }
   | { readonly type: 'UPDATE_SETTINGS'; readonly settings: Partial<GameSettings> };
@@ -130,6 +132,65 @@ function addUnique(values: readonly string[], additions: readonly string[] = [])
   return [...new Set([...values, ...additions])];
 }
 
+function applyItemStats(hero: HeroState, item: ItemDefinition, direction: 1 | -1): HeroState {
+  const maxHealth = Math.max(1, hero.maxHealth + (item.stats.health ?? 0) * direction);
+  const maxFocus = Math.max(0, hero.maxFocus + (item.stats.focus ?? 0) * direction);
+  return {
+    ...hero,
+    attackBonus: Math.max(0, hero.attackBonus + (item.stats.attack ?? 0) * direction),
+    will: Math.max(0, hero.will + (item.stats.will ?? 0) * direction),
+    armor: Math.max(0, hero.armor + (item.stats.armor ?? 0) * direction),
+    ward: Math.max(0, hero.ward + (item.stats.ward ?? 0) * direction),
+    maxHealth,
+    health: direction > 0
+      ? Math.min(maxHealth, hero.health + (item.stats.health ?? 0))
+      : Math.min(maxHealth, hero.health),
+    maxFocus,
+    focus: direction > 0
+      ? Math.min(maxFocus, hero.focus + (item.stats.focus ?? 0))
+      : Math.min(maxFocus, hero.focus),
+  };
+}
+
+function isEquipmentCategory(category: ItemCategory): category is 'weapon' | 'armor' | 'charm' {
+  return category === 'weapon' || category === 'armor' || category === 'charm';
+}
+
+function equipItem(state: GameState, itemId: string): GameState {
+  if (!state.hero.inventory.includes(itemId)) return state;
+  const item = ITEMS.find((candidate) => candidate.id === itemId);
+  if (!item || !item.allowedClasses.includes(state.hero.class)) return state;
+  if (!isEquipmentCategory(item.category)) return state;
+
+  if (item.category === 'charm') {
+    if (state.hero.equipment.charms.includes(item.id) || state.hero.equipment.charms.length >= 2) return state;
+    const hero = applyItemStats(state.hero, item, 1);
+    return { ...state, hero: { ...hero, equipment: { ...hero.equipment, charms: [...hero.equipment.charms, item.id] } } };
+  }
+
+  const slot = item.category;
+  const previousId = state.hero.equipment[slot];
+  if (previousId === item.id) return state;
+  const previous = previousId ? ITEMS.find((candidate) => candidate.id === previousId) : undefined;
+  const withoutPrevious = previous ? applyItemStats(state.hero, previous, -1) : state.hero;
+  const hero = applyItemStats(withoutPrevious, item, 1);
+  return { ...state, hero: { ...hero, equipment: { ...hero.equipment, [slot]: item.id } } };
+}
+
+function unequipItem(state: GameState, itemId: string): GameState {
+  const item = ITEMS.find((candidate) => candidate.id === itemId);
+  if (!item || !isEquipmentCategory(item.category)) return state;
+  const isEquipped = item.category === 'charm'
+    ? state.hero.equipment.charms.includes(item.id)
+    : state.hero.equipment[item.category] === item.id;
+  if (!isEquipped) return state;
+  const hero = applyItemStats(state.hero, item, -1);
+  const equipment = item.category === 'charm'
+    ? { ...hero.equipment, charms: hero.equipment.charms.filter((id) => id !== item.id) }
+    : { ...hero.equipment, [item.category]: null };
+  return { ...state, hero: { ...hero, equipment } };
+}
+
 function applyEffect(state: GameState, effect: EventEffect): GameState {
   const hero = {
     ...state.hero,
@@ -179,6 +240,8 @@ export function gameReducer(state: GameState, command: GameCommand): GameState {
   if (command.type === 'UPDATE_SETTINGS') {
     return { ...state, settings: { ...state.settings, ...command.settings } };
   }
+  if (command.type === 'EQUIP_ITEM') return equipItem(state, command.itemId);
+  if (command.type === 'UNEQUIP_ITEM') return unequipItem(state, command.itemId);
 
   if (command.type === 'CHOOSE') {
     if (state.screen !== 'story' || state.lastOutcome) return state;

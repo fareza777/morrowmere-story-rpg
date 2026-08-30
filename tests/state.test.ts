@@ -59,4 +59,46 @@ describe('chronicle state', () => {
     expect(result.screen).toBe('combat');
     expect(result.combat?.enemy.isBoss).toBe(true);
   });
+
+  it('equips, replaces, and removes gear without stacking old bonuses', () => {
+    const initial = startNewRun({ heroClass: 'warrior', seed: 1943 });
+    const stocked = {
+      ...initial,
+      hero: {
+        ...initial.hero,
+        inventory: ['potion-red', 'weapon-rust-sword', 'weapon-orc-falchion'],
+      },
+    };
+
+    const first = gameReducer(stocked, { type: 'EQUIP_ITEM', itemId: 'weapon-rust-sword' });
+    const replacement = gameReducer(first, { type: 'EQUIP_ITEM', itemId: 'weapon-orc-falchion' });
+    const removed = gameReducer(replacement, { type: 'UNEQUIP_ITEM', itemId: 'weapon-orc-falchion' });
+
+    expect(first.hero.equipment.weapon).toBe('weapon-rust-sword');
+    expect(first.hero.attackBonus).toBe(stocked.hero.attackBonus + 2);
+    expect(replacement.hero.equipment.weapon).toBe('weapon-orc-falchion');
+    expect(replacement.hero.attackBonus).toBe(stocked.hero.attackBonus + 5);
+    expect(removed.hero.equipment.weapon).toBeNull();
+    expect(removed.hero.attackBonus).toBe(stocked.hero.attackBonus);
+  });
+
+  it('limits equipped charms to two and rejects gear for another class', () => {
+    const initial = startNewRun({ heroClass: 'warrior', seed: 84 });
+    const stocked = {
+      ...initial,
+      hero: {
+        ...initial.hero,
+        inventory: ['charm-wolf-tooth', 'charm-mute-bell', 'charm-orc-knot', 'weapon-ash-wand'],
+      },
+    };
+
+    const one = gameReducer(stocked, { type: 'EQUIP_ITEM', itemId: 'charm-wolf-tooth' });
+    const two = gameReducer(one, { type: 'EQUIP_ITEM', itemId: 'charm-mute-bell' });
+    const full = gameReducer(two, { type: 'EQUIP_ITEM', itemId: 'charm-orc-knot' });
+    const wrongClass = gameReducer(full, { type: 'EQUIP_ITEM', itemId: 'weapon-ash-wand' });
+
+    expect(two.hero.equipment.charms).toHaveLength(2);
+    expect(full).toBe(two);
+    expect(wrongClass).toBe(full);
+  });
 });

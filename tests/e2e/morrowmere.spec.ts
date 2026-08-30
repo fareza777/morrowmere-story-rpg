@@ -5,6 +5,10 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   const game = new MorrowmerePage(page);
   await game.gotoFresh();
   await expect(game.title).toBeVisible();
+  const titleBox = await game.title.boundingBox();
+  const viewport = page.viewportSize();
+  expect(titleBox?.x).toBeGreaterThanOrEqual(0);
+  expect((titleBox?.x ?? 0) + (titleBox?.width ?? 0)).toBeLessThanOrEqual(viewport?.width ?? 360);
 
   await game.beginMageChronicle();
   await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
@@ -18,6 +22,8 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
   await page.getByRole('button', { name: 'Open inventory' }).click();
   await expect(page.getByRole('dialog', { name: 'Inventory' })).toContainText('Red Mercy');
+  await page.getByRole('tab', { name: 'Equipment' }).click();
+  await expect(page.getByLabel('Equipped items')).toContainText('WeaponEmpty');
 });
 
 test('exposes an installable English manifest', async ({ request }) => {
