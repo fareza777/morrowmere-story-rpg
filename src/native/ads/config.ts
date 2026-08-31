@@ -15,6 +15,7 @@ export const DEMO_AD_IDS: Readonly<AdUnitIds> = Object.freeze({
 });
 
 const AD_UNIT_PATTERN = /^ca-app-pub-\d{16}\/\d{10}$/;
+const GOOGLE_SAMPLE_PUBLISHER_PREFIX = 'ca-app-pub-3940256099942544';
 
 let lastDiagnostic: AdDiagnostic | null = null;
 
@@ -44,7 +45,7 @@ function recordInvalidLiveConfig(recordDiagnostic?: AdDiagnosticRecorder): void 
 function isValidLiveId(value: unknown): value is string {
   return typeof value === 'string'
     && AD_UNIT_PATTERN.test(value)
-    && !Object.values(DEMO_AD_IDS).includes(value);
+    && !value.startsWith(GOOGLE_SAMPLE_PUBLISHER_PREFIX);
 }
 
 export function getLastAdConfigDiagnostic(): AdDiagnostic | null {

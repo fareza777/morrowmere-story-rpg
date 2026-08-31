@@ -62,6 +62,21 @@ describe('AdMob configuration', () => {
     expect(getLastAdConfigDiagnostic()).toBeNull();
   });
 
+  it('rejects every unit under the Google sample publisher, not only the locked demo units', () => {
+    const diagnostic = vi.fn();
+
+    expect(resolveAdConfig({
+      live: true,
+      native: true,
+      ids: {
+        ...VALID_LIVE_IDS,
+        bannerId: 'ca-app-pub-3940256099942544/0000000000',
+      },
+      recordDiagnostic: diagnostic,
+    })).toMatchObject({ enabled: false, testing: false });
+    expect(diagnostic).toHaveBeenCalledWith(expect.objectContaining({ code: 'invalid-live-config' }));
+  });
+
   it.each([
     undefined,
     { ...VALID_LIVE_IDS, bannerId: '' },
