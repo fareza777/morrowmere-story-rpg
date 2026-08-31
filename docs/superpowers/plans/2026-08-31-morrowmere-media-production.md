@@ -29,8 +29,8 @@
 
 ## File map
 
-- `production/chronicle1/media/style-bible.md`: retained MORROWMERE palette, lighting, composition, character consistency, and rejection examples.
-- `production/chronicle1/media/character-bible.json`: recurring character age, face, clothing, weapon, palette, and silhouette anchors.
+- `production/chronicle1/media/style-guide.md`: retained MORROWMERE palette, lighting, composition, character consistency, and rejection examples.
+- `production/chronicle1/media/character-guide.json`: recurring character age, face, clothing, weapon, palette, and silhouette anchors.
 - `production/chronicle1/media/visual-jobs.json`: exactly 541 logical visual jobs from the content contract.
 - `production/chronicle1/media/audio-jobs.json`: 12 music, 84 SFX, and 32 VO briefs with durations and provenance requirements.
 - `production/chronicle1/media/approvals.json`: contact-sheet approval state and justified luminance exceptions.
@@ -174,11 +174,11 @@ git add .gitignore package.json package-lock.json src/game/media scripts/media t
 git commit -m "build: add Chronicle I media pipeline"
 ```
 
-### Task 2: Lock the MORROWMERE style bible and generation queue
+### Task 2: Lock the MORROWMERE visual style guide and generation queue
 
 **Files:**
-- Create: `production/chronicle1/media/style-bible.md`
-- Create: `production/chronicle1/media/character-bible.json`
+- Create: `production/chronicle1/media/style-guide.md`
+- Create: `production/chronicle1/media/character-guide.json`
 - Create: `production/chronicle1/media/visual-jobs.json`
 - Create: `production/chronicle1/media/audio-jobs.json`
 - Create: `production/chronicle1/media/approvals.json`
@@ -198,7 +198,7 @@ expect(new Set(VISUAL_JOBS.filter((job) => job.kind === 'scene').map((job) => jo
 ```
 
 - [ ] **Step 2: Run `npm test -- tests/media/style-contract.test.ts`; expect missing production-contract failures.**
-- [ ] **Step 3: Write the style bible from the approved existing event plates, not from a named external style. Give every job a unique subject/action/location/camera/lighting brief, mobile text-safe region, focal point, character-reference IDs, exclusions, and output path. Approved existing art may be retained only when it depicts the exact new scene; record its original file hash and never assign it to a second scene.**
+- [ ] **Step 3: Write the visual style guide from the approved existing event plates, not from a named external style. Give every job a unique subject/action/location/camera/lighting brief, mobile text-safe region, focal point, character-reference IDs, exclusions, and output path. Approved existing art may be retained only when it depicts the exact new scene; record its original file hash and never assign it to a second scene.**
 
 ```json
 {
@@ -337,7 +337,7 @@ expect((await assetsOfKind('enemy')).every((entry) => entry.width === 1024 && en
 - Create: `tests/media/opening-art.test.ts`
 
 **Interfaces:**
-- Consumes: approved opening narration and character bible.
+- Consumes: approved opening narration and character guide.
 - Produces: 14 ordered shots, 33 physical WebPs, focal/depth metadata, and a 90–120 second timing contract used by the interface-cinematic plan.
 
 - [ ] **Step 1: Write a failing storyboard/layer/timing test.**
@@ -521,4 +521,3 @@ git commit -m "build: finalize Chronicle I media library"
 - [ ] Runtime manifests contain stable IDs and relative packaged paths only.
 - [ ] The final media report enforces 125 MiB visuals, 55 MiB audio, and 180 MiB combined internal budgets.
 - [ ] The spec's art style, asset counts, cinematic, music, SFX, VO, offline, lazy-loading, and bundle-risk requirements each map to a task above.
-
