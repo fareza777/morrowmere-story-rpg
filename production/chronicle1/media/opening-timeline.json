@@ -1,0 +1,147 @@
+{
+  "id": "chronicle-1-opening",
+  "durationMs": 105000,
+  "fallbackMode": "static-base",
+  "shots": [
+    {
+      "id": "opening-01-fractured-kingdom",
+      "startMs": 0,
+      "endMs": 7000,
+      "base": "/assets/chronicle1/opening/opening-01-fractured-kingdom/base.webp",
+      "captionSegmentId": "opening-narration-01",
+      "camera": { "start": { "scale": 1.08, "x": 0, "y": 1 }, "end": { "scale": 1, "x": 0, "y": 0 } },
+      "focus": "kingdom-valley",
+      "impactCut": false
+    },
+    {
+      "id": "opening-02-medicine-caravan",
+      "startMs": 7000,
+      "endMs": 15000,
+      "base": "/assets/chronicle1/opening/opening-02-medicine-caravan/base.webp",
+      "captionSegmentId": "opening-narration-02",
+      "camera": { "start": { "scale": 1.05, "x": -2, "y": 0 }, "end": { "scale": 1.08, "x": 2, "y": 0 } },
+      "focus": "medicine-wagons",
+      "impactCut": false
+    },
+    {
+      "id": "opening-03-player-on-the-road",
+      "startMs": 15000,
+      "endMs": 21000,
+      "base": "/assets/chronicle1/opening/opening-03-player-on-the-road/base.webp",
+      "captionSegmentId": "opening-narration-03",
+      "camera": { "start": { "scale": 1, "x": 0, "y": 0 }, "end": { "scale": 1.07, "x": -1, "y": 0 } },
+      "focus": "caravan-guard",
+      "impactCut": false
+    },
+    {
+      "id": "opening-04-distant-greywatch",
+      "startMs": 21000,
+      "endMs": 28000,
+      "base": "/assets/chronicle1/opening/opening-04-distant-greywatch/base.webp",
+      "captionSegmentId": "opening-narration-04",
+      "camera": { "start": { "scale": 1.06, "x": 2, "y": 0 }, "end": { "scale": 1.06, "x": -2, "y": 0 } },
+      "focus": "greywatch",
+      "impactCut": false
+    },
+    {
+      "id": "opening-05-abandoned-checkpoint",
+      "startMs": 28000,
+      "endMs": 36000,
+      "base": "/assets/chronicle1/opening/opening-05-abandoned-checkpoint/base.webp",
+      "captionSegmentId": "opening-narration-05",
+      "camera": { "start": { "scale": 1.02, "x": -1, "y": 0 }, "end": { "scale": 1.09, "x": 2, "y": 1 } },
+      "focus": "empty-checkpoint",
+      "impactCut": false
+    },
+    {
+      "id": "opening-06-the-first-arrow",
+      "startMs": 36000,
+      "endMs": 42000,
+      "base": "/assets/chronicle1/opening/opening-06-the-first-arrow/base.webp",
+      "captionSegmentId": "opening-narration-06",
+      "camera": { "start": { "scale": 1, "x": 0, "y": 0 }, "end": { "scale": 1.1, "x": 0, "y": 0 } },
+      "focus": "first-arrow",
+      "impactCut": true
+    },
+    {
+      "id": "opening-07-goblin-attack",
+      "startMs": 42000,
+      "endMs": 50000,
+      "base": "/assets/chronicle1/opening/opening-07-goblin-attack/base.webp",
+      "captionSegmentId": "opening-narration-07",
+      "camera": { "start": { "scale": 1.07, "x": 2, "y": 0 }, "end": { "scale": 1.07, "x": -2, "y": 0 } },
+      "focus": "goblin-ambush",
+      "impactCut": false
+    },
+    {
+      "id": "opening-08-player-responds",
+      "startMs": 50000,
+      "endMs": 57000,
+      "base": "/assets/chronicle1/opening/opening-08-player-responds/base.webp",
+      "captionSegmentId": "opening-narration-08",
+      "camera": { "start": { "scale": 1, "x": 0, "y": 0 }, "end": { "scale": 1.08, "x": -1, "y": 0 } },
+      "focus": "hero-response",
+      "impactCut": false
+    },
+    {
+      "id": "opening-09-royal-armory-mark",
+      "startMs": 57000,
+      "endMs": 64000,
+      "base": "/assets/chronicle1/opening/opening-09-royal-armory-mark/base.webp",
+      "captionSegmentId": "opening-narration-09",
+      "camera": { "start": { "scale": 1.03, "x": 0, "y": 0 }, "end": { "scale": 1.11, "x": 0, "y": 0 } },
+      "focus": "armory-mark",
+      "impactCut": false
+    },
+    {
+      "id": "opening-10-false-orc-banner",
+      "startMs": 64000,
+      "endMs": 71000,
+      "base": "/assets/chronicle1/opening/opening-10-false-orc-banner/base.webp",
+      "captionSegmentId": "opening-narration-10",
+      "camera": { "start": { "scale": 1.08, "x": 0, "y": 1 }, "end": { "scale": 1, "x": 0, "y": 0 } },
+      "focus": "planted-banner",
+      "impactCut": false
+    },
+    {
+      "id": "opening-11-wounded-witness",
+      "startMs": 71000,
+      "endMs": 79000,
+      "base": "/assets/chronicle1/opening/opening-11-wounded-witness/base.webp",
+      "captionSegmentId": "opening-narration-11",
+      "camera": { "start": { "scale": 1.01, "x": 0, "y": 0 }, "end": { "scale": 1.07, "x": 1, "y": 0 } },
+      "focus": "sealed-order",
+      "impactCut": false
+    },
+    {
+      "id": "opening-12-enemy-riders",
+      "startMs": 79000,
+      "endMs": 86000,
+      "base": "/assets/chronicle1/opening/opening-12-enemy-riders/base.webp",
+      "captionSegmentId": "opening-narration-12",
+      "camera": { "start": { "scale": 1.06, "x": -2, "y": 0 }, "end": { "scale": 1.06, "x": 2, "y": 0 } },
+      "focus": "searching-riders",
+      "impactCut": false
+    },
+    {
+      "id": "opening-13-final-approach",
+      "startMs": 86000,
+      "endMs": 96000,
+      "base": "/assets/chronicle1/opening/opening-13-final-approach/base.webp",
+      "captionSegmentId": "opening-narration-13",
+      "camera": { "start": { "scale": 1.07, "x": 0, "y": 1 }, "end": { "scale": 1, "x": 0, "y": 0 } },
+      "focus": "final-approach",
+      "impactCut": false
+    },
+    {
+      "id": "opening-14-title-reveal",
+      "startMs": 96000,
+      "endMs": 105000,
+      "base": "/assets/chronicle1/opening/opening-14-title-reveal/base.webp",
+      "captionSegmentId": "opening-narration-14",
+      "camera": { "start": { "scale": 1, "x": 0, "y": 0 }, "end": { "scale": 1, "x": 0, "y": 0 } },
+      "focus": "greywatch-gate",
+      "impactCut": true
+    }
+  ]
+}
