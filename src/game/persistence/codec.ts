@@ -6,6 +6,7 @@ import type { CombatState, EnemyCombatant, HeroCombatant, StatusEffect } from '.
 import type { EnemyDefinition } from '../types';
 import { generateMerchantVisit, merchantRestockSeed } from '../merchant';
 import { chapterLevelCap, deriveHeroStats } from '../progression';
+import { initialAdPacingState } from '../state/create';
 import type { CampaignCheckpointPayload, CampaignState, ExpeditionState, GameStateV2, ProfileState } from '../state/types';
 import {
   isProfileState,
@@ -24,10 +25,11 @@ import {
   type ExpeditionDto,
   type InventoryDto,
   type PlayerModifierDto,
+  type ProfileDto,
   type SaveStateDto,
 } from './schema';
 
-const rootKeys = ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt'];
+const rootKeys = ['schemaVersion', 'profile', 'campaign', 'expedition', 'adPacing', 'checkpoints', 'flow', 'updatedAt'];
 const campaignKeys = ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'encounterFamilyVictories', 'companions', 'directorMemory', 'attemptCounters', 'routeSeedNonce', 'transitionCounter'];
 const checkpointCampaignKeys = campaignKeys.slice(0, -3);
 const inventoryKeys = ['pack', 'stash', 'questItems', 'equipment'];
@@ -49,6 +51,26 @@ function encodeProfile(profile: ProfileState): ProfileState | null {
   return {
     settings: { ...profile.settings },
     discoveries: { events: [...profile.discoveries.events], enemies: [...profile.discoveries.enemies], codex: [...profile.discoveries.codex] },
+  };
+}
+
+export function decodeProfile(value: ProfileDto): ProfileState {
+  return {
+    settings: {
+      textScale: value.settings.textScale,
+      highContrast: value.settings.highContrast,
+      reducedMotion: value.settings.reducedMotion,
+      sound: value.settings.sound,
+      music: value.settings.music,
+      narration: value.settings.narration,
+      haptics: value.settings.haptics ?? true,
+      reducedHaptics: value.settings.reducedHaptics ?? false,
+    },
+    discoveries: {
+      events: value.discoveries.events as never,
+      enemies: [...value.discoveries.enemies],
+      codex: [...value.discoveries.codex],
+    },
   };
 }
 
@@ -266,6 +288,13 @@ function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, con
     if (!rewardEncounter || combat?.outcome !== 'victory' || value.currentCombat?.encounterId !== value.pendingReward.encounterId) return false;
     const expectedId = `${value.routeSeed}:${value.position.slot}:${value.pendingReward.encounterId}`;
     if (value.pendingReward.rewardId !== expectedId || !sameArray(value.pendingReward.itemChoices, rewardEncounter.reward.itemChoices) || value.pendingReward.baseGold !== rewardEncounter.reward.gold || value.pendingReward.grantedXp > rewardEncounter.reward.xp || value.pendingReward.adEligible !== (rewardEncounter.kind === 'regular')) return false;
+    if (value.pendingReward.rewardOfferId !== undefined) {
+      const expectedOfferId = `reward:${campaign.seed}:${expectedId}`;
+      const expectedAvailability = value.pendingReward.adEligible && value.pendingReward.baseGold > 0;
+      if (value.pendingReward.rewardOfferId !== expectedOfferId || value.pendingReward.rewardedGoldSettlement === undefined) return false;
+      if (!expectedAvailability && value.pendingReward.rewardedGoldSettlement !== 'ineligible') return false;
+      if (value.pendingReward.rewardedGoldSettlement === 'available' && !expectedAvailability) return false;
+    }
   } else if (combat?.outcome === 'victory') return false;
   return hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.pendingReward?.itemChoices ?? [])
     && hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.unbankedLoot)
@@ -291,7 +320,7 @@ function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
 }
 
 /** Content maps own immutable definitions; a DTO may only carry IDs that can be hydrated from those maps. */
-export function isContentBackedProfile(profile: ProfileState, content: ContentIndex): boolean {
+export function isContentBackedProfile(profile: Pick<ProfileDto, 'discoveries'>, content: ContentIndex): boolean {
   return hasCatalogIds(content.events as ReadonlyMap<string, unknown>, profile.discoveries.events)
     && hasCatalogIds(content.enemies as ReadonlyMap<string, unknown>, profile.discoveries.enemies);
 }
@@ -314,6 +343,14 @@ export function isContentBackedSaveState(value: SaveStateDto, content: ContentIn
   if (!isContentBackedProfile(value.profile, content) || !validCampaignCheckpointContent(value.campaign, content) || !validCampaignCheckpointContent(value.checkpoints.chapter.campaign, content) || (value.checkpoints.camp !== null && !validCampaignCheckpointContent(value.checkpoints.camp.campaign, content))) return false;
   if (value.checkpoints.camp?.campSceneId !== null && value.checkpoints.camp?.campSceneId !== undefined && !hasCatalogId(content.events as ReadonlyMap<string, unknown>, value.checkpoints.camp.campSceneId)) return false;
   if (!validCheckpointCoherence(value, content) || (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, content))) return false;
+  const reward = value.expedition?.pendingReward;
+  if (reward?.rewardOfferId !== undefined) {
+    if (!value.adPacing || reward.rewardedGoldSettlement === undefined) return false;
+    const claimed = value.adPacing.claimedRewardOfferIds.includes(reward.rewardOfferId);
+    if ((reward.rewardedGoldSettlement === 'claimed') !== claimed) return false;
+    if (reward.rewardedGoldSettlement === 'available' && (value.adPacing.rewardedClaimsThisExpedition >= 3 || claimed)) return false;
+    if (reward.rewardedGoldSettlement === 'claimed' && (!value.adPacing.rewardedShownAtCurrentBreak || value.adPacing.rewardedClaimsThisExpedition < 1)) return false;
+  }
   return validFlowContent(value, content);
 }
 
@@ -478,7 +515,7 @@ function encodeCombat(value: CombatState, campaign: CampaignState, campaignDto: 
 }
 
 function encodeExpedition(value: ExpeditionState, campaign: CampaignState, campaignDto: CampaignDto, content: ContentIndex): ExpeditionDto | null {
-  if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits']) || !['kings-road', 'old-forest', 'ruined-pass'].includes(value.routeProfile) || !finiteInteger(value.routeSeed) || value.routeSeed < 0 || !exact(value.position, ['chapterId', 'slot']) || typeof value.position.chapterId !== 'string' || !finiteInteger(value.position.slot) || value.position.slot < 0 || (value.currentSceneId !== null && !id(value.currentSceneId)) || (value.sceneResolution !== null && (!exact(value.sceneResolution, ['eventId', 'choiceId']) || !id(value.sceneResolution.eventId) || (value.sceneResolution.choiceId !== null && !id(value.sceneResolution.choiceId)))) || !exact(value.heroVitals, ['health', 'resource']) || !finite(value.heroVitals.health) || value.heroVitals.health < 0 || !finite(value.heroVitals.resource) || value.heroVitals.resource < 0 || (value.pendingReward !== null && (!exact(value.pendingReward, ['rewardId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible']) || !id(value.pendingReward.rewardId) || !id(value.pendingReward.encounterId) || !strings(value.pendingReward.itemChoices) || !finiteInteger(value.pendingReward.baseGold) || value.pendingReward.baseGold < 0 || !finiteInteger(value.pendingReward.grantedXp) || value.pendingReward.grantedXp < 0 || typeof value.pendingReward.adEligible !== 'boolean')) || !finiteInteger(value.unbankedGold) || value.unbankedGold < 0 || !strings(value.unbankedLoot) || !strings(value.temporaryBoons) || !Array.isArray(value.merchantVisits)) return null;
+  if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits']) || !['kings-road', 'old-forest', 'ruined-pass'].includes(value.routeProfile) || !finiteInteger(value.routeSeed) || value.routeSeed < 0 || !exact(value.position, ['chapterId', 'slot']) || typeof value.position.chapterId !== 'string' || !finiteInteger(value.position.slot) || value.position.slot < 0 || (value.currentSceneId !== null && !id(value.currentSceneId)) || (value.sceneResolution !== null && (!exact(value.sceneResolution, ['eventId', 'choiceId']) || !id(value.sceneResolution.eventId) || (value.sceneResolution.choiceId !== null && !id(value.sceneResolution.choiceId)))) || !exact(value.heroVitals, ['health', 'resource']) || !finite(value.heroVitals.health) || value.heroVitals.health < 0 || !finite(value.heroVitals.resource) || value.heroVitals.resource < 0 || (value.pendingReward !== null && (!exact(value.pendingReward, ['rewardId', 'rewardOfferId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible', 'rewardedGoldSettlement']) || !id(value.pendingReward.rewardId) || !id(value.pendingReward.rewardOfferId) || !id(value.pendingReward.encounterId) || !strings(value.pendingReward.itemChoices) || !finiteInteger(value.pendingReward.baseGold) || value.pendingReward.baseGold < 0 || !finiteInteger(value.pendingReward.grantedXp) || value.pendingReward.grantedXp < 0 || typeof value.pendingReward.adEligible !== 'boolean' || !['available', 'claimed', 'ineligible'].includes(value.pendingReward.rewardedGoldSettlement))) || !finiteInteger(value.unbankedGold) || value.unbankedGold < 0 || !strings(value.unbankedLoot) || !strings(value.temporaryBoons) || !Array.isArray(value.merchantVisits)) return null;
   const director = encodeDirector(value.director);
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId);
   const currentCombat = value.currentCombat === null ? null : exact(value.currentCombat, ['encounterId', 'combat']) && id(value.currentCombat.encounterId) && encounter !== null && encounter !== undefined ? { encounterId: value.currentCombat.encounterId, combat: value.currentCombat.combat === null ? null : encodeCombat(value.currentCombat.combat, campaign, campaignDto, encounter, content) } : null;
@@ -490,6 +527,7 @@ function encodeExpedition(value: ExpeditionState, campaign: CampaignState, campa
 
 function validRuntimeShell(state: GameStateV2): boolean {
   if (!exact(state, rootKeys) || state.schemaVersion !== 2 || !exact(state.checkpoints, ['chapter', 'camp']) || !exact(state.checkpoints.chapter, ['campaign', 'enteredAt']) || typeof state.checkpoints.chapter.enteredAt !== 'string' || !exact(state.flow, ['screen', 'overlay', 'merchant']) || typeof state.updatedAt !== 'string') return false;
+  if (!exact(state.adPacing, ['lastInterstitialAt', 'expeditionBreaksSinceInterstitial', 'rewardedShownAtCurrentBreak', 'claimedRewardOfferIds', 'rewardedClaimsThisExpedition']) || (state.adPacing.lastInterstitialAt !== null && (typeof state.adPacing.lastInterstitialAt !== 'string' || !Number.isFinite(Date.parse(state.adPacing.lastInterstitialAt)))) || !finiteInteger(state.adPacing.expeditionBreaksSinceInterstitial) || state.adPacing.expeditionBreaksSinceInterstitial < 0 || typeof state.adPacing.rewardedShownAtCurrentBreak !== 'boolean' || !strings(state.adPacing.claimedRewardOfferIds) || new Set(state.adPacing.claimedRewardOfferIds).size !== state.adPacing.claimedRewardOfferIds.length || !finiteInteger(state.adPacing.rewardedClaimsThisExpedition) || state.adPacing.rewardedClaimsThisExpedition < 0 || state.adPacing.rewardedClaimsThisExpedition > 3) return false;
   if (state.checkpoints.camp !== null && (!exact(state.checkpoints.camp, ['campaign', 'campSceneId', 'savedAt']) || typeof state.checkpoints.camp.savedAt !== 'string' || (state.checkpoints.camp.campSceneId !== null && !id(state.checkpoints.camp.campSceneId)))) return false;
   if (!['camp', 'story', 'combat', 'reward', 'merchant', 'defeat', 'ending'].includes(state.flow.screen)) return false;
   if (state.flow.overlay !== null && !['inventory', 'chronicle', 'bestiary', 'settings'].includes(state.flow.overlay)) return false;
@@ -505,7 +543,7 @@ export function encodeSaveState(state: GameStateV2, content: ContentIndex): Save
   if (!profile || !campaign || !chapter || (state.checkpoints.camp !== null && !camp)) return null;
   const expedition = state.expedition === null ? null : encodeExpedition(state.expedition, state.campaign, campaign, content);
   if (state.expedition !== null && !expedition) return null;
-  const dto: SaveStateDto = { schemaVersion: 2, profile, campaign, expedition, checkpoints: { chapter: { campaign: chapter, enteredAt: state.checkpoints.chapter.enteredAt }, camp: camp && state.checkpoints.camp ? { campaign: camp, campSceneId: state.checkpoints.camp.campSceneId, savedAt: state.checkpoints.camp.savedAt } : null }, flow: { screen: state.flow.screen, overlay: state.flow.overlay, merchant: state.flow.merchant ? { ...state.flow.merchant } : null }, updatedAt: state.updatedAt };
+  const dto: SaveStateDto = { schemaVersion: 2, profile, campaign, expedition, adPacing: { ...state.adPacing, claimedRewardOfferIds: [...state.adPacing.claimedRewardOfferIds] }, checkpoints: { chapter: { campaign: chapter, enteredAt: state.checkpoints.chapter.enteredAt }, camp: camp && state.checkpoints.camp ? { campaign: camp, campSceneId: state.checkpoints.camp.campSceneId, savedAt: state.checkpoints.camp.savedAt } : null }, flow: { screen: state.flow.screen, overlay: state.flow.overlay, merchant: state.flow.merchant ? { ...state.flow.merchant } : null }, updatedAt: state.updatedAt };
   return isSaveStateDto(dto) && isContentBackedSaveState(dto, content) && decodeSaveState(dto, content) ? dto : null;
 }
 
@@ -547,7 +585,7 @@ function decodeExpedition(value: ExpeditionDto, campaign: CampaignState, content
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
   const currentCombat = value.currentCombat === null ? null : { encounterId: value.currentCombat.encounterId as never, combat: value.currentCombat.combat === null || !encounter ? null : decodeCombat(value.currentCombat.combat, campaign, encounter, content) };
   if (value.currentCombat !== null && value.currentCombat.combat !== null && currentCombat?.combat === null) return null;
-  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, sceneResolution: value.sceneResolution === null ? null : { eventId: value.sceneResolution.eventId as never, choiceId: value.sceneResolution.choiceId as never }, heroVitals: { ...value.heroVitals }, currentCombat, pendingReward: value.pendingReward === null ? null : { rewardId: value.pendingReward.rewardId, encounterId: value.pendingReward.encounterId as never, itemChoices: value.pendingReward.itemChoices as never, baseGold: value.pendingReward.baseGold, grantedXp: value.pendingReward.grantedXp, adEligible: value.pendingReward.adEligible }, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
+  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, sceneResolution: value.sceneResolution === null ? null : { eventId: value.sceneResolution.eventId as never, choiceId: value.sceneResolution.choiceId as never }, heroVitals: { ...value.heroVitals }, currentCombat, pendingReward: value.pendingReward === null ? null : { rewardId: value.pendingReward.rewardId, rewardOfferId: value.pendingReward.rewardOfferId ?? `reward:${campaign.seed}:${value.pendingReward.rewardId}`, encounterId: value.pendingReward.encounterId as never, itemChoices: value.pendingReward.itemChoices as never, baseGold: value.pendingReward.baseGold, grantedXp: value.pendingReward.grantedXp, adEligible: value.pendingReward.adEligible, rewardedGoldSettlement: value.pendingReward.rewardedGoldSettlement ?? (value.pendingReward.adEligible && value.pendingReward.baseGold > 0 ? 'available' : 'ineligible') }, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
 }
 
 export function decodeSaveState(value: unknown, content: ContentIndex): GameStateV2 | null {
@@ -555,5 +593,6 @@ export function decodeSaveState(value: unknown, content: ContentIndex): GameStat
   const campaign = decodeCampaign(value.campaign);
   const expedition = value.expedition === null ? null : decodeExpedition(value.expedition, campaign, content);
   if (value.expedition !== null && !expedition) return null;
-  return { schemaVersion: 2, profile: { settings: { ...value.profile.settings }, discoveries: { events: value.profile.discoveries.events as never, enemies: [...value.profile.discoveries.enemies], codex: [...value.profile.discoveries.codex] } }, campaign, expedition, checkpoints: { chapter: { campaign: decodeCampaignCheckpoint(value.checkpoints.chapter.campaign), enteredAt: value.checkpoints.chapter.enteredAt }, camp: value.checkpoints.camp === null ? null : { campaign: decodeCampaignCheckpoint(value.checkpoints.camp.campaign), campSceneId: value.checkpoints.camp.campSceneId as never, savedAt: value.checkpoints.camp.savedAt } }, flow: { screen: value.flow.screen, overlay: value.flow.overlay, merchant: value.flow.merchant === null ? null : { merchantId: value.flow.merchant.merchantId as never, restockKey: value.flow.merchant.restockKey, returnScreen: value.flow.merchant.returnScreen } }, updatedAt: value.updatedAt };
+  const adPacing = value.adPacing ?? initialAdPacingState();
+  return { schemaVersion: 2, profile: decodeProfile(value.profile), campaign, expedition, adPacing: { ...adPacing, claimedRewardOfferIds: [...adPacing.claimedRewardOfferIds] }, checkpoints: { chapter: { campaign: decodeCampaignCheckpoint(value.checkpoints.chapter.campaign), enteredAt: value.checkpoints.chapter.enteredAt }, camp: value.checkpoints.camp === null ? null : { campaign: decodeCampaignCheckpoint(value.checkpoints.camp.campaign), campSceneId: value.checkpoints.camp.campSceneId as never, savedAt: value.checkpoints.camp.savedAt } }, flow: { screen: value.flow.screen, overlay: value.flow.overlay, merchant: value.flow.merchant === null ? null : { merchantId: value.flow.merchant.merchantId as never, restockKey: value.flow.merchant.restockKey, returnScreen: value.flow.merchant.returnScreen } }, updatedAt: value.updatedAt };
 }

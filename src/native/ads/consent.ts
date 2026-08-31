@@ -1,6 +1,5 @@
 import {
   AdmobConsentStatus,
-  PrivacyOptionsRequirementStatus,
   type AdmobConsentInfo,
 } from '@capacitor-community/admob';
 
@@ -42,7 +41,6 @@ export function mapConsentInfo(info: AdmobConsentInfo): ConsentSnapshot {
   return {
     status,
     canRequestAds: knownStatus && info.canRequestAds === true,
-    privacyOptionsRequired:
-      info.privacyOptionsRequirementStatus === PrivacyOptionsRequirementStatus.REQUIRED,
+    privacyOptionsRequired: String(info.privacyOptionsRequirementStatus) === 'REQUIRED',
   };
 }

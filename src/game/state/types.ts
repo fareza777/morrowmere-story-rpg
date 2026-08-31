@@ -24,6 +24,8 @@ export interface ProfileState {
     readonly sound: boolean;
     readonly music: boolean;
     readonly narration: boolean;
+    readonly haptics: boolean;
+    readonly reducedHaptics: boolean;
   };
   readonly discoveries: {
     readonly events: readonly EventId[];
@@ -108,11 +110,21 @@ export interface SceneResolution {
 
 export interface PendingBattleReward {
   readonly rewardId: string;
+  readonly rewardOfferId: string;
   readonly encounterId: EncounterId;
   readonly itemChoices: readonly ItemId[];
   readonly baseGold: number;
   readonly grantedXp: number;
   readonly adEligible: boolean;
+  readonly rewardedGoldSettlement: 'available' | 'claimed' | 'ineligible';
+}
+
+export interface AdPacingState {
+  readonly lastInterstitialAt: string | null;
+  readonly expeditionBreaksSinceInterstitial: number;
+  readonly rewardedShownAtCurrentBreak: boolean;
+  readonly claimedRewardOfferIds: readonly string[];
+  readonly rewardedClaimsThisExpedition: number;
 }
 
 export interface FlowState {
@@ -126,6 +138,7 @@ export interface GameStateV2 {
   readonly profile: ProfileState;
   readonly campaign: CampaignState;
   readonly expedition: ExpeditionState | null;
+  readonly adPacing: AdPacingState;
   readonly checkpoints: { readonly chapter: ChapterSnapshot; readonly camp: CampSnapshot | null };
   readonly flow: FlowState;
   readonly updatedAt: string;
@@ -159,6 +172,9 @@ export type GameCommand =
   | { readonly type: 'restart-chapter'; readonly updatedAt: string }
   | { readonly type: 'resolve-choice'; readonly eventId: EventId; readonly choiceId: ChoiceId; readonly updatedAt: string }
   | { readonly type: 'claim-rewards'; readonly rewardId: string; readonly itemId: ItemId | null; readonly updatedAt: string }
+  | { readonly type: 'CLAIM_REWARDED_GOLD'; readonly rewardOfferId: string; readonly updatedAt: string }
+  | { readonly type: 'RECORD_INTERSTITIAL_SHOWN'; readonly shownAt: string; readonly updatedAt: string }
+  | { readonly type: 'update-profile-settings'; readonly settings: ProfileState['settings']; readonly updatedAt: string }
   | { readonly type: 'set-active-companion'; readonly companionId: CompanionId | null; readonly updatedAt: string }
   | { readonly type: 'use-item'; readonly entryId: string; readonly updatedAt: string }
   | { readonly type: 'inventory'; readonly command: Exclude<InventoryCommand, { readonly type: 'add' }>; readonly updatedAt: string }

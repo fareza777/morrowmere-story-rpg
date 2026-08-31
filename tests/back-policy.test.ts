@@ -11,7 +11,7 @@ describe('resolveBackAction', () => {
     expect(resolveBackAction(context)).toBe(expected);
   });
 
-  it('closes an overlay before a simultaneously open modal', () => {
-    expect(resolveBackAction({ overlayOpen: true, modalOpen: true, view: 'game' })).toBe('close-overlay');
+  it('closes the top modal before its parent overlay', () => {
+    expect(resolveBackAction({ overlayOpen: true, modalOpen: true, view: 'game' })).toBe('close-modal');
   });
 });

@@ -1,6 +1,5 @@
 import {
   AdmobConsentStatus,
-  PrivacyOptionsRequirementStatus,
   type AdmobConsentInfo,
 } from '@capacitor-community/admob';
 import { describe, expect, it, vi } from 'vitest';
@@ -20,7 +19,7 @@ const TEST_CONFIG: AdConfig = {
 function consentInfo(
   status: AdmobConsentStatus,
   canRequestAds: boolean,
-  privacyOptionsRequirementStatus = PrivacyOptionsRequirementStatus.NOT_REQUIRED,
+  privacyOptionsRequirementStatus: AdmobConsentInfo['privacyOptionsRequirementStatus'] = 'NOT_REQUIRED' as AdmobConsentInfo['privacyOptionsRequirementStatus'],
   isConsentFormAvailable = false,
 ): AdmobConsentInfo {
   return { status, canRequestAds, privacyOptionsRequirementStatus, isConsentFormAvailable };
@@ -39,8 +38,13 @@ function createPlugin(
     removeBanner: vi.fn(async () => undefined),
     prepareRewardVideoAd: vi.fn(async ({ adId }) => ({ adUnitId: adId })),
     showRewardVideoAd: vi.fn(async () => ({ type: 'gold', amount: 1 })),
+    addRewardedListener: vi.fn(async () => ({ remove: async () => undefined })),
+    addRewardedDismissedListener: vi.fn(async () => ({ remove: async () => undefined })),
+    addRewardedFailedToShowListener: vi.fn(async () => ({ remove: async () => undefined })),
     prepareInterstitial: vi.fn(async ({ adId }) => ({ adUnitId: adId })),
     showInterstitial: vi.fn(async () => undefined),
+    addInterstitialDismissedListener: vi.fn(async () => ({ remove: async () => undefined })),
+    addInterstitialFailedToShowListener: vi.fn(async () => ({ remove: async () => undefined })),
     removeAllListeners: vi.fn(async () => undefined),
   };
 }
@@ -59,7 +63,7 @@ describe('consent mapping', () => {
     expect(mapConsentInfo(consentInfo(
       AdmobConsentStatus.OBTAINED,
       true,
-      PrivacyOptionsRequirementStatus.REQUIRED,
+      'REQUIRED' as AdmobConsentInfo['privacyOptionsRequirementStatus'],
     ))).toEqual({
       status: 'obtained',
       canRequestAds: true,
@@ -107,6 +111,8 @@ describe('consent lifecycle', () => {
 
     await service.initialize();
     expect(plugin.showConsentForm).not.toHaveBeenCalled();
+    await expect(service.resolveConsentAtSafeMoment(() => false)).resolves.toMatchObject({ status: 'required' });
+    expect(plugin.showConsentForm).not.toHaveBeenCalled();
     await expect(service.resolveConsentAtSafeMoment()).resolves.toEqual({
       status: 'obtained',
       canRequestAds: true,
@@ -140,7 +146,7 @@ describe('consent lifecycle', () => {
     const required = consentInfo(
       AdmobConsentStatus.OBTAINED,
       true,
-      PrivacyOptionsRequirementStatus.REQUIRED,
+      'REQUIRED' as AdmobConsentInfo['privacyOptionsRequirementStatus'],
     );
     const plugin = createPlugin(required);
     const service = createAdService(TEST_CONFIG, plugin);

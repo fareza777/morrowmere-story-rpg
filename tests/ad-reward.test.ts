@@ -69,7 +69,7 @@ function rewardContent(kind: EncounterDefinition['kind'] = 'regular'): ContentIn
       kind,
       enemyIds: [ENEMY_ID],
       ...(kind === 'boss' ? { bossEnemyId: ENEMY_ID } : {}),
-      reward: { xp: 11, gold: BASE_GOLD, itemChoices: [] },
+      reward: { xp: 11, gold: BASE_GOLD, itemChoices: [ITEM_ID] },
     }]]),
     companions: new Map([[COMPANION_ID, {
       id: COMPANION_ID,
@@ -146,6 +146,22 @@ function saveRoundTrip(state: GameStateV2, content: ContentIndex): GameStateV2 {
 }
 
 describe('rewarded battle gold', () => {
+  it('lets the player continue without an optional item when the pack cannot accept it', () => {
+    const { content, state } = victoryState();
+    const reward = state.expedition!.pendingReward!;
+    const declined = reduceGame(state, {
+      type: 'claim-rewards',
+      rewardId: reward.rewardId,
+      itemId: null,
+      updatedAt: '2026-08-31T12:05:00.000Z',
+    }, content);
+
+    expect(declined.diagnostic).toBeUndefined();
+    expect(declined.state.flow.screen).toBe('story');
+    expect(declined.state.expedition!.pendingReward).toBeNull();
+    expect(declined.state.campaign.inventory).toBe(state.campaign.inventory);
+  });
+
   it('adds exactly one authored base-gold copy to carried gold without changing progression, items, or companions', () => {
     const { content, state } = victoryState();
     const reward = state.expedition!.pendingReward!;

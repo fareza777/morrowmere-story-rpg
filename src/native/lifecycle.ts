@@ -59,6 +59,12 @@ export const capacitorLifecycleDriver: LifecycleDriver = {
   addBackButtonListener: (listener) => App.addListener('backButton', listener),
 };
 
+/** Hardware Back at the title screen should background the native app, never terminate game state. */
+export async function minimizeNativeApp(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try { await App.minimizeApp(); } catch { /* Unsupported hosts keep the title screen usable. */ }
+}
+
 async function removeLifecycleListeners(handles: readonly LifecycleListenerHandle[]): Promise<void> {
   await Promise.allSettled(handles.map((handle) => handle.remove()));
 }

@@ -15,7 +15,16 @@ function legacySettings(value: unknown): ProfileState['settings'] | null {
   if (typeof settings.textScale !== 'number' || !Number.isFinite(settings.textScale)
     || typeof settings.highContrast !== 'boolean' || typeof settings.reducedMotion !== 'boolean'
     || typeof settings.sound !== 'boolean' || typeof settings.music !== 'boolean' || typeof settings.narration !== 'boolean') return null;
-  return { textScale: settings.textScale, highContrast: settings.highContrast, reducedMotion: settings.reducedMotion, sound: settings.sound, music: settings.music, narration: settings.narration };
+  return {
+    textScale: settings.textScale,
+    highContrast: settings.highContrast,
+    reducedMotion: settings.reducedMotion,
+    sound: settings.sound,
+    music: settings.music,
+    narration: settings.narration,
+    haptics: true,
+    reducedHaptics: false,
+  };
 }
 
 function validName(value: unknown): string | undefined {

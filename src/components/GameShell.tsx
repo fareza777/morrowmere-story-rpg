@@ -1,9 +1,10 @@
 import { Coins, Storefront, Tent } from '@phosphor-icons/react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { CombatAction } from '../game/combat/types';
 import type { ChoiceId, CompanionId, EventId, ItemId } from '../game/domain/ids';
 import type { InventoryCommand } from '../game/inventory';
 import type { GameCommand } from '../game/state/types';
+import { resolveBackAction } from '../native/back-policy';
 import { selectCampView, selectCombatView, selectCurrentScene, selectInventoryView, selectJournalView, selectMerchantView, selectRouteView } from '../ui/selectors';
 import { feedbackForTransition } from '../ui/feedback';
 import type { GameShellProps as BaseGameShellProps, ItemRowViewModel, UiSettings } from '../ui/types';
@@ -15,7 +16,7 @@ import { InventorySheet } from './InventorySheet';
 import { JournalSheet } from './JournalSheet';
 import { MerchantScreen } from './MerchantScreen';
 import { PauseSheet } from './PauseSheet';
-import { RewardPanel, type RewardViewModel } from './RewardPanel';
+import { RewardPanel, type RewardBonusStatus, type RewardViewModel } from './RewardPanel';
 import { RouteScreen } from './RouteScreen';
 import { SceneArt } from './SceneArt';
 import { SettingsSheet } from './SettingsSheet';
@@ -23,6 +24,7 @@ import { Sheet } from './Sheet';
 import { StoryPanel } from './StoryPanel';
 import { TopHud, type HudMenu } from './TopHud';
 import { TutorialCallout, type TutorialKind } from './TutorialCallout';
+import { ConfirmDialog } from './ConfirmDialog';
 
 type Overlay = HudMenu | null;
 type UiInventoryCommand = Exclude<InventoryCommand, { readonly type: 'add' }>;
@@ -37,6 +39,13 @@ type UndatedGameCommand = GameCommand extends infer Command
 interface GameShellProps extends BaseGameShellProps {
   readonly settings: UiSettings;
   readonly onSettingsChange: (settings: UiSettings) => void;
+  readonly rewardBonusStatus?: RewardBonusStatus;
+  readonly onRequestRewardedGold?: (rewardOfferId: string) => void;
+  readonly onDismissRewardedGold?: (rewardOfferId: string) => void;
+  readonly registerBackHandler?: (handler: (() => void) | null) => void;
+  readonly onAdOverlayChange?: (open: boolean) => void;
+  readonly privacyOptionsRequired?: boolean;
+  readonly onPrivacyOptions?: () => Promise<void>;
   readonly now?: () => string;
 }
 
@@ -78,9 +87,10 @@ function rewardItem(itemId: ItemId, content: BaseGameShellProps['content']): Ite
   };
 }
 
-export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, now = () => new Date().toISOString() }: GameShellProps) {
+export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, rewardBonusStatus, onRequestRewardedGold, onDismissRewardedGold, registerBackHandler, onAdOverlayChange, privacyOptionsRequired = false, onPrivacyOptions, now = () => new Date().toISOString() }: GameShellProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [choosingRoute, setChoosingRoute] = useState(false);
+  const [exitConfirmation, setExitConfirmation] = useState(false);
   const [tutorialsSkipped, setTutorialsSkipped] = useState(() => savedTutorialState().skipped);
   const [tutorialsSeen, setTutorialsSeen] = useState<ReadonlySet<TutorialKind>>(() => new Set(savedTutorialState().seen));
   const commandSequence = useRef(0);
@@ -97,6 +107,26 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   );
   const displayedScene = scene && coreSceneResolved && !scene.resolved ? { ...scene, resolved: true } : scene;
   const issue = (command: UndatedGameCommand) => dispatch({ ...command, updatedAt: now() } as GameCommand);
+
+  const handleBack = useCallback(() => {
+    const action = resolveBackAction({ overlayOpen: overlay !== null, modalOpen: exitConfirmation || choosingRoute, view: 'game' });
+    if (action === 'close-overlay') setOverlay(null);
+    else if (action === 'close-modal') {
+      if (exitConfirmation) setExitConfirmation(false);
+      else setChoosingRoute(false);
+    } else if (action === 'open-exit-confirmation') setExitConfirmation(true);
+  }, [choosingRoute, exitConfirmation, overlay]);
+
+  useEffect(() => {
+    registerBackHandler?.(handleBack);
+    return () => registerBackHandler?.(null);
+  }, [handleBack, registerBackHandler]);
+
+  const adOverlayOpen = overlay !== null || choosingRoute || exitConfirmation;
+  useEffect(() => {
+    onAdOverlayChange?.(adOverlayOpen);
+  }, [adOverlayOpen, onAdOverlayChange]);
+  useEffect(() => () => onAdOverlayChange?.(false), [onAdOverlayChange]);
 
   useEffect(() => {
     if (state.flow.screen === 'story' && state.expedition && !state.expedition.currentSceneId) issue({ type: 'select-next-scene' });
@@ -138,7 +168,9 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
     gold: rewardReceipt.baseGold,
     xp: rewardReceipt.grantedXp,
     items: rewardReceipt.itemChoices.map((itemId) => rewardItem(itemId, content)).filter((item): item is ItemRowViewModel => item !== null),
-    bonusStatus: rewardReceipt.adEligible ? 'unavailable' : 'dismissed',
+    bonusStatus: rewardReceipt.rewardedGoldSettlement === 'claimed' ? 'claimed'
+      : rewardReceipt.rewardedGoldSettlement === 'ineligible' ? 'ineligible'
+        : rewardBonusStatus ?? 'available',
   } : null;
 
   const hubActions = rawScene?.type === 'hub' && coreSceneResolved ? (
@@ -152,7 +184,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   if (state.flow.screen === 'camp' && choosingRoute) {
     body = <RouteScreen view={selectRouteView(state, content)} onBack={() => setChoosingRoute(false)} onChooseRoute={(routeProfile) => { setChoosingRoute(false); issue({ type: 'start-expedition', routeProfile }); }} />;
   } else if (state.flow.screen === 'camp') {
-    body = <CampScreen view={camp} onChooseRoute={() => setChoosingRoute(true)} onOpenInventory={() => setOverlay('inventory')} onOpenJournal={() => setOverlay('journal')} onOpenCompanions={() => setOverlay('companions')} onSaveAndExit={onSaveAndExit} />;
+    body = <CampScreen view={camp} onChooseRoute={() => setChoosingRoute(true)} onOpenInventory={() => setOverlay('inventory')} onOpenJournal={() => setOverlay('journal')} onOpenCompanions={() => setOverlay('companions')} onSaveAndExit={() => setExitConfirmation(true)} />;
   } else if (state.flow.screen === 'story' && displayedScene) {
     body = <><SceneArt illustrationId={displayedScene.illustrationId} alt={displayedScene.illustrationAlt} />{currentTutorial === 'choice' && <TutorialCallout kind="choice" onDismiss={() => dismissTutorial('choice')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><StoryPanel view={displayedScene} onChoose={(choiceId) => issue({ type: 'resolve-choice', eventId: displayedScene.id as EventId, choiceId: choiceId as ChoiceId })} onContinue={() => issue({ type: 'select-next-scene' })} extraActions={hubActions} /></main></>;
   } else if (state.flow.screen === 'story') {
@@ -160,14 +192,14 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   } else if (state.flow.screen === 'combat' && combat) {
     body = <>{scene && <SceneArt illustrationId={scene.illustrationId} alt={scene.illustrationAlt} />}{currentTutorial === 'combat' && <TutorialCallout kind="combat" onDismiss={() => dismissTutorial('combat')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><CombatPanel view={combat} inventory={inventory} transitionEvents={transitionEvents} onAction={combatAction} /></main></>;
   } else if (state.flow.screen === 'reward' && rewardView) {
-    body = <>{currentTutorial === 'loot' && <TutorialCallout kind="loot" onDismiss={() => dismissTutorial('loot')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><RewardPanel view={rewardView} onClaim={(itemId) => issue({ type: 'claim-rewards', rewardId: rewardView.rewardId, itemId: itemId as ItemId | null })} /></main></>;
+    body = <>{currentTutorial === 'loot' && <TutorialCallout kind="loot" onDismiss={() => dismissTutorial('loot')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><RewardPanel view={rewardView} onClaim={(itemId) => issue({ type: 'claim-rewards', rewardId: rewardView.rewardId, itemId: itemId as ItemId | null })} onRequestBonus={onRequestRewardedGold ? () => onRequestRewardedGold(rewardReceipt!.rewardOfferId) : undefined} onDismissBonus={onDismissRewardedGold ? () => onDismissRewardedGold(rewardReceipt!.rewardOfferId) : undefined} /></main></>;
   } else if (state.flow.screen === 'merchant') {
     const merchant = selectMerchantView(state, content);
     body = merchant ? <MerchantScreen view={merchant} onBuy={(stockEntryId) => issue({ type: 'trade', intent: { type: 'buy', stockEntryId } })} onSell={(entryId, quantity) => issue({ type: 'trade', intent: { type: 'sell', entryId, quantity } })} onClose={() => issue({ type: 'close-merchant' })} /> : <main className="loading-screen"><p>The merchant has packed away this stall.</p><button className="button button-secondary" type="button" onClick={() => issue({ type: 'close-merchant' })}>Leave</button></main>;
   } else if (state.flow.screen === 'defeat') {
     body = <main className="game-main"><DefeatPanel onReturnToCamp={() => issue({ type: 'return-to-camp-after-defeat' })} onRestartChapter={() => issue({ type: 'restart-chapter' })} onMainMenu={onMainMenu} /></main>;
   } else {
-    body = <main className="game-main"><section className="end-panel"><p className="eyebrow">Chronicle I complete</p><h1>The Black Banner road has ended.</h1><p>Your choices remain in the Chronicle. Future expansions will continue from the consequences you carried home.</p><button className="button button-secondary" type="button" onClick={onSaveAndExit}>Save &amp; Exit</button></section></main>;
+    body = <main className="game-main"><section className="end-panel"><p className="eyebrow">Chronicle I complete</p><h1>The Black Banner road has ended.</h1><p>Your choices remain in the Chronicle. Future expansions will continue from the consequences you carried home.</p><button className="button button-secondary" type="button" onClick={() => setExitConfirmation(true)}>Save &amp; Exit</button></section></main>;
   }
 
   return (
@@ -178,8 +210,9 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
       {overlay === 'inventory' && <InventorySheet view={inventory} context={context} heroClass={state.campaign.hero.heroClass} heroLevel={state.campaign.hero.level} chapter={Number(state.campaign.chapterId.slice(2))} onUse={(entryId) => issue({ type: 'use-item', entryId })} onInventoryCommand={inventoryCommand} onClose={() => setOverlay(null)} tutorialKind={inventoryTutorial} onTutorialDismiss={() => inventoryTutorial && dismissTutorial(inventoryTutorial)} onSkipTutorials={() => setTutorialsSkipped(true)} />}
       {overlay === 'journal' && <JournalSheet view={journal} canSwitchCompanion={state.flow.screen === 'camp'} onSetActiveCompanion={(companionId) => issue({ type: 'set-active-companion', companionId: companionId as CompanionId | null })} onReplayOpening={onReplayOpening} onReplayTutorials={resetTutorials} onClose={() => setOverlay(null)} />}
       {overlay === 'companions' && <Sheet title="Companions" onClose={() => setOverlay(null)}><CompanionPanel companions={journal.companions} canSwitch={state.flow.screen === 'camp'} onSetActive={(companionId) => issue({ type: 'set-active-companion', companionId: companionId as CompanionId | null })} /></Sheet>}
-      {overlay === 'settings' && <SettingsSheet settings={settings} onChange={onSettingsChange} onClose={() => setOverlay(null)} />}
-      {overlay === 'pause' && <PauseSheet onResume={() => setOverlay(null)} onSaveAndExit={onSaveAndExit} onRestartChapter={() => { setOverlay(null); issue({ type: 'restart-chapter' }); }} />}
+      {overlay === 'settings' && <SettingsSheet settings={settings} onChange={onSettingsChange} onClose={() => setOverlay(null)} privacyOptionsRequired={privacyOptionsRequired} onPrivacyOptions={onPrivacyOptions} />}
+      {overlay === 'pause' && <PauseSheet onResume={() => setOverlay(null)} onSaveAndExit={() => { setOverlay(null); setExitConfirmation(true); }} onRestartChapter={() => { setOverlay(null); issue({ type: 'restart-chapter' }); }} />}
+      {exitConfirmation && <ConfirmDialog title="Save and return to the title?" description="Your exact story, inventory, battle, and reward state will be saved before leaving." cancelLabel="Keep playing" confirmLabel="Save & Exit" onCancel={() => setExitConfirmation(false)} onConfirm={() => { setExitConfirmation(false); onSaveAndExit(); }} />}
       {state.expedition && state.expedition.unbankedGold > 0 && state.flow.screen !== 'merchant' && <p className="carried-gold-note"><Coins size={16} aria-hidden="true" />{state.expedition.unbankedGold} carried gold is at risk until camp.</p>}
     </div>
   );

@@ -27,7 +27,7 @@ export interface ConsentSnapshot {
 
 export interface AdService {
   initialize(): Promise<ConsentSnapshot>;
-  resolveConsentAtSafeMoment(): Promise<ConsentSnapshot>;
+  resolveConsentAtSafeMoment(canPresent?: () => boolean): Promise<ConsentSnapshot>;
   showPrivacyOptions(): Promise<void>;
   setPlacement(placement: AdPlacement, onInsetChange: (heightPx: number) => void): Promise<void>;
   preloadRewarded(): Promise<void>;
@@ -97,8 +97,13 @@ export interface AdMobPort {
   addBannerClosedListener?(listener: () => void): Promise<PluginListenerHandle>;
   prepareRewardVideoAd(options: RewardAdOptions): Promise<AdLoadInfo>;
   showRewardVideoAd(options?: AdShowOptions): Promise<AdMobRewardItem>;
+  addRewardedListener(listener: (reward: AdMobRewardItem) => void): Promise<PluginListenerHandle>;
+  addRewardedDismissedListener(listener: () => void): Promise<PluginListenerHandle>;
+  addRewardedFailedToShowListener(listener: (error: AdMobError) => void): Promise<PluginListenerHandle>;
   prepareInterstitial(options: AdOptions): Promise<AdLoadInfo>;
   showInterstitial(options?: AdShowOptions): Promise<void>;
+  addInterstitialDismissedListener(listener: () => void): Promise<PluginListenerHandle>;
+  addInterstitialFailedToShowListener(listener: (error: AdMobError) => void): Promise<PluginListenerHandle>;
   removeAllListeners?(): Promise<void>;
 }
 

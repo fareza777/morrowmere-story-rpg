@@ -1,6 +1,8 @@
 import {
   AdMob,
   BannerAdPluginEvents,
+  InterstitialAdPluginEvents,
+  RewardAdPluginEvents,
 } from '@capacitor-community/admob';
 
 import {
@@ -51,8 +53,13 @@ function createCapacitorAdMobPort(): AdMobPort {
       AdMob.addListener(BannerAdPluginEvents.Closed, listener),
     prepareRewardVideoAd: (options) => AdMob.prepareRewardVideoAd(options),
     showRewardVideoAd: (options) => AdMob.showRewardVideoAd(options),
+    addRewardedListener: (listener) => AdMob.addListener(RewardAdPluginEvents.Rewarded, listener),
+    addRewardedDismissedListener: (listener) => AdMob.addListener(RewardAdPluginEvents.Dismissed, listener),
+    addRewardedFailedToShowListener: (listener) => AdMob.addListener(RewardAdPluginEvents.FailedToShow, listener),
     prepareInterstitial: (options) => AdMob.prepareInterstitial(options),
     showInterstitial: (options) => AdMob.showInterstitial(options),
+    addInterstitialDismissedListener: (listener) => AdMob.addListener(InterstitialAdPluginEvents.Dismissed, listener),
+    addInterstitialFailedToShowListener: (listener) => AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, listener),
     removeAllListeners: pluginWithCleanup.removeAllListeners
       ? () => pluginWithCleanup.removeAllListeners!()
       : undefined,
@@ -114,6 +121,18 @@ export function createAdService(
   let destroyPromise: Promise<void> | null = null;
 
   const unavailableSnapshot = (): ConsentSnapshot => cloneSnapshot(UNAVAILABLE_CONSENT);
+
+  const removeAttemptListeners = async (handles: readonly { remove(): Promise<void> }[]): Promise<void> => {
+    let cleanupFailed = false;
+    await Promise.all(handles.map(async (handle) => {
+      try {
+        await handle.remove();
+      } catch {
+        cleanupFailed = true;
+      }
+    }));
+    if (cleanupFailed) recordDiagnostic('cleanup-failed', 'A native full-screen ad listener could not be removed.');
+  };
 
   const markUnavailable = (): ConsentSnapshot => {
     consentSnapshot = cloneSnapshot(UNAVAILABLE_CONSENT);
@@ -188,16 +207,23 @@ export function createAdService(
   const service: AdService = {
     initialize,
 
-    async resolveConsentAtSafeMoment(): Promise<ConsentSnapshot> {
+    async resolveConsentAtSafeMoment(canPresent = () => true): Promise<ConsentSnapshot> {
       const current = await initialize();
       if (consentFormResolution) {
         return consentFormResolution;
+      }
+      let presentationAllowed = false;
+      try {
+        presentationAllowed = canPresent();
+      } catch {
+        presentationAllowed = false;
       }
       if (
         current.status !== 'required'
         || !consentFormAvailable
         || consentFormAttempted
         || !runtimeAvailable()
+        || !presentationAllowed
       ) {
         return current;
       }
@@ -318,8 +344,33 @@ export function createAdService(
         }
 
         rewardedPrepared = false;
-        const reward = await plugin.showRewardVideoAd({ adId: config.rewardedId });
-        return Number.isFinite(reward.amount) && reward.amount > 0 ? 'earned' : 'failed';
+        const handles: Array<{ remove(): Promise<void> }> = [];
+        let settle!: (result: RewardedAdResult) => void;
+        let settled = false;
+        const result = new Promise<RewardedAdResult>((resolve) => {
+          settle = (next) => {
+            if (settled) return;
+            settled = true;
+            resolve(next);
+          };
+        });
+        try {
+          handles.push(await plugin.addRewardedListener((reward) => {
+            settle(Number.isFinite(reward.amount) && reward.amount > 0 ? 'earned' : 'failed');
+          }));
+          handles.push(await plugin.addRewardedDismissedListener(() => settle('dismissed')));
+          handles.push(await plugin.addRewardedFailedToShowListener(() => {
+            recordDiagnostic('rewarded-show-failed', 'The prepared rewarded ad failed before display.');
+            settle('failed');
+          }));
+          void plugin.showRewardVideoAd({ adId: config.rewardedId }).catch(() => {
+            recordDiagnostic('rewarded-show-failed', 'The prepared rewarded ad could not be shown.');
+            settle('failed');
+          });
+          return await result;
+        } finally {
+          await removeAttemptListeners(handles);
+        }
       } catch {
         recordDiagnostic('rewarded-show-failed', 'The prepared rewarded ad could not be shown.');
         return 'failed';
@@ -365,16 +416,35 @@ export function createAdService(
 
       interstitialShowing = true;
       try {
-        if (!interstitialPrepared) {
-          await service.preloadInterstitial();
-        }
         if (!interstitialPrepared || !adsMayBeRequested()) {
           return 'unavailable';
         }
 
         interstitialPrepared = false;
-        await plugin.showInterstitial({ adId: config.interstitialId });
-        return 'shown';
+        const handles: Array<{ remove(): Promise<void> }> = [];
+        let settle!: (result: FullScreenAdResult) => void;
+        let settled = false;
+        const result = new Promise<FullScreenAdResult>((resolve) => {
+          settle = (next) => {
+            if (settled) return;
+            settled = true;
+            resolve(next);
+          };
+        });
+        try {
+          handles.push(await plugin.addInterstitialDismissedListener(() => settle('shown')));
+          handles.push(await plugin.addInterstitialFailedToShowListener(() => {
+            recordDiagnostic('interstitial-show-failed', 'The prepared interstitial failed before display.');
+            settle('failed');
+          }));
+          void plugin.showInterstitial({ adId: config.interstitialId }).catch(() => {
+            recordDiagnostic('interstitial-show-failed', 'The prepared interstitial ad could not be shown.');
+            settle('failed');
+          });
+          return await result;
+        } finally {
+          await removeAttemptListeners(handles);
+        }
       } catch {
         recordDiagnostic('interstitial-show-failed', 'The prepared interstitial ad could not be shown.');
         return 'failed';

@@ -25,7 +25,8 @@ export interface GameSessionController {
   showOpening(): void;
   showNewRun(): void;
   startCampaign(heroClass: HeroClass, name: string): void;
-  dispatch(command: GameCommand): void;
+  dispatch(command: GameCommand): boolean;
+  flushLatest(): boolean;
   saveAndExit(): void;
   returnToTitle(): void;
 }
@@ -114,6 +115,19 @@ function campaignSeed(now: number, slot: SaveSlot): number {
   return (Math.imul(Math.trunc(now) >>> 0, 0x45d9f3b) ^ Math.imul(slot, 0x9e3779b1)) >>> 0 || 1943;
 }
 
+function profileSettings(settings: UiSettings): GameStateV2['profile']['settings'] {
+  return {
+    textScale: settings.textScale,
+    highContrast: settings.highContrast,
+    reducedMotion: settings.reducedMotion,
+    sound: settings.sfxVolume > 0,
+    music: settings.musicVolume > 0,
+    narration: settings.voiceVolume > 0,
+    haptics: settings.hapticsEnabled,
+    reducedHaptics: settings.reducedHaptics,
+  };
+}
+
 export function useGameSession(
   repository: SaveRepository,
   content: ContentIndex,
@@ -197,12 +211,13 @@ export function useGameSession(
     const now = ports.now();
     let state: GameStateV2;
     try {
-      state = createCampaign({
+      const created = createCampaign({
         heroClass: selectedClass,
         seed: campaignSeed(now, slot),
         name: name.trim() || 'The Oathless',
         updatedAt: isoTime(now),
       }, content);
+      state = { ...created, profile: { ...created.profile, settings: profileSettings(settings) } };
     } catch {
       setNotice('Chronicle I could not be started. Please return to the title and try again.');
       return;
@@ -215,22 +230,28 @@ export function useGameSession(
     feedbackDeliveryRef.current = { sequence: state.campaign.transitionCounter, eventIds: new Set() };
     publish(slot, state, []);
     setView('game');
-  }, [content, ports, publish, repository]);
+  }, [content, ports, publish, repository, settings]);
 
   const dispatch = useCallback((command: GameCommand) => {
     const current = latestStateRef.current;
     const slot = activeSlotRef.current;
-    if (!current || !slot) return;
+    if (!current || !slot) return false;
     const transition = reduceGame(current, command, content);
+    if (transition.diagnostic) {
+      setNotice(transition.diagnostic.message);
+      return false;
+    }
+    if (transition.state === current && transition.events.length === 0) return false;
     const saved = repository.saveSlot(slot, transition.state);
     if (!saved.ok) {
       setNotice(SAVE_FAILURE_NOTICE);
-      return;
+      return false;
     }
     const delivered = feedbackDeliveryRef.current;
     const unseenEvents = transition.events.filter((event) => event.sequence > delivered.sequence
       || (event.sequence === delivered.sequence && !delivered.eventIds.has(event.eventId)));
-    publish(slot, transition.state, transition.events.map((event) => event.domain));
+    latestStateRef.current = transition.state;
+    activeSlotRef.current = slot;
     if (unseenEvents.length > 0) {
       const nextSequence = Math.max(delivered.sequence, ...unseenEvents.map((event) => event.sequence));
       const eventIds = nextSequence === delivered.sequence ? new Set(delivered.eventIds) : new Set<string>();
@@ -238,7 +259,15 @@ export function useGameSession(
       feedbackDeliveryRef.current = { sequence: nextSequence, eventIds };
       try { ports.feedback.consume(feedbackForTransition(unseenEvents.map((event) => event.domain), settings)); } catch { /* Presentation feedback never invalidates a saved action. */ }
     }
+    publish(slot, transition.state, transition.events.map((event) => event.domain));
+    return true;
   }, [content, ports.feedback, publish, repository, settings]);
+
+  const flushLatest = useCallback((): boolean => {
+    const current = latestStateRef.current;
+    const slot = activeSlotRef.current;
+    return current && slot ? repository.saveSlot(slot, current).ok : true;
+  }, [repository]);
 
   const returnToTitle = useCallback(() => {
     latestStateRef.current = null;
@@ -275,23 +304,6 @@ export function useGameSession(
     setView('title');
   }, [repository, returnToTitle]);
 
-  useEffect(() => {
-    const flushLatest = () => {
-      const current = latestStateRef.current;
-      const slot = activeSlotRef.current;
-      if (current && slot) repository.saveSlot(slot, current);
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') flushLatest();
-    };
-    window.addEventListener('pagehide', flushLatest);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', flushLatest);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [repository]);
-
   return {
     view,
     activeSlot,
@@ -305,6 +317,7 @@ export function useGameSession(
     showNewRun,
     startCampaign,
     dispatch,
+    flushLatest,
     saveAndExit,
     returnToTitle,
   };

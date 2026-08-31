@@ -36,8 +36,12 @@ describe('Android release configuration', () => {
     const ignore = readFileSync(resolve('.gitignore'), 'utf8');
 
     expect(gradle).toContain('ca-app-pub-3940256099942544~3347511713');
+    expect(gradle).toContain("equalsIgnoreCase('bundlePlayRelease')");
+    expect(gradle).toContain('guardedPlayReleaseRequested && liveAdMobAppId');
     expect(gradle).toContain("tasks.register('verifyPlayReleaseConfiguration')");
     expect(gradle).toContain("tasks.register('bundlePlayRelease')");
+    expect(gradle).toContain("VITE_ADMOB_LIVE");
+    expect(gradle).toContain('liveUnitValues.toSet().size()');
     expect(gradle).toContain('MORROWMERE_KEYSTORE_FILE');
     expect(capacitor).toContain('disableBackButtonHandler: true');
     expect(ignore).toContain('*.jks');
@@ -52,6 +56,7 @@ describe('Android release configuration', () => {
       encoding: 'utf8',
       env: {
         ...process.env,
+        VITE_ADMOB_LIVE: '1',
         MORROWMERE_ADMOB_APP_ID: marker,
         VITE_ADMOB_BANNER_ID: marker,
         VITE_ADMOB_REWARDED_ID: marker,

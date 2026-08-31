@@ -1,10 +1,16 @@
+import { useRef } from 'react';
 import type { UiSettings } from '../ui/types';
 import { Sheet } from './Sheet';
 
-interface SettingsSheetProps { readonly settings: UiSettings; readonly onChange: (settings: UiSettings) => void; readonly onClose: () => void; }
+interface SettingsSheetProps { readonly settings: UiSettings; readonly onChange: (settings: UiSettings) => void; readonly onClose: () => void; readonly privacyOptionsRequired?: boolean; readonly onPrivacyOptions?: () => Promise<void>; }
 
-export function SettingsSheet({ settings, onChange, onClose }: SettingsSheetProps) {
+export function SettingsSheet({ settings, onChange, onClose, privacyOptionsRequired = false, onPrivacyOptions }: SettingsSheetProps) {
+  const privacyButtonRef = useRef<HTMLButtonElement>(null);
   const update = (change: Partial<UiSettings>) => onChange({ ...settings, ...change });
+  const showPrivacyOptions = async () => {
+    await onPrivacyOptions?.();
+    privacyButtonRef.current?.focus();
+  };
   const percent = (value: number) => Math.round(value * 100);
   return (
     <Sheet title="Settings" onClose={onClose}>
@@ -19,6 +25,7 @@ export function SettingsSheet({ settings, onChange, onClose }: SettingsSheetProp
       <label className="setting-select"><span><strong>Story voice replay</strong><small>Choose whether voiced main scenes replay automatically.</small></span><select aria-label="Story voice replay" value={settings.voiceReplay} onChange={(event) => update({ voiceReplay: event.target.value as UiSettings['voiceReplay'] })}><option value="automatic">Automatic</option><option value="manual">Manual</option></select></label>
       <label className="setting-toggle"><span><strong>Captions</strong><small>Show opening and voiced-story captions independently of sound.</small></span><input aria-label="Captions" type="checkbox" checked={settings.captions} onChange={(event) => update({ captions: event.target.checked })} /></label>
       <label className="setting-toggle"><span><strong>Screen-reader announcements</strong><small>Announce new scenes, intents, and battle outcomes.</small></span><input aria-label="Screen-reader announcements" type="checkbox" checked={settings.screenReaderAnnouncements} onChange={(event) => update({ screenReaderAnnouncements: event.target.checked })} /></label>
+      {privacyOptionsRequired && onPrivacyOptions && <button ref={privacyButtonRef} className="button button-secondary" type="button" onClick={() => { void showPrivacyOptions(); }}>Privacy choices</button>}
     </Sheet>
   );
 }

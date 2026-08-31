@@ -20,6 +20,7 @@ export type {
   HeroVitals,
   SceneResolution,
   PendingBattleReward,
+  AdPacingState,
   CampSnapshot,
   ProfileState,
   SequencedDomainEvent,

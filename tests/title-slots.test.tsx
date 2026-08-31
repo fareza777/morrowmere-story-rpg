@@ -233,6 +233,28 @@ describe('V2 session controller', () => {
     expect(result.current.notice).not.toContain('private');
   });
 
+  it('reports diagnostics and no-op commands as unaccepted without writing a save', () => {
+    const game = makeUiGame({ screen: 'camp' });
+    const repository = new SessionRepository(new Map([[1, successfulLoad(game)]]));
+    const { result } = renderHook(() => useGameSession(repository, UI_CONTENT, UI_PORTS));
+
+    act(() => result.current.continueSlot(1));
+    let accepted = true;
+    act(() => {
+      accepted = result.current.dispatch({
+        type: 'claim-rewards',
+        rewardId: 'missing-reward',
+        itemId: null,
+        updatedAt: '2026-08-31T14:01:00.000Z',
+      });
+    });
+
+    expect(accepted).toBe(false);
+    expect(repository.saves).toEqual([]);
+    expect(result.current.game).toBe(game);
+    expect(result.current.notice).toBe('That battle reward is no longer available.');
+  });
+
   it('publishes the exact saved transition and flushes the latest state on backgrounding', () => {
     const game = makeUiGame({ screen: 'camp' });
     const repository = new SessionRepository(new Map([[1, successfulLoad(game)]]));
@@ -249,7 +271,7 @@ describe('V2 session controller', () => {
     expect(published?.campaign.transitionCounter).toBe(1);
 
     repository.saves.length = 0;
-    act(() => window.dispatchEvent(new Event('pagehide')));
+    act(() => { result.current.flushLatest(); });
     expect(repository.saves).toEqual([{ slot: 1, state: published! }]);
   });
 

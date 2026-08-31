@@ -1,7 +1,7 @@
 import type { ContentIndex } from '../content/schema';
 import type { GameStateV2, ProfileState } from '../state/types';
 import { migrateSave } from './migrate';
-import { decodeSaveState, encodeSaveState, isContentBackedProfile } from './codec';
+import { decodeProfile, decodeSaveState, encodeSaveState, isContentBackedProfile } from './codec';
 import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope, type SaveSlot } from './schema';
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
@@ -105,7 +105,9 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       const incoming = parseEnvelope(raw);
       const state = incoming ? decodeSaveState(incoming.state, content) : null;
       if (!incoming || !state) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
-      const target = createSaveEnvelope(slot, incoming.state, clock());
+      const encoded = encodeSaveState(state, content);
+      if (!encoded) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
+      const target = createSaveEnvelope(slot, encoded, clock());
       const written = saveEnvelope(slot, target);
       if (!written.ok) return { ok: false, reason: 'corrupt', error: written.error };
       return { ok: true, state, source: 'active', summary: summary(target) };
@@ -120,7 +122,7 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       try { raw = storage.getItem(profileKey); } catch (error) { return { ok: false, reason: 'corrupt', error: message(error, 'Unable to read preferences.') }; }
       if (raw === null) return { ok: false, reason: 'empty' };
       const profile = parseProfile(raw);
-      if (profile && isContentBackedProfile(profile.profile, content)) return { ok: true, profile: profile.profile };
+      if (profile && isContentBackedProfile(profile.profile, content)) return { ok: true, profile: decodeProfile(profile.profile) };
       const key = archive(1, 'profile', raw);
       return { ok: false, reason: 'corrupt', recoveryKey: key };
     },

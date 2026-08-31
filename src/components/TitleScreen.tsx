@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { SaveSlot } from '../game/persistence/schema';
 import type { SaveSlotSummary } from '../ui/types';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -9,9 +9,10 @@ interface TitleScreenProps {
   readonly onNew: (slot: SaveSlot) => void;
   readonly onContinue: (slot: SaveSlot) => void;
   readonly onRecover: (slot: SaveSlot) => void;
+  readonly onOverlayChange?: (open: boolean) => void;
 }
 
-export function TitleScreen({ slots, onNew, onContinue, onRecover }: TitleScreenProps) {
+export function TitleScreen({ slots, onNew, onContinue, onRecover, onOverlayChange }: TitleScreenProps) {
   const [replaceSlot, setReplaceSlot] = useState<SaveSlot | null>(null);
   const cancelReplace = useCallback(() => setReplaceSlot(null), []);
   const confirmReplace = useCallback(() => {
@@ -20,6 +21,12 @@ export function TitleScreen({ slots, onNew, onContinue, onRecover }: TitleScreen
     setReplaceSlot(null);
     onNew(slot);
   }, [onNew, replaceSlot]);
+
+  useEffect(() => {
+    onOverlayChange?.(replaceSlot !== null);
+  }, [onOverlayChange, replaceSlot]);
+
+  useEffect(() => () => onOverlayChange?.(false), [onOverlayChange]);
 
   return (
     <main className="title-screen">

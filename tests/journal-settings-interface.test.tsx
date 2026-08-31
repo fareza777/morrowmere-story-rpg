@@ -4,7 +4,7 @@ import { DefeatPanel } from '../src/components/DefeatPanel';
 import { JournalSheet } from '../src/components/JournalSheet';
 import { RewardPanel } from '../src/components/RewardPanel';
 import { SettingsSheet } from '../src/components/SettingsSheet';
-import { selectJournalView } from '../src/ui/selectors';
+import { selectInventoryView, selectJournalView } from '../src/ui/selectors';
 import type { UiSettings } from '../src/ui/types';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 
@@ -48,6 +48,19 @@ describe('journal, settings, reward, and defeat', () => {
     expect(screen.getByText('12 XP received')).toBeVisible();
     expect(screen.getByText('Bonus video unavailable. Your reward is safe.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
+  });
+
+  it('can decline an item reward and locks every settlement control while an ad is pending', () => {
+    const rewardItem = selectInventoryView(makeUiGame({ stackedPotions: 1 }), UI_CONTENT).pack[0]!;
+    const onClaim = vi.fn();
+    const { rerender } = render(<RewardPanel view={{ rewardId: 'r2', gold: 18, xp: 12, items: [rewardItem], bonusStatus: 'available' }} onClaim={onClaim} onRequestBonus={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Continue without an item' })).toBeEnabled();
+    rerender(<RewardPanel view={{ rewardId: 'r2', gold: 18, xp: 12, items: [rewardItem], bonusStatus: 'pending' }} onClaim={onClaim} onRequestBonus={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: `Choose ${rewardItem.name}` })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Continue without an item' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Watch Ad — Double Battle Gold' })).toBeDisabled();
   });
 
   it('offers all three icon-labeled defeat exits with restart confirmation', async () => {

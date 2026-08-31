@@ -1,6 +1,5 @@
 import {
   AdmobConsentStatus,
-  PrivacyOptionsRequirementStatus,
   type AdmobConsentInfo,
 } from '@capacitor-community/admob';
 import { describe, expect, it, vi } from 'vitest';
@@ -28,8 +27,18 @@ function createPlugin(canRequestAds = true): AdMobPort {
   const consent: AdmobConsentInfo = {
     status: canRequestAds ? AdmobConsentStatus.OBTAINED : AdmobConsentStatus.REQUIRED,
     canRequestAds,
-    privacyOptionsRequirementStatus: PrivacyOptionsRequirementStatus.NOT_REQUIRED,
+    privacyOptionsRequirementStatus: 'NOT_REQUIRED' as AdmobConsentInfo['privacyOptionsRequirementStatus'],
     isConsentFormAvailable: false,
+  };
+
+  const rewardedListeners = new Set<(reward: { type: string; amount: number }) => void>();
+  const rewardedDismissedListeners = new Set<() => void>();
+  const rewardedFailedListeners = new Set<() => void>();
+  const interstitialDismissedListeners = new Set<() => void>();
+  const interstitialFailedListeners = new Set<() => void>();
+  const handle = <Listener,>(listeners: Set<Listener>, listener: Listener) => {
+    listeners.add(listener);
+    return Promise.resolve({ remove: vi.fn(async () => { listeners.delete(listener); }) });
   };
 
   return {
@@ -40,9 +49,19 @@ function createPlugin(canRequestAds = true): AdMobPort {
     showBanner: vi.fn(async () => undefined),
     removeBanner: vi.fn(async () => undefined),
     prepareRewardVideoAd: vi.fn(async ({ adId }) => ({ adUnitId: adId })),
-    showRewardVideoAd: vi.fn(async () => ({ type: 'gold', amount: 1 })),
+    showRewardVideoAd: vi.fn(async () => {
+      queueMicrotask(() => rewardedListeners.forEach((listener) => listener({ type: 'gold', amount: 1 })));
+      return { type: 'gold', amount: 1 };
+    }),
+    addRewardedListener: vi.fn((listener) => handle(rewardedListeners, listener)),
+    addRewardedDismissedListener: vi.fn((listener) => handle(rewardedDismissedListeners, listener)),
+    addRewardedFailedToShowListener: vi.fn((listener) => handle(rewardedFailedListeners, listener)),
     prepareInterstitial: vi.fn(async ({ adId }) => ({ adUnitId: adId })),
-    showInterstitial: vi.fn(async () => undefined),
+    showInterstitial: vi.fn(async () => {
+      queueMicrotask(() => interstitialDismissedListeners.forEach((listener) => listener()));
+    }),
+    addInterstitialDismissedListener: vi.fn((listener) => handle(interstitialDismissedListeners, listener)),
+    addInterstitialFailedToShowListener: vi.fn((listener) => handle(interstitialFailedListeners, listener)),
     removeAllListeners: vi.fn(async () => undefined),
   };
 }
@@ -120,6 +139,7 @@ describe('ad service', () => {
 
     await service.setPlacement('merchant', vi.fn());
     await expect(service.showRewardedBattleGold()).resolves.toBe('earned');
+    await service.preloadInterstitial();
     await expect(service.showInterstitial()).resolves.toBe('shown');
 
     expect(plugin.showBanner).toHaveBeenCalledWith(expect.objectContaining({
@@ -144,7 +164,49 @@ describe('ad service', () => {
     await service.initialize();
 
     await expect(service.showRewardedBattleGold()).resolves.toBe('failed');
+    await service.preloadInterstitial();
     await expect(service.showInterstitial()).resolves.toBe('failed');
+  });
+
+  it('settles on exact full-screen lifecycle events and removes attempt listeners', async () => {
+    const plugin = createPlugin(true);
+    const rewardedRemovals: Array<ReturnType<typeof vi.fn>> = [];
+    const interstitialRemovals: Array<ReturnType<typeof vi.fn>> = [];
+    let dismissRewarded: () => void = () => undefined;
+    let dismissInterstitial: () => void = () => undefined;
+    vi.mocked(plugin.addRewardedListener).mockImplementation(async () => {
+      const remove = vi.fn(async () => undefined); rewardedRemovals.push(remove); return { remove };
+    });
+    vi.mocked(plugin.addRewardedDismissedListener).mockImplementation(async (listener) => {
+      dismissRewarded = listener; const remove = vi.fn(async () => undefined); rewardedRemovals.push(remove); return { remove };
+    });
+    vi.mocked(plugin.addRewardedFailedToShowListener).mockImplementation(async () => {
+      const remove = vi.fn(async () => undefined); rewardedRemovals.push(remove); return { remove };
+    });
+    vi.mocked(plugin.showRewardVideoAd).mockImplementation(async () => new Promise(() => undefined));
+    vi.mocked(plugin.addInterstitialDismissedListener).mockImplementation(async (listener) => {
+      dismissInterstitial = listener; const remove = vi.fn(async () => undefined); interstitialRemovals.push(remove); return { remove };
+    });
+    vi.mocked(plugin.addInterstitialFailedToShowListener).mockImplementation(async () => {
+      const remove = vi.fn(async () => undefined); interstitialRemovals.push(remove); return { remove };
+    });
+    const service = createAdService(TEST_CONFIG, plugin);
+    await service.initialize();
+
+    const rewarded = service.showRewardedBattleGold();
+    await vi.waitFor(() => expect(plugin.showRewardVideoAd).toHaveBeenCalledOnce());
+    dismissRewarded();
+    await expect(rewarded).resolves.toBe('dismissed');
+    expect(rewardedRemovals).toHaveLength(3);
+    rewardedRemovals.forEach((remove) => expect(remove).toHaveBeenCalledOnce());
+
+    await service.preloadInterstitial();
+    const interstitial = service.showInterstitial();
+    await vi.waitFor(() => expect(plugin.showInterstitial).toHaveBeenCalledOnce());
+    dismissInterstitial();
+    await expect(interstitial).resolves.toBe('shown');
+    expect(interstitialRemovals).toHaveLength(2);
+    interstitialRemovals.forEach((remove) => expect(remove).toHaveBeenCalledOnce());
   });
 
   it('removes the banner and listeners exactly once on destroy', async () => {

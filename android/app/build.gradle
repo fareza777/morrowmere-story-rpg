@@ -7,6 +7,12 @@ def releaseKeyPassword = System.getenv('MORROWMERE_KEY_PASSWORD')
 def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
 def googleSampleAdMobAppId = 'ca-app-pub-3940256099942544~3347511713'
 def liveAdMobAppId = System.getenv('MORROWMERE_ADMOB_APP_ID')
+def guardedPlayReleaseRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.tokenize(':').last().equalsIgnoreCase('bundlePlayRelease')
+}
+def releaseAdMobAppId = guardedPlayReleaseRequested && liveAdMobAppId
+    ? liveAdMobAppId
+    : googleSampleAdMobAppId
 
 android {
     namespace = "com.morrowmere.game"
@@ -41,7 +47,7 @@ android {
         release {
             // Plain bundleRelease is an unsigned QA artifact and intentionally uses
             // Google's sample app ID unless the guarded Play task supplies live config.
-            resValue 'string', 'admob_app_id', liveAdMobAppId ?: googleSampleAdMobAppId
+            resValue 'string', 'admob_app_id', releaseAdMobAppId
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasReleaseSigning) {
@@ -69,6 +75,12 @@ tasks.register('verifyPlayReleaseConfiguration') {
     doLast {
         def missing = []
         def invalid = []
+        def liveMode = System.getenv('VITE_ADMOB_LIVE')
+        if (!liveMode) {
+            missing << 'VITE_ADMOB_LIVE'
+        } else if (liveMode != '1') {
+            invalid << 'VITE_ADMOB_LIVE'
+        }
         def appId = System.getenv('MORROWMERE_ADMOB_APP_ID')
         if (!appId) {
             missing << 'MORROWMERE_ADMOB_APP_ID'
@@ -82,6 +94,10 @@ tasks.register('verifyPlayReleaseConfiguration') {
             } else if (!(value ==~ /^ca-app-pub-\d{16}\/\d{10}$/) || value.startsWith('ca-app-pub-3940256099942544')) {
                 invalid << variableName
             }
+        }
+        def liveUnitValues = liveAdUnitVariables.collect { System.getenv(it) }.findAll { it }
+        if (liveUnitValues.size() == liveAdUnitVariables.size() && liveUnitValues.toSet().size() != liveUnitValues.size()) {
+            invalid.addAll(liveAdUnitVariables.findAll { !invalid.contains(it) })
         }
         signingVariables.each { variableName ->
             if (!System.getenv(variableName)) missing << variableName
@@ -101,7 +117,7 @@ tasks.register('bundlePlayRelease') {
     dependsOn 'verifyPlayReleaseConfiguration', 'bundleRelease'
 }
 
-tasks.named('bundleRelease').configure {
+tasks.matching { it.name == 'bundleRelease' }.configureEach {
     mustRunAfter 'verifyPlayReleaseConfiguration'
 }
 

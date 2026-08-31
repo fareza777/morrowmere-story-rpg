@@ -2,10 +2,10 @@ import { createCompanionRoster } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { ChapterId } from '../domain/ids';
 import type { DirectorState } from '../director/types';
-import type { CampaignCheckpointPayload, CreateCampaignOptions, DirectorMemory, GameStateV2, ProfileState } from './types';
+import type { AdPacingState, CampaignCheckpointPayload, CreateCampaignOptions, DirectorMemory, GameStateV2, ProfileState } from './types';
 
 const DEFAULT_PROFILE: ProfileState = {
-  settings: { textScale: 1, highContrast: false, reducedMotion: false, sound: true, music: true, narration: false },
+  settings: { textScale: 1, highContrast: false, reducedMotion: false, sound: true, music: true, narration: false, haptics: true, reducedHaptics: false },
   discoveries: { events: [], enemies: [], codex: [] },
 };
 
@@ -42,6 +42,16 @@ function createProfile(): ProfileState {
   return { settings: { ...DEFAULT_PROFILE.settings }, discoveries: { events: [], enemies: [], codex: [] } };
 }
 
+export function initialAdPacingState(): AdPacingState {
+  return {
+    lastInterstitialAt: null,
+    expeditionBreaksSinceInterstitial: 0,
+    rewardedShownAtCurrentBreak: false,
+    claimedRewardOfferIds: [],
+    rewardedClaimsThisExpedition: 0,
+  };
+}
+
 export function createCampaign(options: CreateCampaignOptions, content: ContentIndex): GameStateV2 {
   const chapterId: ChapterId = options.chapterId ?? 'ch01';
   const campaign = {
@@ -57,7 +67,7 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
   } as const;
   const payload = campaignPayload(campaign);
   return {
-    schemaVersion: 2, profile: createProfile(), campaign, expedition: null,
+    schemaVersion: 2, profile: createProfile(), campaign, expedition: null, adPacing: initialAdPacingState(),
     checkpoints: { chapter: { campaign: campaignPayload(campaign), enteredAt: options.updatedAt }, camp: { campaign: payload, campSceneId: null, savedAt: options.updatedAt } },
     flow: { screen: 'camp', overlay: null, merchant: null }, updatedAt: options.updatedAt,
   };

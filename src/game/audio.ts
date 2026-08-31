@@ -26,6 +26,26 @@ export function configureGameAudio(settings: {
   });
 }
 
+export function suspendAllAudio(): void {
+  gameAudio.pauseAll();
+}
+
+export function resumeEnabledAudio(settings: {
+  readonly sfxVolume: number;
+  readonly musicVolume: number;
+  readonly voiceVolume: number;
+}): void {
+  configureGameAudio({
+    sound: settings.sfxVolume > 0,
+    music: settings.musicVolume > 0,
+    narration: settings.voiceVolume > 0,
+    sfxVolume: settings.sfxVolume,
+    musicVolume: settings.musicVolume,
+    voiceVolume: settings.voiceVolume,
+  });
+  gameAudio.resumeAll();
+}
+
 /** Compatibility wrapper used by the current shell while UI ports migrate to `gameAudio`. */
 export function playSfx(cue: SfxCue, enabled = true): void {
   gameAudio.playSfx(cue, enabled);

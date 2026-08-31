@@ -8,6 +8,7 @@ import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../directo
 import type { DirectorState } from '../director/types';
 import { applyInventoryCommand, useItem, type InventoryState } from '../inventory';
 import { generateMerchantVisit, quoteTrade } from '../merchant';
+import { isRewardedGoldEligible, shouldShowInterstitial } from '../../native/ads/policy';
 import { deriveHeroStats, grantExperience } from '../progression';
 import { campaignPayload, cloneCampaignPayload, initialDirector } from './create';
 import { applyEffectsAtomically } from './effects';
@@ -229,6 +230,53 @@ function commitCampMutation(state: GameStateV2, campaign: GameStateV2['campaign'
 }
 
 export function reduceGame(state: GameStateV2, command: GameCommand, content: ContentIndex): GameTransition {
+  if (command.type === 'update-profile-settings') {
+    const settings = command.settings;
+    const valid = Number.isFinite(settings.textScale) && settings.textScale >= 0.5
+      && ['highContrast', 'reducedMotion', 'sound', 'music', 'narration', 'haptics', 'reducedHaptics']
+        .every((key) => typeof settings[key as keyof typeof settings] === 'boolean');
+    if (!valid) return diagnostic(state, 'invalid_settings', 'Those settings could not be saved.');
+    return commit(state, { ...state, profile: { ...state.profile, settings: { ...settings } }, updatedAt: command.updatedAt }, []);
+  }
+  if (command.type === 'CLAIM_REWARDED_GOLD') {
+    if (state.adPacing.claimedRewardOfferIds.includes(command.rewardOfferId)) return { state, events: [] };
+    const reward = state.expedition?.pendingReward;
+    if (!state.expedition || state.flow.screen !== 'reward' || !reward || reward.rewardOfferId !== command.rewardOfferId) {
+      return diagnostic(state, 'rewarded_gold_unavailable', 'That optional gold reward is no longer available.');
+    }
+    if (!isRewardedGoldEligible(reward, state.adPacing)) {
+      return diagnostic(state, 'rewarded_gold_ineligible', 'This battle does not qualify for optional bonus gold.');
+    }
+    const pendingReward = { ...reward, rewardedGoldSettlement: 'claimed' as const };
+    const adPacing = {
+      ...state.adPacing,
+      rewardedShownAtCurrentBreak: true,
+      claimedRewardOfferIds: [...state.adPacing.claimedRewardOfferIds, reward.rewardOfferId],
+      rewardedClaimsThisExpedition: state.adPacing.rewardedClaimsThisExpedition + 1,
+    };
+    return commit(state, {
+      ...state,
+      expedition: { ...state.expedition, pendingReward, unbankedGold: state.expedition.unbankedGold + reward.baseGold },
+      adPacing,
+      updatedAt: command.updatedAt,
+    }, [{ type: 'notification', message: `${reward.baseGold} bonus gold earned.` }]);
+  }
+  if (command.type === 'RECORD_INTERSTITIAL_SHOWN') {
+    const shownAt = Date.parse(command.shownAt);
+    if (state.flow.screen !== 'camp' || state.expedition || !shouldShowInterstitial(state.adPacing, shownAt)) {
+      return diagnostic(state, 'interstitial_not_due', 'An interstitial is not due at this safe break.');
+    }
+    return commit(state, {
+      ...state,
+      adPacing: {
+        ...state.adPacing,
+        lastInterstitialAt: command.shownAt,
+        expeditionBreaksSinceInterstitial: 0,
+        rewardedShownAtCurrentBreak: false,
+      },
+      updatedAt: command.updatedAt,
+    }, []);
+  }
   if (command.type === 'return-to-camp-after-defeat') {
     const next = returnToCampAfterDefeat(state, content, command.updatedAt);
     return next === state
@@ -268,7 +316,13 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
       unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
     } as const;
-    return commit(state, { ...state, expedition, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Expedition started.' }]);
+    return commit(state, {
+      ...state,
+      expedition,
+      adPacing: { ...state.adPacing, rewardedShownAtCurrentBreak: false, rewardedClaimsThisExpedition: 0 },
+      flow: { ...state.flow, screen: 'story', merchant: null },
+      updatedAt: command.updatedAt,
+    }, [{ type: 'notification', message: 'Expedition started.' }]);
   }
   if (command.type === 'bank-camp') {
     if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward || state.flow.merchant) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
@@ -276,7 +330,14 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
     const gold = state.expedition.unbankedGold;
     const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
-    const provisional: GameStateV2 = { ...state, campaign, expedition: null, flow: { ...state.flow, screen: 'camp', merchant: null }, updatedAt: command.updatedAt };
+    const provisional: GameStateV2 = {
+      ...state,
+      campaign,
+      expedition: null,
+      adPacing: { ...state.adPacing, expeditionBreaksSinceInterstitial: state.adPacing.expeditionBreaksSinceInterstitial + 1 },
+      flow: { ...state.flow, screen: 'camp', merchant: null },
+      updatedAt: command.updatedAt,
+    };
     return commit(state, { ...provisional, checkpoints: { ...provisional.checkpoints, camp: checkpointAtCamp(provisional, scene.id, command.updatedAt) } }, [{ type: 'camp_banked', sceneId: scene.id, gold }]);
   }
   if (command.type === 'inventory') {
@@ -372,7 +433,11 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
     if (!xp.ok) return diagnostic(state, xp.error.code, xp.error.message);
     const rewardId = `${state.expedition.routeSeed}:${state.expedition.position.slot}:${encounterId}`;
-    const pendingReward = { rewardId, encounterId, itemChoices: [...encounter.reward.itemChoices], baseGold: encounter.reward.gold, grantedXp: xp.value.grantedXp, adEligible: encounter.kind === 'regular' };
+    const rewardOfferId = `reward:${state.campaign.seed}:${rewardId}`;
+    const adEligible = encounter.kind === 'regular';
+    const candidateReward = { rewardOfferId, baseGold: encounter.reward.gold, adEligible, rewardedGoldSettlement: 'available' as const };
+    const rewardedGoldSettlement = isRewardedGoldEligible(candidateReward, state.adPacing) ? 'available' as const : 'ineligible' as const;
+    const pendingReward = { rewardId, rewardOfferId, encounterId, itemChoices: [...encounter.reward.itemChoices], baseGold: encounter.reward.gold, grantedXp: xp.value.grantedXp, adEligible, rewardedGoldSettlement };
     const campaign = { ...state.campaign, hero: xp.value.hero, inventory: result.inventory, encounterFamilyVictories: { ...state.campaign.encounterFamilyVictories, [encounter.family]: priorVictories + 1 } };
     const completedCombat = { ...result.combat, player: { ...result.combat.player, level: xp.value.hero.level, xp: xp.value.hero.xp } };
     return commit(state, { ...state, campaign, expedition: { ...state.expedition, heroVitals, unbankedLoot, unbankedGold: state.expedition.unbankedGold + encounter.reward.gold, currentCombat: { encounterId, combat: completedCombat }, pendingReward }, flow: { ...state.flow, screen: 'reward', merchant: null }, updatedAt: command.updatedAt }, [
@@ -385,7 +450,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   if (command.type === 'claim-rewards') {
     const receipt = state.expedition?.pendingReward;
     if (!state.expedition || state.flow.screen !== 'reward' || !receipt || receipt.rewardId !== command.rewardId) return diagnostic(state, 'reward_required', 'That battle reward is no longer available.');
-    if ((receipt.itemChoices.length === 0 && command.itemId !== null) || (receipt.itemChoices.length > 0 && (command.itemId === null || !receipt.itemChoices.includes(command.itemId)))) return diagnostic(state, 'invalid_reward', 'Choose one item from this battle reward.');
+    if (command.itemId !== null && !receipt.itemChoices.includes(command.itemId)) return diagnostic(state, 'invalid_reward', 'Choose an item offered by this battle reward.');
     let inventory = state.campaign.inventory;
     let unbankedLoot = state.expedition.unbankedLoot;
     if (command.itemId !== null) {
