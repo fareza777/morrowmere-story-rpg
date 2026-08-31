@@ -7,6 +7,7 @@ export const CH05_MAIN = Object.freeze([
     illustrationId: 'scene-ch05-main-the-mouth-of-embervault', title: 'The Mouth of Embervault',
     narrative: [
       'The Redwater settlement yielded a shipment code stamped E-17 and a route to Embervault, an iron mine closed after a furnace collapse. Fresh cart tracks now cross the chained entrance.',
+      'Jory Fen reaches the entrance shortly after your party, sent from Greywatch by relay with an authenticated copy of his Route Seven statement. He rejoins the investigation before anyone approaches the gate clerk.',
       'The gate clerk recognizes the transfer code but not your faces. You can present the captured order as inspectors or enter through the ore drainage cut below the road.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [],
