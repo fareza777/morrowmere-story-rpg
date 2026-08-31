@@ -25,6 +25,8 @@ import { TutorialCallout, type TutorialKind } from './TutorialCallout';
 
 type Overlay = HudMenu | null;
 type UiInventoryCommand = Exclude<InventoryCommand, { readonly type: 'add' }>;
+const TUTORIAL_STORAGE_KEY = 'morrowmere.tutorials.v1';
+const TUTORIAL_KINDS: readonly TutorialKind[] = ['choice', 'combat', 'loot', 'consumable', 'equipment'];
 type UndatedGameCommand = GameCommand extends infer Command
   ? Command extends { readonly updatedAt: string }
     ? Omit<Command, 'updatedAt'>
@@ -35,6 +37,18 @@ interface GameShellProps extends BaseGameShellProps {
   readonly settings: UiSettings;
   readonly onSettingsChange: (settings: UiSettings) => void;
   readonly now?: () => string;
+}
+
+function savedTutorialState(): { readonly skipped: boolean; readonly seen: readonly TutorialKind[] } {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(TUTORIAL_STORAGE_KEY) ?? '{}') as { readonly skipped?: unknown; readonly seen?: unknown };
+    const seen = Array.isArray(parsed.seen)
+      ? parsed.seen.filter((kind): kind is TutorialKind => typeof kind === 'string' && TUTORIAL_KINDS.includes(kind as TutorialKind))
+      : [];
+    return { skipped: parsed.skipped === true, seen };
+  } catch {
+    return { skipped: false, seen: [] };
+  }
 }
 
 function rewardItem(itemId: ItemId, content: BaseGameShellProps['content']): ItemRowViewModel | null {
@@ -66,8 +80,8 @@ function rewardItem(itemId: ItemId, content: BaseGameShellProps['content']): Ite
 export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, now = () => new Date().toISOString() }: GameShellProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [choosingRoute, setChoosingRoute] = useState(false);
-  const [tutorialsSkipped, setTutorialsSkipped] = useState(false);
-  const [tutorialsSeen, setTutorialsSeen] = useState<ReadonlySet<TutorialKind>>(() => new Set());
+  const [tutorialsSkipped, setTutorialsSkipped] = useState(() => savedTutorialState().skipped);
+  const [tutorialsSeen, setTutorialsSeen] = useState<ReadonlySet<TutorialKind>>(() => new Set(savedTutorialState().seen));
   const commandSequence = useRef(0);
   const camp = useMemo(() => selectCampView(state, content), [content, state]);
   const scene = useMemo(() => selectCurrentScene(state, content), [content, state]);
@@ -86,6 +100,12 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   useEffect(() => {
     if (state.flow.screen === 'story' && state.expedition && !state.expedition.currentSceneId) issue({ type: 'select-next-scene' });
   }, [state.flow.screen, state.expedition?.currentSceneId]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify({ skipped: tutorialsSkipped, seen: [...tutorialsSeen] }));
+    } catch { /* Tutorial state remains active for this session. */ }
+  }, [tutorialsSeen, tutorialsSkipped]);
 
   useLayoutEffect(() => { window.scrollTo(0, 0); }, [state.flow.screen, scene?.id, choosingRoute]);
 

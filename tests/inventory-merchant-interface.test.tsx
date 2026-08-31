@@ -44,6 +44,31 @@ describe('inventory, equipment, and merchant flows', () => {
     expect(screen.getByText('Warrior only')).toBeVisible();
   });
 
+  it('includes stats lost from the currently equipped item in swap comparisons', async () => {
+    const user = userEvent.setup();
+    const state = makeUiGame({ stackedPotions: 1, equippedWeapon: true });
+    const view = selectInventoryView(state, UI_CONTENT);
+    const currentWeapon = view.equipment.weapon!;
+    const weakerWeapon = {
+      ...currentWeapon,
+      entryId: 'weaker-sword-entry',
+      name: 'Notched Sword',
+      stats: currentWeapon.stats.map((stat) => stat.id === 'attack' ? { ...stat, value: stat.value - 2 } : stat),
+    };
+    render(
+      <InventorySheet
+        view={{ ...view, pack: [...view.pack, weakerWeapon] }}
+        context="camp"
+        heroClass={state.campaign.hero.heroClass}
+        onUse={vi.fn()}
+        onInventoryCommand={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'Equipment' }));
+    expect(screen.getByText('−2 Attack')).toBeVisible();
+  });
+
   it('shows exact buy and sell quotes and persistent empty stock copy', async () => {
     const user = userEvent.setup();
     const state = makeUiGame({ screen: 'merchant', stackedPotions: 2 });

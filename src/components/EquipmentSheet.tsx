@@ -14,8 +14,17 @@ function slotItem(label: string, item: ItemRowViewModel | null, icon: 'weapon' |
 }
 
 function itemDelta(item: ItemRowViewModel, current: ItemRowViewModel | null): string {
-  const currentStats = new Map(current?.stats.map((stat) => [stat.id, stat.value]) ?? []);
-  return item.stats.map((stat) => { const delta = stat.value - (currentStats.get(stat.id) ?? 0); return `${delta >= 0 ? '+' : '−'}${Math.abs(delta)} ${stat.label}`; }).join(' · ') || 'No derived-stat change';
+  const candidateStats = new Map(item.stats.map((stat) => [stat.id, stat]));
+  const currentStats = new Map(current?.stats.map((stat) => [stat.id, stat]) ?? []);
+  const statIds = new Set([...candidateStats.keys(), ...currentStats.keys()]);
+  const deltas = [...statIds].flatMap((id) => {
+    const candidate = candidateStats.get(id);
+    const equipped = currentStats.get(id);
+    const delta = (candidate?.value ?? 0) - (equipped?.value ?? 0);
+    if (delta === 0) return [];
+    return [`${delta > 0 ? '+' : '−'}${Math.abs(delta)} ${candidate?.label ?? equipped?.label ?? id}`];
+  });
+  return deltas.join(' · ') || 'No derived-stat change';
 }
 
 export function EquipmentSheet({ view, heroClass, heroLevel, chapter, context, onCommand }: EquipmentSheetProps) {

@@ -6,7 +6,14 @@ import { LaunchSplash } from './components/LaunchSplash';
 import { NewRunScreen } from './components/NewRunScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { TitleScreen } from './components/TitleScreen';
-import { playSfx } from './game/audio';
+import {
+  cinematicAudio,
+  configureGameAudio,
+  createFeedbackAudioPort,
+  gameAudio,
+  playDomainEvents,
+  playSfx,
+} from './game/audio';
 import { CHRONICLE1_CONTENT } from './game/content/chronicle1';
 import type { ContentIndex } from './game/content/schema';
 import { createSaveRepository } from './game/persistence/repository';
@@ -61,15 +68,8 @@ const CONTENT: ContentIndex = Object.freeze({
 });
 
 const PORTS: UiPorts = {
-  feedback: { consume(): void {} },
-  cinematicAudio: {
-    async preload(): Promise<void> {},
-    async play(): Promise<void> {},
-    pause(): void {},
-    seek(): void {},
-    stop(): void {},
-    setVolumes(): void {},
-  },
+  feedback: createFeedbackAudioPort(gameAudio),
+  cinematicAudio,
   now: () => Date.now(),
 };
 
@@ -89,6 +89,21 @@ export default function App() {
   useEffect(() => {
     try { window.localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Preferences remain active for this session. */ }
   }, [settings]);
+
+  useEffect(() => {
+    configureGameAudio({
+      sound: settings.sfxVolume > 0,
+      music: settings.musicVolume > 0,
+      narration: settings.voiceVolume > 0,
+      sfxVolume: settings.sfxVolume,
+      musicVolume: settings.musicVolume,
+      voiceVolume: settings.voiceVolume,
+    });
+  }, [settings.musicVolume, settings.sfxVolume, settings.voiceVolume]);
+
+  useEffect(() => {
+    playDomainEvents(gameAudio, session.transitionEvents);
+  }, [session.transitionEvents]);
 
   return (
     <>

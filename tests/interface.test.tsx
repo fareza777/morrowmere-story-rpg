@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameShell } from '../src/components/GameShell';
 import type { UiSettings } from '../src/ui/types';
@@ -18,6 +18,10 @@ function renderShell(state = makeUiGame(), dispatch = vi.fn()) {
 }
 
 describe('integrated portrait interface', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem('morrowmere.tutorials.v1');
+  });
+
   it('keeps the current story behind independent readable overlays', async () => {
     const user = userEvent.setup();
     renderShell(makeUiGame({ stackedPotions: 2 }));
@@ -41,5 +45,17 @@ describe('integrated portrait interface', () => {
     expect(screen.getByRole('button', { name: 'Return to Last Camp' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Restart Chapter' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Main Menu' })).toBeVisible();
+  });
+
+  it('keeps a dismissed contextual tutorial hidden after the shell remounts', async () => {
+    const user = userEvent.setup();
+    const first = renderShell();
+    expect(screen.getByLabelText('Choices have consequences tutorial')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    first.unmount();
+    cleanup();
+
+    renderShell();
+    expect(screen.queryByLabelText('Choices have consequences tutorial')).not.toBeInTheDocument();
   });
 });
