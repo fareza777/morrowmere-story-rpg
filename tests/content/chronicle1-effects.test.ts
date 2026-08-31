@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CompanionDefinition, ContentIndex } from '../../src/game/content/schema';
-import type { CompanionId } from '../../src/game/domain/ids';
+import { validateContent } from '../../src/game/content/validate';
+import type { ChoiceId, CompanionId } from '../../src/game/domain/ids';
 import type { GameEffect } from '../../src/game/domain/effects';
 import { applyEffectsAtomically } from '../../src/game/state/effects';
 import { createCampaign, initialDirector } from '../../src/game/state/create';
@@ -91,5 +92,30 @@ describe('Chronicle I runtime effect normalization', () => {
     expect(result.ok).toBe(false);
     expect(state.campaign.evidence).toEqual([]);
     expect(state.campaign.companions.records[0]?.loyalty).toBe(0);
+  });
+
+  it('rejects every progression effect that references a missing companion', () => {
+    const content = makeContentIndex();
+    const event = [...content.events.values()][0]!;
+    const missingCompanionId = 'missing-companion' as CompanionId;
+    const invalidContent: ContentIndex = {
+      ...content,
+      events: new Map([[event.id, {
+        ...event,
+        choices: [{
+          id: 'missing-companion-effects' as ChoiceId,
+          label: 'Use invalid effects',
+          detail: 'A validator-only fixture.',
+          outcome: 'The fixture remains invalid.',
+          effects: [
+            { type: 'companion-loyalty', companionId: missingCompanionId, amount: 1 },
+            { type: 'companion-quest', companionId: missingCompanionId, stage: 1 },
+            { type: 'companion-injury', companionId: missingCompanionId, injured: true },
+          ],
+        }],
+      }]]),
+    };
+
+    expect(validateContent(invalidContent).filter((issue) => issue.code === 'missing_companion')).toHaveLength(3);
   });
 });

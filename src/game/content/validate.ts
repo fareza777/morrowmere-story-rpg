@@ -76,7 +76,15 @@ function effectIssues(effect: GameEffect, index: ContentIndex): ContentIssue[] {
   if (effect.type === 'item' && !index.items.has(effect.itemId)) {
     return [{ code: 'missing_item', message: `Missing item: ${effect.itemId}` }];
   }
-  if (effect.type === 'companion' && !index.companions.has(effect.companionId)) {
+  if (
+    (
+      effect.type === 'companion'
+      || effect.type === 'companion-loyalty'
+      || effect.type === 'companion-quest'
+      || effect.type === 'companion-injury'
+    )
+    && !index.companions.has(effect.companionId)
+  ) {
     return [{ code: 'missing_companion', message: `Missing companion: ${effect.companionId}` }];
   }
   if (effect.type === 'combat' && !index.encounters.has(effect.encounterId)) {
