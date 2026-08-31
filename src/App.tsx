@@ -1,6 +1,7 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { OpeningCinematic } from './components/cinematic/OpeningCinematic';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GameShell } from './components/GameShell';
 import { LaunchSplash } from './components/LaunchSplash';
 import { NewRunScreen } from './components/NewRunScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
@@ -16,6 +17,9 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/game.css';
 import './styles/cinematic.css';
+import './styles/screens.css';
+import './styles/combat.css';
+import './styles/sheets.css';
 
 const DEFAULT_UI_SETTINGS: UiSettings = Object.freeze({
   textScale: 1,
@@ -30,6 +34,19 @@ const DEFAULT_UI_SETTINGS: UiSettings = Object.freeze({
   voiceReplay: 'automatic',
   screenReaderAnnouncements: true,
 });
+
+const UI_SETTINGS_KEY = 'morrowmere.ui-settings.v2';
+
+function loadUiSettings(): UiSettings {
+  try {
+    const saved = window.localStorage.getItem(UI_SETTINGS_KEY);
+    if (!saved) return DEFAULT_UI_SETTINGS;
+    const parsed = JSON.parse(saved) as Partial<UiSettings>;
+    return { ...DEFAULT_UI_SETTINGS, ...parsed };
+  } catch {
+    return DEFAULT_UI_SETTINGS;
+  }
+}
 
 const partialContent = CHRONICLE1_CONTENT as Partial<ContentIndex>;
 const CONTENT: ContentIndex = Object.freeze({
@@ -57,7 +74,7 @@ const PORTS: UiPorts = {
 };
 
 export default function App() {
-  const [settings, setSettings] = useState<UiSettings>(DEFAULT_UI_SETTINGS);
+  const [settings, setSettings] = useState<UiSettings>(loadUiSettings);
   const [replayingOpening, setReplayingOpening] = useState(false);
   const repository = useMemo(
     () => createSaveRepository(window.localStorage, () => new Date().toISOString(), CONTENT),
@@ -69,29 +86,24 @@ export default function App() {
     document.documentElement.scrollTop = 0;
   }, [session.view]);
 
+  useEffect(() => {
+    try { window.localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(settings)); } catch { /* Preferences remain active for this session. */ }
+  }, [settings]);
+
   return (
     <>
       <LaunchSplash />
       <ErrorBoundary onReset={() => { setReplayingOpening(false); session.returnToTitle(); }}>
-        {replayingOpening ? (
-          <OpeningCinematic
-            sequence={OPENING_SEQUENCE}
-            settings={settings}
-            audio={PORTS.cinematicAudio}
-            completionLabel="Return to Chronicle"
-            onComplete={() => setReplayingOpening(false)}
-          />
-        ) : (
-          <>
-            {session.view === 'title' && (
+        <>
+          {!replayingOpening && session.view === 'title' && (
               <TitleScreen
                 slots={session.slots}
                 onContinue={(slot) => { playSfx('ui'); session.continueSlot(slot); }}
                 onRecover={(slot) => { playSfx('ui'); session.continueSlot(slot); }}
                 onNew={(slot) => { playSfx('ui'); session.beginSlot(slot); }}
               />
-            )}
-            {session.view === 'preferences' && (
+          )}
+          {!replayingOpening && session.view === 'preferences' && (
               <OnboardingScreen
                 initialSettings={settings}
                 onBack={session.returnToTitle}
@@ -100,41 +112,48 @@ export default function App() {
                   session.showOpening();
                 }}
               />
-            )}
-            {session.view === 'opening' && (
+          )}
+          {!replayingOpening && session.view === 'opening' && (
               <OpeningCinematic
                 sequence={OPENING_SEQUENCE}
                 settings={settings}
                 audio={PORTS.cinematicAudio}
                 onComplete={session.showNewRun}
               />
-            )}
-            {session.view === 'new-run' && (
+          )}
+          {!replayingOpening && session.view === 'new-run' && (
               <NewRunScreen
                 onBack={session.showOpening}
                 onBegin={session.startCampaign}
               />
-            )}
-            {session.view === 'game' && session.game && (
-              <main className="new-run-screen">
-                <section className="end-panel" aria-labelledby="campaign-ready-title">
-                  <p className="eyebrow">Chronicle I — The Black Banner</p>
-                  <h1 id="campaign-ready-title">{session.game.campaign.heroName}'s road begins at camp.</h1>
-                  <p>Your campaign is saved. Choose a route when the Chronicle camp screen opens.</p>
-                  {session.notice && <p role="status">{session.notice}</p>}
-                  <div className="end-actions">
-                    <button className="button button-secondary" type="button" onClick={() => setReplayingOpening(true)}>
-                      Replay Opening Story
-                    </button>
-                    <button className="button button-secondary" type="button" onClick={session.saveAndExit}>
-                      Save &amp; Exit
-                    </button>
-                  </div>
-                </section>
-              </main>
-            )}
-          </>
-        )}
+          )}
+          {session.view === 'game' && session.game && (
+              <div hidden={replayingOpening}>
+                {session.notice && <p className="session-notice" role="status">{session.notice}</p>}
+                <GameShell
+                  state={session.game}
+                  content={CONTENT}
+                  transitionEvents={session.transitionEvents}
+                  dispatch={session.dispatch}
+                  onSaveAndExit={session.saveAndExit}
+                  onMainMenu={session.returnToTitle}
+                  onReplayOpening={() => setReplayingOpening(true)}
+                  settings={settings}
+                  onSettingsChange={setSettings}
+                  now={() => new Date(PORTS.now()).toISOString()}
+                />
+              </div>
+          )}
+          {replayingOpening && (
+            <OpeningCinematic
+              sequence={OPENING_SEQUENCE}
+              settings={settings}
+              audio={PORTS.cinematicAudio}
+              completionLabel="Return to Chronicle"
+              onComplete={() => setReplayingOpening(false)}
+            />
+          )}
+        </>
       </ErrorBoundary>
     </>
   );

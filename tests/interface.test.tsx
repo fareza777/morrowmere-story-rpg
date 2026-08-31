@@ -1,93 +1,45 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import App from '../src/App';
 import { GameShell } from '../src/components/GameShell';
-import { createCombat } from '../src/game/combat';
-import { ENEMIES } from '../src/game/content/enemies';
-import { startNewRun } from '../src/game/state';
+import type { UiSettings } from '../src/ui/types';
+import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 
-describe('portrait game interface', () => {
-  it('starts a Mage chronicle from the title screen', async () => {
+const SETTINGS: UiSettings = {
+  textScale: 1, highContrast: false, reducedMotion: false, hapticsEnabled: true, reducedHaptics: false,
+  sfxVolume: 0.8, musicVolume: 0.7, voiceVolume: 0.9, captions: true,
+  voiceReplay: 'automatic', screenReaderAnnouncements: true,
+};
+
+function renderShell(state = makeUiGame(), dispatch = vi.fn()) {
+  return {
+    dispatch,
+    ...render(<GameShell state={state} content={UI_CONTENT} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />),
+  };
+}
+
+describe('integrated portrait interface', () => {
+  it('keeps the current story behind independent readable overlays', async () => {
     const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
-    expect(screen.getByRole('heading', { name: 'Your chronicle remembers' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
-    expect(screen.getByRole('heading', { name: 'Choose your path' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: /Mage/i }));
-    await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
-
-    expect(screen.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
-    expect(screen.getByText(/The rain begins at your burial/)).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeVisible();
-  });
-
-  it('shows announced enemy intent and all combat actions', () => {
-    const run = startNewRun({ heroClass: 'warrior', seed: 44 });
-    const combat = createCombat(run.hero, ENEMIES[0], 17);
-    const state = { ...run, screen: 'combat' as const, combat };
-
-    render(<GameShell state={state} dispatch={() => undefined} />);
-
-    expect(screen.getByText('Enemy intent')).toBeVisible();
-    expect(screen.getByText(combat.intentText)).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Attack' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Guard' })).toBeVisible();
-    expect(screen.getByRole('button', { name: /Technique/ })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Flee' })).toBeVisible();
-  });
-
-  it('opens readable settings and updates text scale', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
-    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
-    await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
-
-    await user.click(screen.getByRole('button', { name: 'Settings' }));
-
-    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
-    expect(screen.getByRole('slider', { name: 'Text size' })).toHaveValue('100');
-    expect(screen.getByRole('checkbox', { name: 'Sound effects' })).toBeVisible();
-    expect(screen.getByRole('checkbox', { name: 'Reduce motion' })).toBeVisible();
-  });
-
-  it('shows concrete inventory names and capacity', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByRole('button', { name: 'New Chronicle' }));
-    await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
-    await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
-
+    renderShell(makeUiGame({ stackedPotions: 2 }));
+    expect(screen.getByRole('heading', { name: 'The Orchard Ambush' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Pack' }));
-
     expect(screen.getByRole('dialog', { name: 'Inventory' })).toBeVisible();
-    expect(screen.getByText('Red Mercy')).toBeVisible();
-    expect(screen.getByText('1 / 12 carried')).toBeVisible();
+    expect(screen.getByText('Quantity 2')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Close Inventory' }));
+    expect(screen.getByRole('heading', { name: 'The Orchard Ambush' })).toBeVisible();
   });
 
-  it('announces the active scene when narration is enabled', () => {
-    const run = startNewRun({ heroClass: 'warden', seed: 71 });
-    const state = { ...run, settings: { ...run.settings, narration: true } };
-    render(<GameShell state={state} dispatch={() => undefined} />);
-
-    expect(screen.getByText(/Narration: When the Black Rain Rings/)).toHaveAttribute('aria-live', 'polite');
-  });
-
-  it('offers retry and main menu actions after defeat', async () => {
+  it('issues a typed V2 choice command without changing content in the component', async () => {
     const user = userEvent.setup();
-    const onRetry = vi.fn();
-    const onExit = vi.fn();
-    const run = startNewRun({ heroClass: 'warrior', seed: 91, name: 'Aldren' });
-    const state = { ...run, hero: { ...run.hero, health: 0 }, screen: 'defeat' as const };
+    const { dispatch } = renderShell();
+    await user.click(screen.getByRole('button', { name: 'Follow the blood trail' }));
+    expect(dispatch).toHaveBeenCalledWith({ type: 'resolve-choice', eventId: 'ui-story-event', choiceId: 'follow-blood', updatedAt: '2026-09-01T00:00:00.000Z' });
+  });
 
-    render(<GameShell state={state} dispatch={() => undefined} onRetry={onRetry} onExit={onExit} />);
-
-    await user.click(screen.getByRole('button', { name: 'Try Again' }));
-    await user.click(screen.getByRole('button', { name: 'Main Menu' }));
-
-    expect(onRetry).toHaveBeenCalledOnce();
-    expect(onExit).toHaveBeenCalledOnce();
+  it('always exposes camp, chapter, and menu recovery after defeat', () => {
+    renderShell(makeUiGame({ screen: 'defeat' }));
+    expect(screen.getByRole('button', { name: 'Return to Last Camp' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Restart Chapter' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Main Menu' })).toBeVisible();
   });
 });

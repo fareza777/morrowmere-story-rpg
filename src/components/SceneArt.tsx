@@ -1,25 +1,24 @@
-import type { RegionId } from '../game/types';
-import { composeSceneVisual } from '../game/visuals';
-
-const REGION_LABELS: Record<RegionId, string> = {
-  gloamwood: 'Gloamwood Verge',
-  'drowned-road': 'The Drowned Road',
-  embervault: 'Embervault',
-  'crownless-keep': 'The Crownless Keep',
-};
+import { useEffect, useState } from 'react';
 
 interface SceneArtProps {
-  readonly region: RegionId;
-  readonly sceneKey: string;
-  readonly enemyId?: string;
-  readonly enemyArtFamily?: string;
+  readonly illustrationId: string;
+  readonly alt: string;
+  readonly kind?: 'scene' | 'merchant';
 }
 
-export function SceneArt({ region, sceneKey, enemyId, enemyArtFamily }: SceneArtProps) {
-  const visual = composeSceneVisual({ region, sceneKey, enemyId, enemyArtFamily });
+export function illustrationSource(illustrationId: string, kind: 'scene' | 'merchant' = 'scene'): string {
+  if (kind === 'merchant' && illustrationId.startsWith('merchant-')) return `/assets/chronicle1/merchants/${illustrationId}.webp`;
+  const chapter = illustrationId.match(/scene-(ch\d{2})-/u)?.[1] ?? 'ch01';
+  return `/assets/chronicle1/scenes/${chapter}/${illustrationId}.webp`;
+}
+
+export function SceneArt({ illustrationId, alt, kind = 'scene' }: SceneArtProps) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [illustrationId]);
   return (
-    <figure className={`scene-art scene-${region}${visual.enemySource ? ' has-enemy' : ''}`} data-scene-key={visual.visualKey}>
-      <img src={visual.enemySource ?? visual.backgroundSource} alt={visual.enemySource ? visual.alt : `The road through ${REGION_LABELS[region]}`} />
+    <figure className="scene-art" data-illustration-id={illustrationId}>
+      <img src={illustrationSource(illustrationId, kind)} alt={alt} hidden={failed} onError={() => setFailed(true)} />
+      {failed && <div className="scene-art-fallback" role="img" aria-label={alt}><span>Illustration unavailable</span><small>The story remains fully playable.</small></div>}
     </figure>
   );
 }

@@ -1,65 +1,85 @@
+import { Backpack, BoxArrowDown, Flask, Shield, Sword, Trash } from '@phosphor-icons/react';
 import { useState } from 'react';
-import { ITEMS } from '../game/content/items';
-import type { GameCommand, GameState } from '../game/state';
-import type { ItemDefinition } from '../game/types';
-import { Backpack, Shield, Sparkle, Sword } from './icons';
+import type { InventoryCommand } from '../game/inventory';
+import type { HeroClass } from '../game/types';
+import type { InventoryViewModel, ItemRowViewModel } from '../ui/types';
+import { ConfirmDialog } from './ConfirmDialog';
+import { EquipmentSheet } from './EquipmentSheet';
 import { Sheet } from './Sheet';
+import { TutorialCallout, type TutorialKind } from './TutorialCallout';
+
+type UiInventoryCommand = Exclude<InventoryCommand, { readonly type: 'add' }>;
+export type InventoryContext = 'camp' | 'field' | 'combat';
 
 interface InventorySheetProps {
-  readonly state: GameState;
-  readonly dispatch: (command: GameCommand) => void;
+  readonly view: InventoryViewModel;
+  readonly context: InventoryContext;
+  readonly heroClass: HeroClass;
+  readonly heroLevel?: number;
+  readonly chapter?: number;
+  readonly onUse: (entryId: string) => void;
+  readonly onInventoryCommand: (command: UiInventoryCommand) => void;
   readonly onClose: () => void;
+  readonly tutorialKind?: Extract<TutorialKind, 'consumable' | 'equipment'> | null;
+  readonly onTutorialDismiss?: () => void;
+  readonly onSkipTutorials?: () => void;
 }
 
-function statLine(item: ItemDefinition): string {
-  const labels: Record<string, string> = { attack: 'Attack', will: 'Will', armor: 'Armor', ward: 'Ward', health: 'Health', focus: 'Focus' };
-  const entries = Object.entries(item.stats).filter(([, value]) => Boolean(value));
-  return entries.length > 0 ? entries.map(([key, value]) => `+${value} ${labels[key] ?? key}`).join('  ·  ') : 'No combat bonus';
+function statLine(item: ItemRowViewModel): string {
+  return item.stats.length > 0 ? item.stats.map((stat) => `${stat.value >= 0 ? '+' : ''}${stat.displayValue} ${stat.label}`).join(' · ') : 'No direct combat bonus';
 }
 
-export function InventorySheet({ state, dispatch, onClose }: InventorySheetProps) {
-  const [page, setPage] = useState<'inventory' | 'equipment'>('inventory');
-  const items = state.hero.inventory.map((id) => ITEMS.find((item) => item.id === id)).filter((item): item is ItemDefinition => Boolean(item));
-  const gear = items.filter((item) => ['weapon', 'armor', 'charm'].includes(item.category));
-  const equippedIds = new Set([state.hero.equipment.weapon, state.hero.equipment.armor, ...state.hero.equipment.charms].filter((id): id is string => Boolean(id)));
-  const itemName = (id: string | null | undefined) => ITEMS.find((item) => item.id === id)?.name ?? 'Empty';
+interface ItemCardProps {
+  readonly item: ItemRowViewModel;
+  readonly location: 'pack' | 'stash';
+  readonly context: InventoryContext;
+  readonly onUse: (entryId: string) => void;
+  readonly onMove: (entryId: string, destination: 'pack' | 'stash') => void;
+  readonly onDiscard: (item: ItemRowViewModel) => void;
+}
 
+function ItemCard({ item, location, context, onUse, onMove, onDiscard }: ItemCardProps) {
+  const entryId = item.entryId;
   return (
-    <Sheet title="Inventory" onClose={onClose}>
-      <div className="sheet-tabs" role="tablist" aria-label="Inventory pages">
-        <button type="button" role="tab" aria-selected={page === 'inventory'} onClick={() => setPage('inventory')}><Backpack size={19} aria-hidden="true" />Inventory</button>
-        <button type="button" role="tab" aria-selected={page === 'equipment'} onClick={() => setPage('equipment')}><Sword size={19} aria-hidden="true" />Equipment</button>
+    <article className="item-card">
+      <header><div><strong>{item.name}</strong><span>{item.rarityLabel} · {item.categoryLabel}</span></div>{item.quantity > 1 && <b>Quantity {item.quantity}</b>}</header>
+      <p>{item.description}</p><small>{statLine(item)}</small>
+      {item.restrictionLabel && <p className="restriction-copy">{item.restrictionLabel}</p>}
+      <div className="item-actions">
+        {location === 'pack' && item.usable && <button type="button" disabled={context !== 'field' || !entryId} onClick={() => entryId && onUse(entryId)}><Flask size={17} aria-hidden="true" />Use {item.name}</button>}
+        {context === 'camp' && entryId && <button type="button" onClick={() => onMove(entryId, location === 'pack' ? 'stash' : 'pack')}><BoxArrowDown size={17} aria-hidden="true" />Move to {location === 'pack' ? 'Stash' : 'Pack'}</button>}
+        {context === 'camp' && entryId && <button className="danger-action" type="button" onClick={() => onDiscard(item)}><Trash size={17} aria-hidden="true" />Discard</button>}
       </div>
-      {page === 'inventory' ? (
-        <>
-          <div className="sheet-summary"><Backpack size={22} aria-hidden="true" /><span>{items.length} / 12 carried</span></div>
-          {items.length === 0 ? <p className="empty-state">Your pack is empty. The road rarely leaves it that way.</p> : (
-            <div className="inventory-list">{items.map((item) => <article key={item.id}><div><strong>{item.name}</strong><small>{equippedIds.has(item.id) ? 'equipped' : item.category}</small></div><p>{item.description}</p><b>{statLine(item)}</b></article>)}</div>
-          )}
-        </>
-      ) : (
-        <div className="equipment-page">
-          <p className="equipment-intro">Equip one weapon, one armor piece, and two charms. Bonuses are reflected in your combat stats immediately.</p>
-          <div className="equipment-slots" aria-label="Equipped items">
-            <article><Sword size={20} aria-hidden="true" /><span><small>Weapon</small><strong>{itemName(state.hero.equipment.weapon)}</strong></span></article>
-            <article><Shield size={20} aria-hidden="true" /><span><small>Armor</small><strong>{itemName(state.hero.equipment.armor)}</strong></span></article>
-            <article><Sparkle size={20} aria-hidden="true" /><span><small>Charm I</small><strong>{itemName(state.hero.equipment.charms[0])}</strong></span></article>
-            <article><Sparkle size={20} aria-hidden="true" /><span><small>Charm II</small><strong>{itemName(state.hero.equipment.charms[1])}</strong></span></article>
-          </div>
-          <div className="loadout-stats" aria-label="Current combat stats">
-            <span>ATK <strong>{state.hero.strength + state.hero.attackBonus}</strong></span><span>WILL <strong>{state.hero.will}</strong></span><span>ARM <strong>{state.hero.armor}</strong></span><span>WARD <strong>{state.hero.ward}</strong></span>
-          </div>
-          <div className="inventory-list loadout-list">
-            {gear.length === 0 ? <p className="empty-state">Find weapons, armor, and charms on the road to build a loadout.</p> : gear.map((item) => {
-              const equipped = equippedIds.has(item.id);
-              const allowed = item.allowedClasses.includes(state.hero.class);
-              const charmsFull = item.category === 'charm' && state.hero.equipment.charms.length >= 2 && !equipped;
-              const label = equipped ? 'Unequip' : !allowed ? `Not for ${state.hero.class}` : charmsFull ? 'Charm slots full' : 'Equip';
-              return <article key={item.id}><div><strong>{item.name}</strong><small>{item.category}</small></div><p>{statLine(item)}</p><button className="loadout-action" type="button" disabled={!allowed || charmsFull} onClick={() => dispatch({ type: equipped ? 'UNEQUIP_ITEM' : 'EQUIP_ITEM', itemId: item.id })}>{label}</button></article>;
-            })}
-          </div>
+      {context === 'combat' && item.usable && <p className="item-note">Use this from the Consumable battle action.</p>}
+      {context === 'camp' && item.usable && <p className="item-note">Carry this onto the road to use it when injured.</p>}
+    </article>
+  );
+}
+
+export function InventorySheet({ view, context, heroClass, heroLevel = 1, chapter = 1, onUse, onInventoryCommand, onClose, tutorialKind = null, onTutorialDismiss, onSkipTutorials }: InventorySheetProps) {
+  const [page, setPage] = useState<'pack' | 'stash' | 'equipment'>('pack');
+  const [discardItem, setDiscardItem] = useState<ItemRowViewModel | null>(null);
+  const items = page === 'stash' ? view.stash : view.pack;
+  const showTutorial = tutorialKind === 'consumable' ? page === 'pack' : tutorialKind === 'equipment' ? page === 'equipment' : false;
+  const move = (entryId: string, destination: 'pack' | 'stash') => onInventoryCommand({ type: 'move', entryId, destination });
+  return (
+    <>
+      <Sheet title="Inventory" onClose={onClose}>
+        {showTutorial && tutorialKind && onTutorialDismiss && onSkipTutorials && <TutorialCallout kind={tutorialKind} onDismiss={onTutorialDismiss} onSkipAll={onSkipTutorials} />}
+        <div className="sheet-tabs inventory-tabs" role="tablist" aria-label="Inventory pages">
+          <button type="button" role="tab" aria-selected={page === 'pack'} onClick={() => setPage('pack')}><Backpack size={18} aria-hidden="true" />Pack</button>
+          <button type="button" role="tab" aria-selected={page === 'stash'} disabled={context !== 'camp'} onClick={() => setPage('stash')}><BoxArrowDown size={18} aria-hidden="true" />Stash</button>
+          <button type="button" role="tab" aria-selected={page === 'equipment'} onClick={() => setPage('equipment')}><Sword size={18} aria-hidden="true" />Equipment</button>
         </div>
-      )}
-    </Sheet>
+        {page !== 'equipment' ? (
+          <>
+            <div className="sheet-summary"><Backpack size={21} aria-hidden="true" /><span>{view.usedSlots} / {view.capacity} slots</span></div>
+            {items.length === 0 ? <p className="empty-state">The {page} is empty.</p> : <div className="inventory-list">{items.map((item) => <ItemCard key={item.entryId ?? item.itemId} item={item} location={page} context={context} onUse={onUse} onMove={move} onDiscard={setDiscardItem} />)}</div>}
+            {view.questItems.length > 0 && <section className="quest-items"><h2>Quest items</h2>{view.questItems.map((item) => <article key={item.itemId}><Shield size={18} aria-hidden="true" /><div><strong>{item.name}</strong><p>{item.description}</p><small>Protected · does not use a pack slot</small></div></article>)}</section>}
+          </>
+        ) : <EquipmentSheet view={view} heroClass={heroClass} heroLevel={heroLevel} chapter={chapter} context={context} onCommand={onInventoryCommand} />}
+      </Sheet>
+      {discardItem?.entryId && <ConfirmDialog title={`Discard ${discardItem.name}?`} description="Discarded items cannot be recovered." confirmLabel="Discard Item" cancelLabel="Keep Item" onCancel={() => setDiscardItem(null)} onConfirm={() => { onInventoryCommand({ type: 'discard', entryId: discardItem.entryId! }); setDiscardItem(null); }} />}
+    </>
   );
 }

@@ -1,42 +1,35 @@
-import type { GameCommand, GameState } from '../game/state';
-import { Heart, Shield, Sparkle, Sword } from './icons';
+import { useEffect, useMemo, useState } from 'react';
+import type { CombatAction } from '../game/combat/types';
+import type { DomainEvent } from '../game/domain/result';
+import type { CombatViewModel, InventoryViewModel } from '../ui/types';
+import { CombatActionBar } from './CombatActionBar';
+import { EnemyParty } from './EnemyParty';
 
 interface CombatPanelProps {
-  readonly state: GameState;
-  readonly dispatch: (command: GameCommand) => void;
+  readonly view: CombatViewModel;
+  readonly inventory: InventoryViewModel;
+  readonly transitionEvents: readonly DomainEvent[];
+  readonly onAction: (action: CombatAction) => void;
 }
 
-export function CombatPanel({ state, dispatch }: CombatPanelProps) {
-  const combat = state.combat;
-  if (!combat) return null;
-  const technique = state.hero.class === 'warrior' ? 'Cleave' : state.hero.class === 'mage' ? 'Witchfire' : 'Marked Shot';
-  const healthPercent = Math.max(0, (combat.enemy.health / combat.enemy.maxHealth) * 100);
+export function CombatPanel({ view, inventory, transitionEvents, onAction }: CombatPanelProps) {
+  const [selectedTargetId, setSelectedTargetId] = useState(view.selectedTargetId);
+  useEffect(() => {
+    if (!view.enemies.some((enemy) => enemy.id === selectedTargetId)) setSelectedTargetId(view.selectedTargetId);
+  }, [selectedTargetId, view.enemies, view.selectedTargetId]);
+  const feedbackClass = useMemo(() => {
+    const attack = [...transitionEvents].reverse().find((event) => event.type === 'attack_resolved');
+    return attack?.type === 'attack_resolved' ? `is-${attack.outcome}` : null;
+  }, [transitionEvents]);
+  const consumables = inventory.pack.filter((item) => item.usable && item.entryId !== null);
   return (
-    <section className="combat-panel" aria-labelledby="enemy-name">
-      <div className="enemy-heading">
-        <div>
-          <p>{combat.enemy.species}   rank {combat.enemy.rank}</p>
-          <h1 id="enemy-name">{combat.enemy.name}</h1>
-        </div>
-        <span>{combat.enemy.health} / {combat.enemy.maxHealth}</span>
-      </div>
-      <div className="enemy-health" aria-label={`${combat.enemy.health} of ${combat.enemy.maxHealth} enemy Health`}>
-        <span style={{ inlineSize: `${healthPercent}%` }} />
-      </div>
-      <div className="intent-panel">
-        <strong>Enemy intent</strong>
-        <p>{combat.intentText}</p>
-      </div>
+    <section className="combat-panel" aria-labelledby="battle-title">
+      <header className="combat-heading"><p className="eyebrow">Battle</p><h1 id="battle-title">Choose your target</h1><p>Enemy intent is announced before your action.</p></header>
+      <EnemyParty enemies={view.enemies} selectedTargetId={selectedTargetId} onTarget={setSelectedTargetId} feedbackClass={feedbackClass} />
       <div className="combat-log" aria-live="polite">
-        {combat.log.slice(-3).map((entry, index) => <p key={`${combat.turn}-${index}-${entry}`}>{entry}</p>)}
+        {view.log.slice(-4).map((entry, index) => <p key={`${index}-${entry}`}>{entry}</p>)}
       </div>
-      <div className="combat-actions" aria-label="Combat actions">
-        <button type="button" aria-label="Attack" onClick={() => dispatch({ type: 'COMBAT', action: { type: 'attack' } })}><Sword size={22} weight="duotone" aria-hidden="true" /><span><strong>Attack</strong><small>Reliable physical damage</small></span></button>
-        <button type="button" aria-label="Guard" onClick={() => dispatch({ type: 'COMBAT', action: { type: 'guard' } })}><Shield size={22} weight="duotone" aria-hidden="true" /><span><strong>Guard</strong><small>Halve the next hit</small></span></button>
-        <button type="button" aria-label={`Technique: ${technique}`} onClick={() => dispatch({ type: 'COMBAT', action: { type: 'technique', techniqueId: technique.toLowerCase() } })}><Sparkle size={22} weight="duotone" aria-hidden="true" /><span><strong>Technique: {technique}</strong><small>Costs 3 Focus</small></span></button>
-        <button type="button" aria-label="Red Mercy" disabled={!state.hero.inventory.includes('potion-red')} onClick={() => dispatch({ type: 'COMBAT', action: { type: 'item', itemId: 'potion-red' } })}><Heart size={22} weight="duotone" aria-hidden="true" /><span><strong>Red Mercy</strong><small>Recover 12 Health</small></span></button>
-        <button className="flee-action" type="button" onClick={() => dispatch({ type: 'COMBAT', action: { type: 'flee' } })}>Flee</button>
-      </div>
+      <CombatActionBar view={view} selectedTargetId={selectedTargetId} consumables={consumables} onAction={onAction} />
     </section>
   );
 }
