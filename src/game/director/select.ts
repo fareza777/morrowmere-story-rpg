@@ -12,6 +12,13 @@ import type {
 
 const THREAT_ENCOUNTER_THRESHOLD = 6;
 const RECENT_FAMILY_WINDOW = 3;
+const MAX_CONSECUTIVE_COMBAT_SCENES = 3;
+
+function reachedCombatLimit(state: DirectorState, content: ContentIndex): boolean {
+  const recentIds = state.usedSceneIds.slice(-MAX_CONSECUTIVE_COMBAT_SCENES);
+  return recentIds.length === MAX_CONSECUTIVE_COMBAT_SCENES
+    && recentIds.every((sceneId) => content.events.get(sceneId)?.type === 'combat');
+}
 
 function weightedPick(events: readonly ChronicleEvent[], random: number, context: JourneyDirectorContext): ChronicleEvent {
   const total = events.reduce((sum, event) => sum + routeWeight(event, context), 0);
@@ -114,12 +121,22 @@ export function selectNextScene(state: DirectorState, context: JourneyDirectorCo
   const anchor = eligible
     .filter((event) => event.type === 'main' && (event.anchorOrder ?? Number.POSITIVE_INFINITY) <= context.position.slot)
     .sort((left, right) => (left.anchorOrder ?? 0) - (right.anchorOrder ?? 0))[0];
-  const threat = state.threat >= THREAT_ENCOUNTER_THRESHOLD
+  const combatLimitReached = reachedCombatLimit(state, content);
+  const threat = state.threat >= THREAT_ENCOUNTER_THRESHOLD && !combatLimitReached
     ? eligible.filter((event) => event.type === 'combat')[0]
     : undefined;
-  const pacedEligible = eligible.filter((candidate) => candidate.type !== 'main');
-  const event = callback ?? anchor ?? threat ?? selectPacedEvent(pacedEligible, state, context, random);
-  const reason: DirectorReason = callback ? 'callback' : anchor ? 'anchor' : threat ? 'threat' : 'paced';
+  const pacedEligible = eligible.filter((candidate) =>
+    candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
+  const paced = selectPacedEvent(pacedEligible, state, context, random);
+  const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
+  const event = callback ?? anchor ?? pacedSupport ?? threat ?? paced;
+  const reason: DirectorReason = callback
+    ? 'callback'
+    : anchor
+      ? 'anchor'
+      : event === threat
+        ? 'threat'
+        : 'paced';
   if (!event) {
     const completed = chapterScenes.every((scene) => state.usedSceneIds.includes(scene.id));
     return terminalStep(
