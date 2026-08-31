@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { evaluateRecruitment, type CompanionRoster } from '../../src/game/companions';
+import { CHRONICLE1_SCENE_INDEX, CHRONICLE1_SCENES } from '../../src/game/content/chronicle1';
 import { CHRONICLE1_COMPANIONS } from '../../src/game/content/chronicle1/companions';
 import type { ContentIndex } from '../../src/game/content/schema';
 import type { CompanionId } from '../../src/game/domain/ids';
@@ -95,4 +96,27 @@ describe('Chronicle I companion contracts', () => {
       expect(evaluateRecruitment(companion.id, { flags, companions: readyRoster(companion.id, 3, 34) }, content).missingRequirements).toContain('loyalty-35');
     }
   });
+
+  it('resolves every personal quest and outcome scene in chronological order', () => {
+    for (const companion of CHRONICLE1_COMPANIONS) {
+      const personalQuests = companion.personalQuestIds.map((eventId) => {
+        const scene = CHRONICLE1_SCENE_INDEX.get(eventId);
+        expect(scene, `${companion.id}/${eventId}`).toBeDefined();
+        expect(scene?.relationship).toEqual({ kind: 'companion', companionId: companion.id });
+        return scene!;
+      });
+      const outcomes = companion.outcomeSceneIds.map((eventId) => {
+        const scene = CHRONICLE1_SCENE_INDEX.get(eventId);
+        expect(scene, `${companion.id}/${eventId}`).toBeDefined();
+        expect(scene?.relationship).toEqual({ kind: 'companion', companionId: companion.id });
+        return scene!;
+      });
+
+      const positions = [...personalQuests, ...outcomes].map((scene) => (
+        CHRONICLE1_SCENES.findIndex((candidate) => candidate.id === scene.id)
+      ));
+      expect(positions, companion.id).toEqual([...positions].sort((left, right) => left - right));
+    }
+  });
+
 });
