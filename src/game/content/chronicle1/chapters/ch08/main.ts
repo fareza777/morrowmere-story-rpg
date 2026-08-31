@@ -41,7 +41,7 @@ export const CH08_MAIN = Object.freeze([
     ],
     eligibility: { minLevel: 14, maxLevel: 15 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
     followUps: ['ch08-main-evidence-before-the-realm'], callbackPromises: [], choices: [
-      { id: 'ch08-choice-compare-every-seal-impression', label: 'Compare every seal impression', detail: 'Document the counterfeit pattern completely while clerks retain physical control of some lawful cases.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'false-coronation-seal-audit' }, { type: 'flag', operation: 'add', flagId: 'compact-forgeries-documented' }, { type: 'tension', amount: 1 }], outcome: 'Lyra and the record clerks match repeated chips in impressions supposedly made by different lawful dies.' },
+      { id: 'ch08-choice-compare-every-seal-impression', label: 'Compare every seal impression', detail: 'Document the counterfeit pattern completely while clerks retain physical control of some lawful cases.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'false-coronation-seal-audit' }, { type: 'flag', operation: 'add', flagId: 'compact-forgeries-documented' }, { type: 'tension', amount: 1 }], outcome: 'The record clerks match repeated chips in impressions supposedly made by different lawful dies.' },
       { id: 'ch08-choice-return-the-seals-to-the-governors', label: 'Return the seals to the governors', detail: 'Restore lawful custody before the count while preserving fewer technical details about the copied dies.', effects: [{ type: 'flag', operation: 'add', flagId: 'lawful-seals-restored' }, { type: 'faction', factionId: 'border-council', amount: 3 }, { type: 'threat', amount: 1 }], outcome: 'Each governor signs the custody register beside two witnesses before reclaiming a numbered seal case.' },
     ],
   }),
@@ -111,13 +111,13 @@ export const CH08_MAIN = Object.freeze([
     type: 'main', family: 'restrained-cipher-hook', anchorOrder: 7, weight: 100, pacing: 'quiet',
     illustrationId: 'scene-ch08-main-the-letter-in-cipher', title: 'The Letter in Cipher',
     narrative: [
-      'Only after the hall is secure and a custodian holds the keys does Talla find a narrow cipher letter behind Voss\'s private campaign ledger. It contains payments, route acknowledgments, and no signature that can identify the sender.',
-      'Lyra decodes one complete sentence: the border war was “the first fracture.” Nothing in the page explains what follows. The victory stands, the wounded are counted, and the letter becomes evidence for another day.',
+      'Only after the hall is secure and a custodian holds the keys does a witnessed inventory uncover a narrow cipher letter behind Voss\'s private campaign ledger. It contains payments, route acknowledgments, and no signature that can identify the sender.',
+      'The recovered cipher worksheets reveal one complete sentence: the border war was “the first fracture.” Nothing in the page explains what follows. The victory stands, the wounded are counted, and the letter becomes evidence for another day.',
     ],
     eligibility: { minLevel: 14, maxLevel: 15 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
     followUps: [], callbackPromises: [], choices: [
       { id: 'ch08-choice-seal-the-cipher-with-the-public-record', label: 'Seal it with the public record', detail: 'Preserve the letter under the new custodian\'s witnessed archive rules without making unsupported accusations.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'first-fracture-cipher-letter' }, { type: 'flag', operation: 'add', flagId: 'cipher-letter-publicly-sealed' }], outcome: 'Three witnesses sign the envelope before it enters the same archive as the resolved case against Voss.' },
-      { id: 'ch08-choice-copy-the-cipher-for-the-road', label: 'Copy it for trusted road agents', detail: 'Prepare for future investigation while accepting the risk that an unexplained phrase will spread as rumor.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'first-fracture-cipher-letter' }, { type: 'flag', operation: 'add', flagId: 'cipher-letter-copies-dispatched' }, { type: 'tension', amount: 1 }], outcome: 'Talla makes two exact copies, marks every uncertain character, and gives them to agents with separate routes.' },
+      { id: 'ch08-choice-copy-the-cipher-for-the-road', label: 'Copy it for trusted road agents', detail: 'Prepare for future investigation while accepting the risk that an unexplained phrase will spread as rumor.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'first-fracture-cipher-letter' }, { type: 'flag', operation: 'add', flagId: 'cipher-letter-copies-dispatched' }, { type: 'tension', amount: 1 }], outcome: 'Two archive clerks make exact copies, mark every uncertain character, and give them to agents with separate routes.' },
     ],
   }),
 ]);

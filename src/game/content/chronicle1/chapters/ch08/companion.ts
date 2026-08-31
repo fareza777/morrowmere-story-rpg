@@ -2,18 +2,18 @@ import { defineScene } from '../../builders';
 
 export const CH08_COMPANION = Object.freeze([
   defineScene({
-    id: 'ch08-companion-talla-opens-the-guest-passage', chapterId: 'ch08', region: 'crownless-keep', slot: 4,
-    type: 'companion', family: 'talla-guest-passage', relationship: { kind: 'companion', companionId: 'talla' },
-    weight: 82, pacing: 'quiet', illustrationId: 'scene-ch08-companion-talla-opens-the-guest-passage',
-    title: 'Talla Opens the Guest Passage',
+    id: 'ch08-companion-talla-takes-the-hidden-road', chapterId: 'ch08', region: 'crownless-keep', slot: 4,
+    type: 'companion', family: 'talla-recruitment', relationship: { kind: 'companion', companionId: 'talla' },
+    weight: 40, pacing: 'quiet', illustrationId: 'scene-ch08-companion-talla-takes-the-hidden-road',
+    title: 'Talla Takes the Hidden Road',
     narrative: [
-      'Talla finds a servants\' passage connecting the guarded guest rooms to an old records arcade. It can move compelled families out unseen or bring two witnesses directly into the public gallery.',
-      'Evacuation protects more people. The shorter witness route strengthens the hearing, but leaves the remaining families behind armed doors.',
+      'Below Crownless Keep, Talla returns the steward\'s torn papers and shows you a servants\' passage leading toward the guarded guest rooms. She kept the hidden routes secret, protected the refuge, and gave up the profit that betrayal offered.',
+      'She asks to join the company as an equal keeper of those roads. If you decline, she will remain independent and use the passage to evacuate compelled families during the hearing.',
     ],
-    eligibility: { minLevel: 14, maxLevel: 15 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
+    eligibility: { minLevel: 14, maxLevel: 15, requiredFlags: ['talla-met', 'goblin-courier-spared', 'secret-bargain-honored', 'goblin-refuge-hidden', 'profitable-betrayal-refused'], excludedFlags: ['talla-betrayed'] }, requirements: [], exclusions: [], cooldownRuns: 4, oneShot: true,
     followUps: [], callbackPromises: [], choices: [
-      { id: 'ch08-choice-use-tallas-passage-for-families', label: 'Use the passage for families', detail: 'Evacuate every reachable civilian while the hearing begins with fewer firsthand witnesses.', effects: [{ type: 'flag', operation: 'add', flagId: 'guest-families-evacuated' }, { type: 'companion-loyalty', companionId: 'talla', amount: 6 }, { type: 'faction', factionId: 'border-council', amount: 2 }], outcome: 'Talla guides families through the arcade in small groups and closes each door behind them.' },
-      { id: 'ch08-choice-use-tallas-passage-for-witnesses', label: 'Use the passage for witnesses', detail: 'Bring two compelled governors into the gallery quickly while other families wait for the main rescue.', effects: [{ type: 'flag', operation: 'add', flagId: 'guest-witnesses-smuggled' }, { type: 'evidence', operation: 'add', evidenceId: 'guest-passage-testimony' }, { type: 'companion-loyalty', companionId: 'talla', amount: 3 }], outcome: 'Two governors enter the gallery before Voss\'s ushers realize their guest rooms are empty.' },
+      { id: 'ch08-choice-invite-talla-to-join', label: 'Invite Talla to join', detail: 'Accept her as an active companion and give her an equal voice over every hidden route the company uses.', effects: [{ type: 'companion', companionId: 'talla', operation: 'recruit' }, { type: 'flag', operation: 'add', flagId: 'talla-recruited' }, { type: 'flag', operation: 'add', flagId: 'guest-passage-shared' }, { type: 'companion-loyalty', companionId: 'talla', amount: 4 }], outcome: 'Talla marks the guest passage on the company map, keeps the only spare key, and takes her place beside you.' },
+      { id: 'ch08-choice-keep-tallas-network-independent', label: 'Keep Talla\'s network independent', detail: 'Leave her free to evacuate every reachable family, but continue without her battle command or hidden-road knowledge.', effects: [{ type: 'flag', operation: 'add', flagId: 'guest-families-evacuated' }, { type: 'flag', operation: 'add', flagId: 'talla-network-independent' }, { type: 'faction', factionId: 'border-council', amount: 2 }], outcome: 'Talla accepts the separate duty and guides the guest-room families out before Voss\'s ushers notice the empty beds.' },
     ],
   }),
   defineScene({
@@ -58,7 +58,7 @@ export const CH08_COMPANION = Object.freeze([
     eligibility: { minLevel: 14, maxLevel: 15 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
     followUps: [], callbackPromises: [], choices: [
       { id: 'ch08-choice-let-lyra-read-the-sequence', label: 'Let Lyra read the sequence', detail: 'Deliver the strongest technical account while allowing Voss to dismiss it as an archivist\'s dispute.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'lyra-five-step-case' }, { type: 'companion-loyalty', companionId: 'lyra', amount: 5 }], outcome: 'Lyra reads five dated steps and answers each challenge with a seal, witness, or custody line.' },
-      { id: 'ch08-choice-speak-with-lyra-beside-you', label: 'Speak with Lyra beside you', detail: 'Put the case in direct language while relying on Lyra to correct every disputed record.', effects: [{ type: 'flag', operation: 'add', flagId: 'ordinary-guard-delivered-case' }, { type: 'companion-loyalty', companionId: 'lyra', amount: 6 }, { type: 'faction', factionId: 'border-council', amount: 2 }], outcome: 'The hall hears how each order changed a road, a village, or a family before Lyra names its record.' },
+      { id: 'ch08-choice-speak-with-lyra-beside-you', label: 'Speak with Lyra beside you', detail: 'Put the case in direct language while relying on Lyra to verify every disputed record.', effects: [{ type: 'flag', operation: 'add', flagId: 'ordinary-guard-delivered-case' }, { type: 'companion-loyalty', companionId: 'lyra', amount: 6 }, { type: 'faction', factionId: 'border-council', amount: 2 }], outcome: 'The hall hears how each order changed a road, a village, or a family before Lyra names its record.' },
     ],
   }),
   defineScene({

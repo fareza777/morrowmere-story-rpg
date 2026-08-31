@@ -41,7 +41,7 @@ export const CH07_MAIN = Object.freeze([
     eligibility: { minLevel: 12, maxLevel: 14 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
     followUps: ['ch07-main-wall-or-hidden-way'], callbackPromises: [], choices: [
       { id: 'ch07-choice-capture-the-signal-clerk', label: 'Capture the signal clerk', detail: 'Secure the gate challenge and guest list while alerting the keep that its outer patrol is missing.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'coronation-guest-list' }, { type: 'flag', operation: 'add', flagId: 'keep-challenge-learned' }, { type: 'threat', amount: 2 }], outcome: 'The clerk surrenders the bronze challenge plate and identifies which governors arrived under guard.' },
-      { id: 'ch07-choice-shadow-the-patrol-home', label: 'Shadow the patrol home', detail: 'Learn the guarded route into the keep while leaving the guest list and clerk in enemy hands.', effects: [{ type: 'flag', operation: 'add', flagId: 'keep-guest-route-shadowed' }, { type: 'threat', amount: -1 }], outcome: 'Mara\'s scouts follow the patrol to a service gate hidden behind the old royal granary.' },
+      { id: 'ch07-choice-shadow-the-patrol-home', label: 'Shadow the patrol home', detail: 'Learn the guarded route into the keep while leaving the guest list and clerk in enemy hands.', effects: [{ type: 'flag', operation: 'add', flagId: 'keep-guest-route-shadowed' }, { type: 'threat', amount: -1 }], outcome: 'Two forward scouts follow the patrol to a service gate hidden behind the old royal granary.' },
     ],
   }),
   defineScene({

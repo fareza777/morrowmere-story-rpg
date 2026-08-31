@@ -119,4 +119,35 @@ describe('Chronicle I companion contracts', () => {
     }
   });
 
+  it('offers each earned recruitment in a later authored scene with a decline path', () => {
+    for (const companion of CHRONICLE1_COMPANIONS) {
+      const recruitmentScenes = CHRONICLE1_SCENES.filter((scene) => scene.choices.some((choice) => (
+        choice.effects.some((effect) => (
+          effect.type === 'companion'
+          && effect.companionId === companion.id
+          && effect.operation === 'recruit'
+        ))
+      )));
+
+      expect(recruitmentScenes, companion.id).toHaveLength(1);
+      const recruitmentScene = recruitmentScenes[0]!;
+      expect(companion.personalQuestIds).not.toContain(recruitmentScene.id);
+      expect(recruitmentScene.eligibility.requiredFlags).toEqual(
+        expect.arrayContaining(companion.recruitment.requiredDecisionIds),
+      );
+      expect(recruitmentScene.eligibility.excludedFlags).toEqual(
+        expect.arrayContaining(companion.recruitment.blockingDecisionIds ?? []),
+      );
+      expect(recruitmentScene.choices.some((choice) => choice.effects.every((effect) => (
+        effect.type !== 'companion' || effect.operation !== 'recruit'
+      ))), companion.id).toBe(true);
+
+      const recruitmentPosition = CHRONICLE1_SCENES.findIndex((scene) => scene.id === recruitmentScene.id);
+      for (const questId of companion.personalQuestIds) {
+        const questPosition = CHRONICLE1_SCENES.findIndex((scene) => scene.id === questId);
+        expect(recruitmentPosition, `${companion.id}/${questId}`).toBeGreaterThan(questPosition);
+      }
+    }
+  });
+
 });

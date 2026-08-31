@@ -12,7 +12,7 @@ export const CH03_MAIN = Object.freeze([
     eligibility: { minLevel: 4, maxLevel: 6 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
     followUps: ['ch03-main-the-flooded-mile'], callbackPromises: [],
     choices: [
-      { id: 'ch03-choice-seal-evidence-case', label: 'Seal the copies in oilskin', detail: 'Carry extra weight, but protect the evidence from floodwater.', effects: [{ type: 'flag', operation: 'add', flagId: 'redwater-evidence-waterproofed' }], outcome: 'Quartermaster Hale knots the oilskin himself and records every item in your custody.' },
+      { id: 'ch03-choice-seal-evidence-case', label: 'Seal the copies in oilskin', detail: 'Carry extra weight, but protect the evidence from floodwater.', effects: [{ type: 'flag', operation: 'add', flagId: 'redwater-evidence-waterproofed' }], outcome: 'Sergeant Hale knots the oilskin himself and records every item in your custody.' },
       { id: 'ch03-choice-divide-evidence-copies', label: 'Divide the copies between riders', detail: 'Reduce the risk of one loss, but trust two couriers on a dangerous road.', effects: [{ type: 'flag', operation: 'add', flagId: 'redwater-evidence-divided' }, { type: 'threat', amount: 1 }], outcome: 'Two riders leave by different gates. Your own case now holds only the proof needed to persuade Redwater.' },
     ],
   }),
