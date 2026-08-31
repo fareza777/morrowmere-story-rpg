@@ -610,7 +610,7 @@ export function selectMerchantView(state: GameStateV2, content: ContentIndex): M
   return {
     id: merchant.id,
     name: merchant.name,
-    illustrationId: merchantScene?.illustrationId ?? '',
+    illustrationId: `merchant-${merchant.id}`,
     illustrationAlt: `Illustration of ${merchant.name}.`,
     dialogue: merchantScene ? [...merchantScene.narrative] : [],
     bankedGold: state.campaign.bankedGold,

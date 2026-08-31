@@ -128,7 +128,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const inventoryCommand = (command: UiInventoryCommand) => issue({ type: 'inventory', command });
   const context = state.flow.screen === 'camp' ? 'camp' : state.flow.screen === 'combat' ? 'combat' : 'field';
   const narrationText = scene ? `${scene.title}. ${scene.paragraphs.join(' ')}` : combat ? `Battle. ${combat.enemies.map((enemy) => `${enemy.name}: ${enemy.intent.description}`).join(' ')}` : '';
-  const transitionAnnouncement = useMemo(() => feedbackForTransition(transitionEvents, settings)
+  const transitionAnnouncement = useMemo(() => feedbackForTransition(transitionEvents, settings, () => undefined)
     .flatMap((cue) => cue.type === 'announce' ? [cue.message] : []).join(' '), [settings, transitionEvents]);
   const style = { '--text-scale': settings.textScale } as CSSProperties;
 

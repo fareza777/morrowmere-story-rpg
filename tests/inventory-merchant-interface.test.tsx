@@ -88,7 +88,7 @@ describe('inventory, equipment, and merchant flows', () => {
     await user.click(screen.getByRole('button', { name: `Buy ${stock.name} for ${stock.price} gold` }));
     expect(onBuy).toHaveBeenCalledWith(stock.stockEntryId);
     expect(screen.getByText(/Banked .*Carried .*Total/)).toBeVisible();
-    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/merchants/ui-merchant-art.webp');
+    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/merchants/merchant-road-trader.webp');
     expect(container.querySelector('.merchant-list .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-consumable-field-bandage.webp');
     await user.click(screen.getByRole('tab', { name: 'Sell' }));
     expect(container.querySelector('.merchant-list .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-consumable-field-bandage.webp');

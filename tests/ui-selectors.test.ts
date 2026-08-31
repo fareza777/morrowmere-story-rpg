@@ -61,7 +61,7 @@ describe('Chronicle I UI selectors', () => {
     const view = selectMerchantView(makeUiGame({ screen: 'merchant' }), UI_CONTENT);
 
     expect(view?.name).toBe('Harlan the Road Trader');
-    expect(view?.illustrationId).toBe('ui-merchant-art');
+    expect(view?.illustrationId).toBe('merchant-road-trader');
     expect(view?.stock.map((entry) => entry.name)).toEqual([
       'Weathered Traveller\'s Cloak',
       'Red Mercy',
