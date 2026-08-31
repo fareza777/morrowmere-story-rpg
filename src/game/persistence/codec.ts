@@ -8,6 +8,8 @@ import { deriveHeroStats } from '../progression';
 import type { CampaignCheckpointPayload, CampaignState, ExpeditionState, GameStateV2, ProfileState } from '../state/types';
 import {
   isProfileState,
+  isJsonCompatible,
+  isPlainRecord,
   isSaveStateDto,
   type CampaignCheckpointDto,
   type CampaignDto,
@@ -31,7 +33,7 @@ const inventoryKeys = ['pack', 'stash', 'questItems', 'equipment'];
 const directorMemoryKeys = ['rngState', 'seenEventIds', 'familyCooldowns', 'pendingCallbacks'];
 const directorKeys = [...directorMemoryKeys, 'usedSceneIds', 'recentSceneKinds', 'recentFamilies', 'currentRunBlockedFamilies', 'tension', 'threat'];
 
-function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+function record(value: unknown): value is Record<string, unknown> { return isPlainRecord(value); }
 function exact(value: unknown, keys: readonly string[]): value is Record<string, unknown> { return record(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.prototype.hasOwnProperty.call(value, key)); }
 function exactOptional(value: unknown, required: readonly string[], optional: readonly string[]): value is Record<string, unknown> { return record(value) && required.every((key) => Object.prototype.hasOwnProperty.call(value, key)) && Object.keys(value).every((key) => required.includes(key) || optional.includes(key)); }
 function finite(value: unknown): value is number { return typeof value === 'number' && Number.isFinite(value); }
@@ -47,6 +49,183 @@ function encodeProfile(profile: ProfileState): ProfileState | null {
     settings: { ...profile.settings },
     discoveries: { events: [...profile.discoveries.events], enemies: [...profile.discoveries.enemies], codex: [...profile.discoveries.codex] },
   };
+}
+
+function hasCatalogId(catalog: ReadonlyMap<string, unknown>, value: string): boolean {
+  return catalog.has(value);
+}
+
+function hasCatalogIds(catalog: ReadonlyMap<string, unknown>, values: readonly string[]): boolean {
+  return values.every((value) => hasCatalogId(catalog, value));
+}
+
+function validInventoryContent(value: InventoryDto, heroClass: CampaignDto['hero']['heroClass'], content: ContentIndex): boolean {
+  const entries = [...value.pack, ...value.stash];
+  for (const entry of entries) {
+    const item = content.items.get(entry.itemId as never);
+    if (!item || item.category === 'quest' || ((item.category !== 'potion' && item.category !== 'scroll') && entry.quantity !== 1)) return false;
+  }
+  if (!value.questItems.every((itemId) => content.items.get(itemId as never)?.category === 'quest')) return false;
+  const weapon = value.equipment.weapon === null ? null : content.items.get(value.equipment.weapon as never);
+  const armor = value.equipment.armor === null ? null : content.items.get(value.equipment.armor as never);
+  if (value.equipment.weapon !== null && (!weapon || weapon.category !== 'weapon' || !weapon.allowedClasses.includes(heroClass))) return false;
+  if (value.equipment.armor !== null && (!armor || armor.category !== 'armor' || !armor.allowedClasses.includes(heroClass))) return false;
+  return value.equipment.charms.every((itemId) => {
+    const item = content.items.get(itemId as never);
+    return item !== undefined && item.category === 'charm' && item.allowedClasses.includes(heroClass);
+  });
+}
+
+function contentFamilies(content: ContentIndex): ReadonlySet<string> {
+  return new Set([...content.events.values()].map((event) => event.family));
+}
+
+function validDirectorMemoryContent(value: DirectorMemoryDto, content: ContentIndex, families = contentFamilies(content)): boolean {
+  return hasCatalogIds(content.events as ReadonlyMap<string, unknown>, value.seenEventIds)
+    && Object.keys(value.familyCooldowns).every((family) => families.has(family))
+    && value.pendingCallbacks.every((callback) => {
+      const target = content.events.get(callback.targetEventId as never);
+    return target !== undefined && target.chapterId === callback.deadline.chapterId && callback.deadline.slot >= 1;
+    });
+}
+
+function validCompanionsContent(value: CampaignDto['companions'], content: ContentIndex): boolean {
+  if (!value.records.every((record) => hasCatalogId(content.companions as ReadonlyMap<string, unknown>, record.companionId))) return false;
+  return value.activeCompanionId === null || value.records.some((record) => record.companionId === value.activeCompanionId && record.status === 'recruited');
+}
+
+function validCampaignCheckpointContent(value: CampaignCheckpointDto, content: ContentIndex): boolean {
+  return validInventoryContent(value.inventory, value.hero.heroClass, content)
+    && validCompanionsContent(value.companions, content)
+    && validDirectorMemoryContent(value.directorMemory, content);
+}
+
+function validDirectorContent(value: DirectorDto, content: ContentIndex): boolean {
+  const families = contentFamilies(content);
+  return validDirectorMemoryContent(value, content, families)
+    && hasCatalogIds(content.events as ReadonlyMap<string, unknown>, value.usedSceneIds)
+    && value.recentFamilies.every((family) => families.has(family))
+    && value.currentRunBlockedFamilies.every((family) => families.has(family));
+}
+
+function sameMultiset(expected: readonly string[], actual: readonly string[]): boolean {
+  if (expected.length !== actual.length) return false;
+  const counts = new Map<string, number>();
+  for (const value of expected) counts.set(value, (counts.get(value) ?? 0) + 1);
+  for (const value of actual) {
+    const remaining = counts.get(value) ?? 0;
+    if (remaining === 0) return false;
+    counts.set(value, remaining - 1);
+  }
+  return [...counts.values()].every((count) => count === 0);
+}
+
+function validProbability(value: number): boolean { return finite(value) && value >= 0 && value <= 100; }
+
+function validHydratedPlayer(value: CombatDto['player'], campaign: CampaignDto, content: ContentIndex): boolean {
+  const base = basePlayer(decodeCampaign(campaign), content);
+  const player = {
+    attackBonus: base.attackBonus + value.modifiers.attackBonus,
+    armor: base.armor + value.modifiers.armor,
+    ward: base.ward + value.modifiers.ward,
+    maxHealth: base.maxHealth + value.modifiers.maxHealth,
+    maxFocus: base.maxFocus + value.modifiers.maxFocus,
+    strength: base.strength + value.modifiers.strength,
+    cunning: base.cunning + value.modifiers.cunning,
+    will: base.will + value.modifiers.will,
+  };
+  return Object.values(player).every(finite)
+    && player.attackBonus >= 0 && player.armor >= 0 && player.ward >= 0
+    && player.maxHealth >= 1 && player.maxFocus >= 0
+    && player.strength >= 0 && player.cunning >= 0 && player.will >= 0
+    && value.health >= 0 && value.health <= player.maxHealth
+    && value.focus >= 0 && value.focus <= player.maxFocus;
+}
+
+function validHydratedEnemy(value: EnemyCombatDto, content: ContentIndex): boolean {
+  const definitionId = value.source.kind === 'catalog' ? value.source.enemyId : value.source.originEnemyId;
+  const definition = content.enemies.get(definitionId as never);
+  if (!definition) return false;
+  const base = value.source.kind === 'catalog' ? catalogEnemy(definition, value.instanceId, value.isBoss) : smokeEnemy(definition, value.instanceId);
+  const enemy = {
+    maxHealth: base.maxHealth + value.modifiers.maxHealth,
+    attack: base.attack + value.modifiers.attack,
+    armor: base.armor + value.modifiers.armor,
+    ward: base.ward + value.modifiers.ward,
+    evasion: base.evasion + value.modifiers.evasion,
+    blockChance: base.blockChance + value.modifiers.blockChance,
+    parryChance: base.parryChance + value.modifiers.parryChance,
+  };
+  if (!Object.values(enemy).every(finite) || enemy.maxHealth < 1 || enemy.attack < 0 || enemy.armor < 0 || enemy.ward < 0 || !validProbability(enemy.evasion) || !validProbability(enemy.blockChance) || !validProbability(enemy.parryChance) || value.health < 0 || value.health > enemy.maxHealth) return false;
+  if (value.source.kind === 'summon-smoke') return !value.isBoss && value.phase === 1 && value.roleUses === 0;
+  if ((!value.isBoss && value.phase !== 1) || (value.isBoss && value.phase !== 1 && value.phase !== 2)) return false;
+  return roleForEnemy(definition) === 'summoner'
+    ? value.roleUses === 0 || value.roleUses === 1
+    : value.roleUses === 0;
+}
+
+function validCombatContent(value: CombatDto, campaign: CampaignDto, encounterEnemyIds: readonly string[], content: ContentIndex): boolean {
+  if (!validHydratedPlayer(value.player, campaign, content)) return false;
+  const directEnemyIds = value.enemies.flatMap((enemy) => enemy.source.kind === 'catalog' ? [enemy.source.enemyId] : []);
+  if (!sameMultiset(encounterEnemyIds, directEnemyIds) || !value.enemies.every((enemy) => validHydratedEnemy(enemy, content))) return false;
+  const directOrigins = new Set(directEnemyIds);
+  for (const enemy of value.enemies) {
+    if (enemy.source.kind !== 'summon-smoke') continue;
+    const origin = content.enemies.get(enemy.source.originEnemyId as never);
+    if (!directOrigins.has(enemy.source.originEnemyId) || !origin || roleForEnemy(origin) !== 'summoner') return false;
+  }
+  if (value.companionId === null) return value.companionCooldown === 0 && value.companionDamageDealt === 0 && value.companionSupportBudget === 0;
+  return campaign.companions.records.some((record) => record.companionId === value.companionId && record.status === 'recruited')
+    && value.companionDamageDealt <= value.companionSupportBudget;
+}
+
+function validMerchantVisitsContent(value: ExpeditionDto['merchantVisits'], content: ContentIndex): boolean {
+  return value.every((visit) => {
+    const merchant = content.merchants.get(visit.merchantId as never);
+    if (!merchant || new Set(visit.stock.map((entry) => entry.id)).size !== visit.stock.length) return false;
+    return visit.stock.every((entry) => hasCatalogId(content.items as ReadonlyMap<string, unknown>, entry.itemId) && merchant.stockItemIds.includes(entry.itemId as never));
+  });
+}
+
+function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, content: ContentIndex): boolean {
+  const scene = value.currentSceneId === null ? null : content.events.get(value.currentSceneId as never);
+  const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
+  if (!validDirectorContent(value.director, content)) return false;
+  if (value.currentSceneId !== null && (!scene || scene.chapterId !== value.position.chapterId)) return false;
+  if (value.currentCombat !== null) {
+    if (!encounter || (value.currentCombat.combat !== null && !validCombatContent(value.currentCombat.combat, campaign, encounter.enemyIds, content))) return false;
+  }
+  return hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.pendingRewards)
+    && hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.unbankedLoot)
+    && validMerchantVisitsContent(value.merchantVisits, content);
+}
+
+function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
+  const { expedition, flow } = value;
+  if ((flow.screen === 'merchant') !== (flow.merchant !== null)) return false;
+  if (flow.merchant !== null) {
+    const scene = expedition?.currentSceneId === null || expedition === null ? null : content.events.get(expedition.currentSceneId as never);
+    if (!expedition || expedition.currentCombat !== null || !scene || scene.type !== 'hub' || scene.merchantId !== flow.merchant.merchantId || !scene.merchantRestockKey) return false;
+    const expectedRestockKey = `${expedition.routeSeed}:${scene.merchantId}:${scene.merchantRestockKey}`;
+    return flow.merchant.restockKey === expectedRestockKey
+      && expedition.merchantVisits.some((visit) => visit.merchantId === flow.merchant!.merchantId && visit.restockKey === flow.merchant!.restockKey);
+  }
+  const combat = expedition?.currentCombat?.combat ?? null;
+  if (combat !== null && !['combat', 'reward', 'defeat'].includes(flow.screen)) return false;
+  return !['combat', 'reward'].includes(flow.screen) || combat !== null;
+}
+
+/** Content maps own immutable definitions; a DTO may only carry IDs that can be hydrated from those maps. */
+export function isContentBackedProfile(profile: ProfileState, content: ContentIndex): boolean {
+  return hasCatalogIds(content.events as ReadonlyMap<string, unknown>, profile.discoveries.events)
+    && hasCatalogIds(content.enemies as ReadonlyMap<string, unknown>, profile.discoveries.enemies);
+}
+
+export function isContentBackedSaveState(value: SaveStateDto, content: ContentIndex): boolean {
+  if (!isContentBackedProfile(value.profile, content) || !validCampaignCheckpointContent(value.campaign, content) || !validCampaignCheckpointContent(value.checkpoints.chapter.campaign, content) || (value.checkpoints.camp !== null && !validCampaignCheckpointContent(value.checkpoints.camp.campaign, content))) return false;
+  if (value.checkpoints.camp?.campSceneId !== null && value.checkpoints.camp?.campSceneId !== undefined && !hasCatalogId(content.events as ReadonlyMap<string, unknown>, value.checkpoints.camp.campSceneId)) return false;
+  if (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, content)) return false;
+  return validFlowContent(value, content);
 }
 
 function encodeInventory(value: CampaignState['inventory']): InventoryDto | null {
@@ -207,7 +386,7 @@ function validRuntimeShell(state: GameStateV2): boolean {
 }
 
 export function encodeSaveState(state: GameStateV2, content: ContentIndex): SaveStateDto | null {
-  if (!validRuntimeShell(state)) return null;
+  if (!isJsonCompatible(state) || !validRuntimeShell(state)) return null;
   const profile = encodeProfile(state.profile);
   const campaign = encodeCampaign(state.campaign);
   const chapter = encodeCampaignCheckpoint(state.checkpoints.chapter.campaign);
@@ -215,7 +394,7 @@ export function encodeSaveState(state: GameStateV2, content: ContentIndex): Save
   const expedition = state.expedition === null ? null : encodeExpedition(state.expedition, state.campaign, content);
   if (!profile || !campaign || !chapter || (state.checkpoints.camp !== null && !camp) || (state.expedition !== null && !expedition)) return null;
   const dto: SaveStateDto = { schemaVersion: 2, profile, campaign, expedition, checkpoints: { chapter: { campaign: chapter, enteredAt: state.checkpoints.chapter.enteredAt }, camp: camp && state.checkpoints.camp ? { campaign: camp, campSceneId: state.checkpoints.camp.campSceneId, savedAt: state.checkpoints.camp.savedAt } : null }, flow: { screen: state.flow.screen, overlay: state.flow.overlay, merchant: state.flow.merchant ? { ...state.flow.merchant } : null }, updatedAt: state.updatedAt };
-  return isSaveStateDto(dto) ? dto : null;
+  return isSaveStateDto(dto) && isContentBackedSaveState(dto, content) && decodeSaveState(dto, content) ? dto : null;
 }
 
 function decodeInventory(value: InventoryDto): CampaignState['inventory'] { return { pack: value.pack.map((entry) => ({ id: entry.id, itemId: entry.itemId as never, quantity: entry.quantity })), stash: value.stash.map((entry) => ({ id: entry.id, itemId: entry.itemId as never, quantity: entry.quantity })), questItems: value.questItems as never, equipment: { weapon: value.equipment.weapon as never, armor: value.equipment.armor as never, charms: value.equipment.charms as never } }; }
@@ -254,7 +433,7 @@ function decodeExpedition(value: ExpeditionDto, campaign: CampaignState, content
 }
 
 export function decodeSaveState(value: unknown, content: ContentIndex): GameStateV2 | null {
-  if (!isSaveStateDto(value)) return null;
+  if (!isSaveStateDto(value) || !isContentBackedSaveState(value, content)) return null;
   const campaign = decodeCampaign(value.campaign);
   const expedition = value.expedition === null ? null : decodeExpedition(value.expedition, campaign, content);
   if (value.expedition !== null && !expedition) return null;

@@ -2,7 +2,7 @@ import type { ContentIndex } from '../content/schema';
 import type { GameStateV2, ProfileState } from '../state/types';
 import type { SaveSlot } from '../persistence';
 import { migrateSave } from './migrate';
-import { decodeSaveState, encodeSaveState } from './codec';
+import { decodeSaveState, encodeSaveState, isContentBackedProfile } from './codec';
 import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope } from './schema';
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
@@ -112,7 +112,7 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       return { ok: true, state, source: 'active', summary: summary(target) };
     },
     saveProfile(profile) {
-      if (!isProfileState(profile)) return { ok: false, error: 'Invalid profile.' };
+      if (!isProfileState(profile) || !isContentBackedProfile(profile, content)) return { ok: false, error: 'Invalid profile.' };
       try { storage.setItem(profileKey, JSON.stringify(createProfileEnvelope(profile, clock()))); return { ok: true }; }
       catch (error) { return { ok: false, error: message(error, 'Unable to save preferences.') }; }
     },
@@ -121,7 +121,7 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       try { raw = storage.getItem(profileKey); } catch (error) { return { ok: false, reason: 'corrupt', error: message(error, 'Unable to read preferences.') }; }
       if (raw === null) return { ok: false, reason: 'empty' };
       const profile = parseProfile(raw);
-      if (profile) return { ok: true, profile: profile.profile };
+      if (profile && isContentBackedProfile(profile.profile, content)) return { ok: true, profile: profile.profile };
       const key = archive(1, 'profile', raw);
       return { ok: false, reason: 'corrupt', recoveryKey: key };
     },

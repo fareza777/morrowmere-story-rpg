@@ -80,6 +80,11 @@ const TALENTS: readonly TalentDefinition[] = [
   { id: 'warden-remedy', heroClass: 'warden', stats: { maxHealth: 4, maxFocus: 1 } },
 ];
 
+/** Persistence needs the same closed talent catalog as the progression command. */
+export function isTalentForClass(heroClass: HeroClass, talentId: string): boolean {
+  return TALENTS.some((talent) => talent.heroClass === heroClass && talent.id === talentId);
+}
+
 const CLASS_BASE_STATS: Readonly<Record<HeroClass, Omit<DerivedHeroStats, 'heroClass' | 'level' | 'xp' | 'talents' | 'attack'>>> = {
   warrior: { maxHealth: 44, maxFocus: 8, strength: 8, cunning: 4, will: 3, armor: 4, ward: 1 },
   mage: { maxHealth: 30, maxFocus: 14, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5 },

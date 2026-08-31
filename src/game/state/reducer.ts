@@ -56,7 +56,7 @@ function merchantRestockKey(state: GameStateV2, scene: NonNullable<ReturnType<ty
 function heroCombatant(state: GameStateV2, content: ContentIndex) {
   const stats = deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
   return {
-    class: stats.heroClass, name: 'The Oathless', level: stats.level, xp: stats.xp,
+    class: stats.heroClass, name: state.campaign.heroName, level: stats.level, xp: stats.xp,
     health: stats.maxHealth, maxHealth: stats.maxHealth, focus: stats.maxFocus, maxFocus: stats.maxFocus,
     strength: stats.strength, cunning: stats.cunning, will: stats.will, armor: stats.armor, ward: stats.ward, attackBonus: Math.max(0, stats.attack - stats.strength),
     guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] },

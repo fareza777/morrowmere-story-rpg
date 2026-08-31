@@ -47,7 +47,8 @@ export interface CampaignState {
   readonly companions: CompanionRoster;
   readonly directorMemory: DirectorMemory;
   /** These fields deliberately live outside checkpoint payloads. */
-  readonly attemptCounters: Readonly<Partial<Record<ChapterId, number>>>;
+  /** A stable eight-chapter replay ledger; every chapter has an explicit counter. */
+  readonly attemptCounters: Readonly<Record<ChapterId, number>>;
   readonly routeSeedNonce: number;
   readonly transitionCounter: number;
 }

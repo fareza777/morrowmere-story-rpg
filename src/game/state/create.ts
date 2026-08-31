@@ -9,6 +9,8 @@ const DEFAULT_PROFILE: ProfileState = {
   discoveries: { events: [], enemies: [], codex: [] },
 };
 
+const initialAttemptCounters = () => ({ ch01: 0, ch02: 0, ch03: 0, ch04: 0, ch05: 0, ch06: 0, ch07: 0, ch08: 0 } as const);
+
 export function cloneCampaignPayload(payload: CampaignCheckpointPayload): CampaignCheckpointPayload {
   return {
     ...payload,
@@ -50,7 +52,7 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
     inventory: { pack: [], stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] } },
     bankedGold: 12,
     flags: [], evidence: [], factions: {}, companions: createCompanionRoster(content), directorMemory: initialDirectorMemory(options.seed),
-    attemptCounters: {}, routeSeedNonce: 0, transitionCounter: 0,
+    attemptCounters: initialAttemptCounters(), routeSeedNonce: 0, transitionCounter: 0,
   } as const;
   const payload = campaignPayload(campaign);
   return {

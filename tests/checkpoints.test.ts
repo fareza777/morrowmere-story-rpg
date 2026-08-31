@@ -2,9 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { createCampaign, currentScene, reduceGame, restartChapter, returnToCampAfterDefeat } from '../src/game/state';
 import type { ContentIndex } from '../src/game/content/schema';
 import type { EventId, ItemId } from '../src/game/domain/ids';
+import { createSaveRepository } from '../src/game/persistence/repository';
 
 const itemId = (id: string) => id as ItemId;
 const sceneId = (id: string) => id as EventId;
+
+class MemoryStorage implements Storage {
+  private readonly values = new Map<string, string>();
+  get length() { return this.values.size; }
+  clear() { this.values.clear(); }
+  getItem(key: string) { return this.values.get(key) ?? null; }
+  key(index: number) { return [...this.values.keys()][index] ?? null; }
+  removeItem(key: string) { this.values.delete(key); }
+  setItem(key: string, value: string) { this.values.set(key, value); }
+}
 
 const content: ContentIndex = {
   events: new Map([[sceneId('camp-scene'), {
@@ -57,6 +68,17 @@ describe('campaign checkpoints', () => {
     expect(state.campaign.hero).not.toHaveProperty('name');
   });
 
+  it('persists a custom name from a reducer-created combat', () => {
+    const created = createCampaign({ heroClass: 'warrior', name: 'Mira', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const combat = reduceGame(started, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, orchestrationContent).state;
+    const repo = createSaveRepository(new MemoryStorage(), () => '2026-08-31T00:03:00.000Z', orchestrationContent);
+
+    expect(combat.expedition?.currentCombat?.combat?.player.name).toBe('Mira');
+    expect(repo.saveSlot(1, combat)).toEqual({ ok: true });
+    expect(repo.loadSlot(1)).toMatchObject({ ok: true, state: { campaign: { heroName: 'Mira' }, expedition: { currentCombat: { combat: { player: { name: 'Mira' } } } } } });
+  });
+
   it('loses expedition gains but keeps permanent progression on defeat', () => {
     const started = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const startedRoute = reduceGame(started, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;
@@ -96,7 +118,7 @@ describe('campaign checkpoints', () => {
     const altered = {
       ...initial,
       profile: { ...initial.profile, settings: { ...initial.profile.settings, sound: false } },
-      campaign: { ...initial.campaign, flags: ['after-entry'], evidence: ['proof'], attemptCounters: { ch01: 4 }, routeSeedNonce: 7 },
+      campaign: { ...initial.campaign, flags: ['after-entry'], evidence: ['proof'], attemptCounters: { ...initial.campaign.attemptCounters, ch01: 4 }, routeSeedNonce: 7 },
       expedition: { ...initial.expedition!, currentCombat: { encounterId: 'fight' as never, combat: null }, pendingRewards: [itemId('warrior-blade')] },
       flow: { ...initial.flow, screen: 'defeat' as const },
     };

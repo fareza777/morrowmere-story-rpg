@@ -1,5 +1,7 @@
 import type { ProfileState } from '../state/types';
 import type { SaveSlot } from '../persistence';
+import { PACK_CAPACITY } from '../inventory';
+import { isTalentForClass, LEVEL_CAP } from '../progression';
 import { checksumFor } from './checksum';
 
 export interface InventoryEntryDto { readonly id: string; readonly itemId: string; readonly quantity: number; }
@@ -26,7 +28,8 @@ export interface SaveStateDto { readonly schemaVersion: 2; readonly profile: Pro
 export interface SaveEnvelope { readonly schemaVersion: 2; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
 export interface ProfileEnvelope { readonly schemaVersion: 2; readonly savedAt: string; readonly profile: ProfileState; readonly checksum: string; }
 
-const chapters = new Set(['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08']);
+const chapterIds = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'] as const;
+const chapters = new Set<string>(chapterIds);
 const heroClasses = new Set(['warrior', 'mage', 'warden']);
 const routeProfiles = new Set(['kings-road', 'old-forest', 'ruined-pass']);
 const scenePacing = new Set(['danger', 'merchant', 'recovery', 'quiet']);
@@ -38,29 +41,83 @@ const combatOutcomes = new Set(['active', 'victory', 'defeat', 'fled']);
 const combatIntents = new Set(['strike', 'heavy', 'guard', 'hex', 'recover', 'flee']);
 const slots = new Set([1, 2, 3]);
 
-function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+/** Save data is JSON only: allow ordinary own-key records (including null prototypes), never collection or class instances. */
+export function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    const prototype = Object.getPrototypeOf(value);
+    return (prototype === Object.prototype || prototype === null)
+      && Object.getOwnPropertySymbols(value).length === 0
+      && Object.getOwnPropertyNames(value).every((key) => Object.prototype.propertyIsEnumerable.call(value, key));
+  } catch { return false; }
+}
+
+/** Reject values JSON would silently drop, along with cycles and custom collection/class instances. */
+export function isJsonCompatible(value: unknown, ancestors = new Set<object>()): boolean {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'object') return false;
+  if (ancestors.has(value)) return false;
+  ancestors.add(value);
+  try {
+    if (Array.isArray(value)) {
+      if (Object.getPrototypeOf(value) !== Array.prototype || Object.getOwnPropertySymbols(value).length > 0) return false;
+      const names = Object.getOwnPropertyNames(value);
+      if (names.length !== value.length + 1 || !names.includes('length')) return false;
+      for (let index = 0; index < value.length; index += 1) {
+        if (!Object.prototype.hasOwnProperty.call(value, index) || !isJsonCompatible(value[index], ancestors)) return false;
+      }
+      return true;
+    }
+    if (!isPlainRecord(value)) return false;
+    return Object.keys(value).every((key) => isJsonCompatible(value[key], ancestors));
+  } catch { return false; }
+  finally { ancestors.delete(value); }
+}
+
+function record(value: unknown): value is Record<string, unknown> { return isPlainRecord(value); }
 function exact(value: unknown, keys: readonly string[]): value is Record<string, unknown> { return record(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.prototype.hasOwnProperty.call(value, key)); }
 function number(value: unknown, minimum = -Infinity, integer = false): value is number { return typeof value === 'number' && Number.isFinite(value) && value >= minimum && (!integer || Number.isSafeInteger(value)); }
 function nonEmptyString(value: unknown): value is string { return typeof value === 'string' && value.length > 0; }
 function stringArray(value: unknown): value is readonly string[] { return Array.isArray(value) && value.every(nonEmptyString); }
+function uniqueStrings(value: unknown): value is readonly string[] { return stringArray(value) && new Set(value).size === value.length; }
 function idOrNull(value: unknown): boolean { return value === null || nonEmptyString(value); }
 function chapter(value: unknown): boolean { return typeof value === 'string' && chapters.has(value); }
-function numericRecord(value: unknown, minimum = -Infinity, integer = false, permittedKeys?: ReadonlySet<string>): boolean { return record(value) && Object.keys(value).every((key) => nonEmptyString(key) && (!permittedKeys || permittedKeys.has(key)) && number(value[key], minimum, integer)); }
+function numericRecord(value: unknown, minimum = -Infinity, integer = false, permittedKeys?: ReadonlySet<string>): boolean {
+  if (!record(value)) return false;
+  return Object.keys(value).every((key) => nonEmptyString(key) && (!permittedKeys || permittedKeys.has(key)) && number(value[key], minimum, integer));
+}
+function exactNumericRecord(value: unknown, minimum: number, permittedKeys: ReadonlySet<string>): boolean {
+  return record(value) && numericRecord(value, minimum, true, permittedKeys) && Object.keys(value).length === permittedKeys.size;
+}
 
 function validSettings(value: unknown): boolean { return exact(value, ['textScale', 'highContrast', 'reducedMotion', 'sound', 'music', 'narration']) && number(value.textScale, 0.5) && typeof value.highContrast === 'boolean' && typeof value.reducedMotion === 'boolean' && typeof value.sound === 'boolean' && typeof value.music === 'boolean' && typeof value.narration === 'boolean'; }
-export function isProfileState(value: unknown): value is ProfileState { return exact(value, ['settings', 'discoveries']) && validSettings(value.settings) && exact(value.discoveries, ['events', 'enemies', 'codex']) && stringArray(value.discoveries.events) && stringArray(value.discoveries.enemies) && stringArray(value.discoveries.codex); }
+export function isProfileState(value: unknown): value is ProfileState { return isJsonCompatible(value) && exact(value, ['settings', 'discoveries']) && validSettings(value.settings) && exact(value.discoveries, ['events', 'enemies', 'codex']) && uniqueStrings(value.discoveries.events) && uniqueStrings(value.discoveries.enemies) && uniqueStrings(value.discoveries.codex); }
 function validEquipment(value: unknown): boolean { return exact(value, ['weapon', 'armor', 'charms']) && idOrNull(value.weapon) && idOrNull(value.armor) && stringArray(value.charms); }
 function validInventoryEntry(value: unknown): boolean { return exact(value, ['id', 'itemId', 'quantity']) && nonEmptyString(value.id) && nonEmptyString(value.itemId) && number(value.quantity, 1, true); }
-function validInventory(value: unknown): boolean { return exact(value, ['pack', 'stash', 'questItems', 'equipment']) && Array.isArray(value.pack) && value.pack.every(validInventoryEntry) && Array.isArray(value.stash) && value.stash.every(validInventoryEntry) && stringArray(value.questItems) && validEquipment(value.equipment); }
-function validHero(value: unknown): boolean { return exact(value, ['heroClass', 'level', 'xp', 'talents']) && typeof value.heroClass === 'string' && heroClasses.has(value.heroClass) && number(value.level, 1, true) && number(value.xp, 0, true) && stringArray(value.talents); }
+function validInventory(value: unknown): boolean {
+  if (!exact(value, ['pack', 'stash', 'questItems', 'equipment']) || !Array.isArray(value.pack) || !Array.isArray(value.stash) || !validEquipment(value.equipment) || !exact(value.equipment, ['weapon', 'armor', 'charms'])) return false;
+  return value.pack.length <= PACK_CAPACITY
+    && value.pack.every(validInventoryEntry)
+    && value.stash.every(validInventoryEntry)
+    && new Set([...value.pack, ...value.stash].map((entry) => entry.id)).size === value.pack.length + value.stash.length
+    && uniqueStrings(value.questItems)
+    && uniqueStrings(value.equipment.charms)
+    && value.equipment.charms.length <= 2;
+}
+function validHero(value: unknown): boolean { return exact(value, ['heroClass', 'level', 'xp', 'talents']) && typeof value.heroClass === 'string' && heroClasses.has(value.heroClass) && number(value.level, 1, true) && value.level <= LEVEL_CAP && number(value.xp, 0, true) && uniqueStrings(value.talents) && value.talents.length <= Math.floor(value.level / 3) && value.talents.every((talent) => isTalentForClass(value.heroClass as HeroDto['heroClass'], talent)); }
 function validPosition(value: unknown): boolean { return exact(value, ['chapterId', 'slot']) && chapter(value.chapterId) && number(value.slot, 0, true); }
-function validPendingCallback(value: unknown): boolean { return exact(value, ['targetEventId', 'deadline', 'status', 'required']) && nonEmptyString(value.targetEventId) && validPosition(value.deadline) && typeof value.status === 'string' && pendingStatuses.has(value.status) && typeof value.required === 'boolean'; }
+function validPendingCallback(value: unknown): boolean {
+  if (!exact(value, ['targetEventId', 'deadline', 'status', 'required']) || !exact(value.deadline, ['chapterId', 'slot'])) return false;
+  return nonEmptyString(value.targetEventId) && chapter(value.deadline.chapterId) && number(value.deadline.slot, 1, true)
+    && typeof value.status === 'string' && pendingStatuses.has(value.status) && typeof value.required === 'boolean';
+}
 function validDirectorMemory(value: unknown): boolean { return exact(value, ['rngState', 'seenEventIds', 'familyCooldowns', 'pendingCallbacks']) && number(value.rngState, 0, true) && stringArray(value.seenEventIds) && numericRecord(value.familyCooldowns, 0, true) && Array.isArray(value.pendingCallbacks) && value.pendingCallbacks.every(validPendingCallback); }
-function validDirector(value: unknown): boolean { return exact(value, ['rngState', 'seenEventIds', 'familyCooldowns', 'pendingCallbacks', 'usedSceneIds', 'recentSceneKinds', 'recentFamilies', 'currentRunBlockedFamilies', 'tension', 'threat']) && validDirectorMemory({ rngState: value.rngState, seenEventIds: value.seenEventIds, familyCooldowns: value.familyCooldowns, pendingCallbacks: value.pendingCallbacks }) && stringArray(value.usedSceneIds) && Array.isArray(value.recentSceneKinds) && value.recentSceneKinds.every((entry) => typeof entry === 'string' && scenePacing.has(entry)) && stringArray(value.recentFamilies) && stringArray(value.currentRunBlockedFamilies) && number(value.tension, 0, true) && number(value.threat, 0, true); }
+function validDirector(value: unknown): boolean { return exact(value, ['rngState', 'seenEventIds', 'familyCooldowns', 'pendingCallbacks', 'usedSceneIds', 'recentSceneKinds', 'recentFamilies', 'currentRunBlockedFamilies', 'tension', 'threat']) && validDirectorMemory({ rngState: value.rngState, seenEventIds: value.seenEventIds, familyCooldowns: value.familyCooldowns, pendingCallbacks: value.pendingCallbacks }) && stringArray(value.usedSceneIds) && Array.isArray(value.recentSceneKinds) && value.recentSceneKinds.every((entry) => typeof entry === 'string' && scenePacing.has(entry)) && stringArray(value.recentFamilies) && stringArray(value.currentRunBlockedFamilies) && number(value.tension, 0, true) && value.tension <= 10 && number(value.threat, 0, true) && value.threat <= 10; }
 function validCompanionRecord(value: unknown): boolean { return exact(value, ['companionId', 'status', 'questStage', 'loyalty', 'injured']) && nonEmptyString(value.companionId) && typeof value.status === 'string' && companionStatuses.has(value.status) && number(value.questStage, 0, true) && value.questStage <= 3 && number(value.loyalty, -100) && value.loyalty <= 100 && typeof value.injured === 'boolean'; }
-function validCompanions(value: unknown): boolean { return exact(value, ['activeCompanionId', 'records']) && idOrNull(value.activeCompanionId) && Array.isArray(value.records) && value.records.every(validCompanionRecord); }
+function validCompanions(value: unknown): boolean { return exact(value, ['activeCompanionId', 'records']) && idOrNull(value.activeCompanionId) && Array.isArray(value.records) && value.records.every(validCompanionRecord) && new Set(value.records.map((record) => record.companionId)).size === value.records.length; }
 function validCampaignCheckpoint(value: unknown): boolean { return exact(value, ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'companions', 'directorMemory']) && number(value.seed, 0, true) && chapter(value.chapterId) && nonEmptyString(value.heroName) && value.heroName.length <= 48 && validHero(value.hero) && validInventory(value.inventory) && number(value.bankedGold, 0, true) && stringArray(value.flags) && stringArray(value.evidence) && numericRecord(value.factions) && validCompanions(value.companions) && validDirectorMemory(value.directorMemory); }
-function validCampaign(value: unknown): boolean { return exact(value, ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'companions', 'directorMemory', 'attemptCounters', 'routeSeedNonce', 'transitionCounter']) && validCampaignCheckpoint({ seed: value.seed, chapterId: value.chapterId, heroName: value.heroName, hero: value.hero, inventory: value.inventory, bankedGold: value.bankedGold, flags: value.flags, evidence: value.evidence, factions: value.factions, companions: value.companions, directorMemory: value.directorMemory }) && numericRecord(value.attemptCounters, 0, true, chapters) && number(value.routeSeedNonce, 0, true) && number(value.transitionCounter, 0, true); }
+function validCampaign(value: unknown): boolean { return exact(value, ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'companions', 'directorMemory', 'attemptCounters', 'routeSeedNonce', 'transitionCounter']) && validCampaignCheckpoint({ seed: value.seed, chapterId: value.chapterId, heroName: value.heroName, hero: value.hero, inventory: value.inventory, bankedGold: value.bankedGold, flags: value.flags, evidence: value.evidence, factions: value.factions, companions: value.companions, directorMemory: value.directorMemory }) && exactNumericRecord(value.attemptCounters, 0, chapters) && number(value.routeSeedNonce, 0, true) && number(value.transitionCounter, 0, true); }
 function validCombatStatus(value: unknown): boolean { return exact(value, ['id', 'duration', 'potency']) && nonEmptyString(value.id) && number(value.duration, 0, true) && number(value.potency); }
 function validPlayerModifiers(value: unknown): boolean { return exact(value, ['attackBonus', 'armor', 'ward', 'maxHealth', 'maxFocus', 'strength', 'cunning', 'will']) && Object.values(value).every((entry) => number(entry)); }
 function validEnemyModifiers(value: unknown): boolean { return exact(value, ['maxHealth', 'attack', 'armor', 'ward', 'evasion', 'blockChance', 'parryChance']) && Object.values(value).every((entry) => number(entry)); }
@@ -81,7 +138,7 @@ function validExpedition(value: unknown): boolean { return exact(value, ['routeP
 function validCheckpoints(value: unknown): boolean { return exact(value, ['chapter', 'camp']) && exact(value.chapter, ['campaign', 'enteredAt']) && validCampaignCheckpoint(value.chapter.campaign) && typeof value.chapter.enteredAt === 'string' && (value.camp === null || (exact(value.camp, ['campaign', 'campSceneId', 'savedAt']) && validCampaignCheckpoint(value.camp.campaign) && idOrNull(value.camp.campSceneId) && typeof value.camp.savedAt === 'string')); }
 function validFlow(value: unknown): boolean { return exact(value, ['screen', 'overlay', 'merchant']) && typeof value.screen === 'string' && flowScreens.has(value.screen) && (value.overlay === null || (typeof value.overlay === 'string' && overlays.has(value.overlay))) && (value.merchant === null || (exact(value.merchant, ['merchantId', 'restockKey', 'returnScreen']) && nonEmptyString(value.merchant.merchantId) && nonEmptyString(value.merchant.restockKey) && (value.merchant.returnScreen === 'camp' || value.merchant.returnScreen === 'story'))); }
 
-export function isSaveStateDto(value: unknown): value is SaveStateDto { return exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt']) && value.schemaVersion === 2 && isProfileState(value.profile) && validCampaign(value.campaign) && (value.expedition === null || validExpedition(value.expedition)) && validCheckpoints(value.checkpoints) && validFlow(value.flow) && typeof value.updatedAt === 'string'; }
+export function isSaveStateDto(value: unknown): value is SaveStateDto { return isJsonCompatible(value) && exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt']) && value.schemaVersion === 2 && isProfileState(value.profile) && validCampaign(value.campaign) && (value.expedition === null || validExpedition(value.expedition)) && validCheckpoints(value.checkpoints) && validFlow(value.flow) && typeof value.updatedAt === 'string'; }
 export function createSaveEnvelope(slot: SaveSlot, state: SaveStateDto, savedAt: string): SaveEnvelope { const unsigned = { schemaVersion: 2 as const, slot, savedAt, state }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
 export function createProfileEnvelope(profile: ProfileState, savedAt: string): ProfileEnvelope { const unsigned = { schemaVersion: 2 as const, savedAt, profile }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
 export function isSaveEnvelope(value: unknown): value is SaveEnvelope { if (!exact(value, ['schemaVersion', 'slot', 'savedAt', 'state', 'checksum']) || value.schemaVersion !== 2 || !slots.has(value.slot as number) || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || !isSaveStateDto(value.state)) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }
