@@ -84,6 +84,9 @@ describe('Chronicle I offline audio pack', () => {
     expect(cueForDomainEvent({ type: 'attack_resolved', attackerId: 'hero', targetId: 'orc', outcome: 'critical', damage: 12, powerVariation: 1 })).toBe('critical');
     expect(cueForDomainEvent({ type: 'attack_resolved', attackerId: 'orc', targetId: 'hero', outcome: 'blocked', damage: 0, powerVariation: 0 })).toBe('block');
     expect(cueForDomainEvent({ type: 'trade_completed', merchantId: 'road-trader' as never, tradeType: 'buy', itemId: 'potion' as never, quantity: 1, total: 4, unbankedSpent: 4, bankedSpent: 0 })).toBe('merchant-buy');
+    expect(cueForDomainEvent({ type: 'consumable_used', instanceId: 'field-tonic-1' })).toBe('consume');
+    expect(cueForDomainEvent({ type: 'flee_resolved', escaped: true })).toBeNull();
+    expect(cueForDomainEvent({ type: 'combat_ended', encounterId: 'road-ambush' as never, outcome: 'fled' })).toBe('flee');
   });
 
   it('rotates file-backed variants, honors channel settings, and fails open', async () => {

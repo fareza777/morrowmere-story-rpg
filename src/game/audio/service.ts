@@ -158,6 +158,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       safePause(ambience?.element ?? null);
     }
     if (!settings.voiceEnabled || settings.voiceVolume === 0) {
+      safePause(narration);
+      narration = null;
       try { localSpeech?.cancel(); } catch { /* Local narration is optional. */ }
     }
   };
@@ -269,7 +271,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     }
     narration = clip;
     safePlay(clip, () => {
-      if (narration === clip) narration = null;
+      if (narration !== clip || !settings.voiceEnabled || settings.voiceVolume === 0) return;
+      narration = null;
       speakLocally(text, speaker);
     });
   };
@@ -338,10 +341,12 @@ export function cueForDomainEvent(event: DomainEvent): SemanticSfxCue | null {
   if (event.type === 'trade_completed') return event.tradeType === 'buy' ? 'merchant-buy' : 'merchant-sell';
   if (event.type === 'battle_rewards_granted' || event.type === 'battle_reward_claimed') return 'loot';
   if (event.type === 'item_changed') return event.quantity > 0 ? 'loot' : 'consume';
+  if (event.type === 'consumable_used') return 'consume';
   if (event.type === 'boss_phase_changed') return 'boss-phase';
   if (event.type === 'combatant_defeated') return 'enemy-death';
   if (event.type === 'companion_activated') return 'confirm';
-  if (event.type === 'flee_resolved' && event.escaped) return 'flee';
+  if (event.type === 'camp_banked') return 'coins';
+  if (event.type === 'combat_action_rejected' || (event.type === 'flee_resolved' && !event.escaped)) return 'warning';
   return null;
 }
 
@@ -384,7 +389,7 @@ export function createCinematicAudioPort(service: AudioService): CinematicAudioP
 
   const runShotCues = (active: CinematicSequence, fromMs: number): void => {
     for (const shot of active.shots) {
-      if (shot.endMs <= fromMs) continue;
+      if (shot.startMs < fromMs) continue;
       const ids = [...new Set([...shot.sfxCueIds, ...(OPENING_SHOT_SFX[shot.id] ?? [])])];
       if (ids.length === 0) continue;
       const delay = Math.max(0, shot.startMs - fromMs);

@@ -168,7 +168,23 @@ function sine(frequency, time, phase = 0) { return Math.sin(Math.PI * 2 * freque
 function triangle(frequency, time) { return (2 / Math.PI) * Math.asin(sine(frequency, time)); }
 function saw(frequency, time) { return 2 * ((frequency * time) - Math.floor(0.5 + frequency * time)); }
 function clamp(value) { return Math.max(-1, Math.min(1, value)); }
-function edgeFade(time, duration, fade = 0.08) { return Math.min(1, time / fade, (duration - time) / fade); }
+function loopFrequency(frequency, duration) { return Math.round(frequency * duration) / duration; }
+
+function periodicNoisePartials(seed, duration, count, minHz, maxHz) {
+  const random = randomSource(seed);
+  const minimumCycles = Math.ceil(minHz * duration);
+  const maximumCycles = Math.floor(maxHz * duration);
+  return Array.from({ length: count }, () => ({
+    frequency: (minimumCycles + Math.floor(((random() + 1) / 2) * (maximumCycles - minimumCycles + 1))) / duration,
+    phase: random() * Math.PI,
+  }));
+}
+
+function periodicNoise(partials, time) {
+  let value = 0;
+  for (const partial of partials) value += sine(partial.frequency, time, partial.phase);
+  return value / Math.sqrt(partials.length);
+}
 
 function normalize(samples, target = 0.88) {
   let peak = 0;
@@ -182,11 +198,10 @@ function synthMusic(config, trackIndex) {
   const duration = 80;
   const total = SAMPLE_RATE * duration;
   const samples = new Float32Array(total);
-  const random = randomSource(stableSeed(config.id));
   const scale = [0, 2, 3, 5, 7, 8, 10, 12];
   const chordRoots = [0, -2, 3, -4];
   const beatsPerSecond = 1.6;
-  let smoothedNoise = 0;
+  const vibratoFrequency = loopFrequency(4.6 + trackIndex * 0.03, duration);
 
   for (let index = 0; index < total; index += 1) {
     const time = index / SAMPLE_RATE;
@@ -196,31 +211,29 @@ function synthMusic(config, trackIndex) {
     const bar = Math.floor(wholeBeat / 4);
     const chordRoot = config.root + chordRoots[Math.floor(bar / 2) % chordRoots.length];
     const motif = config.motif[wholeBeat % config.motif.length];
-    const melodyFrequency = midi(config.root + 12 + motif);
-    const bassFrequency = midi(chordRoot - 12);
-    const padFrequency = midi(chordRoot);
+    const melodyFrequency = loopFrequency(midi(config.root + 12 + motif), duration);
+    const bassFrequency = loopFrequency(midi(chordRoot - 12), duration);
+    const padFrequency = loopFrequency(midi(chordRoot), duration);
     const melodyEnvelope = Math.exp(-3.8 * beatPhase) * Math.min(1, beatPhase * 35);
     const bassEnvelope = 0.42 + 0.58 * Math.exp(-2.5 * (beat % 2));
     const pad = sine(padFrequency, time) * 0.16
       + sine(padFrequency * 1.5, time, 0.4) * 0.07
       + triangle(padFrequency * 2, time) * 0.035;
-    const bass = (sine(bassFrequency, time) * 0.2 + saw(bassFrequency, time) * 0.045) * bassEnvelope;
-    const vibrato = Math.sin(Math.PI * 2 * (4.6 + trackIndex * 0.03) * time) * 0.006;
-    const melody = (sine(melodyFrequency * (1 + vibrato), time) * 0.16
+    const bass = (sine(bassFrequency, time) * 0.2 + triangle(bassFrequency, time) * 0.045) * bassEnvelope;
+    const melody = (Math.sin(Math.PI * 2 * melodyFrequency * time + 0.06 * Math.sin(Math.PI * 2 * vibratoFrequency * time)) * 0.16
       + triangle(melodyFrequency * 2, time) * 0.035) * melodyEnvelope;
     const dulcimer = wholeBeat % 2 === 0
-      ? sine(midi(config.root + scale[(wholeBeat + trackIndex) % scale.length] + 12), time) * Math.exp(-8 * beatPhase) * 0.08
+      ? sine(loopFrequency(midi(config.root + scale[(wholeBeat + trackIndex) % scale.length] + 12), duration), time) * Math.exp(-8 * beatPhase) * 0.08
       : 0;
-    const rawNoise = random();
-    smoothedNoise = smoothedNoise * 0.82 + rawNoise * 0.18;
     const drumPhase = beat % 4;
     const drumEnvelope = Math.exp(-18 * drumPhase);
+    const drumAttack = Math.min(1, drumPhase * 40);
+    const drumNoise = (sine(833 + trackIndex * 13, time, 0.7) + sine(1_387 + trackIndex * 17, time, -0.4)) * 0.5;
     const drum = config.intensity > 0.36
-      ? (sine(78 - 25 * Math.min(1, drumPhase * 8), time) * 0.14 + smoothedNoise * 0.06) * drumEnvelope * config.intensity
+      ? (sine(78 - 25 * Math.min(1, drumPhase * 8), time) * 0.14 + drumNoise * 0.06) * drumEnvelope * drumAttack * config.intensity
       : 0;
-    const air = smoothedNoise * 0.008 * (0.5 + config.intensity);
-    samples[index] = Math.tanh((pad + bass + melody + dulcimer + drum + air) * (0.7 + config.intensity * 0.38))
-      * edgeFade(time, duration, 0.12);
+    const air = (sine(997 + trackIndex * 7, time, 0.2) + sine(1_433 + trackIndex * 11, time, -0.6)) * 0.003 * (0.5 + config.intensity);
+    samples[index] = Math.tanh((pad + bass + melody + dulcimer + drum + air) * (0.7 + config.intensity * 0.38));
   }
   return normalize(samples, 0.86);
 }
@@ -229,6 +242,12 @@ function synthSfx(definition, index) {
   const duration = definition.durationMs / 1_000;
   const samples = new Float32Array(Math.max(1, Math.round(SAMPLE_RATE * duration)));
   const random = randomSource(stableSeed(definition.id));
+  const ambienceHigh = definition.group === 'ambience'
+    ? periodicNoisePartials(stableSeed(`${definition.id}-high`), duration, 20, 180, 9_500)
+    : [];
+  const ambienceLow = definition.group === 'ambience'
+    ? periodicNoisePartials(stableSeed(`${definition.id}-low`), duration, 10, 18, 420)
+    : [];
   const base = 90 + (stableSeed(definition.id) % 210);
   let smooth = 0;
   let previous = 0;
@@ -298,17 +317,18 @@ function synthSfx(definition, index) {
     } else if (design.startsWith('ambience-')) {
       const kind = design.slice('ambience-'.length);
       const cyclic = Math.sin(Math.PI * 2 * progress);
-      value = smooth * ({ rain: 0.34, forest: 0.16, flood: 0.29, forge: 0.23, siege: 0.15, keep: 0.1 }[kind] ?? 0.16);
-      if (kind === 'rain') value += highNoise * 0.12;
-      if (kind === 'forest') value += sine(1_100 + 90 * cyclic, time) * Math.max(0, cyclic) ** 12 * 0.08;
-      if (kind === 'flood') value += sine(72 + 12 * cyclic, time) * 0.08;
-      if (kind === 'forge') value += noise * Math.max(0, sine(0.5, time)) * 0.12 + sine(84, time) * Math.max(0, sine(0.25, time)) * 0.08;
+      const highBed = periodicNoise(ambienceHigh, time);
+      const lowBed = periodicNoise(ambienceLow, time);
+      value = kind === 'rain' ? highBed * 0.4 : lowBed * ({ forest: 0.14, flood: 0.24, forge: 0.18, siege: 0.12, keep: 0.08 }[kind] ?? 0.14);
+      if (kind === 'forest') value += Math.sin(Math.PI * 2 * 1_100 * time + 0.8 * cyclic) * Math.max(0, cyclic) ** 12 * 0.08;
+      if (kind === 'flood') value += Math.sin(Math.PI * 2 * 72 * time + 1.1 * cyclic) * 0.08;
+      if (kind === 'forge') value += highBed * Math.max(0, sine(0.5, time)) * 0.1 + sine(84, time) * Math.max(0, sine(0.25, time)) * 0.08;
       if (kind === 'siege') value += sine(54, time) * Math.max(0, sine(0.375, time)) ** 16 * 0.22;
       if (kind === 'keep') value += sine(63, time) * 0.06 + sine(126, time) * 0.025;
     }
 
     const fade = definition.group === 'ambience'
-      ? edgeFade(time, duration, 0.24)
+      ? 1
       : Math.min(1, time / 0.006) * Math.min(1, (duration - time) / 0.025);
     samples[sampleIndex] = Math.tanh(value * 1.35) * fade;
   }
@@ -358,6 +378,19 @@ function probeDuration(path) {
   return Math.round(Number(result.stdout.trim()) * 1_000);
 }
 
+function probeLoudness(path) {
+  const result = spawnSync('ffmpeg', [
+    '-hide_banner', '-nostats', '-nostdin', '-i', path,
+    '-filter_complex', 'ebur128=peak=true', '-f', 'null', '-',
+  ], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+  if (result.status !== 0) throw new Error(`Loudness probe failed for ${path}: ${result.stderr.trim()}`);
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  const integrated = [...output.matchAll(/\bI:\s*(-?\d+(?:\.\d+)?)\s+LUFS/g)].at(-1);
+  const peak = [...output.matchAll(/\bPeak:\s*(-?\d+(?:\.\d+)?)\s+dBFS/g)].at(-1);
+  if (!integrated || !peak) throw new Error(`Could not parse loudness for ${path}.`);
+  return { loudnessLufs: Number(integrated[1]), truePeakDbtp: Number(peak[1]) };
+}
+
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
@@ -377,6 +410,7 @@ for (const [index, definition] of MUSIC.entries()) {
   writeFileSync(wavPath, master);
   encode(wavPath, outputPath, 'music');
   const output = readFileSync(outputPath);
+  const measured = probeLoudness(outputPath);
   const provenanceId = `provenance-${definition.id}`;
   provenance.push({
     id: provenanceId,
@@ -395,8 +429,7 @@ for (const [index, definition] of MUSIC.entries()) {
     durationMs: probeDuration(outputPath),
     loopStartMs: 0,
     loopEndMs: 80_000,
-    loudnessLufs: -18,
-    truePeakDbtp: -1.5,
+    ...measured,
     bytes: output.byteLength,
     sha256: sha256(output),
     provenanceId,
@@ -411,6 +444,7 @@ for (const [index, definition] of SFX.entries()) {
   writeFileSync(wavPath, master);
   encode(wavPath, outputPath, definition.group === 'ambience' ? 'ambience' : 'sfx');
   const output = readFileSync(outputPath);
+  const measured = probeLoudness(outputPath);
   const provenanceId = `provenance-${definition.id}`;
   provenance.push({
     id: provenanceId,
@@ -431,8 +465,7 @@ for (const [index, definition] of SFX.entries()) {
     src: `/audio/chronicle1/sfx/${definition.id}.mp3`,
     durationMs: probeDuration(outputPath),
     loop: definition.group === 'ambience',
-    loudnessLufs: definition.group === 'ambience' ? -22 : -16,
-    truePeakDbtp: -1.5,
+    ...measured,
     bytes: output.byteLength,
     sha256: sha256(output),
     provenanceId,
@@ -480,6 +513,10 @@ writeJson(resolve(PRODUCTION, 'audio-manifest.json'), {
   codec: 'mp3',
   sampleRate: SAMPLE_RATE,
   channels: 1,
+  measurement: {
+    loudness: 'Post-encode EBU R128 integrated LUFS; -70 is the gate floor for very short cues.',
+    peak: 'Post-encode EBU R128 true peak dBFS.',
+  },
   music: musicAssets,
   sfx: sfxAssets,
 });

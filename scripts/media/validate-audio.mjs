@@ -69,6 +69,33 @@ function measureLoudness(path, id) {
   return { integrated: Number(integrated[1]), peak: Number(peak[1]) };
 }
 
+function windowRms(path, startSeconds, durationSeconds, id) {
+  const result = spawnSync('ffmpeg', [
+    '-v', 'error', '-nostdin', '-ss', String(startSeconds), '-i', path,
+    '-t', String(durationSeconds), '-ac', '1', '-ar', '22050', '-f', 'f32le', '-',
+  ], { windowsHide: true, maxBuffer: 2 * 1024 * 1024 });
+  assert(result.status === 0, `Loop-window decode failed for ${id}.`);
+  const bytes = result.stdout;
+  assert(Buffer.isBuffer(bytes) && bytes.byteLength >= 4, `Loop-window decode was empty for ${id}.`);
+  let energy = 0;
+  const samples = Math.floor(bytes.byteLength / 4);
+  for (let offset = 0; offset < samples * 4; offset += 4) {
+    const value = bytes.readFloatLE(offset);
+    energy += value * value;
+  }
+  return Math.sqrt(energy / samples);
+}
+
+function validateLoopBoundary(path, durationMs, id) {
+  const durationSeconds = durationMs / 1_000;
+  const windowSeconds = 0.08;
+  const start = windowRms(path, 0, windowSeconds, id);
+  const beforeEnd = windowRms(path, Math.max(0, durationSeconds - 0.24), windowSeconds, id);
+  const end = windowRms(path, Math.max(0, durationSeconds - windowSeconds), windowSeconds, id);
+  assert(start >= beforeEnd * 0.18, `${id} fades down at its loop start.`);
+  assert(end >= beforeEnd * 0.18, `${id} fades down at its loop end.`);
+}
+
 async function listMp3(directory) {
   const output = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -87,6 +114,7 @@ async function main() {
   assert(!SECRET_PATTERN.test(serializedMetadata), 'Audio metadata contains a credential-like value.');
   assert(manifest.version === 1 && manifest.codec === 'mp3', 'Unsupported audio manifest version or codec.');
   assert(manifest.sampleRate === 22050 && manifest.channels === 1, 'Android pack must be 22.05 kHz mono.');
+  assert(manifest.measurement?.loudness.includes('Post-encode EBU R128') && manifest.measurement?.peak.includes('Post-encode EBU R128'), 'Audio measurement method must be explicit.');
   assert(JSON.stringify(manifest.music.map((asset) => asset.id)) === JSON.stringify(MUSIC_IDS), 'Music IDs/order differ from the locked contract.');
   assert(manifest.music.length === 12, 'Expected exactly 12 music tracks.');
   assert(manifest.sfx.length === 84, 'Expected exactly 84 SFX.');
@@ -125,15 +153,18 @@ async function main() {
     const media = probe(path, asset.id);
     assert(media.codec === 'mp3' && media.sampleRate === 22050 && media.channels === 1, `${asset.id} is not 22.05 kHz mono MP3.`);
     assert(Math.abs(media.durationMs - asset.durationMs) <= 120, `${asset.id} duration differs by more than 120 ms.`);
+    const loudness = measureLoudness(path, asset.id);
+    assert(Math.abs(loudness.integrated - asset.loudnessLufs) <= 0.11, `${asset.id} measured loudness differs from its manifest.`);
+    assert(Math.abs(loudness.peak - asset.truePeakDbtp) <= 0.11, `${asset.id} measured peak differs from its manifest.`);
     if (asset.id.startsWith('music-')) {
       assert(asset.durationMs >= 75_000 && asset.durationMs <= 240_000, `${asset.id} music duration is outside the contract.`);
       assert(asset.loopStartMs >= 0 && asset.loopEndMs > asset.loopStartMs + 30_000 && Math.abs(asset.loopEndMs - asset.durationMs) <= 120, `${asset.id} loop window is invalid.`);
-      const loudness = measureLoudness(path, asset.id);
       assert(Math.abs(loudness.integrated - (-18)) <= 1, `${asset.id} measures ${loudness.integrated} LUFS; expected -18 +/-1.`);
       assert(loudness.peak <= -1, `${asset.id} true/sample peak ${loudness.peak} dBFS exceeds -1 dBFS.`);
     } else {
       assert(asset.durationMs >= 40 && asset.durationMs <= 20_000, `${asset.id} SFX duration is outside the contract.`);
     }
+    if (asset.id.startsWith('music-') || asset.loop === true) validateLoopBoundary(path, asset.durationMs, asset.id);
     decode(path, asset.id);
   }
 
