@@ -29,9 +29,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.8,
+      "truePeakDbtp": -4.4,
       "bytes": 480619,
-      "sha256": "fd8d1d97f3e521029b6ecf2076e2247e01f13f62df6d33047a1e6fb5b80946e6",
+      "sha256": "75a777025e4a3e4b1216d6b36006fb38ab78489e5f041de36c0a69ad91275130",
       "provenanceId": "provenance-music-title"
     },
     {
@@ -55,9 +55,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -5.1,
+      "truePeakDbtp": -5,
       "bytes": 480619,
-      "sha256": "a9eb13736a503f3547d17aa4cec211d0fc5cf9735c252f0d31a5cf25a513cee9",
+      "sha256": "f70eb3d246d57d5492c6edc52bb264c5d9bcbeb55cfe4f521307436bb84c5837",
       "provenanceId": "provenance-music-camp"
     },
     {
@@ -81,9 +81,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.8,
+      "truePeakDbtp": -5.2,
       "bytes": 480619,
-      "sha256": "0d4b6ae89aad87086659b60111ddc255b81cba1ab208a10be19a6b3a2e9ec6f9",
+      "sha256": "1e44504ac939b9aa78d256b911d502a415c8b9ef29a9346efa2415eac101cc55",
       "provenanceId": "provenance-music-merchant"
     },
     {
@@ -107,9 +107,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.9,
+      "truePeakDbtp": -5,
       "bytes": 480619,
-      "sha256": "c56c2c996af3bb7341813a9d89661929a12765cbf79d221cc1a11c24ed65c10b",
+      "sha256": "2ec6d134cc8d8389ab46039cbbe3ef5bac9beffc37e8bcbe903466d52b7d587d",
       "provenanceId": "provenance-music-kings-road"
     },
     {
@@ -133,9 +133,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.4,
+      "truePeakDbtp": -4.1,
       "bytes": 480619,
-      "sha256": "55fc07944fcef8ed4940171472aa6cff54b63971ecfea5b4cfe613054dcb68a1",
+      "sha256": "efdf2ac3a94d9fce6db7b97b8fd95ad86a22f1a9b6e7c749487a1375f4e0d2db",
       "provenanceId": "provenance-music-greywatch"
     },
     {
@@ -161,7 +161,7 @@
       "loudnessLufs": -18.4,
       "truePeakDbtp": -4.6,
       "bytes": 480619,
-      "sha256": "a882d231e98ae70d861064bd8c805045269352ca743b912e47e02c1a830bc7aa",
+      "sha256": "7cfbde1c89219123523fc80e249ad0e65507f165b32e39484cda06d4b40820ce",
       "provenanceId": "provenance-music-old-forest"
     },
     {
@@ -185,9 +185,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.5,
+      "truePeakDbtp": -4.4,
       "bytes": 480619,
-      "sha256": "1bb760e5fea404109241b010afb38c7619114ac3ec75845d411e9c395abc8d76",
+      "sha256": "97bc0546567b66445470f2cb645a57ef922b6c3e5a16d6dd946f1de2b6bdc35c",
       "provenanceId": "provenance-music-redwater"
     },
     {
@@ -211,9 +211,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -3.5,
+      "truePeakDbtp": -4,
       "bytes": 480619,
-      "sha256": "276145bb760d89f2d96d35fb2387de65666244f5f5bf21deb53a209e698389e3",
+      "sha256": "22aafbef1e223b41f5b039b89b71f6b21477781bc2c816cc4ec1aabbafb80000",
       "provenanceId": "provenance-music-embervault"
     },
     {
@@ -237,9 +237,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -3.4,
+      "truePeakDbtp": -3.8,
       "bytes": 480619,
-      "sha256": "1edd0fc364057b7dce213c6c235f3b88d68a2d712fc37b734391d137bce9fcb5",
+      "sha256": "e7a47dca3a8e7dc12374ca9b2097461d7255985ecff6b80c7e64535f1c318d0d",
       "provenanceId": "provenance-music-greywatch-siege"
     },
     {
@@ -263,9 +263,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -3.7,
+      "truePeakDbtp": -4,
       "bytes": 480619,
-      "sha256": "a1e864c29ba68d087aabac987a3cacb5ea15a79d8316063feb477e85c2f61250",
+      "sha256": "89fa25377feefa79a4d6d680e2bdb3469a07ff4df842806a858b5baa366c92bb",
       "provenanceId": "provenance-music-crownless-keep"
     },
     {
@@ -289,9 +289,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -4.1,
+      "truePeakDbtp": -4.2,
       "bytes": 480619,
-      "sha256": "2f8bb05b67260006593a1b54848301c2effb46e29a70a8e2822a88717360da00",
+      "sha256": "74c3323c1d291249c284001ccae891cd4190c84f371c91cd2f3fe638d3ea71ae",
       "provenanceId": "provenance-music-false-coronation"
     },
     {
@@ -315,9 +315,9 @@
       "loopStartMs": 0,
       "loopEndMs": 80000,
       "loudnessLufs": -18.4,
-      "truePeakDbtp": -5,
+      "truePeakDbtp": -5.5,
       "bytes": 480619,
-      "sha256": "d440d021b670d94ea4d446dc0bfcb6a88b63caf79d4d282fab910122655ddb72",
+      "sha256": "ce9141f3f511357c29d3856a382a01b6b41d9981a9419769083663155b77a7b1",
       "provenanceId": "provenance-music-ending-road"
     }
   ],

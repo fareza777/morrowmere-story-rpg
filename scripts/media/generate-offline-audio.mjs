@@ -214,10 +214,11 @@ function synthMusic(config, trackIndex) {
     const melodyFrequency = loopFrequency(midi(config.root + 12 + motif), duration);
     const bassFrequency = loopFrequency(midi(chordRoot - 12), duration);
     const padFrequency = loopFrequency(midi(chordRoot), duration);
+    const padOvertoneFrequency = loopFrequency(padFrequency * 1.5, duration);
     const melodyEnvelope = Math.exp(-3.8 * beatPhase) * Math.min(1, beatPhase * 35);
     const bassEnvelope = 0.42 + 0.58 * Math.exp(-2.5 * (beat % 2));
     const pad = sine(padFrequency, time) * 0.16
-      + sine(padFrequency * 1.5, time, 0.4) * 0.07
+      + sine(padOvertoneFrequency, time, 0.4) * 0.07
       + triangle(padFrequency * 2, time) * 0.035;
     const bass = (sine(bassFrequency, time) * 0.2 + triangle(bassFrequency, time) * 0.045) * bassEnvelope;
     const melody = (Math.sin(Math.PI * 2 * melodyFrequency * time + 0.06 * Math.sin(Math.PI * 2 * vibratoFrequency * time)) * 0.16
