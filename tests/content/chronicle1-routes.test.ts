@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { beginDirectorRun, selectNextScene } from '../../src/game/director';
-import { comparePosition } from '../../src/game/director/eligibility';
+import { choiceIsAvailable, comparePosition } from '../../src/game/director/eligibility';
 import type { DirectorState, PendingCallback, RouteProfileId } from '../../src/game/director/types';
 import {
   CHRONICLE1,
@@ -8,25 +8,12 @@ import {
   CHRONICLE1_SCENES,
   MAIN_ANCHOR_IDS,
 } from '../../src/game/content/chronicle1';
-import type { Chronicle1Event, ContentIndex } from '../../src/game/content/schema';
-import type { EventId } from '../../src/game/domain/ids';
+import type { Chronicle1Event } from '../../src/game/content/schema';
 import { scenePacing } from '../../src/game/director/pacing';
+import { createCampaign } from '../../src/game/state/create';
+import { applyEffectsAtomically, type EffectState } from '../../src/game/state/effects';
 
 const ROUTES: readonly RouteProfileId[] = ['kings-road', 'old-forest', 'ruined-pass'];
-const SCENE_BY_ID = new Map(CHRONICLE1_SCENES.map((scene) => [scene.id, scene] as const));
-
-function unlockedContent(chapterId: string, slot: number): ContentIndex {
-  return {
-    ...CHRONICLE1_CONTENT,
-    events: new Map(
-      [...CHRONICLE1_CONTENT.events].filter(([eventId]) => {
-        const scene = SCENE_BY_ID.get(eventId);
-        return scene?.chapterId === chapterId && scene.slot <= slot;
-      }),
-    ),
-  };
-}
-
 const initialState = (seed: number): DirectorState => ({
   rngState: seed,
   usedSceneIds: [],
@@ -46,6 +33,7 @@ interface RouteAudit {
   readonly duplicateSceneIds: readonly string[];
   readonly expiredCallbackIds: readonly string[];
   readonly choiceGateFailureIds: readonly string[];
+  readonly terminalDiagnostics: readonly string[];
   readonly longestCombatRun: number;
   readonly longestNoRecoveryRun: number;
 }
@@ -54,48 +42,72 @@ function chooseChoiceIndex(seed: number, chapterIndex: number, selectionIndex: n
   return (seed + chapterIndex + selectionIndex) % choiceCount;
 }
 
-function applyChoice(
+function initialEffectState(seed: number): EffectState {
+  const created = createCampaign({
+    heroClass: 'warrior',
+    seed,
+    name: 'Route Auditor',
+    updatedAt: '2026-08-31T00:00:00.000Z',
+  }, CHRONICLE1_CONTENT);
+  return {
+    campaign: { ...created.campaign, bankedGold: 10_000 },
+    expedition: {
+      routeProfile: 'kings-road',
+      routeSeed: seed,
+      director: initialState(seed),
+      position: { chapterId: 'ch01', slot: 1 },
+      currentSceneId: null,
+      sceneResolution: null,
+      heroVitals: { health: 44, resource: 8 },
+      currentCombat: null,
+      pendingReward: null,
+      unbankedGold: 10_000,
+      unbankedLoot: [],
+      temporaryBoons: [],
+      merchantVisits: [],
+    },
+  };
+}
+
+function resolveChoice(
   event: Chronicle1Event,
   seed: number,
   chapterIndex: number,
   selectionIndex: number,
-  flags: Set<string>,
-  pendingCallbacks: readonly PendingCallback[],
-): {
-  readonly pendingCallbacks: readonly PendingCallback[];
-  readonly threatChange: number;
-  readonly tensionChange: number;
-} | null {
+  state: EffectState,
+): EffectState | null {
   const eligibleChoices = event.choices.filter((choice) =>
-    (choice.requirements ?? []).every((gate) => flags.has(gate.flagId) === gate.present)
-      && (choice.exclusions ?? []).every((gate) => flags.has(gate.flagId) !== gate.present));
+    choiceIsAvailable(choice, state.campaign.flags, state.expedition?.position));
   if (eligibleChoices.length === 0) return null;
 
-  const choice = eligibleChoices[
-    chooseChoiceIndex(seed, chapterIndex, selectionIndex, eligibleChoices.length)
-  ]!;
-  const callbacks: PendingCallback[] = [...pendingCallbacks];
-  const register = (promise: { readonly targetEventId: EventId; readonly deadline: PendingCallback['deadline'] }) => {
-    if (!callbacks.some((callback) => callback.targetEventId === promise.targetEventId)) {
-      callbacks.push({ ...promise, status: 'pending', required: true });
+  const firstChoiceIndex = chooseChoiceIndex(
+    seed,
+    chapterIndex,
+    selectionIndex,
+    eligibleChoices.length,
+  );
+  const callbackEffects = event.callbackPromises.map((promise) => ({
+    type: 'callback' as const,
+    promise: { targetEventId: promise.targetEventId, deadline: promise.deadline },
+  }));
+
+  for (let offset = 0; offset < eligibleChoices.length; offset += 1) {
+    const choice = eligibleChoices[(firstChoiceIndex + offset) % eligibleChoices.length]!;
+    const applied = applyEffectsAtomically(
+      state,
+      [...callbackEffects, ...choice.effects],
+      CHRONICLE1_CONTENT,
+    );
+    if (applied.ok) {
+      return {
+        campaign: applied.value.campaign,
+        expedition: applied.value.expedition
+          ? { ...applied.value.expedition, currentCombat: null }
+          : null,
+      };
     }
-  };
-
-  for (const promise of event.callbackPromises) register(promise);
-
-  let threatChange = 0;
-  let tensionChange = 0;
-
-  for (const effect of choice.effects) {
-    if (effect.type === 'flag') {
-      if (effect.operation === 'add') flags.add(effect.flagId);
-      else flags.delete(effect.flagId);
-    }
-    if (effect.type === 'callback') register(effect.promise);
-    if (effect.type === 'threat') threatChange += effect.amount;
-    if (effect.type === 'tension') tensionChange += effect.amount;
   }
-  return { pendingCallbacks: callbacks, threatChange, tensionChange };
+  return null;
 }
 
 function expiredCallbackIds(pendingCallbacks: readonly PendingCallback[], position: PendingCallback['deadline']): readonly string[] {
@@ -105,12 +117,13 @@ function expiredCallbackIds(pendingCallbacks: readonly PendingCallback[], positi
 }
 
 function simulateChronicle1(seed: number): RouteAudit {
-  let director = initialState(seed);
-  const flags = new Set<string>();
+  let effectState = initialEffectState(seed);
+  let director = effectState.expedition!.director;
   const selectedSceneIds: string[] = [];
   const duplicateSceneIds: string[] = [];
   const expiredCallbackIdsFound: string[] = [];
   const choiceGateFailureIds: string[] = [];
+  const terminalDiagnostics: string[] = [];
   let combatRun = 0;
   let longestCombatRun = 0;
   let noRecoveryRun = 0;
@@ -122,6 +135,19 @@ function simulateChronicle1(seed: number): RouteAudit {
     const lastSlot = Math.max(...chapterScenes.map((scene) => scene.slot));
     const level = chapter.levelBand.min;
     const routeProfile = ROUTES[(seed + chapterIndex) % ROUTES.length]!;
+    effectState = {
+      campaign: {
+        ...effectState.campaign,
+        chapterId: chapter.id,
+        hero: { ...effectState.campaign.hero, level },
+      },
+      expedition: {
+        ...effectState.expedition!,
+        routeProfile,
+        director,
+        position: { chapterId: chapter.id, slot: 1 },
+      },
+    };
     const scheduledSlots = new Set(
       chapterScenes.filter((scene) => scene.type === 'main').map((scene) => scene.slot),
     );
@@ -130,6 +156,10 @@ function simulateChronicle1(seed: number): RouteAudit {
 
     for (let slot = 1; slot <= lastSlot; slot += 1) {
       const position = { chapterId: chapter.id, slot };
+      effectState = {
+        ...effectState,
+        expedition: { ...effectState.expedition!, director, position, currentCombat: null },
+      };
       expiredCallbackIdsFound.push(...expiredCallbackIds(director.pendingCallbacks, position));
       let scheduledSelectionOwed = scheduledSlots.has(slot);
       let selectionsAtSlot = 0;
@@ -142,13 +172,18 @@ function simulateChronicle1(seed: number): RouteAudit {
         const step = selectNextScene(director, {
           position,
           level,
-          flags: [...flags],
+          flags: effectState.campaign.flags,
           inventoryTags: [],
           routeProfile,
-        }, unlockedContent(chapter.id, slot));
+        }, CHRONICLE1_CONTENT);
 
         if (step.kind === 'terminal') {
+          terminalDiagnostics.push(`${chapter.id}:${slot}:${step.terminal}:${step.diagnostic}`);
           director = step.state;
+          effectState = {
+            ...effectState,
+            expedition: { ...effectState.expedition!, director },
+          };
           break;
         }
 
@@ -161,25 +196,32 @@ function simulateChronicle1(seed: number): RouteAudit {
         noRecoveryRun = ['merchant', 'recovery'].includes(scenePacing(event)) ? 0 : noRecoveryRun + 1;
         longestNoRecoveryRun = Math.max(longestNoRecoveryRun, noRecoveryRun);
 
-        const choiceResult = applyChoice(
+        const choiceResult = resolveChoice(
           event,
           seed,
           chapterIndex,
           selectedSceneIds.length - 1,
-          flags,
-          step.state.pendingCallbacks,
+          {
+            campaign: effectState.campaign,
+            expedition: {
+              ...effectState.expedition!,
+              director: step.state,
+              position: { ...position, slot: position.slot + 1 },
+              currentCombat: null,
+            },
+          },
         );
         if (!choiceResult) {
           choiceGateFailureIds.push(event.id);
           director = step.state;
+          effectState = {
+            ...effectState,
+            expedition: { ...effectState.expedition!, director },
+          };
           break;
         }
-        director = {
-          ...step.state,
-          pendingCallbacks: choiceResult.pendingCallbacks,
-          threat: Math.max(0, Math.min(10, step.state.threat + choiceResult.threatChange)),
-          tension: Math.max(0, Math.min(10, step.state.tension + choiceResult.tensionChange)),
-        };
+        effectState = choiceResult;
+        director = effectState.expedition!.director;
 
         selectionsAtSlot += 1;
         if (selectionsAtSlot >= 8) throw new Error(`Route audit stalled at ${chapter.id}:${slot}.`);
@@ -199,6 +241,7 @@ function simulateChronicle1(seed: number): RouteAudit {
     duplicateSceneIds,
     expiredCallbackIds: expiredCallbackIdsFound,
     choiceGateFailureIds,
+    terminalDiagnostics,
     longestCombatRun,
     longestNoRecoveryRun,
   };
@@ -215,6 +258,7 @@ describe('Chronicle I route audit', () => {
       expect(audit.duplicateSceneIds).toEqual([]);
       expect(audit.expiredCallbackIds).toEqual([]);
       expect(audit.choiceGateFailureIds).toEqual([]);
+      expect(audit.terminalDiagnostics, `seed ${seed}`).toEqual([]);
       expect(audit.longestCombatRun, `seed ${seed}`).toBeLessThanOrEqual(3);
       expect(audit.longestNoRecoveryRun, `seed ${seed}`).toBeLessThanOrEqual(12);
     }

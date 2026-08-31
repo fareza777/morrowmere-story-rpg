@@ -1,6 +1,20 @@
-import type { ChronicleEvent, ContentIndex } from '../content/schema';
-import type { EventId } from '../domain/ids';
+import type { ChronicleChoice, ChronicleEvent, ContentIndex } from '../content/schema';
+import type { EventId, StoryPosition } from '../domain/ids';
 import type { DirectorState, JourneyDirectorContext } from './types';
+
+/** Shared gate semantics for both presentation and command validation. */
+export function choiceIsAvailable(
+  choice: Pick<ChronicleChoice, 'requirements' | 'exclusions'>,
+  flags: readonly string[],
+  resolutionPosition?: StoryPosition,
+): boolean {
+  const present = new Set(flags);
+  const gatesOpen = (choice.requirements ?? []).every((gate) => present.has(gate.flagId) === gate.present)
+    && (choice.exclusions ?? []).every((gate) => present.has(gate.flagId) !== gate.present);
+  if (!gatesOpen || !resolutionPosition) return gatesOpen;
+  return choice.effects.every((effect) =>
+    effect.type !== 'callback' || comparePosition(effect.promise.deadline, resolutionPosition) >= 0);
+}
 
 export function eligibleScenes(
   state: DirectorState,
@@ -13,8 +27,13 @@ export function eligibleScenes(
       .filter((callback) => callback.status === 'pending' && callback.required)
       .map((callback) => callback.targetEventId),
   );
+  const resolutionPosition = {
+    chapterId: context.position.chapterId,
+    slot: context.position.slot + 1,
+  } as const;
   return [...content.events.values()]
     .filter((event) => event.chapterId === context.position.chapterId)
+    .filter((event) => event.slot === undefined || event.slot <= context.position.slot)
     .filter((event) => !used.has(event.id))
     .filter((event) => !event.oneShot || !state.seenEventIds.includes(event.id))
     .filter((event) => !reservedCallbacks.has(event.id))
@@ -23,6 +42,8 @@ export function eligibleScenes(
     .filter((event) => event.eligibility.requiredFlags?.every((flag) => context.flags.includes(flag)) ?? true)
     .filter((event) => event.eligibility.excludedFlags?.every((flag) => !context.flags.includes(flag)) ?? true)
     .filter((event) => event.eligibility.routes?.includes(context.routeProfile) ?? true)
+    .filter((event) => event.choices.length === 0
+      || event.choices.some((choice) => choiceIsAvailable(choice, context.flags, resolutionPosition)))
     .filter((event) => event.type === 'main' || !state.currentRunBlockedFamilies.includes(event.family))
     .sort((left, right) => left.id.localeCompare(right.id));
 }

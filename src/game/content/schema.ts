@@ -50,6 +50,8 @@ export interface ChronicleChoice {
   readonly id: ChoiceId;
   readonly label: string;
   readonly detail: string;
+  readonly requirements?: readonly ChronicleRequirement[];
+  readonly exclusions?: readonly ChronicleRequirement[];
   readonly effects: readonly GameEffect[];
   readonly outcome: string;
 }
@@ -57,6 +59,8 @@ export interface ChronicleChoice {
 export interface ChronicleEvent {
   readonly id: EventId;
   readonly chapterId: ChapterId;
+  /** Optional authored unlock position; legacy catalogs without slots stay immediately eligible. */
+  readonly slot?: number;
   readonly type: ChronicleEventType;
   readonly family: string;
   readonly anchorOrder?: number;

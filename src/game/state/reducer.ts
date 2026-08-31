@@ -4,7 +4,7 @@ import { resolveCombatTurn } from '../combat/resolve';
 import type { ContentIndex } from '../content/schema';
 import type { EncounterId, ItemId } from '../domain/ids';
 import type { DomainEvent } from '../domain/result';
-import { beginDirectorRun, selectNextScene } from '../director';
+import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
 import type { DirectorState } from '../director/types';
 import { applyInventoryCommand, useItem, type InventoryState } from '../inventory';
 import { generateMerchantVisit, quoteTrade } from '../merchant';
@@ -307,6 +307,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (state.expedition.sceneResolution?.eventId === scene.id) return diagnostic(state, 'choice_resolved', 'That choice has already been resolved.');
     const choice = scene.choices.find((candidate) => candidate.id === command.choiceId);
     if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
+    if (!choiceIsAvailable(choice, state.campaign.flags, state.expedition.position)) {
+      return diagnostic(state, 'choice_unavailable', 'Earlier decisions have closed that choice.');
+    }
     const applied = applyEffectsAtomically(state, choice.effects, content);
     if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
     const bankedGoldDelta = applied.value.campaign.bankedGold - state.campaign.bankedGold;
