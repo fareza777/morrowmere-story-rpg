@@ -1,67 +1,39 @@
 # MORROWMERE playtest guide
 
-## Fast smoke test
+## Short device check
 
-1. Open the title screen and confirm the generated keep artwork appears behind `MORROWMERE`.
-2. Select `New Chronicle`, review Warrior, Mage, and Warden, then begin a run.
-3. Confirm the prologue is fully readable at the default text size.
-4. Open Inventory, Chronicle, Bestiary, and Settings from the top HUD.
-5. Enable High contrast, Reduce motion, and Screen reader narration one at a time.
-6. Make story choices until combat begins.
-7. Confirm the enemy intent is shown before choosing Attack, Guard, Technique, Red Mercy, or Flee.
-8. Win the encounter, choose one of the class-aware rewards, and confirm the next story node loads.
-9. Close and reopen the app, select Continue, and confirm the current run resumes.
-10. Disable the device network and relaunch. All text and artwork must still load.
+1. Launch the game and confirm the bright opening artwork, title, subtitle, and buttons fit without clipping.
+2. Start Chronicle I, finish onboarding, choose a class, and watch or skip the captioned opening cinematic.
+3. Confirm story text and choices are clear, scrollable, and saved after every meaningful action.
+4. Enter a random battle and confirm enemy intent, attack, guard, technique, consumables, miss, block, critical hit, SFX, music, and haptics.
+5. Win a normal battle. Accept or decline the optional rewarded-gold offer and confirm the same victory can never grant the ad reward twice.
+6. Open Inventory and Equipment, use a consumable, equip an allowed item, and verify the derived stats update.
+7. Visit a merchant, buy and sell items, and confirm gold and stock remain correct after reopening the app.
+8. Background and resume the app during a story scene and during combat; the exact turn must return.
+9. Use Android Back through overlays first, then pause, then the title/exit behavior.
+10. Lose a battle and confirm `Return to Last Camp`, `Restart Chapter`, and `Main Menu` are visible and functional.
+11. Disable the network and relaunch. The Chronicle, local visuals, music, SFX, saves, combat, inventory, and merchants must still work; ads may be unavailable without blocking play.
 
-## Complete chronicle test
+## Chronicle I checks
 
-A full run contains twelve nodes:
+Chronicle I — The Black Banner contains eight chapters spanning levels 1–15:
 
-1. Prologue in Gloamwood Verge
-2. Two procedural Gloamwood events
-3. One Drowned Road event
-4. Drowned Marshal lieutenant
-5. One additional Drowned Road event
-6. Two Embervault events
-7. Furnace Confessor lieutenant
-8. Two Crownless Keep events
-9. Final throne decision and Crown Devil battle
+1. The Greywatch Road
+2. Raiders at Dawn
+3. The Drowned Road
+4. Banners at Redwater
+5. The Embervault Conspiracy
+6. The Broken Oath
+7. March on Crownless Keep
+8. The False Coronation
 
-At the throne, verify all three player-facing decisions appear: Break the Crown, Wear the Crown, and Refuse Every Throne.
+Different seeds and choices should change optional events, encounters, rewards, companion opportunities, evidence, faction standing, and epilogue fragments without skipping the required main-story anchors. Verify the four main resolutions: `The Banner Broken`, `The Iron Peace`, `Council of the Road`, and `The War Without End`.
 
-## Ending matrix
+## Balance and accessibility
 
-- `Iron Rain`: break the Crown
-- `The Crowned Wound`: restore and wear the Crown
-- `The Road Without Kings`: refuse the Crown after learning the truth and maintaining high mercy
-- `The Law of Iron`: let the Iron Abbey lead
-- `The Red Dawn`: finish with the Free Host as the strongest faction
-- `The Pale Star`: finish with the Pale Conclave as the strongest faction
-
-## Class checks
-
-- Warrior: highest Health and Strength; technique is Cleave.
-- Mage: highest Focus and Will; technique is Witchfire.
-- Warden: highest Cunning and balanced defenses; technique is Marked Shot.
-- Reward choices must always include usable options for the active class.
-- Inventory capacity must never exceed 12 carried items.
-
-## Accessibility checks
-
-- At 130% text size, story text and every choice remain reachable by scrolling.
-- Every icon-only menu button has a spoken label.
-- Screen reader narration announces new story scenes and enemy intent.
-- High contrast strengthens borders and secondary text without hiding art.
-- Reduce motion removes transitions.
-- Keyboard focus remains visible and dialogs close with their labeled Close button.
-
-Automated coverage includes unit, component, axe-core accessibility, persistence, visual catalog, mobile E2E, PWA manifest, and forced-offline tests.
-
-## Offline Android release check
-
-1. Install the QA APK, launch it once, and enter an active Chronicle I run.
-2. Enable airplane mode, background the app, and resume the same saved combat turn.
-3. Use one consumable in combat and confirm the inventory count, health, and turn state remain correct.
-4. Confirm one local music loop, one attack SFX, and one captioned story voice cue can play offline.
-5. Finish a story choice and confirm the next scene and its local artwork load.
-6. Open a safe camp or merchant. Ad controls may report unavailable, but they must never block saving, shopping, combat, or story progress.
+- Companion recruitment requires route-specific choices and loyalty; no companion should trivialize combat.
+- Rewarded gold changes purchasing options but does not increase battle power directly or bypass recruitment requirements.
+- Enemies scale through the chapter bands and retain meaningful miss, critical, guard, and counterplay variation.
+- At the largest text setting, story text and every choice remain reachable by scrolling on 320 × 568 and 360 × 800 screens.
+- Every icon-only control has an accessible name; new story text and enemy intent use appropriate live announcements.
+- High contrast strengthens text and controls, Reduce motion removes nonessential animation, and captions remain available without voice playback.

@@ -1,62 +1,57 @@
 # Google Play release checklist
 
-This project is technically packaged for Google Play, but final publication requires the Play Console owner's identity, legal declarations, upload key, and approval. Those owner-only steps are intentionally not automated.
+The project can produce an Android QA build. Publishing requires owner-controlled identity, legal declarations, live advertising configuration, and upload signing; these values are intentionally not stored in the repository.
 
-## Already prepared
+## Prepared in the project
 
 - Application ID `com.morrowmere.game`
-- Version `1.1.1`, version code `3`
-- Android App Bundle release build
-- Target API 36, meeting the requirement that applies to new mobile submissions from 31 August 2026
-- Minimum API 24
-- Portrait orientation
-- Adaptive launcher icon and branded splash resources
-- No sensitive, runtime, or Internet permission; packaging adds only AndroidX's signature-level internal receiver permission
-- No ads, analytics, accounts, purchases, or third-party network services
-- English offline PWA and native Android assets
-- 512 px store icon, 1024 x 500 feature graphic, and three actual 1080 x 1920 gameplay screenshots
+- Version `1.2.0`, version code `4`
+- Minimum API 24 and target API 36
+- Portrait orientation, adaptive launcher icon, and branded splash resources
+- Local Chronicle I story, artwork, music, SFX, and saves
+- Google Mobile Ads integration for banner, rewarded, and interstitial formats
+- UMP consent refresh on launch and a privacy-options entry when required
+- Test builds restricted to Google's sample ad identifiers
+- Live build guard requiring external AdMob identifiers and upload signing
+- No account system, social login, remote game-content download, or developer-operated analytics
 
-Google's current target API policy is documented in [Play Console Help](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en). Current graphic requirements are in [Add preview assets](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en).
+## Configure a live release
 
-## Sign the release bundle
+1. Create the Android app `MORROWMERE` with package `com.morrowmere.game` in the publisher's AdMob account.
+2. Create a banner placement for safe hubs, a rewarded placement for optional post-battle gold, and an interstitial placement for restrained expedition breaks.
+3. Publish the required GDPR privacy message in AdMob Privacy & messaging.
+4. Supply the live application and ad-unit identifiers through the documented build environment. Never commit them.
+5. Create and securely back up an upload key. Never commit the key or passwords.
+6. Run the guarded Play bundle task and upload the signed AAB to Internal testing first.
 
-Create and securely back up an upload key. Never commit it to this repository.
+Example signing environment:
 
 ```powershell
-keytool -genkeypair -v -keystore morrowmere-upload.jks -alias morrowmere-upload -keyalg RSA -keysize 4096 -validity 10000
 $env:MORROWMERE_KEYSTORE_FILE = 'C:\secure\morrowmere-upload.jks'
 $env:MORROWMERE_KEYSTORE_PASSWORD = '<store password>'
 $env:MORROWMERE_KEY_ALIAS = 'morrowmere-upload'
 $env:MORROWMERE_KEY_PASSWORD = '<key password>'
-Set-Location android
-.\gradlew.bat bundleRelease
+npm run android:bundle:play
 ```
 
-Upload `android/app/build/outputs/bundle/release/app-release.aab`. Enroll in [Play App Signing](https://support.google.com/googleplay/android-developer/answer/9842756?hl=en) and protect the developer account with two-step verification.
+## Play Console declarations
 
-## Play Console owner steps
+1. Mark the app as **Contains ads**.
+2. Host `docs/PRIVACY_POLICY.md` at a stable public HTTPS address and enter the final URL.
+3. Complete Data safety for the exact SDK/version shipped. Google Mobile Ads may automatically process IP address/general-location estimates, product interactions, diagnostics, and device or account identifiers for advertising, analytics, and fraud prevention. Local game saves are not uploaded by the game.
+4. State that the app is not designed for children and select the audience that matches the final content rating.
+5. Complete the IARC questionnaire for fantasy violence, combat, frightening imagery, and mature war themes; the game contains no graphic gore.
+6. Add the publisher's legal name, support email, privacy-policy URL, developer contact details, countries, price, and distribution declarations.
+7. Add the English listing copy and graphics from `store-listing/`.
+8. Review the merged manifest, including Internet access and any advertising-ID declaration contributed by the advertising SDK.
 
-1. Create the game record and reserve the final listing name.
-2. Complete trademark and business-name clearance for MORROWMERE.
-3. Upload the signed AAB to Internal testing first.
-4. Add the copy and graphics from `store-listing/`.
-5. Host `docs/PRIVACY_POLICY.md` at a stable public HTTPS URL and add that URL in Play Console.
-6. Complete Data safety. For this build, declare that no user data is collected or shared; saves remain local.
-7. Declare no ads, no in-app purchases, and unrestricted app access.
-8. Complete the IARC content-rating questionnaire accurately for fantasy violence, combat, frightening imagery, and dark themes. Do not declare graphic gore because the game contains none.
-9. Choose the target audience based on the final rating. This release is not designed for children.
-10. Add support email, developer contact details, countries, price, and distribution consent.
-11. Run a closed test on multiple physical phone sizes, including one low-memory API 24 device and one API 36 device.
-12. Review the automated pre-launch report, fix any blocking issue, then promote to Production.
+## Final owner-controlled gates
 
-Google requires every published app, including apps that collect no data, to complete Data safety and provide a privacy-policy link. See [Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en-EN). Content ratings are generated from the required [IARC questionnaire](https://support.google.com/googleplay/android-developer/answer/9859655?hl=en).
-
-## Final release gates
-
-- Increase `versionCode` for every subsequent upload.
-- Confirm the signed AAB certificate is the intended upload certificate.
-- Verify no permissions were introduced by dependency changes.
-- Run `npm run test:run`, `npm run test:e2e`, `npm run build`, and `gradlew.bat bundleRelease` on the exact release commit.
-- Install the generated APK or an Internal App Sharing build on a physical device.
-- Test airplane-mode launch, save/resume, text at 130%, screen reader narration, combat, rewards, and one full ending.
-- Recheck current Google Play policies immediately before submission.
+- Live AdMob app/ad-unit identifiers are present and consent messaging is published.
+- Publisher legal name, support email, and hosted privacy-policy URL replace every placeholder.
+- The AAB is signed with the intended upload key and the certificate is verified.
+- `versionCode` is increased for every later upload.
+- The Contains ads and Data safety declarations match the exact final binary.
+- The Internal-testing build is installed on at least one small API 24 phone and one current Android phone.
+- Airplane-mode launch, save/resume, defeat recovery, consumables, text scaling, privacy options, rewarded idempotency, and one ending are checked on the release candidate.
+- Current Google Play and AdMob policies are rechecked immediately before submission.

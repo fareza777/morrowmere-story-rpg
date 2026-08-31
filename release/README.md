@@ -1,12 +1,12 @@
 # Android build artifacts
 
-The local build produces these version 1.2.0 handoff files in this directory:
+The final local build produces these version 1.2.0 handoff files in this directory:
 
-- `MORROWMERE-v1.2.0-debug.apk`: signed with the Android debug certificate and ready for device testing
-- `MORROWMERE-v1.2.0-release-unsigned.aab`: QA bundle with Google sample ads; it is not a Play submission artifact
+- `MORROWMERE-v1.2.0-debug.apk`: debug-signed APK for direct device testing
+- `MORROWMERE-v1.2.0-test-unsigned.aab`: unsigned QA bundle; not a Play submission artifact
 
-The version 1.2.0 artifacts disable stale PWA caching inside Android, keep Chronicle media local, and use Google sample ads for device testing. `bundlePlayRelease` fails closed until live AdMob variables and upload signing are supplied outside Git.
+These QA artifacts use Google's official sample ad identifiers. Live AdMob identifiers and upload signing are deliberately required outside Git, and the Play task fails closed when either is missing.
 
-The binary files are intentionally excluded from Git. Regenerate native artwork with `npx capacitor-assets generate --android --assetPath assets`, run `npm run android:sync`, then run `.\gradlew.bat assembleDebug bundleRelease` from the `android` directory. Run `npm run check:android-size` afterward; Play submission is blocked above 180 MiB.
+The Android package keeps Chronicle media local, excludes stale PWA caches, and enforces a 180 MiB bundle-size gate. Regenerate native artwork with `npx capacitor-assets generate --android --assetPath assets`, run `npm run android:sync`, build with `.\gradlew.bat assembleDebug bundleRelease` from `android`, and finish with `npm run check:android-size`.
 
-The exact AAB byte count is recorded after the final synchronized QA build.
+Exact artifact byte counts and SHA-256 hashes are recorded here after the final synchronized build.

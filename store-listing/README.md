@@ -6,43 +6,46 @@ App name: `MORROWMERE`
 
 Short description:
 
-> Forge your fate in an offline procedural sword and sorcery chronicle.
+> Survive a branching medieval war in a richly illustrated text RPG.
 
 Full description:
 
-> Black rain rises over a kingdom that has forgotten how to die.
+> A medicine caravan should have been an ordinary first assignment. Then an arrow bearing the wrong colors starts a border war.
 >
-> You wake beneath your own burial with an iron tooth lodged beneath your heart. Cross the haunted roads of Morrowmere as a Warrior, Mage, or Warden. Bargain with goblins, challenge orc freeblades, survive drowned soldiers, and decide what should become of a Crown that can command the dead.
+> Begin as a level-one caravan guard and follow the evidence from the Greywatch road to flooded crossings, hidden forges, besieged walls, and Crownless Keep. Goblin scouts, orc freeblades, mages, soldiers, merchants, and rival commanders all have reasons to help you—and reasons to lie.
 >
-> Every chronicle reshapes the road through authored procedural events, unique illustrated scenes, faction consequences, class-aware loot, and visible-intent turn-based combat. Attacks may miss, hit, or land a critical blow. Your mercy, corruption, discoveries, and alliances determine which of six endings the realm remembers.
+> Chronicle I: The Black Banner is a long-form sword-and-sorcery adventure built around clear choices and consequences. Its mystery starts simply, then expands chapter by chapter into a conspiracy capable of turning every alliance against itself.
 >
 > Features:
-> - 200 enemy entries across goblins, orcs, mages, beasts, trolls, constructs, undead, cultists, and demons
-> - 60 weapons, armor pieces, charms, potions, scrolls, and quest relics
-> - Three distinct classes with unique strengths and combat techniques
-> - A branching twelve-node chronicle with 48 event templates, 48 unique event backgrounds, and six endings
-> - Clear enemy intentions, misses, critical hits, and tactical turn-based choices
-> - Inventory and equipment loadouts with a weapon, armor, and two charm slots
-> - Offline combat, magic, healing, equipment, victory, and defeat sound effects
-> - Adjustable text size, high contrast, reduced motion, and screen reader narration
-> - Fully offline play with local autosave
 >
-> No ads. No accounts. No required connection. Only the road and the choices you carry down it.
+> - Eight story chapters spanning levels 1–15, designed for a 10–12 hour first run
+> - 332 authored scenes with seeded routes, optional events, random encounters, and replay variation
+> - 215 enemies, including ranked variants and 15 illustrated bosses
+> - Tactical combat with visible intent, misses, critical hits, blocks, techniques, and usable consumables
+> - 160 weapons, armor pieces, charms, supplies, and quest items
+> - Inventory, equipment, merchants, gold, leveling, and difficult companion recruitment
+> - Four main endings plus detailed epilogues shaped by evidence, allies, factions, and the fate of Greywatch
+> - 341 bright illustrated assets, a cinematic opening, 12 music tracks, and 84 distinct sound effects
+> - Multiple save slots, autosave, save-and-exit support, chapter restart, and clear defeat recovery
+> - Adjustable text size, high contrast, reduced motion, captions, narration support, SFX controls, and haptic feedback
+> - Core story, combat, saves, artwork, music, and SFX remain playable offline
+>
+> Contains ads. Rewarded ads are optional; declining or losing connectivity never blocks the adventure.
 
 ## Upload assets
 
-- `icon-512.png`: 512 x 512 RGBA PNG, under 1 MB
-- `feature-graphic.png`: 1024 x 500 RGB PNG
-- `screenshots/01-title.png`: 1080 x 1920 actual title screen
-- `screenshots/02-story.png`: 1080 x 1920 actual story scene
-- `screenshots/03-combat.png`: 1080 x 1920 actual combat scene
+- `icon-512.png`: 512 × 512 RGBA PNG, under 1 MB
+- `feature-graphic.png`: 1024 × 500 RGB PNG
+- `screenshots/01-title.png`: 1080 × 1920 title screen
+- `screenshots/02-story.png`: 1080 × 1920 story scene
+- `screenshots/03-combat.png`: 1080 × 1920 combat scene
 
 Suggested alt text:
 
-- Icon: `A clear heraldic sword and broken crown emblem on a warm gold field.`
-- Feature graphic: `Three adventurers approach a ruined keep along a sunlit medieval road.`
-- Title screenshot: `MORROWMERE title screen with a lone warrior approaching a ruined keep.`
-- Story screenshot: `Readable story scene in Gloamwood with a large narrative choice.`
-- Combat screenshot: `A Gloam Warg encounter showing health, enemy intent, and four combat actions.`
+- Icon: `A heraldic sword and broken crown emblem on a warm gold field.`
+- Feature graphic: `Adventurers approach a medieval keep along a clear sunlit road.`
+- Title screenshot: `The MORROWMERE title screen with large readable menu controls.`
+- Story screenshot: `An illustrated medieval story event with clear narrative choices.`
+- Combat screenshot: `A tactical encounter showing health, enemy intent, and battle actions.`
 
-All artwork was generated specifically for this project and contains no third-party game assets or store badges.
+All artwork was created specifically for this project and contains no third-party game assets or store badges.
