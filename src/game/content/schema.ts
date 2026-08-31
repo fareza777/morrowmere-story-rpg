@@ -1,4 +1,4 @@
-import type { GameEffect } from '../domain/effects';
+import type { GameEffect } from "../domain/effects";
 import type {
   ChapterId,
   ChoiceId,
@@ -8,8 +8,8 @@ import type {
   EventId,
   ItemId,
   MerchantId,
-} from '../domain/ids';
-import type { EnemyDefinition, ItemDefinition } from '../types';
+} from "../domain/ids";
+import type { EnemyDefinition, ItemDefinition } from "../types";
 
 /**
  * Immutable catalog item contracts are consumed by pure game systems through
@@ -18,7 +18,12 @@ import type { EnemyDefinition, ItemDefinition } from '../types';
  */
 export type CatalogItemDefinition = ItemDefinition;
 
-export type ChronicleEventType = 'main' | 'companion' | 'journey' | 'combat' | 'hub';
+export type ChronicleEventType =
+  | "main"
+  | "companion"
+  | "journey"
+  | "combat"
+  | "hub";
 
 export interface EventEligibility {
   readonly routes?: readonly string[];
@@ -62,8 +67,15 @@ export interface CompanionDefinition {
   readonly name: string;
   readonly recruitment: {
     readonly requiredDecisionIds: readonly string[];
+    readonly blockingDecisionIds?: readonly string[];
   };
   readonly personalQuestIds: readonly EventId[];
+  readonly combat: {
+    readonly attack: number;
+    readonly guard: number;
+    readonly will: number;
+    readonly actionId: string;
+  };
 }
 
 export interface MerchantDefinition {
@@ -83,5 +95,14 @@ export interface ContentIndex {
   readonly audioIds: ReadonlySet<string>;
 }
 
-export type { ChapterId, ChoiceId, CompanionId, EncounterId, EnemyId, EventId, ItemId, MerchantId };
-export type { EnemyDefinition, ItemDefinition } from '../types';
+export type {
+  ChapterId,
+  ChoiceId,
+  CompanionId,
+  EncounterId,
+  EnemyId,
+  EventId,
+  ItemId,
+  MerchantId,
+};
+export type { EnemyDefinition, ItemDefinition } from "../types";
