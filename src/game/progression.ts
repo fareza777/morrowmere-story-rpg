@@ -120,7 +120,7 @@ export function grantExperience(hero: HeroProgress, grant: ExperienceGrant): Dom
   const victories = Math.max(0, Math.floor(grant.priorEncounterVictories ?? 0));
   const grantedXp = Math.floor(grant.amount * 0.5 ** victories);
   const xp = hero.xp + grantedXp;
-  const level = Math.min(LEVEL_CAP, CHAPTER_SOFT_CAP[grant.chapterId], levelForXp(xp));
+  const level = Math.max(hero.level, Math.min(LEVEL_CAP, CHAPTER_SOFT_CAP[grant.chapterId], levelForXp(xp)));
   return { ok: true, value: { hero: { ...hero, xp, level }, grantedXp, levelsGained: Math.max(0, level - hero.level) } };
 }
 
@@ -144,7 +144,7 @@ export function deriveHeroStats(hero: HeroProgress, inventory: InventoryState, i
   for (const talent of TALENTS.filter((candidate) => hero.talents.includes(candidate.id))) stats = applyModifiers(stats, talent.stats);
   for (const equippedId of [inventory.equipment.weapon, inventory.equipment.armor, ...inventory.equipment.charms]) {
     if (!equippedId) continue;
-    const item = items.get(equippedId as ItemId);
+    const item = items.get(equippedId);
     if (item) stats = applyModifiers(stats, { attack: item.stats.attack, armor: item.stats.armor, ward: item.stats.ward, maxHealth: item.stats.health, maxFocus: item.stats.focus, will: item.stats.will });
   }
   for (const boon of boons) stats = applyModifiers(stats, boon.stats);

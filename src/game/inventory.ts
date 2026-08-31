@@ -17,9 +17,9 @@ export interface InventoryState {
   readonly stash: readonly InventoryEntry[];
   readonly questItems: readonly ItemId[];
   readonly equipment: {
-    readonly weapon: string | null;
-    readonly armor: string | null;
-    readonly charms: readonly string[];
+    readonly weapon: ItemId | null;
+    readonly armor: ItemId | null;
+    readonly charms: readonly ItemId[];
   };
 }
 
@@ -67,21 +67,27 @@ function withPartition(inventory: InventoryState, destination: InventoryPartitio
   return { ...inventory, [destination]: entries };
 }
 
-function uniqueEntryId(entries: readonly InventoryEntry[], itemId: ItemId): string {
-  const prefix = `item-${itemId}-`;
+function uniqueEntryId(entries: readonly InventoryEntry[], itemId: ItemId, destination: InventoryPartition): string {
+  const prefix = `${destination}-item-${itemId}-`;
   let suffix = 1;
   while (entries.some((entry) => entry.id === `${prefix}${suffix}`)) suffix += 1;
   return `${prefix}${suffix}`;
 }
 
-function addToPartition(entries: readonly InventoryEntry[], item: ItemDefinition, itemId: ItemId, quantity: number): readonly InventoryEntry[] {
+function addToPartition(
+  entries: readonly InventoryEntry[],
+  item: ItemDefinition,
+  itemId: ItemId,
+  quantity: number,
+  destination: InventoryPartition,
+): readonly InventoryEntry[] {
   if (isStackable(item)) {
     const existing = entries.find((entry) => entry.itemId === itemId);
     if (existing) return entries.map((entry) => entry.id === existing.id ? { ...entry, quantity: entry.quantity + quantity } : entry);
-    return [...entries, { id: `stack-${itemId}`, itemId, quantity }];
+    return [...entries, { id: `${destination}-stack-${itemId}`, itemId, quantity }];
   }
   const next = [...entries];
-  for (let count = 0; count < quantity; count += 1) next.push({ id: uniqueEntryId(next, itemId), itemId, quantity: 1 });
+  for (let count = 0; count < quantity; count += 1) next.push({ id: uniqueEntryId(next, itemId, destination), itemId, quantity: 1 });
   return next;
 }
 
@@ -115,7 +121,7 @@ export function applyInventoryCommand(
     const entries = partition(inventory, destination);
     const newSlots = isStackable(item) && entries.some((entry) => entry.itemId === command.itemId) ? 0 : isStackable(item) ? 1 : quantity;
     if (destination === 'pack' && inventorySlotUsage(inventory).available < newSlots) return failure('pack_full', 'Your pack has no room for that item.');
-    return { ok: true, value: withPartition(inventory, destination, addToPartition(entries, item, command.itemId, quantity)) };
+    return { ok: true, value: withPartition(inventory, destination, addToPartition(entries, item, command.itemId, quantity, destination)) };
   }
 
   if (command.type === 'move') {
@@ -130,7 +136,7 @@ export function applyInventoryCommand(
     const newSlot = !isStackable(item) || !destinationEntries.some((candidate) => candidate.itemId === entry.itemId);
     if (command.destination === 'pack' && newSlot && inventorySlotUsage(inventory).available < 1) return failure('pack_full', 'Your pack has no room for that item.');
     const withoutSource = withPartition(inventory, source, sourceEntries.filter((candidate) => candidate.id !== entry.id));
-    const destination = isStackable(item) ? addToPartition(destinationEntries, item, entry.itemId, entry.quantity) : [...destinationEntries, entry];
+    const destination = addToPartition(destinationEntries, item, entry.itemId, entry.quantity, command.destination);
     return { ok: true, value: withPartition(withoutSource, command.destination, destination) };
   }
 
@@ -144,9 +150,11 @@ export function applyInventoryCommand(
       return { ok: true, value: { ...inventory, pack: removeFromEntries(inventory.pack, entry.id, 1), equipment: { ...inventory.equipment, charms: [...inventory.equipment.charms, entry.itemId] } } };
     }
     const previousId = inventory.equipment[item.category];
-    const previous = previousId ? items.get(previousId as ItemId) : undefined;
+    const previous = previousId ? items.get(previousId) : undefined;
     const withoutEntry = removeFromEntries(inventory.pack, entry.id, 1);
-    const pack = previous ? addToPartition(withoutEntry, previous, previousId as ItemId, 1) : withoutEntry;
+    const pack = previousId && previous
+      ? addToPartition(withoutEntry, previous, previousId, 1, 'pack')
+      : withoutEntry;
     return { ok: true, value: { ...inventory, pack, equipment: { ...inventory.equipment, [item.category]: entry.itemId } } };
   }
 
@@ -159,7 +167,7 @@ export function applyInventoryCommand(
     const equipment = slot === 'charm'
       ? { ...inventory.equipment, charms: inventory.equipment.charms.filter((id, index) => id !== command.itemId || index !== inventory.equipment.charms.indexOf(command.itemId)) }
       : { ...inventory.equipment, [slot]: null };
-    return { ok: true, value: { ...inventory, pack: addToPartition(inventory.pack, item, command.itemId, 1), equipment } };
+    return { ok: true, value: { ...inventory, pack: addToPartition(inventory.pack, item, command.itemId, 1, 'pack'), equipment } };
   }
 
   const inPack = inventory.pack.find((entry) => entry.id === command.entryId);

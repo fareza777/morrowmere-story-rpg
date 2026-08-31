@@ -33,6 +33,16 @@ describe('progression', () => {
     expect(result.ok && result.value.levelsGained).toBe(2);
   });
 
+  it('never lowers a hero level when granting XP under an earlier chapter soft cap', () => {
+    const result = grantExperience(
+      { ...warrior, level: 8, xp: 1_750 },
+      { amount: 100, chapterId: 'ch01' },
+    );
+
+    expect(result.ok && result.value.hero.level).toBe(8);
+    expect(result.ok && result.value.levelsGained).toBe(0);
+  });
+
   it('halves repeated encounter XP after the first victory', () => {
     const result = grantExperience(warrior, {
       amount: 100,
@@ -57,7 +67,7 @@ describe('progression', () => {
   it('derives equipment and temporary-boon bonuses without storing them on hero progress', () => {
     const inventory: InventoryState = {
       ...emptyInventory,
-      equipment: { weapon: 'weapon-rust-sword', armor: null, charms: [] },
+      equipment: { weapon: itemId('weapon-rust-sword'), armor: null, charms: [] },
     };
     const derived = deriveHeroStats(
       { ...warrior, level: 3, xp: 250, talents: ['warrior-cleave'] },

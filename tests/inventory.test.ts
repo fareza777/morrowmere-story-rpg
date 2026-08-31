@@ -70,6 +70,29 @@ describe('inventory', () => {
     expect(inventorySlotUsage(inventory)).toEqual({ used: 1, capacity: 24, available: 23 });
   });
 
+  it('moves the stash stack when the same consumable was also added to the pack', () => {
+    const inPack = applyInventoryCommand(
+      emptyInventory(),
+      { type: 'add', itemId: itemId('potion-red') },
+      ITEMS_FIXTURE,
+    );
+    const inBothPartitions = applyInventoryCommand(
+      inPack.ok ? inPack.value : emptyInventory(),
+      { type: 'add', itemId: itemId('potion-red'), destination: 'stash' },
+      ITEMS_FIXTURE,
+    );
+    const moved = applyInventoryCommand(
+      inBothPartitions.ok ? inBothPartitions.value : emptyInventory(),
+      { type: 'move', entryId: 'stash-stack-potion-red', destination: 'pack' },
+      ITEMS_FIXTURE,
+    );
+
+    expect(moved.ok && moved.value.pack).toEqual([
+      { id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 2 },
+    ]);
+    expect(moved.ok && moved.value.stash).toEqual([]);
+  });
+
   it('rejects a new non-stackable item when the pack is full without changing inventory', () => {
     const inventory: InventoryState = {
       ...emptyInventory(),
@@ -131,7 +154,7 @@ describe('inventory', () => {
   it('unequips only one copy when both charm slots contain the same charm', () => {
     const inventory: InventoryState = {
       ...emptyInventory(),
-      equipment: { weapon: null, armor: null, charms: ['charm-wolf-tooth', 'charm-wolf-tooth'] },
+      equipment: { weapon: null, armor: null, charms: [itemId('charm-wolf-tooth'), itemId('charm-wolf-tooth')] },
     };
 
     const result = applyInventoryCommand(
@@ -142,7 +165,7 @@ describe('inventory', () => {
 
     expect(result.ok && result.value.equipment.charms).toEqual(['charm-wolf-tooth']);
     expect(result.ok && result.value.pack).toEqual([
-      { id: 'item-charm-wolf-tooth-1', itemId: itemId('charm-wolf-tooth'), quantity: 1 },
+      { id: 'pack-item-charm-wolf-tooth-1', itemId: itemId('charm-wolf-tooth'), quantity: 1 },
     ]);
   });
 });
