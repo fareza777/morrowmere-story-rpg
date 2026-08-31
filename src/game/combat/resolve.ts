@@ -60,11 +60,12 @@ function textForEvent(event: DomainEvent): string {
   return '';
 }
 
-function finalize(state: CombatState, player: HeroCombatant, enemies: readonly EnemyCombatant[], rngState: number, events: DomainEvent[], inventory: CombatTurnResult['inventory'], spentTurn: boolean): CombatTurnResult {
+function finalize(state: CombatState, player: HeroCombatant, enemies: readonly EnemyCombatant[], rngState: number, events: DomainEvent[], inventory: CombatTurnResult['inventory'], spentTurn: boolean, skipCooldownTick = false): CombatTurnResult {
   const living = enemies.filter((enemy) => enemy.health > 0);
   if (!spentTurn) return { combat: state, inventory, events };
+  const companionCooldown = skipCooldownTick ? state.companionCooldown : Math.max(0, state.companionCooldown - 1);
   if (living.length === 0) {
-    const combat: CombatState = { ...state, turn: state.turn + 1, rngState, player: { ...player, guarding: false, statuses: tickStatuses('hero', player.statuses, events) }, enemies, enemy: compatibilityEnemy(enemies), outcome: 'victory', log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8) };
+    const combat: CombatState = { ...state, turn: state.turn + 1, rngState, player: { ...player, guarding: false, statuses: tickStatuses('hero', player.statuses, events) }, enemies, enemy: compatibilityEnemy(enemies), outcome: 'victory', log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8), companionCooldown };
     return { combat, inventory, events };
   }
 
@@ -114,6 +115,7 @@ function finalize(state: CombatState, player: HeroCombatant, enemies: readonly E
   const combat: CombatState = {
     ...state, turn: state.turn + 1, rngState: selected.rngState, player: nextPlayer, enemies: nextEnemies, enemy: compatibilityEnemy(nextEnemies),
     enemyIntent: primary.intent, enemyIntents: selected.intents, intentText: primary.text, outcome,
+    companionCooldown,
     log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8),
   };
   return { combat, inventory, events };
@@ -132,7 +134,7 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
     if (state.enemies.some((enemy) => enemy.isBoss)) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'boss_cannot_flee' }] };
     const escaped = player.cunning + (rngState % 10) + 1 >= Math.max(...enemies.map((enemy) => enemy.level)) + 7;
     rngState = (rngState + 0x6d2b79f5) >>> 0;
-    if (escaped) return { combat: { ...state, rngState, outcome: 'fled', log: [...state.log, 'You break contact and find another road.'] }, inventory, events: [{ type: 'flee_resolved', escaped: true }] };
+    if (escaped) return { combat: { ...state, turn: state.turn + 1, rngState, outcome: 'fled', companionCooldown: Math.max(0, state.companionCooldown - 1), log: [...state.log, 'You break contact and find another road.'] }, inventory, events: [{ type: 'flee_resolved', escaped: true }] };
     return finalize(state, player, enemies, rngState, [{ type: 'flee_resolved', escaped: false }], inventory, true);
   }
 
@@ -148,7 +150,7 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
   if (!target) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'invalid_target' }] };
   if (action.type === 'companion') {
     if (!state.companion) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_unavailable' }] };
-    if (state.companionCooldown > 0) return { combat: { ...state, companionCooldown: state.companionCooldown - 1 }, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_cooling_down' }] };
+    if (state.companionCooldown > 0) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_cooling_down' }] };
     const available = state.companionSupportBudget - companionDamageDealt;
     if (available <= 0) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_support_budget' }] };
     const damage = Math.min(available, Math.max(1, state.companion.attack + Math.floor(state.companion.will / 2)));
@@ -159,7 +161,7 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
     if (updated.health <= 0) events.push({ type: 'combatant_defeated', combatantId: updated.id });
     const phaseChanged = enemies.find((enemy) => enemy.id === target.id && enemy.phase === 2 && target.phase === 1);
     if (phaseChanged) events.push({ type: 'boss_phase_changed', enemyId: phaseChanged.id, phase: 2 });
-    return finalize({ ...state, companionCooldown: 2, companionDamageDealt }, player, enemies, rngState, events, inventory, true);
+    return finalize({ ...state, companionCooldown: 2, companionDamageDealt }, player, enemies, rngState, events, inventory, true, true);
   }
 
   let power = player.strength + player.attackBonus + 4;

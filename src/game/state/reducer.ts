@@ -50,7 +50,7 @@ function inventoryTags(state: GameStateV2, content: ContentIndex): readonly stri
 }
 
 function merchantRestockKey(state: GameStateV2, scene: NonNullable<ReturnType<typeof currentScene>>): string {
-  return `${state.expedition!.routeSeed}:${scene.id}:${scene.merchantRestockKey!}`;
+  return `${state.expedition!.routeSeed}:${scene.merchantId!}:${scene.merchantRestockKey!}`;
 }
 
 function heroCombatant(state: GameStateV2, content: ContentIndex) {
@@ -187,6 +187,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   if (command.type === 'combat-turn') {
     if (!state.expedition?.currentCombat?.combat || state.flow.screen !== 'combat') return diagnostic(state, 'combat_required', 'Take combat actions only during combat.');
     const result = resolveCombatTurn(state.expedition.currentCombat.combat, command.action, state.campaign.inventory, { items: content.items });
+    if (result.combat === state.expedition.currentCombat.combat && result.inventory === state.campaign.inventory) {
+      return { state, events: sequenced(result.events, state.campaign.transitionCounter) };
+    }
     const screen = result.combat.outcome === 'defeat' ? 'defeat' : result.combat.outcome === 'active' ? 'combat' : 'reward';
     return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, currentCombat: { ...state.expedition.currentCombat, combat: result.combat } }, flow: { ...state.flow, screen, merchant: null }, updatedAt: command.updatedAt }, result.events);
   }

@@ -26,6 +26,12 @@ const orchestrationContent: ContentIndex = {
   }], [sceneId('merchant-scene'), {
     id: sceneId('merchant-scene'), chapterId: 'ch01', type: 'hub', family: 'merchant', merchantId: 'merchant-1' as never, merchantRestockKey: 'road-trader',
     illustrationId: 'camp-art', title: 'Trader', narrative: ['A trader waits.'], eligibility: {}, cooldownRuns: 0, oneShot: false, choices: [],
+  }], [sceneId('merchant-scene-shared'), {
+    id: sceneId('merchant-scene-shared'), chapterId: 'ch01', type: 'hub', family: 'merchant-shared', merchantId: 'merchant-1' as never, merchantRestockKey: 'road-trader',
+    illustrationId: 'camp-art', title: 'Second Trader', narrative: ['The same trader returns.'], eligibility: {}, cooldownRuns: 0, oneShot: false, choices: [],
+  }], [sceneId('merchant-scene-distinct'), {
+    id: sceneId('merchant-scene-distinct'), chapterId: 'ch01', type: 'hub', family: 'merchant-distinct', merchantId: 'merchant-1' as never, merchantRestockKey: 'night-trader',
+    illustrationId: 'camp-art', title: 'Night Trader', narrative: ['A new stock arrives.'], eligibility: {}, cooldownRuns: 0, oneShot: false, choices: [],
   }], [sceneId('late-scene'), {
     id: sceneId('late-scene'), chapterId: 'ch01', type: 'main', family: 'late', anchorOrder: 5,
     illustrationId: 'camp-art', title: 'Late', narrative: ['Too late.'], eligibility: {}, cooldownRuns: 0, oneShot: true, choices: [],
@@ -205,22 +211,44 @@ describe('campaign checkpoints', () => {
     expect(reopened.expedition!.merchantVisits[0]!.stock).toEqual([]);
   });
 
-  it('makes a cooldown of two reject exactly two future companion opportunities', () => {
+  it('ticks companion cooldown on spent turns without letting rejected actions burn it', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
     const roster = { activeCompanionId: 'companion-1' as never, records: [{ companionId: 'companion-1' as never, status: 'recruited' as const, questStage: 3 as const, loyalty: 70, injured: false }] };
     const started = reduceGame({ ...created, campaign: { ...created.campaign, companions: roster } }, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
     const combat = reduceGame(started, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, orchestrationContent).state;
     const first = reduceGame(combat, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
-    const firstRejected = reduceGame(first, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent);
-    const secondRejected = reduceGame(firstRejected.state, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent);
-    const available = reduceGame(secondRejected.state, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:06:00.000Z' }, orchestrationContent);
+    const rejected = reduceGame(first, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent);
+    const guarded = reduceGame(rejected.state, { type: 'combat-turn', action: { type: 'guard' }, updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
+    const attacked = reduceGame(guarded, { type: 'combat-turn', action: { type: 'attack' }, updatedAt: '2026-08-31T00:06:00.000Z' }, orchestrationContent).state;
+    const available = reduceGame(attacked, { type: 'combat-turn', action: { type: 'companion' }, updatedAt: '2026-08-31T00:07:00.000Z' }, orchestrationContent);
 
     expect(first.expedition!.currentCombat!.combat!.companionCooldown).toBe(2);
-    expect(firstRejected.events[0]?.domain).toEqual({ type: 'combat_action_rejected', reason: 'companion_cooling_down' });
-    expect(firstRejected.state.expedition!.currentCombat!.combat!.companionCooldown).toBe(1);
-    expect(firstRejected.state.expedition!.currentCombat!.combat!.rngState).toBe(first.expedition!.currentCombat!.combat!.rngState);
-    expect(secondRejected.state.expedition!.currentCombat!.combat!.companionCooldown).toBe(0);
+    expect(rejected.events[0]?.domain).toEqual({ type: 'combat_action_rejected', reason: 'companion_cooling_down' });
+    expect(rejected.state).toBe(first);
+    expect(guarded.expedition!.currentCombat!.combat!.companionCooldown).toBe(1);
+    expect(attacked.expedition!.currentCombat!.combat!.companionCooldown).toBe(0);
     expect(available.events.some((event) => event.domain.type === 'companion_commanded')).toBe(true);
+  });
+
+  it('shares merchant stock across authored scenes in the same restock namespace', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const firstScene = { ...started, expedition: { ...started.expedition!, currentSceneId: sceneId('merchant-scene'), unbankedGold: 20 } };
+    const openedFirst = reduceGame(firstScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
+    const firstKey = openedFirst.flow.merchant!.restockKey;
+    const bought = reduceGame(openedFirst, { type: 'trade', intent: { type: 'buy', stockEntryId: openedFirst.expedition!.merchantVisits[0]!.stock[0]!.id }, updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
+    const closed = reduceGame(bought, { type: 'close-merchant', updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent).state;
+    const sharedScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-shared') } };
+    const reopenedShared = reduceGame(sharedScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
+    const distinctScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-distinct') } };
+    const openedDistinct = reduceGame(distinctScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:06:00.000Z' }, orchestrationContent).state;
+
+    expect(reopenedShared.flow.merchant!.restockKey).toBe(firstKey);
+    expect(reopenedShared.expedition!.merchantVisits).toHaveLength(1);
+    expect(reopenedShared.expedition!.merchantVisits[0]!.stock).toEqual([]);
+    expect(openedDistinct.flow.merchant!.restockKey).not.toBe(firstKey);
+    expect(openedDistinct.expedition!.merchantVisits).toHaveLength(2);
+    expect(openedDistinct.expedition!.merchantVisits.find((visit) => visit.restockKey === openedDistinct.flow.merchant!.restockKey)?.stock).toHaveLength(1);
   });
 
   it('keeps director memory across defeat and begins the next run with the saved cooldowns', () => {
