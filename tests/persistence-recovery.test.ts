@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCampaign } from '../src/game/state';
-import { createCombat } from '../src/game/combat';
+import { createCombat, createEncounter } from '../src/game/combat';
 import { initialDirector } from '../src/game/state/create';
 import { encodeSaveState } from '../src/game/persistence/codec';
 import { resolveCombatTurn } from '../src/game/combat/resolve';
@@ -72,8 +72,8 @@ function catalogState() {
       expedition: {
         routeProfile: 'kings-road' as const, routeSeed: 7,
         director: { ...initialDirector(7), usedSceneIds: ['hub-event' as never], seenEventIds: ['fixture-event' as never], pendingCallbacks: [{ targetEventId: 'callback-event' as never, deadline: { chapterId: 'ch01' as const, slot: 2 }, status: 'pending' as const, required: true }] },
-        position: { chapterId: 'ch01' as const, slot: 1 }, currentSceneId: 'hub-event' as never, currentCombat: null, pendingRewards: ['potion-1' as never], unbankedGold: 3, unbankedLoot: ['scroll-1' as never], temporaryBoons: [],
-        merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, stock: [{ id: 'merchant-stock-potion', itemId: 'potion-1' as never }] }],
+        position: { chapterId: 'ch01' as const, slot: 1 }, currentSceneId: 'hub-event' as never, currentCombat: null, pendingRewards: [], unbankedGold: 3, unbankedLoot: ['scroll-1' as never], temporaryBoons: [],
+        merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:potion-1', itemId: 'potion-1' as never }] }],
       },
       flow: { screen: 'merchant' as const, overlay: null, merchant: { merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', returnScreen: 'story' as const } },
     },
@@ -90,7 +90,16 @@ describe('V2 save recovery', () => {
     const storage = new MemoryStorage();
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', content);
     const one = state();
-    const two = { ...state(), campaign: { ...state().campaign, heroName: 'Briar' } };
+    const second = state();
+    const two = {
+      ...second,
+      campaign: { ...second.campaign, heroName: 'Briar' },
+      checkpoints: {
+        ...second.checkpoints,
+        chapter: { ...second.checkpoints.chapter, campaign: { ...second.checkpoints.chapter.campaign, heroName: 'Briar' } },
+        camp: second.checkpoints.camp === null ? null : { ...second.checkpoints.camp, campaign: { ...second.checkpoints.camp.campaign, heroName: 'Briar' } },
+      },
+    };
 
     expect(repo.saveSlot(1, one)).toEqual({ ok: true });
     expect(repo.saveSlot(2, two)).toEqual({ ok: true });
@@ -343,6 +352,26 @@ describe('V2 save recovery', () => {
   });
 
   it.each([
+    ['a mismatched campaign chapter', (envelope: any) => { envelope.state.campaign.chapterId = 'ch02'; }],
+    ['a mismatched checkpoint identity', (envelope: any) => { envelope.state.checkpoints.chapter.campaign.heroName = 'Impostor'; }],
+    ['a camp scene from another chapter', (envelope: any) => { envelope.state.checkpoints.camp.campSceneId = 'other-chapter-event'; }],
+    ['merchant stock generated above the saved hero level', (envelope: any) => { envelope.state.expedition.merchantVisits[0].generatedAtLevel = 15; }],
+    ['merchant stock generated above the chapter cap', (envelope: any) => { envelope.state.campaign.hero.level = 15; envelope.state.expedition.merchantVisits[0].generatedAtLevel = 15; }],
+    ['an injected merchant stock entry ID', (envelope: any) => { envelope.state.expedition.merchantVisits[0].stock[0].id = 'injected-stock'; }],
+    ['duplicate merchant visit namespace', (envelope: any) => { envelope.state.expedition.merchantVisits.push({ ...envelope.state.expedition.merchantVisits[0] }); }],
+  ])('rejects a checksum-valid import with %s before writing', (_label, mutate) => {
+    const { content: localContent, value } = catalogState();
+    const storage = new MemoryStorage();
+    const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
+    expect(repo.saveSlot(1, value)).toEqual({ ok: true });
+    const envelope = JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}');
+    mutate(envelope);
+
+    expect(repo.importSlot(2, signed(envelope))).toMatchObject({ ok: false, reason: 'corrupt' });
+    expect(storage.getItem(saveActiveKey(2))).toBeNull();
+  });
+
+  it.each([
     ['a hero above the level cap', (candidate: any) => ({ ...candidate, campaign: { ...candidate.campaign, hero: { ...candidate.campaign.hero, level: 16 } } })],
     ['a partial attempt-counter record', (candidate: any) => ({ ...candidate, campaign: { ...candidate.campaign, attemptCounters: { ch01: 0 } } })],
     ['director tension above its bounded range', (candidate: any) => ({ ...candidate, expedition: { routeProfile: 'kings-road', routeSeed: 1, director: { ...initialDirector(1), tension: 11 }, position: { chapterId: 'ch01', slot: 0 }, currentSceneId: null, currentCombat: null, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'story', overlay: null, merchant: null } })],
@@ -376,12 +405,14 @@ describe('V2 save recovery', () => {
     (localContent.items as Map<never, never>).set('item-1' as never, { id: 'item-1', name: 'Tonic', category: 'potion', description: 'A tonic.', allowedClasses: ['mage'], stats: {}, value: 1, tags: [] } as never);
     (localContent.encounters as Map<never, never>).set('fight-1' as never, { id: 'fight-1', enemyIds: ['enemy-1'] } as never);
     (localContent.merchants as Map<never, never>).set('merchant-1' as never, { id: 'merchant-1', name: 'Trader', stockItemIds: ['item-1'] } as never);
+    const fixture = localContent.events.get('fixture-event' as never)!;
+    (localContent.events as Map<never, never>).set('merchant-hub' as never, { ...fixture, id: 'merchant-hub', type: 'hub', family: 'merchant', merchantId: 'merchant-1', merchantRestockKey: 'merchant-restock' } as never);
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
     const combat = createCombat({ class: 'mage', name: 'Aster', level: 1, xp: 0, health: 20, maxHealth: 20, focus: 10, maxFocus: 10, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5, attackBonus: 0, guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] } }, enemy, 7);
     const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
     const complete = {
       ...base,
-      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'fight-1' as never, combat }, pendingRewards: ['item-1' as never], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: 'route:merchant', restockSeed: 7, stock: [{ id: 'stock-1', itemId: 'item-1' as never }] }] },
+      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'fight-1' as never, combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:item-1', itemId: 'item-1' as never }] }] },
       flow: { screen: 'combat' as const, overlay: null, merchant: null },
     };
 
@@ -401,7 +432,7 @@ describe('V2 save recovery', () => {
     expect(hydrated.enemy.name).toBe('Goblin');
     expect(hydrated.player.inventory).toEqual([]);
     expect(hydrated.player.equipment).toEqual({ weapon: null, armor: null, charms: [] });
-    expect(loaded.state.expedition!.merchantVisits[0]!.restockSeed).toBe(merchantRestockSeed(7, 'merchant-1' as never, 'route:merchant'));
+    expect(loaded.state.expedition!.merchantVisits[0]!.restockSeed).toBe(merchantRestockSeed(7, 'merchant-1' as never, '7:merchant-1:merchant-restock'));
     const originalTurn = resolveCombatTurn(combat, { type: 'attack' }, complete.campaign.inventory, { items: localContent.items });
     const hydratedTurn = resolveCombatTurn(hydrated, { type: 'attack' }, loaded.state.campaign.inventory, { items: localContent.items });
     expect(hydratedTurn.events).toEqual(originalTurn.events);
@@ -432,6 +463,13 @@ describe('V2 save recovery', () => {
       ['a non-summoner role-use budget', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemies[0].roleUses = 1; }],
       ['an extra catalog enemy outside the encounter definition', (envelope: any) => { const first = envelope.state.expedition.currentCombat.combat.enemies[0]; envelope.state.expedition.currentCombat.combat.enemies.push({ ...first, instanceId: 'enemy-1-extra' }); }],
       ['combat payload on the story screen', (envelope: any) => { envelope.state.flow.screen = 'story'; }],
+      ['a forged direct combat instance ID', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemies[0].instanceId = 'enemy-1-2'; envelope.state.expedition.currentCombat.combat.primaryEnemyId = 'enemy-1-2'; envelope.state.expedition.currentCombat.combat.enemyIntents[0].enemyId = 'enemy-1-2'; }],
+      ['an active combat with no living-enemy intent', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemyIntents = []; }],
+      ['an active combat with a mismatched legacy intent', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemyIntent = 'heavy'; }],
+      ['a full-health living victory on the reward screen', (envelope: any) => { envelope.state.expedition.currentCombat.combat.outcome = 'victory'; envelope.state.flow.screen = 'reward'; }],
+      ['an active combat on the reward screen', (envelope: any) => { envelope.state.flow.screen = 'reward'; }],
+      ['a defeat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.player.health = 0; envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'defeat'; envelope.state.expedition.pendingRewards = []; envelope.state.flow.screen = 'defeat'; }],
+      ['a fled combat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'fled'; envelope.state.expedition.pendingRewards = []; envelope.state.flow.screen = 'reward'; }],
     ] as const;
     for (const [_label, mutate] of impossibleRuntime) {
       const candidate = JSON.parse(before ?? '{}');
@@ -469,6 +507,39 @@ describe('V2 save recovery', () => {
     const hydratedNext = resolveCombatTurn(loaded.state.expedition.currentCombat.combat, { type: 'guard' }, loaded.state.campaign.inventory, { items: localContent.items });
     expect(hydratedNext.events).toEqual(originalNext.events);
     expect(hydratedNext.combat.rngState).toBe(originalNext.combat.rngState);
+    expect(repo.saveSlot(1, loaded.state)).toEqual({ ok: true });
+  });
+
+  it('binds duplicate direct enemies and summoned smoke to their canonical occurrence IDs', () => {
+    const storage = new MemoryStorage();
+    const localContent = makeContentIndex();
+    const caller = { id: 'caller', archetypeId: 'caller', name: 'Caller', rank: 1, level: 1, species: 'human' as const, region: 'gloamwood' as const, maxHealth: 20, attack: 3, armor: 0, ward: 0, intentWeights: { hex: 1 }, traits: ['summon'], rewardTags: [], description: 'Calls smoke.', artFamily: 'caller' };
+    (localContent.enemies as Map<never, never>).set('caller' as never, caller as never);
+    (localContent.encounters as Map<never, never>).set('duplicate-callers' as never, { id: 'duplicate-callers' as never, enemyIds: ['caller' as never, 'caller' as never] } as never);
+    const hero = { class: 'mage' as const, name: 'Aster', level: 1, xp: 0, health: 20, maxHealth: 20, focus: 10, maxFocus: 10, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5, attackBonus: 0, guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] } };
+    const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
+    const combat = createEncounter(hero, { id: 'duplicate-callers' as never, enemyIds: ['caller' as never, 'caller' as never] }, localContent, 7);
+    const stateWithCombat = { ...base, expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'duplicate-callers' as never, combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'combat' as const, overlay: null, merchant: null } };
+    const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
+
+    expect(repo.saveSlot(1, stateWithCombat)).toEqual({ ok: true });
+    const direct = JSON.parse(repo.exportSlot(1) ?? '{}');
+    expect(direct.state.expedition.currentCombat.combat.enemies.map((enemy: { instanceId: string }) => enemy.instanceId)).toEqual(['caller', 'caller-2']);
+    direct.state.expedition.currentCombat.combat.enemies[1].instanceId = 'caller-3';
+    direct.state.expedition.currentCombat.combat.enemyIntents[1].enemyId = 'caller-3';
+    expect(repo.importSlot(2, signed(direct))).toMatchObject({ ok: false, reason: 'corrupt' });
+    expect(storage.getItem(saveActiveKey(2))).toBeNull();
+
+    const summoned = resolveCombatTurn(combat, { type: 'guard' }, base.campaign.inventory, { items: localContent.items });
+    expect(summoned.combat.enemies.map((enemy) => enemy.id)).toEqual(['caller', 'caller-2', 'caller-smoke-1', 'caller-2-smoke-1']);
+    const stateWithSummons = { ...stateWithCombat, expedition: { ...stateWithCombat.expedition, currentCombat: { ...stateWithCombat.expedition.currentCombat, combat: summoned.combat } } };
+    expect(repo.saveSlot(1, stateWithSummons)).toEqual({ ok: true });
+    const forged = JSON.parse(repo.exportSlot(1) ?? '{}');
+    forged.state.expedition.currentCombat.combat.enemies[3].instanceId = 'caller-2-smoke-2';
+    forged.state.expedition.currentCombat.combat.enemyIntents[3].enemyId = 'caller-2-smoke-2';
+
+    expect(repo.importSlot(2, signed(forged))).toMatchObject({ ok: false, reason: 'corrupt' });
+    expect(storage.getItem(saveActiveKey(2))).toBeNull();
   });
 });
 

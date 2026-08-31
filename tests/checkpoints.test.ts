@@ -79,6 +79,41 @@ describe('campaign checkpoints', () => {
     expect(repo.loadSlot(1)).toMatchObject({ ok: true, state: { campaign: { heroName: 'Mira' }, expedition: { currentCombat: { combat: { player: { name: 'Mira' } } } } } });
   });
 
+  it('persists a reducer-created victory on the reward screen and re-saves its hydrated terminal state', () => {
+    const victoryContent: ContentIndex = {
+      ...orchestrationContent,
+      enemies: new Map([...orchestrationContent.enemies, ['enemy-1' as never, { ...orchestrationContent.enemies.get('enemy-1' as never)!, maxHealth: 1 }]]),
+    };
+    const created = createCampaign({ heroClass: 'warrior', name: 'Mira', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, victoryContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, victoryContent).state;
+    const combat = reduceGame(started, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, victoryContent).state;
+    const won = reduceGame(combat, { type: 'combat-turn', action: { type: 'attack' }, updatedAt: '2026-08-31T00:03:00.000Z' }, victoryContent).state;
+    const repo = createSaveRepository(new MemoryStorage(), () => '2026-08-31T00:04:00.000Z', victoryContent);
+
+    expect(won.flow.screen).toBe('reward');
+    expect(won.expedition?.currentCombat?.combat?.outcome).toBe('victory');
+    expect(repo.saveSlot(1, won)).toEqual({ ok: true });
+    const loaded = repo.loadSlot(1);
+    expect(loaded).toMatchObject({ ok: true, state: { flow: { screen: 'reward' }, expedition: { currentCombat: { combat: { outcome: 'victory', enemyIntents: [] } } } } });
+    if (!loaded.ok) throw new Error('Expected a hydrated victory save.');
+    expect(repo.saveSlot(1, loaded.state)).toEqual({ ok: true });
+  });
+
+  it('keeps a coherent loaded checkpoint restartable', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
+    const routed = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, content).state;
+    const repo = createSaveRepository(new MemoryStorage(), () => '2026-08-31T00:02:00.000Z', content);
+
+    expect(repo.saveSlot(1, routed)).toEqual({ ok: true });
+    const loaded = repo.loadSlot(1);
+    if (!loaded.ok) throw new Error('Expected a hydrated checkpoint save.');
+    const restarted = restartChapter(loaded.state, content, '2026-08-31T00:03:00.000Z');
+
+    expect(restarted.expedition).toBeNull();
+    expect(restarted.flow.screen).toBe('camp');
+    expect(repo.saveSlot(1, restarted)).toEqual({ ok: true });
+  });
+
   it('loses expedition gains but keeps permanent progression on defeat', () => {
     const started = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const startedRoute = reduceGame(started, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;

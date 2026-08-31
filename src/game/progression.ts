@@ -8,6 +8,11 @@ export const LEVEL_CAP = 15;
 const XP_BY_LEVEL = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250, 3850, 4500, 5200, 5950] as const;
 const CHAPTER_SOFT_CAP: Readonly<Record<ChapterId, number>> = { ch01: 3, ch02: 5, ch03: 7, ch04: 9, ch05: 11, ch06: 13, ch07: 15, ch08: 15 };
 
+/** The highest progression level that Chronicle I awards within a chapter. */
+export function chapterLevelCap(chapterId: ChapterId): number {
+  return CHAPTER_SOFT_CAP[chapterId];
+}
+
 export type DerivedStatName = 'attack' | 'armor' | 'ward' | 'maxHealth' | 'maxFocus' | 'strength' | 'cunning' | 'will';
 
 export interface HeroProgress {

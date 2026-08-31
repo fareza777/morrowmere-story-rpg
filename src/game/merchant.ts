@@ -20,6 +20,8 @@ export interface MerchantVisit {
   readonly merchantId: MerchantId;
   readonly restockKey: string;
   readonly restockSeed: number;
+  /** The hero level used when this deterministic stock was originally generated. */
+  readonly generatedAtLevel: number;
   readonly stock: readonly MerchantStockEntry[];
 }
 export interface MerchantContext {
@@ -192,6 +194,7 @@ export function generateMerchantVisit(
     merchantId: merchant.id,
     restockKey: context.restockKey,
     restockSeed: seed,
+    generatedAtLevel: context.heroLevel,
     stock: createRng(seed)
       .shuffle(distinctEligible)
       .slice(0, DEFAULT_STOCK_SIZE)

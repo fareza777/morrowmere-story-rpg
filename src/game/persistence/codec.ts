@@ -3,8 +3,8 @@ import type { ContentIndex } from '../content/schema';
 import { roleForEnemy } from '../combat/enemy-ai';
 import type { CombatState, EnemyCombatant, HeroCombatant, StatusEffect } from '../combat/types';
 import type { EnemyDefinition } from '../types';
-import { merchantRestockSeed } from '../merchant';
-import { deriveHeroStats } from '../progression';
+import { generateMerchantVisit, merchantRestockSeed } from '../merchant';
+import { chapterLevelCap, deriveHeroStats } from '../progression';
 import type { CampaignCheckpointPayload, CampaignState, ExpeditionState, GameStateV2, ProfileState } from '../state/types';
 import {
   isProfileState,
@@ -108,19 +108,35 @@ function validDirectorContent(value: DirectorDto, content: ContentIndex): boolea
     && value.currentRunBlockedFamilies.every((family) => families.has(family));
 }
 
-function sameMultiset(expected: readonly string[], actual: readonly string[]): boolean {
-  if (expected.length !== actual.length) return false;
-  const counts = new Map<string, number>();
-  for (const value of expected) counts.set(value, (counts.get(value) ?? 0) + 1);
-  for (const value of actual) {
-    const remaining = counts.get(value) ?? 0;
-    if (remaining === 0) return false;
-    counts.set(value, remaining - 1);
-  }
-  return [...counts.values()].every((count) => count === 0);
+function validProbability(value: number): boolean { return finite(value) && value >= 0 && value <= 100; }
+
+interface ExpectedDirectEnemy {
+  readonly instanceId: string;
+  readonly enemyId: string;
 }
 
-function validProbability(value: number): boolean { return finite(value) && value >= 0 && value <= 100; }
+function expectedDirectEnemies(enemyIds: readonly string[]): readonly ExpectedDirectEnemy[] {
+  const occurrences = new Map<string, number>();
+  return enemyIds.map((enemyId) => {
+    const occurrence = (occurrences.get(enemyId) ?? 0) + 1;
+    occurrences.set(enemyId, occurrence);
+    return { enemyId, instanceId: occurrence === 1 ? enemyId : `${enemyId}-${occurrence}` };
+  });
+}
+
+function compatibilityEnemyId(enemies: readonly EnemyCombatDto[]): string | null {
+  return enemies.find((enemy) => enemy.health > 0)?.instanceId ?? enemies[0]?.instanceId ?? null;
+}
+
+function orderedSubset<T>(actual: readonly T[], expected: readonly T[], same: (left: T, right: T) => boolean): boolean {
+  let cursor = 0;
+  for (const value of actual) {
+    while (cursor < expected.length && !same(value, expected[cursor]!)) cursor += 1;
+    if (cursor === expected.length) return false;
+    cursor += 1;
+  }
+  return true;
+}
 
 function validHydratedPlayer(value: CombatDto['player'], campaign: CampaignDto, content: ContentIndex): boolean {
   const base = basePlayer(decodeCampaign(campaign), content);
@@ -166,24 +182,51 @@ function validHydratedEnemy(value: EnemyCombatDto, content: ContentIndex): boole
 
 function validCombatContent(value: CombatDto, campaign: CampaignDto, encounterEnemyIds: readonly string[], content: ContentIndex): boolean {
   if (!validHydratedPlayer(value.player, campaign, content)) return false;
-  const directEnemyIds = value.enemies.flatMap((enemy) => enemy.source.kind === 'catalog' ? [enemy.source.enemyId] : []);
-  if (!sameMultiset(encounterEnemyIds, directEnemyIds) || !value.enemies.every((enemy) => validHydratedEnemy(enemy, content))) return false;
-  const directOrigins = new Set(directEnemyIds);
-  for (const enemy of value.enemies) {
-    if (enemy.source.kind !== 'summon-smoke') continue;
-    const origin = content.enemies.get(enemy.source.originEnemyId as never);
-    if (!directOrigins.has(enemy.source.originEnemyId) || !origin || roleForEnemy(origin) !== 'summoner') return false;
+  const direct = expectedDirectEnemies(encounterEnemyIds);
+  if (value.enemies.length < direct.length || new Set(value.enemies.map((enemy) => enemy.instanceId)).size !== value.enemies.length || !value.enemies.every((enemy) => validHydratedEnemy(enemy, content))) return false;
+  for (const [index, expected] of direct.entries()) {
+    const enemy = value.enemies[index]!;
+    if (enemy.source.kind !== 'catalog' || enemy.source.enemyId !== expected.enemyId || enemy.instanceId !== expected.instanceId) return false;
   }
+  const directCombatants = value.enemies.slice(0, direct.length);
+  const summonedOwners = new Set<string>();
+  for (const enemy of value.enemies.slice(direct.length)) {
+    if (enemy.source.kind !== 'summon-smoke') return false;
+    const owner = directCombatants.find((candidate) => candidate.source.kind === 'catalog' && `${candidate.instanceId}-smoke-1` === enemy.instanceId);
+    if (!owner || owner.source.kind !== 'catalog') return false;
+    const definition = content.enemies.get(owner.source.enemyId as never);
+    if (!definition || roleForEnemy(definition) !== 'summoner' || enemy.source.originEnemyId !== owner.source.enemyId || summonedOwners.has(owner.instanceId)) return false;
+    summonedOwners.add(owner.instanceId);
+  }
+  const primaryEnemyId = compatibilityEnemyId(value.enemies);
+  if (primaryEnemyId === null || value.primaryEnemyId !== primaryEnemyId) return false;
+  const living = value.enemies.filter((enemy) => enemy.health > 0);
+  if (value.outcome === 'active') {
+    if (value.player.health <= 0 || living.length === 0 || value.enemyIntents.length !== living.length) return false;
+    const intentIds = new Set(value.enemyIntents.map((intent) => intent.enemyId));
+    const primaryIntent = value.enemyIntents.find((intent) => intent.enemyId === primaryEnemyId);
+    if (intentIds.size !== value.enemyIntents.length || living.some((enemy) => !intentIds.has(enemy.instanceId)) || !primaryIntent || value.enemyIntent !== primaryIntent.intent) return false;
+  } else if (value.outcome === 'victory') {
+    if (value.player.health <= 0 || living.length !== 0) return false;
+  } else if (value.outcome === 'defeat') {
+    if (value.player.health !== 0 || living.length === 0) return false;
+  } else if (value.outcome === 'fled' && (value.player.health <= 0 || living.length === 0)) return false;
   if (value.companionId === null) return value.companionCooldown === 0 && value.companionDamageDealt === 0 && value.companionSupportBudget === 0;
   return campaign.companions.records.some((record) => record.companionId === value.companionId && record.status === 'recruited')
     && value.companionDamageDealt <= value.companionSupportBudget;
 }
 
-function validMerchantVisitsContent(value: ExpeditionDto['merchantVisits'], content: ContentIndex): boolean {
-  return value.every((visit) => {
+function validMerchantVisitsContent(value: ExpeditionDto, campaign: CampaignDto, content: ContentIndex): boolean {
+  const namespaces = new Set<string>();
+  return value.merchantVisits.every((visit) => {
     const merchant = content.merchants.get(visit.merchantId as never);
-    if (!merchant || new Set(visit.stock.map((entry) => entry.id)).size !== visit.stock.length) return false;
-    return visit.stock.every((entry) => hasCatalogId(content.items as ReadonlyMap<string, unknown>, entry.itemId) && merchant.stockItemIds.includes(entry.itemId as never));
+    const namespace = `${visit.merchantId}\u0000${visit.restockKey}`;
+    if (!merchant || visit.generatedAtLevel > campaign.hero.level || visit.generatedAtLevel > chapterLevelCap(value.position.chapterId as never) || namespaces.has(namespace)) return false;
+    namespaces.add(namespace);
+    const authorizesVisit = [...content.events.values()].some((scene) => scene.chapterId === value.position.chapterId && scene.type === 'hub' && scene.merchantId === visit.merchantId && scene.merchantRestockKey !== undefined && `${value.routeSeed}:${scene.merchantId}:${scene.merchantRestockKey}` === visit.restockKey);
+    if (!authorizesVisit) return false;
+    const original = generateMerchantVisit({ content, seed: value.routeSeed, restockKey: visit.restockKey, heroLevel: visit.generatedAtLevel, chapter: Number(value.position.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1 }, merchant);
+    return visit.stock.length <= 6 && orderedSubset(visit.stock, original.stock, (actual, expected) => actual.id === expected.id && actual.itemId === expected.itemId);
   });
 }
 
@@ -195,9 +238,11 @@ function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, con
   if (value.currentCombat !== null) {
     if (!encounter || (value.currentCombat.combat !== null && !validCombatContent(value.currentCombat.combat, campaign, encounter.enemyIds, content))) return false;
   }
+  const combat = value.currentCombat?.combat;
+  if (value.pendingRewards.length !== 0 && combat?.outcome !== 'victory') return false;
   return hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.pendingRewards)
     && hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.unbankedLoot)
-    && validMerchantVisitsContent(value.merchantVisits, content);
+    && validMerchantVisitsContent(value, campaign, content);
 }
 
 function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
@@ -211,8 +256,10 @@ function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
       && expedition.merchantVisits.some((visit) => visit.merchantId === flow.merchant!.merchantId && visit.restockKey === flow.merchant!.restockKey);
   }
   const combat = expedition?.currentCombat?.combat ?? null;
-  if (combat !== null && !['combat', 'reward', 'defeat'].includes(flow.screen)) return false;
-  return !['combat', 'reward'].includes(flow.screen) || combat !== null;
+  if (combat === null) return !['combat', 'reward'].includes(flow.screen);
+  if (combat.outcome === 'active') return flow.screen === 'combat';
+  if (combat.outcome === 'victory' || combat.outcome === 'fled') return flow.screen === 'reward';
+  return flow.screen === 'defeat';
 }
 
 /** Content maps own immutable definitions; a DTO may only carry IDs that can be hydrated from those maps. */
@@ -221,10 +268,24 @@ export function isContentBackedProfile(profile: ProfileState, content: ContentIn
     && hasCatalogIds(content.enemies as ReadonlyMap<string, unknown>, profile.discoveries.enemies);
 }
 
+function sameCampaignIdentity(left: CampaignCheckpointDto, right: CampaignCheckpointDto): boolean {
+  return left.seed === right.seed && left.heroName === right.heroName && left.hero.heroClass === right.hero.heroClass;
+}
+
+function validCheckpointCoherence(value: SaveStateDto, content: ContentIndex): boolean {
+  const { campaign, checkpoints } = value;
+  if (campaign.chapterId !== checkpoints.chapter.campaign.chapterId || !sameCampaignIdentity(campaign, checkpoints.chapter.campaign)) return false;
+  if (checkpoints.camp !== null) {
+    const campScene = checkpoints.camp.campSceneId === null ? null : content.events.get(checkpoints.camp.campSceneId as never);
+    if (checkpoints.camp.campaign.chapterId !== campaign.chapterId || !sameCampaignIdentity(campaign, checkpoints.camp.campaign) || (checkpoints.camp.campSceneId !== null && (!campScene || campScene.chapterId !== campaign.chapterId))) return false;
+  }
+  return value.expedition === null || value.expedition.position.chapterId === campaign.chapterId;
+}
+
 export function isContentBackedSaveState(value: SaveStateDto, content: ContentIndex): boolean {
   if (!isContentBackedProfile(value.profile, content) || !validCampaignCheckpointContent(value.campaign, content) || !validCampaignCheckpointContent(value.checkpoints.chapter.campaign, content) || (value.checkpoints.camp !== null && !validCampaignCheckpointContent(value.checkpoints.camp.campaign, content))) return false;
   if (value.checkpoints.camp?.campSceneId !== null && value.checkpoints.camp?.campSceneId !== undefined && !hasCatalogId(content.events as ReadonlyMap<string, unknown>, value.checkpoints.camp.campSceneId)) return false;
-  if (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, content)) return false;
+  if (!validCheckpointCoherence(value, content) || (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, content))) return false;
   return validFlowContent(value, content);
 }
 
@@ -355,7 +416,7 @@ function validRuntimeCompanion(value: unknown): boolean {
     && typeof value.injured === 'boolean' && finite(value.attack) && finite(value.guard) && finite(value.will) && id(value.actionId);
 }
 
-function encodeCombat(value: CombatState, campaign: CampaignState, content: ContentIndex): CombatDto | null {
+function encodeCombat(value: CombatState, campaign: CampaignState, campaignDto: CampaignDto, encounterEnemyIds: readonly string[], content: ContentIndex): CombatDto | null {
   if (!exact(value, ['turn', 'rngState', 'player', 'enemy', 'enemies', 'enemyIntent', 'enemyIntents', 'intentText', 'outcome', 'log', 'missedAttacks', 'companion', 'companionCooldown', 'companionDamageDealt', 'companionSupportBudget']) || !record(value.player) || !record(value.enemy) || !Array.isArray(value.enemies) || !Array.isArray(value.enemyIntents) || !Array.isArray(value.log) || !finiteInteger(value.turn) || value.turn < 1 || !finiteInteger(value.rngState) || value.rngState < 0 || value.enemies.length === 0 || !['strike', 'heavy', 'guard', 'hex', 'recover', 'flee'].includes(value.enemyIntent) || !['active', 'victory', 'defeat', 'fled'].includes(value.outcome) || !finiteInteger(value.missedAttacks) || value.missedAttacks < 0 || !finiteInteger(value.companionCooldown) || value.companionCooldown < 0 || !finite(value.companionDamageDealt) || !finite(value.companionSupportBudget)) return null;
   if (value.companion !== null && !validRuntimeCompanion(value.companion)) return null;
   const base = basePlayer(campaign, content);
@@ -364,16 +425,36 @@ function encodeCombat(value: CombatState, campaign: CampaignState, content: Cont
   const enemies = value.enemies.map((enemy) => encodeEnemy(enemy, content));
   const intents = value.enemyIntents.map((intent) => exact(intent, ['enemyId', 'intent', 'text']) && id(intent.enemyId) && typeof intent.text === 'string' && typeof intent.intent === 'string' && ['strike', 'heavy', 'guard', 'hex', 'recover', 'flee'].includes(intent.intent) ? { enemyId: intent.enemyId, intent: intent.intent } : null);
   const companion = value.companion === null ? null : buildCompanionCombatSnapshot(campaign.companions, content);
-  if (!modifiers || !statuses || enemies.some((entry) => entry === null) || intents.some((entry) => entry === null) || !id(value.enemy.id) || !value.enemies.some((enemy) => enemy.id === value.enemy.id) || (value.companion !== null && (!companion || companion.companionId !== value.companion.companionId))) return null;
-  return { turn: value.turn, rngState: value.rngState, player: { health: value.player.health, focus: value.player.focus, guarding: value.player.guarding, statuses, modifiers }, enemies: enemies as readonly EnemyCombatDto[], primaryEnemyId: value.enemy.id, enemyIntent: value.enemyIntent, enemyIntents: intents as CombatDto['enemyIntents'], outcome: value.outcome, missedAttacks: value.missedAttacks, companionId: companion?.companionId ?? null, companionCooldown: value.companionCooldown, companionDamageDealt: value.companionDamageDealt, companionSupportBudget: value.companionSupportBudget };
+  if (!modifiers || !statuses || enemies.some((entry) => entry === null) || intents.some((entry) => entry === null) || !id(value.enemy.id) || (value.companion !== null && (!companion || companion.companionId !== value.companion.companionId))) return null;
+  const encodedEnemies = enemies as readonly EnemyCombatDto[];
+  const primaryEnemyId = compatibilityEnemyId(encodedEnemies);
+  if (primaryEnemyId === null || value.enemy.id !== primaryEnemyId) return null;
+  const terminal = value.outcome !== 'active';
+  const dto: CombatDto = {
+    turn: value.turn,
+    rngState: value.rngState,
+    player: { health: value.player.health, focus: value.player.focus, guarding: value.player.guarding, statuses, modifiers },
+    enemies: encodedEnemies,
+    primaryEnemyId,
+    enemyIntent: terminal ? 'strike' : value.enemyIntent,
+    enemyIntents: terminal ? [] : intents as CombatDto['enemyIntents'],
+    outcome: value.outcome,
+    missedAttacks: value.missedAttacks,
+    companionId: companion?.companionId ?? null,
+    companionCooldown: value.companionCooldown,
+    companionDamageDealt: value.companionDamageDealt,
+    companionSupportBudget: value.companionSupportBudget,
+  };
+  return validCombatContent(dto, campaignDto, encounterEnemyIds, content) ? dto : null;
 }
 
-function encodeExpedition(value: ExpeditionState, campaign: CampaignState, content: ContentIndex): ExpeditionDto | null {
+function encodeExpedition(value: ExpeditionState, campaign: CampaignState, campaignDto: CampaignDto, content: ContentIndex): ExpeditionDto | null {
   if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'currentCombat', 'pendingRewards', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits']) || !['kings-road', 'old-forest', 'ruined-pass'].includes(value.routeProfile) || !finiteInteger(value.routeSeed) || value.routeSeed < 0 || !exact(value.position, ['chapterId', 'slot']) || typeof value.position.chapterId !== 'string' || !finiteInteger(value.position.slot) || value.position.slot < 0 || (value.currentSceneId !== null && !id(value.currentSceneId)) || !strings(value.pendingRewards) || !finiteInteger(value.unbankedGold) || value.unbankedGold < 0 || !strings(value.unbankedLoot) || !strings(value.temporaryBoons) || !Array.isArray(value.merchantVisits)) return null;
   const director = encodeDirector(value.director);
-  const currentCombat = value.currentCombat === null ? null : exact(value.currentCombat, ['encounterId', 'combat']) && id(value.currentCombat.encounterId) ? { encounterId: value.currentCombat.encounterId, combat: value.currentCombat.combat === null ? null : encodeCombat(value.currentCombat.combat, campaign, content) } : null;
+  const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId);
+  const currentCombat = value.currentCombat === null ? null : exact(value.currentCombat, ['encounterId', 'combat']) && id(value.currentCombat.encounterId) && encounter !== null && encounter !== undefined ? { encounterId: value.currentCombat.encounterId, combat: value.currentCombat.combat === null ? null : encodeCombat(value.currentCombat.combat, campaign, campaignDto, encounter.enemyIds, content) } : null;
   if (!director || (value.currentCombat !== null && (!currentCombat || currentCombat.combat === null && value.currentCombat.combat !== null))) return null;
-  const merchantVisits = value.merchantVisits.map((visit) => exact(visit, ['merchantId', 'restockKey', 'restockSeed', 'stock']) && id(visit.merchantId) && id(visit.restockKey) && finiteInteger(visit.restockSeed) && visit.restockSeed >= 0 && Array.isArray(visit.stock) && visit.stock.every((entry) => exact(entry, ['id', 'itemId']) && id(entry.id) && id(entry.itemId)) ? { merchantId: visit.merchantId, restockKey: visit.restockKey, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId })) } : null);
+  const merchantVisits = value.merchantVisits.map((visit) => exact(visit, ['merchantId', 'restockKey', 'restockSeed', 'generatedAtLevel', 'stock']) && id(visit.merchantId) && id(visit.restockKey) && finiteInteger(visit.restockSeed) && visit.restockSeed >= 0 && finiteInteger(visit.generatedAtLevel) && visit.generatedAtLevel >= 1 && visit.generatedAtLevel <= 15 && Array.isArray(visit.stock) && visit.stock.every((entry) => exact(entry, ['id', 'itemId']) && id(entry.id) && id(entry.itemId)) ? { merchantId: visit.merchantId, restockKey: visit.restockKey, generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId })) } : null);
   return merchantVisits.some((entry) => entry === null) ? null : { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director, position: { chapterId: value.position.chapterId, slot: value.position.slot }, currentSceneId: value.currentSceneId, currentCombat: currentCombat as ExpeditionDto['currentCombat'], pendingRewards: [...value.pendingRewards], unbankedGold: value.unbankedGold, unbankedLoot: [...value.unbankedLoot], temporaryBoons: [...value.temporaryBoons], merchantVisits: merchantVisits as readonly ExpeditionDto['merchantVisits'][number][] };
 }
 
@@ -391,8 +472,9 @@ export function encodeSaveState(state: GameStateV2, content: ContentIndex): Save
   const campaign = encodeCampaign(state.campaign);
   const chapter = encodeCampaignCheckpoint(state.checkpoints.chapter.campaign);
   const camp = state.checkpoints.camp === null ? null : encodeCampaignCheckpoint(state.checkpoints.camp.campaign);
-  const expedition = state.expedition === null ? null : encodeExpedition(state.expedition, state.campaign, content);
-  if (!profile || !campaign || !chapter || (state.checkpoints.camp !== null && !camp) || (state.expedition !== null && !expedition)) return null;
+  if (!profile || !campaign || !chapter || (state.checkpoints.camp !== null && !camp)) return null;
+  const expedition = state.expedition === null ? null : encodeExpedition(state.expedition, state.campaign, campaign, content);
+  if (state.expedition !== null && !expedition) return null;
   const dto: SaveStateDto = { schemaVersion: 2, profile, campaign, expedition, checkpoints: { chapter: { campaign: chapter, enteredAt: state.checkpoints.chapter.enteredAt }, camp: camp && state.checkpoints.camp ? { campaign: camp, campSceneId: state.checkpoints.camp.campSceneId, savedAt: state.checkpoints.camp.savedAt } : null }, flow: { screen: state.flow.screen, overlay: state.flow.overlay, merchant: state.flow.merchant ? { ...state.flow.merchant } : null }, updatedAt: state.updatedAt };
   return isSaveStateDto(dto) && isContentBackedSaveState(dto, content) && decodeSaveState(dto, content) ? dto : null;
 }
@@ -423,13 +505,16 @@ function decodeCombat(value: CombatDto, campaign: CampaignState, content: Conten
   const primary = hydratedEnemies.find((enemy) => enemy.id === value.primaryEnemyId);
   const companion = value.companionId === null ? null : buildCompanionCombatSnapshot(campaign.companions, content);
   if (!primary || (value.companionId !== null && (!companion || companion.companionId !== value.companionId)) || !value.enemyIntents.every((entry) => hydratedEnemies.some((enemy) => enemy.id === entry.enemyId))) return null;
-  return { turn: value.turn, rngState: value.rngState, player, enemy: primary, enemies: hydratedEnemies, enemyIntent: value.enemyIntent, enemyIntents: value.enemyIntents.map((entry) => ({ enemyId: entry.enemyId, intent: entry.intent, text: intentText(entry.intent) })), intentText: intentText(value.enemyIntent), outcome: value.outcome, log: [], missedAttacks: value.missedAttacks, companion, companionCooldown: value.companionCooldown, companionDamageDealt: value.companionDamageDealt, companionSupportBudget: value.companionSupportBudget };
+  const terminal = value.outcome !== 'active';
+  const enemyIntents = terminal ? [] : value.enemyIntents.map((entry) => ({ enemyId: entry.enemyId, intent: entry.intent, text: intentText(entry.intent) }));
+  const enemyIntent = terminal ? 'strike' : value.enemyIntent;
+  return { turn: value.turn, rngState: value.rngState, player, enemy: primary, enemies: hydratedEnemies, enemyIntent, enemyIntents, intentText: intentText(enemyIntent), outcome: value.outcome, log: [], missedAttacks: value.missedAttacks, companion, companionCooldown: value.companionCooldown, companionDamageDealt: value.companionDamageDealt, companionSupportBudget: value.companionSupportBudget };
 }
 function decodeDirector(value: DirectorDto): ExpeditionState['director'] { return { ...decodeDirectorMemory(value), usedSceneIds: value.usedSceneIds as never, recentSceneKinds: [...value.recentSceneKinds], recentFamilies: [...value.recentFamilies], currentRunBlockedFamilies: [...value.currentRunBlockedFamilies], tension: value.tension, threat: value.threat }; }
 function decodeExpedition(value: ExpeditionDto, campaign: CampaignState, content: ContentIndex): ExpeditionState | null {
   const currentCombat = value.currentCombat === null ? null : { encounterId: value.currentCombat.encounterId as never, combat: value.currentCombat.combat === null ? null : decodeCombat(value.currentCombat.combat, campaign, content) };
   if (value.currentCombat !== null && value.currentCombat.combat !== null && currentCombat?.combat === null) return null;
-  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, currentCombat, pendingRewards: value.pendingRewards as never, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
+  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, currentCombat, pendingRewards: value.pendingRewards as never, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
 }
 
 export function decodeSaveState(value: unknown, content: ContentIndex): GameStateV2 | null {
