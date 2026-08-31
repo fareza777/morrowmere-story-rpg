@@ -1,9 +1,12 @@
 import {
   AdMob,
-  BannerAdPosition,
-  BannerAdSize,
+  BannerAdPluginEvents,
 } from '@capacitor-community/admob';
 
+import {
+  createBannerController,
+  type BannerControllerPlugin,
+} from './banner-controller';
 import { resolveAdConfigFromEnvironment } from './config';
 import { mapConsentInfo, UNAVAILABLE_CONSENT, UNKNOWN_CONSENT } from './consent';
 import type {
@@ -40,6 +43,12 @@ function createCapacitorAdMobPort(): AdMobPort {
     hideBanner: () => AdMob.hideBanner(),
     resumeBanner: () => AdMob.resumeBanner(),
     removeBanner: () => AdMob.removeBanner(),
+    addBannerSizeChangedListener: (listener) =>
+      AdMob.addListener(BannerAdPluginEvents.SizeChanged, listener),
+    addBannerFailedToLoadListener: (listener) =>
+      AdMob.addListener(BannerAdPluginEvents.FailedToLoad, listener),
+    addBannerClosedListener: (listener) =>
+      AdMob.addListener(BannerAdPluginEvents.Closed, listener),
     prepareRewardVideoAd: (options) => AdMob.prepareRewardVideoAd(options),
     showRewardVideoAd: (options) => AdMob.showRewardVideoAd(options),
     prepareInterstitial: (options) => AdMob.prepareInterstitial(options),
@@ -64,6 +73,30 @@ export function createAdService(
     }
   };
 
+  const noOpListener = async () => ({ remove: async () => undefined });
+  const hasExactBannerListenerSupport = Boolean(
+    plugin.addBannerSizeChangedListener
+    && plugin.addBannerFailedToLoadListener
+    && plugin.addBannerClosedListener,
+  );
+  const bannerPlugin: BannerControllerPlugin = {
+    showBanner: (options) => plugin.showBanner(options),
+    hideBanner: () => plugin.hideBanner?.() ?? Promise.resolve(),
+    resumeBanner: () => plugin.resumeBanner?.() ?? Promise.resolve(),
+    removeBanner: () => plugin.removeBanner(),
+    addBannerSizeChangedListener: (listener) =>
+      plugin.addBannerSizeChangedListener?.(listener) ?? noOpListener(),
+    addBannerFailedToLoadListener: (listener) =>
+      plugin.addBannerFailedToLoadListener?.(listener) ?? noOpListener(),
+    addBannerClosedListener: (listener) =>
+      plugin.addBannerClosedListener?.(listener) ?? noOpListener(),
+  };
+  const bannerController = createBannerController(
+    config,
+    bannerPlugin,
+    ({ code, message }) => recordDiagnostic(code, message),
+  );
+
   let consentSnapshot = cloneSnapshot(UNKNOWN_CONSENT);
   let consentFormAvailable = false;
   let sdkInitialization: Promise<boolean> | null = null;
@@ -77,8 +110,6 @@ export function createAdService(
   let interstitialPrepared = false;
   let interstitialPreparation: Promise<void> | null = null;
   let interstitialShowing = false;
-  let bannerVisible = false;
-  let activeInsetCallback: ((heightPx: number) => void) | null = null;
   let destroyed = false;
   let destroyPromise: Promise<void> | null = null;
 
@@ -153,20 +184,6 @@ export function createAdService(
 
   const adsMayBeRequested = (): boolean =>
     runtimeAvailable() && consentSnapshot.canRequestAds;
-
-  const removeBanner = async (): Promise<void> => {
-    activeInsetCallback?.(0);
-    activeInsetCallback = null;
-    if (!bannerVisible) {
-      return;
-    }
-    bannerVisible = false;
-    try {
-      await plugin.removeBanner();
-    } catch {
-      recordDiagnostic('cleanup-failed', 'The native banner could not be removed cleanly.');
-    }
-  };
 
   const service: AdService = {
     initialize,
@@ -249,40 +266,11 @@ export function createAdService(
       placement: AdPlacement,
       onInsetChange: (heightPx: number) => void,
     ): Promise<void> {
-      activeInsetCallback?.(0);
-      activeInsetCallback = onInsetChange;
-      onInsetChange(0);
-
-      if (placement === 'none' || !adsMayBeRequested()) {
-        await removeBanner();
-        return;
-      }
-
-      if (bannerVisible) {
-        return;
-      }
-
-      try {
-        await plugin.showBanner({
-          adId: config.bannerId,
-          isTesting: config.testing,
-          adSize: BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-        });
-        if (!runtimeAvailable()) {
-          try {
-            await plugin.removeBanner();
-          } catch {
-            recordDiagnostic('cleanup-failed', 'A late native banner could not be removed during cleanup.');
-          }
-          return;
-        }
-        bannerVisible = true;
-      } catch {
-        bannerVisible = false;
-        onInsetChange(0);
-        recordDiagnostic('banner-failed', 'The native banner was unavailable for this placement.');
-      }
+      await bannerController.setPlacement(
+        placement,
+        adsMayBeRequested(),
+        onInsetChange,
+      );
     },
 
     async preloadRewarded(): Promise<void> {
@@ -408,25 +396,19 @@ export function createAdService(
       rewardedShowing = false;
       interstitialPrepared = false;
       interstitialShowing = false;
-      activeInsetCallback?.(0);
-      activeInsetCallback = null;
-
-      if (!config.enabled) {
-        return;
-      }
 
       destroyPromise = (async () => {
-        try {
-          await plugin.removeBanner();
-        } catch {
-          recordDiagnostic('cleanup-failed', 'The native banner could not be removed during cleanup.');
+        await bannerController.destroy();
+        if (!config.enabled) {
+          return;
         }
-        try {
-          await plugin.removeAllListeners?.();
-        } catch {
-          recordDiagnostic('cleanup-failed', 'Native ad listeners could not be removed during cleanup.');
+        if (!hasExactBannerListenerSupport) {
+          try {
+            await plugin.removeAllListeners?.();
+          } catch {
+            recordDiagnostic('cleanup-failed', 'Native ad listeners could not be removed during cleanup.');
+          }
         }
-        bannerVisible = false;
       })();
 
       return destroyPromise;

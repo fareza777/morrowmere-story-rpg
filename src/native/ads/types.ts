@@ -1,5 +1,7 @@
 import type {
   AdLoadInfo,
+  AdMobBannerSize,
+  AdMobError,
   AdMobInitializationOptions,
   AdMobRewardItem,
   AdOptions,
@@ -9,6 +11,7 @@ import type {
   BannerAdOptions,
   RewardAdOptions,
 } from '@capacitor-community/admob';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 export type AdPlacement = 'none' | 'title' | 'camp' | 'journal' | 'merchant';
 
@@ -85,6 +88,13 @@ export interface AdMobPort {
   hideBanner?(): Promise<void>;
   resumeBanner?(): Promise<void>;
   removeBanner(): Promise<void>;
+  addBannerSizeChangedListener?(
+    listener: (size: AdMobBannerSize) => void,
+  ): Promise<PluginListenerHandle>;
+  addBannerFailedToLoadListener?(
+    listener: (error: AdMobError) => void,
+  ): Promise<PluginListenerHandle>;
+  addBannerClosedListener?(listener: () => void): Promise<PluginListenerHandle>;
   prepareRewardVideoAd(options: RewardAdOptions): Promise<AdLoadInfo>;
   showRewardVideoAd(options?: AdShowOptions): Promise<AdMobRewardItem>;
   prepareInterstitial(options: AdOptions): Promise<AdLoadInfo>;
