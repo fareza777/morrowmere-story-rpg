@@ -11,6 +11,13 @@ import type {
 } from '../domain/ids';
 import type { EnemyDefinition, ItemDefinition } from '../types';
 
+/**
+ * Immutable catalog item contracts are consumed by pure game systems through
+ * stable `ItemId` map keys.  The existing item shape remains compatible with
+ * the vertical-slice catalog while consumers migrate to these domain modules.
+ */
+export type CatalogItemDefinition = ItemDefinition;
+
 export type ChronicleEventType = 'main' | 'companion' | 'journey' | 'combat' | 'hub';
 
 export interface EventEligibility {
