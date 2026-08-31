@@ -33,6 +33,10 @@ const content: ContentIndex = {
 
 const orchestrationContent: ContentIndex = {
   ...content,
+  items: new Map([...content.items, [itemId('potion-red'), {
+    id: 'potion-red', name: 'Red Mercy', category: 'potion', description: 'A field tonic.',
+    allowedClasses: ['warrior', 'mage', 'warden'], stats: { health: 12 }, value: 12, tags: ['healing'],
+  }]]),
   events: new Map([[sceneId('route-scene'), {
     id: sceneId('route-scene'), chapterId: 'ch01', type: 'main', family: 'road', anchorOrder: 0,
     illustrationId: 'camp-art', title: 'Road', narrative: ['A road.'], eligibility: {}, cooldownRuns: 2, oneShot: true,
@@ -369,6 +373,93 @@ describe('campaign checkpoints', () => {
     const result = reduceGame(state, { type: 'inventory', command: { type: 'equip', entryId: 'blade', heroClass: 'mage' }, updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent);
 
     expect(result.state.campaign.inventory.equipment.weapon).toBe(itemId('warrior-blade'));
+  });
+
+  it.each([
+    ['story', 'stash-potion'],
+    ['combat', 'pack-potion'],
+  ] as const)('rejects %s-time inventory discard before it can desynchronise expedition loot', (screen, entryId) => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const inventory = {
+      ...started.campaign.inventory,
+      pack: [{ id: 'pack-potion', itemId: itemId('potion-red'), quantity: 2 }],
+      stash: [{ id: 'stash-potion', itemId: itemId('potion-red'), quantity: 1 }],
+    };
+    const state: GameStateV2 = {
+      ...started,
+      campaign: { ...started.campaign, inventory },
+      expedition: { ...started.expedition!, unbankedLoot: [itemId('potion-red')] },
+      flow: { ...started.flow, screen },
+    };
+    const result = reduceGame(state, { type: 'inventory', command: { type: 'discard', entryId, quantity: 1 }, updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent);
+
+    expect(result.state).toBe(state);
+    expect(result.diagnostic?.code).toBe('camp_required');
+    expect(result.state.expedition?.unbankedLoot).toEqual([itemId('potion-red')]);
+  });
+
+  it('derives secured and unsecured partial-stack sales from the camp checkpoint', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const liveInventory = {
+      ...started.campaign.inventory,
+      pack: [{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 3 }],
+    };
+    const securedInventory = {
+      ...started.checkpoints.camp!.campaign.inventory,
+      pack: [{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 2 }],
+    };
+    const atMerchant: GameStateV2 = {
+      ...started,
+      campaign: { ...started.campaign, inventory: liveInventory },
+      checkpoints: {
+        ...started.checkpoints,
+        camp: { ...started.checkpoints.camp!, campaign: { ...started.checkpoints.camp!.campaign, inventory: securedInventory } },
+      },
+      expedition: {
+        ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
+        sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null },
+        // One item is truly unsecured; the second marker deliberately models stale persisted data.
+        unbankedLoot: [itemId('potion-red'), itemId('potion-red')],
+      },
+    };
+    const opened = reduceGame(atMerchant, { type: 'open-merchant', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
+    const sold = reduceGame(opened, {
+      type: 'trade', intent: { type: 'sell', entryId: 'pack-stack-potion-red', quantity: 2 }, updatedAt: '2026-08-31T00:03:00.000Z',
+    }, orchestrationContent).state;
+    const defeated = returnToCampAfterDefeat({ ...sold, flow: { ...sold.flow, screen: 'defeat', merchant: null } }, orchestrationContent, '2026-08-31T00:04:00.000Z');
+
+    expect(sold.campaign.inventory.pack).toEqual([{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }]);
+    expect(sold.checkpoints.camp!.campaign.inventory.pack).toEqual([{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }]);
+    expect(sold.expedition!.unbankedLoot).toEqual([]);
+    expect(defeated.campaign.inventory.pack).toEqual([{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }]);
+  });
+
+  it('charges a persistent banked-gold choice against the secured checkpoint atomically', () => {
+    const tollScene = {
+      id: sceneId('toll-scene'), chapterId: 'ch01' as const, type: 'main' as const, family: 'toll', anchorOrder: 0,
+      illustrationId: 'camp-art', title: 'The Toll', narrative: ['The gate captain names a price.'], eligibility: {}, cooldownRuns: 0, oneShot: true,
+      choices: [{
+        id: 'pay-toll' as never, label: 'Pay five gold', detail: 'Buy safe passage.', outcome: 'The gate opens.',
+        effects: [
+          { type: 'gold' as const, scope: 'banked' as const, amount: -5 },
+          { type: 'flag' as const, operation: 'add' as const, flagId: 'toll-paid' as never },
+        ],
+      }],
+    };
+    const tollContent: ContentIndex = { ...orchestrationContent, events: new Map([...orchestrationContent.events, [tollScene.id, tollScene]]) };
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, tollContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, tollContent).state;
+    const atToll: GameStateV2 = { ...started, expedition: { ...started.expedition!, currentSceneId: tollScene.id, sceneResolution: null } };
+    const paid = reduceGame(atToll, { type: 'resolve-choice', eventId: tollScene.id, choiceId: 'pay-toll' as never, updatedAt: '2026-08-31T00:02:00.000Z' }, tollContent).state;
+    const defeated = returnToCampAfterDefeat({ ...paid, flow: { ...paid.flow, screen: 'defeat' } }, tollContent, '2026-08-31T00:03:00.000Z');
+
+    expect(paid.campaign.bankedGold).toBe(7);
+    expect(paid.checkpoints.camp!.campaign.bankedGold).toBe(7);
+    expect(paid.campaign.flags).toContain('toll-paid');
+    expect(defeated.campaign.bankedGold).toBe(7);
+    expect(defeated.campaign.flags).toContain('toll-paid');
   });
 
   it('rejects invalid callback promises without mutating the effect batch', () => {

@@ -143,7 +143,23 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
     const instanceId = action.type === 'consumable' ? action.instanceId : action.itemId;
     const used = useItem(inventory, instanceId, 'combat', content.items as never);
     if (!used.ok) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'item_unavailable' }] };
-    player = { ...player, health: Math.min(player.maxHealth, player.health + (used.value.effects.health ?? 0)), focus: Math.min(player.maxFocus, player.focus + (used.value.effects.focus ?? 0)), armor: player.armor + (used.value.effects.armor ?? 0), ward: player.ward + (used.value.effects.ward ?? 0) };
+    const affected = {
+      ...player,
+      health: Math.max(0, Math.min(player.maxHealth, player.health + (used.value.effects.health ?? 0))),
+      focus: Math.max(0, Math.min(player.maxFocus, player.focus + (used.value.effects.focus ?? 0))),
+      attackBonus: player.attackBonus + (used.value.effects.attack ?? 0),
+      will: player.will + (used.value.effects.will ?? 0),
+      armor: player.armor + (used.value.effects.armor ?? 0),
+      ward: player.ward + (used.value.effects.ward ?? 0),
+    };
+    const hasEffect = affected.health !== player.health
+      || affected.focus !== player.focus
+      || affected.attackBonus !== player.attackBonus
+      || affected.will !== player.will
+      || affected.armor !== player.armor
+      || affected.ward !== player.ward;
+    if (!hasEffect) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'item_unavailable' }] };
+    player = affected;
     return finalize(state, player, enemies, rngState, [{ type: 'consumable_used', instanceId }], used.value.inventory, true);
   }
   const target = livingTarget({ ...state, enemies }, action.type === 'attack' || action.type === 'technique' || action.type === 'companion' ? action.targetId : undefined);

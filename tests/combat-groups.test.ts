@@ -7,6 +7,8 @@ import { ENEMIES } from '../src/game/content/enemies';
 import { roleForEnemy } from '../src/game/combat/enemy-ai';
 import type { DomainEvent as CanonicalDomainEvent } from '../src/game/domain/result';
 import type { EncounterDefinition } from '../src/game/content/schema';
+import { ITEMS } from '../src/game/content/items';
+import type { ItemId } from '../src/game/domain/ids';
 
 const inventory = (): InventoryState => ({
   pack: [{ id: 'pack-stack-potion-red', itemId: 'potion-red' as never, quantity: 1 }],
@@ -33,6 +35,15 @@ const companion: CompanionCombatSnapshot = {
 const items = new Map<string, ItemDefinition>([['potion-red', {
   id: 'potion-red', name: 'Red Mercy', category: 'potion', description: '', allowedClasses: ['warrior', 'mage', 'warden'], stats: { health: 12 }, value: 1, tags: ['healing'],
 }]]);
+
+const catalogItems = new Map(ITEMS.map((item) => [item.id as ItemId, item] as const));
+
+function inventoryWith(itemId: ItemId): InventoryState {
+  return {
+    pack: [{ id: `pack-stack-${itemId}`, itemId, quantity: 1 }],
+    stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] },
+  };
+}
 
 const encounter = (id: string, enemyIds: readonly string[], kind: 'regular' | 'boss' = 'regular'): EncounterDefinition => ({
   id: id as never,
@@ -74,6 +85,36 @@ describe('group combat', () => {
     expect(result.combat.player.health).toBeGreaterThan(20);
     expect(result.combat.turn).toBe(2);
     expect(canonicalEvents).toEqual(result.events);
+  });
+
+  it('rejects a full-health restorative without consuming it or advancing combat', () => {
+    const combat = createEncounter(hero, encounter('solo', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
+    const pack = inventoryWith('potion-red' as ItemId);
+    const result = resolveCombatTurn(combat, { type: 'consumable', instanceId: 'pack-stack-potion-red' }, pack, { items: catalogItems });
+
+    expect(result.combat).toBe(combat);
+    expect(result.inventory).toBe(pack);
+    expect(result.combat.turn).toBe(1);
+    expect(result.combat.rngState).toBe(combat.rngState);
+    expect(result.events).toEqual([{ type: 'combat_action_rejected', reason: 'item_unavailable' }]);
+  });
+
+  it.each([
+    ['potion-ember', 3, 3],
+    ['potion-black-rain', 4, 4],
+    ['scroll-sparks', 0, 3],
+    ['scroll-thorns', 2, 2],
+  ] as const)('applies the authored attack and will effects for %s', (rawItemId, attack, will) => {
+    const itemId = rawItemId as ItemId;
+    const combat = createEncounter(hero, encounter('solo', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
+    const pack = inventoryWith(itemId);
+    const result = resolveCombatTurn(combat, { type: 'consumable', instanceId: `pack-stack-${itemId}` }, pack, { items: catalogItems });
+
+    expect(result.inventory.pack).toEqual([]);
+    expect(result.combat.turn).toBe(2);
+    expect(result.combat.player.attackBonus).toBe(combat.player.attackBonus + attack);
+    expect(result.combat.player.will).toBe(combat.player.will + will);
+    expect(result.events).toContainEqual({ type: 'consumable_used', instanceId: `pack-stack-${itemId}` });
   });
 
   it('enforces companion cooldown and support budget instead of making a second hero', () => {

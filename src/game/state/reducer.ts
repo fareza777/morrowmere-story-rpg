@@ -152,6 +152,26 @@ function removeQuantityByItem(inventory: InventoryState, itemId: ItemId, quantit
   return next;
 }
 
+function packQuantity(inventory: InventoryState, itemId: ItemId): number {
+  return inventory.pack.reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
+}
+
+/** Makes the marker ledger match the checkpoint-derived unsecured quantity without trusting stale markers. */
+function reconcileUnbankedLoot(values: readonly ItemId[], itemId: ItemId, quantity: number): readonly ItemId[] {
+  let remaining = quantity;
+  const next = values.flatMap((value) => {
+    if (value !== itemId) return [value];
+    if (remaining <= 0) return [];
+    remaining -= 1;
+    return [value];
+  });
+  while (remaining > 0) {
+    next.push(itemId);
+    remaining -= 1;
+  }
+  return next;
+}
+
 /** The defeat flow remains visible until this command is explicitly requested. */
 export function returnToCampAfterDefeat(state: GameStateV2, _content: ContentIndex, updatedAt: string): GameStateV2 {
   if (state.flow.screen !== 'defeat' || !state.expedition) return state;
@@ -261,7 +281,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   }
   if (command.type === 'inventory') {
     if (state.expedition?.currentCombat && (command.command.type === 'equip' || command.command.type === 'unequip')) return diagnostic(state, 'combat_active', 'Equipment cannot be changed during combat.');
-    if (command.command.type === 'move' && (state.flow.screen !== 'camp' || state.expedition)) return diagnostic(state, 'camp_required', 'Move items to or from the stash while at camp.');
+    if ((command.command.type === 'move' || command.command.type === 'discard') && (state.flow.screen !== 'camp' || state.expedition)) return diagnostic(state, 'camp_required', 'Move or discard items while at camp.');
     const inventoryCommand = command.command.type === 'equip' ? { ...command.command, heroClass: state.campaign.hero.heroClass } : command.command;
     const result = applyInventoryCommand(state.campaign.inventory, inventoryCommand, content.items);
     if (!result.ok) return diagnostic(state, result.error.code, result.error.message);
@@ -289,20 +309,33 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
     const applied = applyEffectsAtomically(state, choice.effects, content);
     if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
+    const bankedGoldDelta = applied.value.campaign.bankedGold - state.campaign.bankedGold;
+    let checkpoints = state.checkpoints;
+    if (bankedGoldDelta !== 0 && state.checkpoints.camp) {
+      const checkpointGold = state.checkpoints.camp.campaign.bankedGold + bankedGoldDelta;
+      if (checkpointGold < 0) return diagnostic(state, 'insufficient_gold', 'You do not have enough secured gold.');
+      checkpoints = {
+        ...state.checkpoints,
+        camp: {
+          ...state.checkpoints.camp,
+          campaign: cloneCampaignPayload({ ...state.checkpoints.camp.campaign, bankedGold: checkpointGold }),
+        },
+      };
+    }
     let expedition = { ...applied.value.expedition!, sceneResolution: { eventId: scene.id, choiceId: choice.id } };
     const events: DomainEvent[] = [{ type: 'choice_resolved', eventId: scene.id, choiceId: choice.id }, ...applied.value.events];
     if (expedition.heroVitals.health <= 0) {
       expedition = { ...expedition, currentCombat: null, pendingReward: null };
-      return commit(state, { ...state, campaign: applied.value.campaign, expedition, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, events);
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, events);
     }
     if (expedition.currentCombat && !expedition.currentCombat.combat) {
       const temporary = { ...state, campaign: applied.value.campaign, expedition };
       const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
       if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
       expedition = { ...expedition, currentCombat: { ...expedition.currentCombat, combat } };
-      return commit(state, { ...state, campaign: applied.value.campaign, expedition, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
     }
-    return commit(state, { ...state, campaign: applied.value.campaign, expedition, updatedAt: command.updatedAt }, events);
+    return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
   }
   if (command.type === 'use-item') {
     if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat) return diagnostic(state, 'field_required', 'Use that item while travelling outside combat.');
@@ -407,19 +440,23 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       unbankedLoot = [...unbankedLoot, quote.value.itemId];
       nextVisit = { ...visit, stock: visit.stock.filter((entry) => entry.id !== stockEntryId) };
     } else {
+      const liveQuantityBefore = packQuantity(state.campaign.inventory, quote.value.itemId);
+      const securedQuantityBefore = campCampaign ? packQuantity(campCampaign.inventory, quote.value.itemId) : 0;
+      const unsecuredQuantityBefore = Math.max(0, liveQuantityBefore - securedQuantityBefore);
       const removed = applyInventoryCommand(state.campaign.inventory, { type: 'discard', entryId: command.intent.entryId, quantity: quote.value.quantity }, content.items);
       if (!removed.ok) return diagnostic(state, removed.error.code, removed.error.message);
       inventory = removed.value;
       unbankedGold += quote.value.total;
-      const unsecuredBefore = unbankedLoot.filter((itemId) => itemId === quote.value.itemId).length;
-      const unsecuredSold = Math.min(unsecuredBefore, quote.value.quantity);
-      for (let count = 0; count < unsecuredSold; count += 1) unbankedLoot = removeOneUnbanked(unbankedLoot, quote.value.itemId);
+      const unsecuredSold = Math.min(unsecuredQuantityBefore, quote.value.quantity);
       const securedSold = quote.value.quantity - unsecuredSold;
       if (securedSold > 0 && campCampaign) {
         const checkpointInventory = removeQuantityByItem(campCampaign.inventory, quote.value.itemId, securedSold, content);
         if (!checkpointInventory) return diagnostic(state, 'merchant_state_missing', 'The secured inventory no longer matches this trade.');
         campCampaign = { ...campCampaign, inventory: checkpointInventory };
       }
+      const securedQuantityAfter = campCampaign ? packQuantity(campCampaign.inventory, quote.value.itemId) : 0;
+      const unsecuredQuantityAfter = Math.max(0, packQuantity(inventory, quote.value.itemId) - securedQuantityAfter);
+      unbankedLoot = reconcileUnbankedLoot(unbankedLoot, quote.value.itemId, unsecuredQuantityAfter);
     }
     const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== visit.merchantId || candidate.restockKey !== visit.restockKey), nextVisit];
     return commit(state, { ...state, campaign: { ...state.campaign, inventory, bankedGold }, expedition: { ...state.expedition, merchantVisits, unbankedGold, unbankedLoot }, checkpoints: { ...state.checkpoints, camp: state.checkpoints.camp && campCampaign ? { ...state.checkpoints.camp, campaign: cloneCampaignPayload(campCampaign) } : state.checkpoints.camp }, updatedAt: command.updatedAt }, [{ type: 'trade_completed', merchantId: visit.merchantId, tradeType: quote.value.type, itemId: quote.value.itemId, quantity: quote.value.quantity, total: quote.value.total, unbankedSpent, bankedSpent }]);

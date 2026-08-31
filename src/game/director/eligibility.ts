@@ -38,7 +38,9 @@ export function callbackScene(
     .filter((callback) => comparePosition(callback.deadline, context.position) <= 0)
     .sort((left, right) => comparePosition(left.deadline, right.deadline))[0];
   if (!due || used.has(due.targetEventId)) return undefined;
-  return content.events.get(due.targetEventId);
+  const event = content.events.get(due.targetEventId);
+  if (!event || (event.oneShot && state.seenEventIds.includes(event.id))) return undefined;
+  return event;
 }
 
 export function comparePosition(left: { readonly chapterId: string; readonly slot: number }, right: { readonly chapterId: string; readonly slot: number }): number {

@@ -134,6 +134,32 @@ describe('Chronicle I callback scheduling', () => {
     expect(step.state.pendingCallbacks[0]?.status).toBe('pending');
   });
 
+  it('does not redeliver a due one-shot callback already seen in a prior run', () => {
+    const priorRunScene = asEventId('seen-required-callback');
+    const initial = state({
+      usedSceneIds: [],
+      seenEventIds: [priorRunScene],
+      pendingCallbacks: [{
+        targetEventId: priorRunScene,
+        deadline: { chapterId: 'ch03', slot: 2 },
+        status: 'pending',
+        required: true,
+      }],
+    });
+    const step = selectNextScene(
+      initial,
+      context(),
+      content(event('seen-required-callback'), event('ordinary-road-scene', { oneShot: false })),
+    );
+
+    expect(step).toMatchObject({
+      kind: 'terminal',
+      terminal: 'precondition',
+      diagnostic: expect.stringMatching(/required story callback/i),
+    });
+    expect(step.state).toBe(initial);
+  });
+
   it('resumes from the saved RNG state without rerolling', () => {
     const saved = state();
     const fixture = content(event('first'), event('second'), event('third'));
@@ -159,25 +185,25 @@ describe('Chronicle I callback scheduling', () => {
         threat: 5,
       }),
       context(),
-      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2, oneShot: false })),
     ));
     const nextRun = beginDirectorRun(first.state);
     const blockedFirst = selectNextScene(
       nextRun,
       context(),
-      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2, oneShot: false })),
     );
     const followingRun = beginDirectorRun(nextRun);
     const blockedSecond = selectNextScene(
       followingRun,
       context(),
-      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2, oneShot: false })),
     );
     const thirdSubsequentRun = beginDirectorRun(followingRun);
     const available = selectNextScene(
       thirdSubsequentRun,
       context(),
-      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2, oneShot: false })),
     );
 
     expect(nextRun).toMatchObject({
