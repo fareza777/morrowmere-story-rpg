@@ -3,6 +3,7 @@ import type {
   Chronicle1CompanionDefinition,
   Chronicle1Event,
   Chronicle1MerchantDefinition,
+  ChronicleCallbackPromise,
   ChronicleDefinition,
   ChronicleFactionDefinition,
   ChronicleRouteDefinition,
@@ -394,14 +395,14 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
       }
     }
 
-    const callbackPromises = [
+    const callbackPromises: readonly ChronicleCallbackPromise[] = [
       ...event.callbackPromises,
       ...event.choices.flatMap((choice) => choice.effects.flatMap((effect) => (
         effect.type === 'callback' ? [effect.promise] : []
       ))),
     ];
     for (const promise of callbackPromises) {
-      if ('id' in promise && promise.id) validateSourceId('callback', promise.id, issues);
+      if (promise.id) validateSourceId('callback', promise.id, issues);
       validateSourceId('callback target', promise.targetEventId, issues);
       const sourcePosition = chapterPosition(input.chronicle, event.chapterId, event.slot);
       const deadlinePosition = chapterPosition(
@@ -439,7 +440,7 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
         ));
       }
 
-      if ('fallbackEventId' in promise && promise.fallbackEventId && !eventIds.has(promise.fallbackEventId)) {
+      if (promise.fallbackEventId && !eventIds.has(promise.fallbackEventId)) {
         issues.push(sourceIssue(
           'unreachable_callback',
           `Scene ${event.id} references missing callback fallback ${promise.fallbackEventId}.`,

@@ -190,7 +190,7 @@ function simulateChronicle1(seed: number): RouteAudit {
         selectedSceneIds.push(event.id);
         combatRun = event.type === 'combat' ? combatRun + 1 : 0;
         longestCombatRun = Math.max(longestCombatRun, combatRun);
-        noRecoveryRun = ['merchant', 'recovery'].includes(scenePacing(event)) ? 0 : noRecoveryRun + 1;
+        noRecoveryRun = ['merchant', 'recovery'].includes(scenePacing(step.event)) ? 0 : noRecoveryRun + 1;
         longestNoRecoveryRun = Math.max(longestNoRecoveryRun, noRecoveryRun);
 
         const choiceResult = resolveChoice(

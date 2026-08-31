@@ -4,7 +4,7 @@ import type { DirectorState, JourneyDirectorContext } from './types';
 
 /** Shared gate semantics for both presentation and command validation. */
 export function choiceIsAvailable(
-  choice: Pick<ChronicleChoice, 'requirements' | 'exclusions'>,
+  choice: Pick<ChronicleChoice, 'requirements' | 'exclusions' | 'effects'>,
   flags: readonly string[],
   resolutionPosition?: StoryPosition,
 ): boolean {

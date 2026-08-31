@@ -76,9 +76,9 @@ describe('Chronicle I offline audio pack', () => {
   });
 
   it('keeps critical, miss, and block as distinct sound designs and maps core outcomes', () => {
-    const critical = new Set(SFX_CUE_VARIANTS.critical);
-    const miss = new Set(SFX_CUE_VARIANTS.miss);
-    const block = new Set(SFX_CUE_VARIANTS.block);
+    const critical = new Set<string>(SFX_CUE_VARIANTS.critical);
+    const miss = new Set<string>(SFX_CUE_VARIANTS.miss);
+    const block = new Set<string>(SFX_CUE_VARIANTS.block);
     expect([...critical].some((id) => miss.has(id) || block.has(id))).toBe(false);
     expect([...miss].some((id) => block.has(id))).toBe(false);
     expect(cueForDomainEvent({ type: 'attack_resolved', attackerId: 'hero', targetId: 'orc', outcome: 'critical', damage: 12, powerVariation: 1 })).toBe('critical');

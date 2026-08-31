@@ -6,13 +6,15 @@ import type {
 } from '../schema';
 
 export type DeepReadonly<T> =
-  T extends (...args: never[]) => unknown
+  T extends string | number | boolean | bigint | symbol | null | undefined
     ? T
-    : T extends readonly unknown[]
-      ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
-      : T extends object
+    : T extends (...args: never[]) => unknown
+      ? T
+      : T extends readonly unknown[]
         ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
-        : T;
+        : T extends object
+          ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
+          : T;
 
 /** Recursively freezes authored records so catalogs cannot drift at runtime. */
 export function deepFreeze<const T>(value: T): DeepReadonly<T> {

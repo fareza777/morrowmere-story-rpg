@@ -163,10 +163,14 @@ export function musicAsset(id: string): MusicAsset | undefined { return musicByI
 export function sfxAsset(id: string): SfxAsset | undefined { return sfxById.get(id); }
 export function voiceProfile(speaker: VoiceSpeaker): VoiceProfile | undefined { return voiceProfileBySpeaker.get(speaker); }
 
+function isSemanticSfxCue(cue: string): cue is SemanticSfxCue {
+  return Object.prototype.hasOwnProperty.call(SFX_CUE_VARIANTS, cue);
+}
+
 export function resolveSfxCue(cue: SfxCue, variantIndex = 0): SfxAsset | undefined {
   const direct = sfxById.get(cue);
   if (direct) return direct;
-  const variants = SFX_CUE_VARIANTS[cue as SemanticSfxCue];
-  if (!variants || variants.length === 0) return undefined;
+  if (!isSemanticSfxCue(cue)) return undefined;
+  const variants = SFX_CUE_VARIANTS[cue];
   return sfxById.get(variants[Math.abs(variantIndex) % variants.length]!);
 }
