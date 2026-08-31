@@ -149,8 +149,14 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     };
     try { if (music) music.element.volume = settings.musicVolume; } catch { /* Optional audio must fail open. */ }
     try { if (ambience) ambience.element.volume = settings.musicVolume * 0.55; } catch { /* Optional audio must fail open. */ }
-    if (!settings.musicEnabled || settings.musicVolume === 0) safePause(music?.element ?? null);
-    if (!settings.ambienceEnabled || settings.musicVolume === 0) safePause(ambience?.element ?? null);
+    if (!settings.musicEnabled || settings.musicVolume === 0) {
+      resumeMusic = false;
+      safePause(music?.element ?? null);
+    }
+    if (!settings.ambienceEnabled || settings.musicVolume === 0) {
+      resumeAmbience = false;
+      safePause(ambience?.element ?? null);
+    }
     if (!settings.voiceEnabled || settings.voiceVolume === 0) {
       try { localSpeech?.cancel(); } catch { /* Local narration is optional. */ }
     }
@@ -283,8 +289,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
   };
 
   const resumeAll = (): void => {
-    if (resumeMusic) safePlay(music?.element ?? null);
-    if (resumeAmbience) safePlay(ambience?.element ?? null);
+    if (resumeMusic && settings.musicEnabled && settings.musicVolume > 0) safePlay(music?.element ?? null);
+    if (resumeAmbience && settings.ambienceEnabled && settings.musicVolume > 0) safePlay(ambience?.element ?? null);
     resumeMusic = false;
     resumeAmbience = false;
   };
