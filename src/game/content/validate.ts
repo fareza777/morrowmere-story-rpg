@@ -18,6 +18,8 @@ export type ContentIssueCode =
   | 'missing_enemy'
   | 'missing_callback_target'
   | 'missing_merchant_stock'
+  | 'missing_event_merchant'
+  | 'invalid_event_merchant'
   | 'invalid_route';
 
 export interface ContentIssue {
@@ -72,6 +74,12 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
     }
     if (event.audioId && !index.audioIds.has(event.audioId)) {
       issues.push({ code: 'missing_audio', message: `Missing audio: ${event.audioId}` });
+    }
+    if (event.merchantId && !index.merchants.has(event.merchantId)) {
+      issues.push({ code: 'missing_event_merchant', message: `Missing event merchant: ${event.merchantId}` });
+    }
+    if ((event.merchantId || event.merchantRestockKey) && (event.type !== 'hub' || !event.merchantId || !event.merchantRestockKey?.trim())) {
+      issues.push({ code: 'invalid_event_merchant', message: `Invalid merchant metadata: ${event.id}` });
     }
     for (const route of event.eligibility.routes ?? []) {
       if (!ROUTE_OPTIONS.some((option) => option.id === route)) {

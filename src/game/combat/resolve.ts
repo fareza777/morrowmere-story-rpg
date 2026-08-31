@@ -64,7 +64,7 @@ function finalize(state: CombatState, player: HeroCombatant, enemies: readonly E
   const living = enemies.filter((enemy) => enemy.health > 0);
   if (!spentTurn) return { combat: state, inventory, events };
   if (living.length === 0) {
-    const combat: CombatState = { ...state, turn: state.turn + 1, rngState, player: { ...player, guarding: false, statuses: tickStatuses('hero', player.statuses, events) }, enemies, enemy: compatibilityEnemy(enemies), outcome: 'victory', log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8), companionCooldown: Math.max(0, state.companionCooldown - 1) };
+    const combat: CombatState = { ...state, turn: state.turn + 1, rngState, player: { ...player, guarding: false, statuses: tickStatuses('hero', player.statuses, events) }, enemies, enemy: compatibilityEnemy(enemies), outcome: 'victory', log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8) };
     return { combat, inventory, events };
   }
 
@@ -114,7 +114,6 @@ function finalize(state: CombatState, player: HeroCombatant, enemies: readonly E
   const combat: CombatState = {
     ...state, turn: state.turn + 1, rngState: selected.rngState, player: nextPlayer, enemies: nextEnemies, enemy: compatibilityEnemy(nextEnemies),
     enemyIntent: primary.intent, enemyIntents: selected.intents, intentText: primary.text, outcome,
-    companionCooldown: Math.max(0, state.companionCooldown - 1),
     log: [...state.log, ...events.map(textForEvent).filter(Boolean)].slice(-8),
   };
   return { combat, inventory, events };
@@ -149,7 +148,7 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
   if (!target) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'invalid_target' }] };
   if (action.type === 'companion') {
     if (!state.companion) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_unavailable' }] };
-    if (state.companionCooldown > 0) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_cooling_down' }] };
+    if (state.companionCooldown > 0) return { combat: { ...state, companionCooldown: state.companionCooldown - 1 }, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_cooling_down' }] };
     const available = state.companionSupportBudget - companionDamageDealt;
     if (available <= 0) return { combat: state, inventory, events: [{ type: 'combat_action_rejected', reason: 'companion_support_budget' }] };
     const damage = Math.min(available, Math.max(1, state.companion.attack + Math.floor(state.companion.will / 2)));

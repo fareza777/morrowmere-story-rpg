@@ -49,6 +49,10 @@ function inventoryTags(state: GameStateV2, content: ContentIndex): readonly stri
   return [...new Set(ids.flatMap((id) => content.items.get(id)?.tags ?? []))];
 }
 
+function merchantRestockKey(state: GameStateV2, scene: NonNullable<ReturnType<typeof currentScene>>): string {
+  return `${state.expedition!.routeSeed}:${scene.id}:${scene.merchantRestockKey!}`;
+}
+
 function heroCombatant(state: GameStateV2, content: ContentIndex) {
   const stats = deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
   return {
@@ -173,11 +177,6 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!result.ok) return diagnostic(state, result.error.code, result.error.message);
     return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.value }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
-  if (command.type === 'set-scene') {
-    if (!state.expedition) return diagnostic(state, 'no_expedition', 'Start an expedition before selecting a scene.');
-    if (!content.events.has(command.sceneId)) return diagnostic(state, 'invalid_scene', 'That scene is not available.');
-    return commit(state, { ...state, expedition: { ...state.expedition, currentSceneId: command.sceneId }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Scene ready.' }]);
-  }
   if (command.type === 'select-next-scene') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
     const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content);
@@ -194,13 +193,15 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   if (command.type === 'open-merchant') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');
     const scene = currentScene(state, content);
-    const merchant = content.merchants.get(command.merchantId);
-    if (!scene || scene.type !== 'hub' || scene.merchantId !== command.merchantId || !merchant) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
-    const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === command.merchantId && visit.restockKey === command.restockKey);
-    const context = { content, seed: state.expedition.routeSeed, restockKey: command.restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
+    if (!scene || scene.type !== 'hub' || !scene.merchantId || !scene.merchantRestockKey) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
+    const merchant = content.merchants.get(scene.merchantId);
+    if (!merchant) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
+    const restockKey = merchantRestockKey(state, scene);
+    const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === scene.merchantId && visit.restockKey === restockKey);
+    const context = { content, seed: state.expedition.routeSeed, restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
     const visit = generateMerchantVisit(context, merchant);
-    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== command.merchantId || candidate.restockKey !== command.restockKey), visit];
-    return commit(state, { ...state, expedition: { ...state.expedition, merchantVisits }, flow: { ...state.flow, screen: 'merchant', merchant: { merchantId: command.merchantId, restockKey: command.restockKey, returnScreen: 'story' } }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Merchant opened.' }]);
+    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== scene.merchantId || candidate.restockKey !== restockKey), visit];
+    return commit(state, { ...state, expedition: { ...state.expedition, merchantVisits }, flow: { ...state.flow, screen: 'merchant', merchant: { merchantId: scene.merchantId, restockKey, returnScreen: 'story' } }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Merchant opened.' }]);
   }
   if (command.type === 'close-merchant') {
     if (state.flow.screen !== 'merchant' || !state.flow.merchant) return diagnostic(state, 'merchant_required', 'There is no merchant to close.');
@@ -208,17 +209,16 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   }
   if (command.type === 'trade') {
     if (!state.expedition || state.flow.screen !== 'merchant' || !state.flow.merchant) return diagnostic(state, 'merchant_required', 'Trade only while a merchant is open.');
-    if (state.flow.merchant.merchantId !== command.merchantId || state.flow.merchant.restockKey !== command.restockKey) return diagnostic(state, 'merchant_mismatch', 'That trade does not match the open merchant.');
     const scene = currentScene(state, content);
-    if (!scene || scene.type !== 'hub' || scene.merchantId !== command.merchantId) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
-    const merchant = content.merchants.get(command.merchantId);
+    if (!scene || scene.type !== 'hub' || scene.merchantId !== state.flow.merchant.merchantId || !scene.merchantRestockKey || merchantRestockKey(state, scene) !== state.flow.merchant.restockKey) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
+    const merchant = content.merchants.get(state.flow.merchant.merchantId);
     if (!merchant) return diagnostic(state, 'merchant_not_found', 'That merchant is not available.');
-    const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === command.merchantId && visit.restockKey === command.restockKey);
+    const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === state.flow.merchant!.merchantId && visit.restockKey === state.flow.merchant!.restockKey);
     if (!persistedVisit) return diagnostic(state, 'merchant_state_missing', 'That merchant visit is no longer available.');
-    const context = { content, seed: state.expedition.routeSeed, restockKey: command.restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
+    const context = { content, seed: state.expedition.routeSeed, restockKey: state.flow.merchant.restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
     const trade = executeTrade(persistedVisit, state.campaign.inventory, state.expedition.unbankedGold, command.intent, context);
     if (!trade.ok) return diagnostic(state, trade.error.code, trade.error.message);
-    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== command.merchantId || candidate.restockKey !== command.restockKey), trade.value.visit];
+    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== state.flow.merchant!.merchantId || candidate.restockKey !== state.flow.merchant!.restockKey), trade.value.visit];
     return commit(state, { ...state, campaign: { ...state.campaign, inventory: trade.value.inventory }, expedition: { ...state.expedition, merchantVisits, unbankedGold: trade.value.gold }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Trade completed.' }]);
   }
   if (!state.expedition) return diagnostic(state, 'no_expedition', 'There is no expedition to defeat.');

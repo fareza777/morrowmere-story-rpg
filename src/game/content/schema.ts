@@ -64,6 +64,8 @@ export interface ChronicleEvent {
   readonly oneShot: boolean;
   /** A hub scene may authorize exactly one merchant identity. */
   readonly merchantId?: MerchantId;
+  /** Stable authored restock namespace; route state supplies the deterministic seed. */
+  readonly merchantRestockKey?: string;
   readonly choices: readonly ChronicleChoice[];
 }
 
