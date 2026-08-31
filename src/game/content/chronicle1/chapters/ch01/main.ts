@@ -17,7 +17,7 @@ export const CH01_MAIN = Object.freeze([
       'Two medicine wagons leave Dunmere before sunrise, bound for Greywatch on the northern border. You are the hired guard, not an officer, and your pay depends on both wagons arriving.',
       'Junior stores clerk Jory Fen carries the Route Seven dispatch in a waxed leather tube. He asks whether you want one last inspection or an early lead on the road.',
     ],
-    eligibility: { routes: ['kings-road'], minLevel: 1, maxLevel: 2 },
+    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 },
     requirements: [],
     exclusions: [],
     cooldownRuns: 0,
