@@ -56,3 +56,12 @@ At the throne, verify all three player-facing decisions appear: Break the Crown,
 - Keyboard focus remains visible and dialogs close with their labeled Close button.
 
 Automated coverage includes unit, component, axe-core accessibility, persistence, visual catalog, mobile E2E, PWA manifest, and forced-offline tests.
+
+## Offline Android release check
+
+1. Install the QA APK, launch it once, and enter an active Chronicle I run.
+2. Enable airplane mode, background the app, and resume the same saved combat turn.
+3. Use one consumable in combat and confirm the inventory count, health, and turn state remain correct.
+4. Confirm one local music loop, one attack SFX, and one captioned story voice cue can play offline.
+5. Finish a story choice and confirm the next scene and its local artwork load.
+6. Open a safe camp or merchant. Ad controls may report unavailable, but they must never block saving, shopping, combat, or story progress.

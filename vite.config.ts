@@ -2,10 +2,12 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
+export const isAndroidMode = (mode: string): boolean => mode.startsWith('android');
+
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    ...(mode === 'android' ? [] : [VitePWA({
+    ...(isAndroidMode(mode) ? [] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['assets/icons/app-icon.webp'],
       manifest: {
@@ -29,10 +31,25 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         cacheId: 'morrowmere-1-1-bright',
         dontCacheBustURLsMatching: /assets\/index-[A-Za-z0-9_-]+\.(?:js|css)$/,
-        globPatterns: ['**/*.{js,css,html,png,webp}'],
-        globIgnores: ['assets/icons/app-icon.webp', 'assets/icons/pwa-192.png', 'assets/icons/pwa-512.png'],
+        globPatterns: ['**/*.{js,css,html,png,webp,ogg,m4a,mp3,json}'],
+        globIgnores: [
+          'assets/icons/app-icon.webp',
+          'assets/icons/pwa-192.png',
+          'assets/icons/pwa-512.png',
+          'assets/chronicle1/**/*',
+          'audio/chronicle1/**/*',
+        ],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
+        runtimeCaching: [{
+          urlPattern: /\/(?:assets|audio)\/chronicle1\//,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'morrowmere-chronicle1-media-v1',
+            cacheableResponse: { statuses: [0, 200] },
+            expiration: { maxEntries: 800, maxAgeSeconds: 31_536_000 },
+          },
+        }],
       },
     })]),
   ],

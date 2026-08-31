@@ -11,6 +11,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    App: {
+      // App.tsx installs the custom priority-aware hardware Back listener.
+      disableBackButtonHandler: true,
+    },
+  },
 };
 
 export default config;

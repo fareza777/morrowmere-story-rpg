@@ -11,8 +11,11 @@ assets-v2/
 *.tsbuildinfo
 .media-work/
 .env*.local
+*.jks
+*.keystore
 android/.gradle/
 android/local.properties
+android/app/google-services.json
 android/app/build/
 release/*.apk
 release/*.aab

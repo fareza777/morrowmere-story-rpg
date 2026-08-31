@@ -1,12 +1,13 @@
 {
   "name": "morrowmere",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:android": "tsc -b && vite build --mode android",
+    "build:android": "tsc -b && vite build --mode android-test",
+    "build:android:live": "node scripts/verify-live-admob.mjs && tsc -b && vite build --mode android-live",
     "preview": "vite preview",
     "test": "vitest --pool=threads",
     "test:run": "vitest run --pool=threads",
@@ -17,6 +18,9 @@
     "voice:generate": "node scripts/media/generate-elevenlabs-voice.mjs --execute",
     "test:e2e": "playwright test",
     "android:sync": "npm run build:android && cap sync android",
+    "android:sync:live": "npm run build:android:live && cap sync android",
+    "android:bundle:play": "node scripts/verify-live-admob.mjs && npm run android:sync:live && cd android && gradlew.bat bundlePlayRelease",
+    "check:android-size": "node scripts/check-android-size.mjs",
     "android:open": "cap open android"
   },
   "dependencies": {

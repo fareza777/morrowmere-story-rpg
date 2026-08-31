@@ -5,6 +5,8 @@ def releaseKeystorePassword = System.getenv('MORROWMERE_KEYSTORE_PASSWORD')
 def releaseKeyAlias = System.getenv('MORROWMERE_KEY_ALIAS')
 def releaseKeyPassword = System.getenv('MORROWMERE_KEY_PASSWORD')
 def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+def googleSampleAdMobAppId = 'ca-app-pub-3940256099942544~3347511713'
+def liveAdMobAppId = System.getenv('MORROWMERE_ADMOB_APP_ID')
 
 android {
     namespace = "com.morrowmere.game"
@@ -13,8 +15,8 @@ android {
         applicationId "com.morrowmere.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.1.1"
+        versionCode 4
+        versionName "1.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -33,7 +35,13 @@ android {
         }
     }
     buildTypes {
+        debug {
+            resValue 'string', 'admob_app_id', googleSampleAdMobAppId
+        }
         release {
+            // Plain bundleRelease is an unsigned QA artifact and intentionally uses
+            // Google's sample app ID unless the guarded Play task supplies live config.
+            resValue 'string', 'admob_app_id', liveAdMobAppId ?: googleSampleAdMobAppId
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasReleaseSigning) {
@@ -41,6 +49,60 @@ android {
             }
         }
     }
+}
+
+def liveAdUnitVariables = [
+    'VITE_ADMOB_BANNER_ID',
+    'VITE_ADMOB_REWARDED_ID',
+    'VITE_ADMOB_INTERSTITIAL_ID',
+]
+def signingVariables = [
+    'MORROWMERE_KEYSTORE_FILE',
+    'MORROWMERE_KEYSTORE_PASSWORD',
+    'MORROWMERE_KEY_ALIAS',
+    'MORROWMERE_KEY_PASSWORD',
+]
+
+tasks.register('verifyPlayReleaseConfiguration') {
+    group = 'verification'
+    description = 'Fail closed unless live AdMob and upload-signing environment are valid.'
+    doLast {
+        def missing = []
+        def invalid = []
+        def appId = System.getenv('MORROWMERE_ADMOB_APP_ID')
+        if (!appId) {
+            missing << 'MORROWMERE_ADMOB_APP_ID'
+        } else if (!(appId ==~ /^ca-app-pub-\d{16}~\d{10}$/) || appId.startsWith('ca-app-pub-3940256099942544')) {
+            invalid << 'MORROWMERE_ADMOB_APP_ID'
+        }
+        liveAdUnitVariables.each { variableName ->
+            def value = System.getenv(variableName)
+            if (!value) {
+                missing << variableName
+            } else if (!(value ==~ /^ca-app-pub-\d{16}\/\d{10}$/) || value.startsWith('ca-app-pub-3940256099942544')) {
+                invalid << variableName
+            }
+        }
+        signingVariables.each { variableName ->
+            if (!System.getenv(variableName)) missing << variableName
+        }
+        if (releaseKeystoreFile && !file(releaseKeystoreFile).isFile()) {
+            invalid << 'MORROWMERE_KEYSTORE_FILE'
+        }
+        if (missing || invalid) {
+            throw new GradleException("Play release configuration rejected. Missing variables: ${missing.join(', ') ?: 'none'}. Invalid variables: ${invalid.join(', ') ?: 'none'}.")
+        }
+    }
+}
+
+tasks.register('bundlePlayRelease') {
+    group = 'build'
+    description = 'Build the guarded, signed Play release bundle.'
+    dependsOn 'verifyPlayReleaseConfiguration', 'bundleRelease'
+}
+
+tasks.named('bundleRelease').configure {
+    mustRunAfter 'verifyPlayReleaseConfiguration'
 }
 
 repositories {
