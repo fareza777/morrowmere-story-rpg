@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "test": "vitest --pool=threads",
     "test:run": "vitest run --pool=threads",
+    "content:validate": "vitest run --pool=threads tests/content/chronicle1-effects.test.ts tests/content/chronicle1-validation.test.ts tests/content/chronicle1-routes.test.ts",
+    "content:export": "node scripts/content/export-chronicle1-manifest.mjs",
     "test:e2e": "playwright test",
     "android:sync": "npm run build:android && cap sync android",
     "android:open": "cap open android"

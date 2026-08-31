@@ -1,0 +1,3736 @@
+{
+  "version": 1,
+  "scenes": [
+    {
+      "id": "scene-ch01-combat-ditch-road-cutters",
+      "sceneId": "ch01-combat-ditch-road-cutters",
+      "title": "Blades in the Drainage Ditch",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-combat-recover-the-false-banner",
+      "sceneId": "ch01-combat-recover-the-false-banner",
+      "title": "Hands on the False Banner",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-combat-reedbank-pursuers",
+      "sceneId": "ch01-combat-reedbank-pursuers",
+      "title": "Pursuers at the Reedbank",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-combat-smoke-on-the-bridge",
+      "sceneId": "ch01-combat-smoke-on-the-bridge",
+      "title": "Steel in the Bridge Smoke",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-combat-the-orchard-volley",
+      "sceneId": "ch01-combat-the-orchard-volley",
+      "title": "The Orchard Volley",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-combat-tollhouse-lookouts",
+      "sceneId": "ch01-combat-tollhouse-lookouts",
+      "title": "Lookouts Behind the Tollhouse",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-companion-mara-at-the-burning-bridge",
+      "sceneId": "ch01-companion-mara-at-the-burning-bridge",
+      "title": "Mara at the Burning Bridge",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-companion-mara-measures-the-road",
+      "sceneId": "ch01-companion-mara-measures-the-road",
+      "title": "Mara Measures the Road",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-companion-talla-and-the-spared-courier",
+      "sceneId": "ch01-companion-talla-and-the-spared-courier",
+      "title": "Talla and the Spared Courier",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-companion-talla-names-the-price",
+      "sceneId": "ch01-companion-talla-names-the-price",
+      "title": "Talla Names the Price",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-faction-jorys-seal-lesson",
+      "sceneId": "ch01-faction-jorys-seal-lesson",
+      "title": "Jory's Seal Lesson",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-hub-first-night-camp",
+      "sceneId": "ch01-hub-first-night-camp",
+      "title": "First Night on Route Seven",
+      "chapterId": "ch01",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch01-hub-ilenes-field-apothecary",
+      "sceneId": "ch01-hub-ilenes-field-apothecary",
+      "title": "Ilene's Field Apothecary",
+      "chapterId": "ch01",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch01-hub-orrens-charcoal-wagon",
+      "sceneId": "ch01-hub-orrens-charcoal-wagon",
+      "title": "Orren's Charcoal Wagon",
+      "chapterId": "ch01",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch01-journey-greywatch-lanterns",
+      "sceneId": "ch01-journey-greywatch-lanterns",
+      "title": "Greywatch Lanterns",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-jorys-waxed-tube",
+      "sceneId": "ch01-journey-jorys-waxed-tube",
+      "title": "Jory's Waxed Tube",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-rain-on-chalk-hill",
+      "sceneId": "ch01-journey-rain-on-chalk-hill",
+      "title": "Rain on Chalk Hill",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-smoke-behind-us",
+      "sceneId": "ch01-journey-smoke-behind-us",
+      "title": "Smoke Behind Us",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-abandoned-register",
+      "sceneId": "ch01-journey-the-abandoned-register",
+      "title": "The Abandoned Register",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-closed-north-track",
+      "sceneId": "ch01-journey-the-closed-north-track",
+      "title": "The Closed North Track",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-ferrymans-rope",
+      "sceneId": "ch01-journey-the-ferrymans-rope",
+      "title": "The Ferryman's Rope",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-field-surgery-road",
+      "sceneId": "ch01-journey-the-field-surgery-road",
+      "title": "The Field Surgery Road",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-last-uphill-mile",
+      "sceneId": "ch01-journey-the-last-uphill-mile",
+      "title": "The Last Uphill Mile",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-millers-children",
+      "sceneId": "ch01-journey-the-millers-children",
+      "title": "The Miller's Children",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-officers-clean-boots",
+      "sceneId": "ch01-journey-the-officers-clean-boots",
+      "title": "The Officer's Clean Boots",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-royal-shaft-mark",
+      "sceneId": "ch01-journey-the-royal-shaft-mark",
+      "title": "The Royal Shaft Mark",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-shepherds-missing-mule",
+      "sceneId": "ch01-journey-the-shepherds-missing-mule",
+      "title": "The Shepherd's Missing Mule",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-toll-collectors-widow",
+      "sceneId": "ch01-journey-the-toll-collectors-widow",
+      "title": "The Toll Collector's Widow",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-tollhouse-cellar",
+      "sceneId": "ch01-journey-the-tollhouse-cellar",
+      "title": "The Tollhouse Cellar",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-wagon-or-the-rope",
+      "sceneId": "ch01-journey-the-wagon-or-the-rope",
+      "title": "The Wagon or the Rope",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-wagonwrights-mile",
+      "sceneId": "ch01-journey-the-wagonwrights-mile",
+      "title": "The Wagonwright's Mile",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-the-wounded-woodcutter",
+      "sceneId": "ch01-journey-the-wounded-woodcutter",
+      "title": "The Wounded Woodcutter",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-tracks-beyond-the-orchard",
+      "sceneId": "ch01-journey-tracks-beyond-the-orchard",
+      "title": "Tracks Beyond the Orchard",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-journey-witness-or-medicine",
+      "sceneId": "ch01-journey-witness-or-medicine",
+      "title": "Witness or Medicine",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-main-a-banner-placed-too-neatly",
+      "sceneId": "ch01-main-a-banner-placed-too-neatly",
+      "title": "A Banner Placed Too Neatly",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-before-the-gates-close",
+      "sceneId": "ch01-main-before-the-gates-close",
+      "title": "Before the Gates Close",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-medicine-for-the-north",
+      "sceneId": "ch01-main-medicine-for-the-north",
+      "title": "Medicine for the North",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-the-bridge-in-smoke",
+      "sceneId": "ch01-main-the-bridge-in-smoke",
+      "title": "The Bridge in Smoke",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-the-empty-tollhouse",
+      "sceneId": "ch01-main-the-empty-tollhouse",
+      "title": "The Empty Tollhouse",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-the-first-arrow",
+      "sceneId": "ch01-main-the-first-arrow",
+      "title": "The First Arrow",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch01-main-three-days-to-greywatch",
+      "sceneId": "ch01-main-three-days-to-greywatch",
+      "title": "Three Days to Greywatch",
+      "chapterId": "ch01",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-combat-blades-in-the-council-passage",
+      "sceneId": "ch02-combat-blades-in-the-council-passage",
+      "title": "Blades in the Council Passage",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-combat-fire-at-the-granary",
+      "sceneId": "ch02-combat-fire-at-the-granary",
+      "title": "Fire at the Granary",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-combat-infiltrators-below-the-armory",
+      "sceneId": "ch02-combat-infiltrators-below-the-armory",
+      "title": "Infiltrators Below the Armory",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-combat-ladders-on-the-north-wall",
+      "sceneId": "ch02-combat-ladders-on-the-north-wall",
+      "title": "Ladders on the North Wall",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-combat-sentries-at-the-lime-kiln",
+      "sceneId": "ch02-combat-sentries-at-the-lime-kiln",
+      "title": "Sentries at the Lime Kiln",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-combat-the-south-gate-sapper",
+      "sceneId": "ch02-combat-the-south-gate-sapper",
+      "title": "The South-Gate Sapper",
+      "chapterId": "ch02",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch02-companion-caldus-among-the-refugees",
+      "sceneId": "ch02-companion-caldus-among-the-refugees",
+      "title": "Caldus Among the Refugees",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-companion-lyra-reads-the-seal",
+      "sceneId": "ch02-companion-lyra-reads-the-seal",
+      "title": "Lyra Reads the Seal",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-companion-mara-scouts-before-silver",
+      "sceneId": "ch02-companion-mara-scouts-before-silver",
+      "title": "Mara's Scouts Before Silver",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-companion-mara-takes-the-road",
+      "sceneId": "ch02-companion-mara-takes-the-road",
+      "title": "Mara Takes the Road",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-companion-mara-the-broken-command",
+      "sceneId": "ch02-companion-mara-the-broken-command",
+      "title": "Mara and the Broken Command",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-companion-talla-keeps-the-bargain",
+      "sceneId": "ch02-companion-talla-keeps-the-bargain",
+      "title": "Talla Keeps the Bargain",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-faction-sergeant-hale-at-the-infirmary",
+      "sceneId": "ch02-faction-sergeant-hale-at-the-infirmary",
+      "title": "Sergeant Hale at the Infirmary",
+      "chapterId": "ch02",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch02-hub-dorrans-wall-forge",
+      "sceneId": "ch02-hub-dorrans-wall-forge",
+      "title": "Dorran's Wall Forge",
+      "chapterId": "ch02",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch02-hub-greywatch-before-the-bell",
+      "sceneId": "ch02-hub-greywatch-before-the-bell",
+      "title": "Greywatch Before the Bell",
+      "chapterId": "ch02",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch02-hub-quartermaster-coles-yard",
+      "sceneId": "ch02-hub-quartermaster-coles-yard",
+      "title": "Quartermaster Cole's Yard",
+      "chapterId": "ch02",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch02-journey-bread-before-steel",
+      "sceneId": "ch02-journey-bread-before-steel",
+      "title": "Bread Before Steel",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-find-apprentice-rowan",
+      "sceneId": "ch02-journey-find-apprentice-rowan",
+      "title": "Find Apprentice Rowan",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-jorys-duplicate-chit",
+      "sceneId": "ch02-journey-jorys-duplicate-chit",
+      "title": "Jory's Duplicate Chit",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-rooftop-couriers",
+      "sceneId": "ch02-journey-rooftop-couriers",
+      "title": "Rooftop Couriers",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-armory-receiving-book",
+      "sceneId": "ch02-journey-the-armory-receiving-book",
+      "title": "The Armory Receiving Book",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-bakers-water-line",
+      "sceneId": "ch02-journey-the-bakers-water-line",
+      "title": "The Baker's Water Line",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-depot-cistern",
+      "sceneId": "ch02-journey-the-depot-cistern",
+      "title": "The Depot Cistern",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-east-wall-run",
+      "sceneId": "ch02-journey-the-east-wall-run",
+      "title": "The East-Wall Run",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-fletching-bench",
+      "sceneId": "ch02-journey-the-fletching-bench",
+      "title": "The Fletching Bench",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-lane-of-wounded",
+      "sceneId": "ch02-journey-the-lane-of-wounded",
+      "title": "The Lane of Wounded",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-old-barracks-passage",
+      "sceneId": "ch02-journey-the-old-barracks-passage",
+      "title": "The Old Barracks Passage",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-quarry-cart-ruts",
+      "sceneId": "ch02-journey-the-quarry-cart-ruts",
+      "title": "The Quarry Cart Ruts",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-quarry-track",
+      "sceneId": "ch02-journey-the-quarry-track",
+      "title": "The Quarry Track",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-raider-in-a-grey-cloak",
+      "sceneId": "ch02-journey-the-raider-in-a-grey-cloak",
+      "title": "The Raider in a Grey Cloak",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-signal-stair",
+      "sceneId": "ch02-journey-the-signal-stair",
+      "title": "The Signal Stair",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-underwall-conduit",
+      "sceneId": "ch02-journey-the-underwall-conduit",
+      "title": "The Underwall Conduit",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-the-widows-missing-son",
+      "sceneId": "ch02-journey-the-widows-missing-son",
+      "title": "The Widow's Missing Son",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-three-horn-signals",
+      "sceneId": "ch02-journey-three-horn-signals",
+      "title": "Three Horn Signals",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-journey-who-holds-the-arrow",
+      "sceneId": "ch02-journey-who-holds-the-arrow",
+      "title": "Who Holds the Arrow",
+      "chapterId": "ch02",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch02-main-greywatch-council",
+      "sceneId": "ch02-main-greywatch-council",
+      "title": "Greywatch Council",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-hold-the-south-gate",
+      "sceneId": "ch02-main-hold-the-south-gate",
+      "title": "Hold the South Gate",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-raiders-at-the-wall",
+      "sceneId": "ch02-main-raiders-at-the-wall",
+      "title": "Raiders at the Wall",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-the-hidden-depot",
+      "sceneId": "ch02-main-the-hidden-depot",
+      "title": "The Hidden Depot",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-the-royal-fletching",
+      "sceneId": "ch02-main-the-royal-fletching",
+      "title": "The Royal Fletching",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-the-witness-speaks",
+      "sceneId": "ch02-main-the-witness-speaks",
+      "title": "The Witness Speaks",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch02-main-warning-before-dawn",
+      "sceneId": "ch02-main-warning-before-dawn",
+      "title": "Warning Before Dawn",
+      "chapterId": "ch02",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-combat-arrows-in-the-flooded-orchard",
+      "sceneId": "ch03-combat-arrows-in-the-flooded-orchard",
+      "title": "Arrows in the Flooded Orchard",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-combat-marsh-hounds-at-low-water",
+      "sceneId": "ch03-combat-marsh-hounds-at-low-water",
+      "title": "Marsh Hounds at Low Water",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-combat-patrol-with-borrowed-faces",
+      "sceneId": "ch03-combat-patrol-with-borrowed-faces",
+      "title": "A Patrol with Borrowed Faces",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-combat-smugglers-on-black-skiffs",
+      "sceneId": "ch03-combat-smugglers-on-black-skiffs",
+      "title": "Smugglers on Black Skiffs",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-combat-the-sluice-breakers",
+      "sceneId": "ch03-combat-the-sluice-breakers",
+      "title": "The Sluice Breakers",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-combat-the-two-banner-rearguard",
+      "sceneId": "ch03-combat-the-two-banner-rearguard",
+      "title": "The Two-Banner Rearguard",
+      "chapterId": "ch03",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch03-companion-courier-testimony",
+      "sceneId": "ch03-companion-courier-testimony",
+      "title": "The Courier's Testimony",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-lyra-weighs-the-evidence",
+      "sceneId": "ch03-companion-lyra-weighs-the-evidence",
+      "title": "Lyra Weighs the Evidence",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-mara-and-rukhar-draw-the-line",
+      "sceneId": "ch03-companion-mara-and-rukhar-draw-the-line",
+      "title": "Mara and Rukhar Draw the Line",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-rukhar-keeps-watch",
+      "sceneId": "ch03-companion-rukhar-keeps-watch",
+      "title": "Rukhar Keeps Watch",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-stonehands-promise",
+      "sceneId": "ch03-companion-stonehands-promise",
+      "title": "Stonehand's Promise",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-talla-hides-the-refuge",
+      "sceneId": "ch03-companion-talla-hides-the-refuge",
+      "title": "Talla Hides the Refuge",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-companion-the-enemys-dead",
+      "sceneId": "ch03-companion-the-enemys-dead",
+      "title": "The Enemy's Dead",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-faction-voices-of-the-river",
+      "sceneId": "ch03-faction-voices-of-the-river",
+      "title": "Voices of the River",
+      "chapterId": "ch03",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch03-hub-ferrymans-lantern-camp",
+      "sceneId": "ch03-hub-ferrymans-lantern-camp",
+      "title": "Ferryman's Lantern Camp",
+      "chapterId": "ch03",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch03-hub-mother-ailsas-reed-clinic",
+      "sceneId": "ch03-hub-mother-ailsas-reed-clinic",
+      "title": "Mother Ailsa's Reed Clinic",
+      "chapterId": "ch03",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch03-hub-sella-vains-flatboat",
+      "sceneId": "ch03-hub-sella-vains-flatboat",
+      "title": "Sella Vain's Flatboat",
+      "chapterId": "ch03",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch03-journey-a-child-at-the-picket",
+      "sceneId": "ch03-journey-a-child-at-the-picket",
+      "title": "A Child at the Picket",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-black-thread-in-the-reeds",
+      "sceneId": "ch03-journey-black-thread-in-the-reeds",
+      "title": "Black Thread in the Reeds",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-letters-from-the-east-bank",
+      "sceneId": "ch03-journey-letters-from-the-east-bank",
+      "title": "Letters from the East Bank",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-road-beneath-water",
+      "sceneId": "ch03-journey-road-beneath-water",
+      "title": "The Road Beneath Water",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-boatmans-toll",
+      "sceneId": "ch03-journey-the-boatmans-toll",
+      "title": "The Boatman's Toll",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-broken-causeway",
+      "sceneId": "ch03-journey-the-broken-causeway",
+      "title": "The Broken Causeway",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-cut-ferry-rope",
+      "sceneId": "ch03-journey-the-cut-ferry-rope",
+      "title": "The Cut Ferry Rope",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-eel-smugglers-debt",
+      "sceneId": "ch03-journey-the-eel-smugglers-debt",
+      "title": "The Eel Smuggler's Debt",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-flooded-toll-archive",
+      "sceneId": "ch03-journey-the-flooded-toll-archive",
+      "title": "The Flooded Toll Archive",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-half-sunk-chapel",
+      "sceneId": "ch03-journey-the-half-sunk-chapel",
+      "title": "The Half-Sunk Chapel",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-last-dry-loft",
+      "sceneId": "ch03-journey-the-last-dry-loft",
+      "title": "The Last Dry Loft",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-levee-before-storm",
+      "sceneId": "ch03-journey-the-levee-before-storm",
+      "title": "The Levee Before Storm",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-millers-wheel",
+      "sceneId": "ch03-journey-the-millers-wheel",
+      "title": "The Miller's Wheel",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-night-ferry",
+      "sceneId": "ch03-journey-the-night-ferry",
+      "title": "The Night Ferry",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-redwater-roadbook",
+      "sceneId": "ch03-journey-the-redwater-roadbook",
+      "title": "The Redwater Roadbook",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-the-reed-maze",
+      "sceneId": "ch03-journey-the-reed-maze",
+      "title": "The Reed Maze",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-three-prisoners-one-boat",
+      "sceneId": "ch03-journey-three-prisoners-one-boat",
+      "title": "Three Prisoners, One Boat",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-journey-tracks-at-the-sluice",
+      "sceneId": "ch03-journey-tracks-at-the-sluice",
+      "title": "Tracks at the Sluice",
+      "chapterId": "ch03",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch03-main-evidence-on-both-sides",
+      "sceneId": "ch03-main-evidence-on-both-sides",
+      "title": "Evidence on Both Sides",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-orders-for-redwater",
+      "sceneId": "ch03-main-orders-for-redwater",
+      "title": "Orders for Redwater",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-redwater-in-sight",
+      "sceneId": "ch03-main-redwater-in-sight",
+      "title": "Redwater in Sight",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-rukhar-at-the-crossing",
+      "sceneId": "ch03-main-rukhar-at-the-crossing",
+      "title": "Rukhar at the Crossing",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-the-attack-with-two-banners",
+      "sceneId": "ch03-main-the-attack-with-two-banners",
+      "title": "The Attack with Two Banners",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-the-captured-courier",
+      "sceneId": "ch03-main-the-captured-courier",
+      "title": "The Captured Courier",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch03-main-the-flooded-mile",
+      "sceneId": "ch03-main-the-flooded-mile",
+      "title": "The Flooded Mile",
+      "chapterId": "ch03",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-combat-fire-in-the-north-warehouse",
+      "sceneId": "ch04-combat-fire-in-the-north-warehouse",
+      "title": "Fire in the North Warehouse",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-combat-knives-beneath-the-millrace",
+      "sceneId": "ch04-combat-knives-beneath-the-millrace",
+      "title": "Knives Beneath the Millrace",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-combat-pikes-at-the-parley-rope",
+      "sceneId": "ch04-combat-pikes-at-the-parley-rope",
+      "title": "Pikes at the Parley Rope",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-combat-rearguard-on-the-north-road",
+      "sceneId": "ch04-combat-rearguard-on-the-north-road",
+      "title": "Rearguard on the North Road",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-combat-the-south-tower-provocateurs",
+      "sceneId": "ch04-combat-the-south-tower-provocateurs",
+      "title": "The South-Tower Provocateurs",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-combat-war-oxen-in-the-grain-lane",
+      "sceneId": "ch04-combat-war-oxen-in-the-grain-lane",
+      "title": "War Oxen in the Grain Lane",
+      "chapterId": "ch04",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch04-companion-caldus-in-the-field-hospital",
+      "sceneId": "ch04-companion-caldus-in-the-field-hospital",
+      "title": "Caldus in the Field Hospital",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-camps-of-two-fires",
+      "sceneId": "ch04-companion-camps-of-two-fires",
+      "title": "Camps of Two Fires",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-lyra-finds-the-second-hand",
+      "sceneId": "ch04-companion-lyra-finds-the-second-hand",
+      "title": "Lyra Finds the Second Hand",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-mara-rukhar-common-ground",
+      "sceneId": "ch04-companion-mara-rukhar-common-ground",
+      "title": "Mara and Rukhar Find Common Ground",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-rukhar-at-the-parley",
+      "sceneId": "ch04-companion-rukhar-at-the-parley",
+      "title": "Rukhar at the Parley",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-stonehand-joins-the-road",
+      "sceneId": "ch04-companion-stonehand-joins-the-road",
+      "title": "Stonehand Joins the Road",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-stop-the-retaliation",
+      "sceneId": "ch04-companion-stop-the-retaliation",
+      "title": "Stop the Retaliation",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-talla-between-the-lines",
+      "sceneId": "ch04-companion-talla-between-the-lines",
+      "title": "Talla Between the Lines",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-companion-the-cost-of-peace",
+      "sceneId": "ch04-companion-the-cost-of-peace",
+      "title": "The Cost of Peace",
+      "chapterId": "ch04",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch04-hub-redwater-palisade-camp",
+      "sceneId": "ch04-hub-redwater-palisade-camp",
+      "title": "Redwater Palisade Camp",
+      "chapterId": "ch04",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch04-hub-the-neutral-quartermaster",
+      "sceneId": "ch04-hub-the-neutral-quartermaster",
+      "title": "The Neutral Quartermaster",
+      "chapterId": "ch04",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch04-hub-the-nimble-nail-exchange",
+      "sceneId": "ch04-hub-the-nimble-nail-exchange",
+      "title": "The Nimble Nail Exchange",
+      "chapterId": "ch04",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch04-journey-beneath-the-mill-drains",
+      "sceneId": "ch04-journey-beneath-the-mill-drains",
+      "title": "Beneath the Mill Drains",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-field-of-discarded-shields",
+      "sceneId": "ch04-journey-field-of-discarded-shields",
+      "title": "Field of Discarded Shields",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-red-clay-back-to-the-quarry",
+      "sceneId": "ch04-journey-red-clay-back-to-the-quarry",
+      "title": "Red Clay Back to the Quarry",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-seals-on-the-north-warehouse",
+      "sceneId": "ch04-journey-seals-on-the-north-warehouse",
+      "title": "Seals on the North Warehouse",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-stones-across-the-millrace",
+      "sceneId": "ch04-journey-stones-across-the-millrace",
+      "title": "Stones Across the Millrace",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-camp-supply-ledger",
+      "sceneId": "ch04-journey-the-camp-supply-ledger",
+      "title": "The Camp Supply Ledger",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-ember-seven-marks",
+      "sceneId": "ch04-journey-the-ember-seven-marks",
+      "title": "The Ember Seven Marks",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-evacuation-lane",
+      "sceneId": "ch04-journey-the-evacuation-lane",
+      "title": "The Evacuation Lane",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-last-river-families",
+      "sceneId": "ch04-journey-the-last-river-families",
+      "title": "The Last River Families",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-missing-bakers",
+      "sceneId": "ch04-journey-the-missing-bakers",
+      "title": "The Missing Bakers",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-north-road-barricade",
+      "sceneId": "ch04-journey-the-north-road-barricade",
+      "title": "The North Road Barricade",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-north-warehouse-cellar",
+      "sceneId": "ch04-journey-the-north-warehouse-cellar",
+      "title": "The North Warehouse Cellar",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-prisoner-at-grain-hall",
+      "sceneId": "ch04-journey-the-prisoner-at-grain-hall",
+      "title": "The Prisoner at Grain Hall",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-two-grieving-mothers",
+      "sceneId": "ch04-journey-the-two-grieving-mothers",
+      "title": "The Two Grieving Mothers",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-the-white-flag-path",
+      "sceneId": "ch04-journey-the-white-flag-path",
+      "title": "The White-Flag Path",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-through-the-water-gate",
+      "sceneId": "ch04-journey-through-the-water-gate",
+      "title": "Through the Water Gate",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-two-captains-one-surgeon",
+      "sceneId": "ch04-journey-two-captains-one-surgeon",
+      "title": "Two Captains, One Surgeon",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-journey-who-pays-for-redwater",
+      "sceneId": "ch04-journey-who-pays-for-redwater",
+      "title": "Who Pays for Redwater",
+      "chapterId": "ch04",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch04-main-before-the-first-charge",
+      "sceneId": "ch04-main-before-the-first-charge",
+      "title": "Before the First Charge",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-orders-written-to-be-found",
+      "sceneId": "ch04-main-orders-written-to-be-found",
+      "title": "Orders Written to Be Found",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-parley-between-lines",
+      "sceneId": "ch04-main-parley-between-lines",
+      "title": "Parley Between Lines",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-terms-at-redwater",
+      "sceneId": "ch04-main-terms-at-redwater",
+      "title": "Terms at Redwater",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-the-murdered-scout",
+      "sceneId": "ch04-main-the-murdered-scout",
+      "title": "The Murdered Scout",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-two-armies-one-field",
+      "sceneId": "ch04-main-two-armies-one-field",
+      "title": "Two Armies, One Field",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch04-main-what-the-river-carried-away",
+      "sceneId": "ch04-main-what-the-river-carried-away",
+      "title": "What the River Carried Away",
+      "chapterId": "ch04",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-combat-cutters-in-the-ledger-vault",
+      "sceneId": "ch05-combat-cutters-in-the-ledger-vault",
+      "title": "Cutters in the Ledger Vault",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-combat-jailers-of-the-missing-shift",
+      "sceneId": "ch05-combat-jailers-of-the-missing-shift",
+      "title": "Jailers of the Missing Shift",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-combat-the-black-banner-forgemaster",
+      "sceneId": "ch05-combat-the-black-banner-forgemaster",
+      "title": "The Black Banner Forgemaster",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-combat-the-chained-gate",
+      "sceneId": "ch05-combat-the-chained-gate",
+      "title": "Veterans at the Chained Gate",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-combat-the-demolition-crew",
+      "sceneId": "ch05-combat-the-demolition-crew",
+      "title": "The Cinder-Shaft Demolition Crew",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-combat-the-twin-armory-convoy",
+      "sceneId": "ch05-combat-the-twin-armory-convoy",
+      "title": "The Twin-Armory Convoy",
+      "chapterId": "ch05",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch05-companion-caldus-answers-the-road",
+      "sceneId": "ch05-companion-caldus-answers-the-road",
+      "title": "Caldus Answers the Road",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-caldus-keeps-confidence",
+      "sceneId": "ch05-companion-caldus-keeps-confidence",
+      "title": "Caldus Keeps Confidence",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-caldus-reads-the-hostage-list",
+      "sceneId": "ch05-companion-caldus-reads-the-hostage-list",
+      "title": "Caldus Reads the Hostage List",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-caldus-the-first-hostages",
+      "sceneId": "ch05-companion-caldus-the-first-hostages",
+      "title": "Caldus and the First Hostages",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-lyra-and-the-embervault-ward",
+      "sceneId": "ch05-companion-lyra-and-the-embervault-ward",
+      "title": "Lyra and the Embervault Ward",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-lyra-chooses-the-slower-truth",
+      "sceneId": "ch05-companion-lyra-chooses-the-slower-truth",
+      "title": "Lyra Chooses the Slower Truth",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-lyra-tests-the-ledger-seals",
+      "sceneId": "ch05-companion-lyra-tests-the-ledger-seals",
+      "title": "Lyra Tests the Ledger Seals",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-mara-and-the-contingency-runner",
+      "sceneId": "ch05-companion-mara-and-the-contingency-runner",
+      "title": "Mara and the Contingency Runner",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-companion-talla-in-the-shift-tunnels",
+      "sceneId": "ch05-companion-talla-in-the-shift-tunnels",
+      "title": "Talla in the Shift Tunnels",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-faction-forewoman-dessa-testifies",
+      "sceneId": "ch05-faction-forewoman-dessa-testifies",
+      "title": "Forewoman Dessa Testifies",
+      "chapterId": "ch05",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch05-hub-omarens-relic-bench",
+      "sceneId": "ch05-hub-omarens-relic-bench",
+      "title": "Omaren's Cooling Bench",
+      "chapterId": "ch05",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch05-hub-redwater-pursuit-camp",
+      "sceneId": "ch05-hub-redwater-pursuit-camp",
+      "title": "Camp Below Embervault",
+      "chapterId": "ch05",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch05-hub-vekkas-boiler-room-market",
+      "sceneId": "ch05-hub-vekkas-boiler-room-market",
+      "title": "Vekka's Boiler-Room Market",
+      "chapterId": "ch05",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch05-journey-across-furnace-ridge",
+      "sceneId": "ch05-journey-across-furnace-ridge",
+      "title": "Across Furnace Ridge",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-ink-from-three-offices",
+      "sceneId": "ch05-journey-ink-from-three-offices",
+      "title": "Ink from Three Offices",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-ledger-or-medicine",
+      "sceneId": "ch05-journey-ledger-or-medicine",
+      "title": "Ledger or Medicine",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-accounting-vault",
+      "sceneId": "ch05-journey-the-accounting-vault",
+      "title": "The Accounting Vault",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-charges-and-the-witnesses",
+      "sceneId": "ch05-journey-the-charges-and-the-witnesses",
+      "title": "The Charges and the Witnesses",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-cinder-feeder-shaft",
+      "sceneId": "ch05-journey-the-cinder-feeder-shaft",
+      "title": "The Cinder-Feeder Shaft",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-cold-armory",
+      "sceneId": "ch05-journey-the-cold-armory",
+      "title": "The Cold Armory",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-die-change-bell",
+      "sceneId": "ch05-journey-the-die-change-bell",
+      "title": "The Die-Change Bell",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-e17-road",
+      "sceneId": "ch05-journey-the-e17-road",
+      "title": "The E-17 Road",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-heat-number-audit",
+      "sceneId": "ch05-journey-the-heat-number-audit",
+      "title": "The Heat-Number Audit",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-last-missing-smith",
+      "sceneId": "ch05-journey-the-last-missing-smith",
+      "title": "The Last Missing Smith",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-ore-cart-descent",
+      "sceneId": "ch05-journey-the-ore-cart-descent",
+      "title": "The Ore-Cart Descent",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-shift-change-catwalk",
+      "sceneId": "ch05-journey-the-shift-change-catwalk",
+      "title": "The Shift-Change Catwalk",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-smugglers-wife",
+      "sceneId": "ch05-journey-the-smugglers-wife",
+      "title": "The Smuggler's Wife",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-trapped-surveyor",
+      "sceneId": "ch05-journey-the-trapped-surveyor",
+      "title": "The Trapped Surveyor",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-ventilation-gallery",
+      "sceneId": "ch05-journey-the-ventilation-gallery",
+      "title": "The Ventilation Gallery",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-journey-the-waterwheel-tunnel",
+      "sceneId": "ch05-journey-the-waterwheel-tunnel",
+      "title": "The Waterwheel Tunnel",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch05-main-escape-through-the-cinder-shaft",
+      "sceneId": "ch05-main-escape-through-the-cinder-shaft",
+      "title": "Escape Through the Cinder Shaft",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-forge-behind-the-wall",
+      "sceneId": "ch05-main-forge-behind-the-wall",
+      "title": "The Forge Behind the Wall",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-the-missing-shift",
+      "sceneId": "ch05-main-the-missing-shift",
+      "title": "The Missing Shift",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-the-mouth-of-embervault",
+      "sceneId": "ch05-main-the-mouth-of-embervault",
+      "title": "The Mouth of Embervault",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-the-name-severin-voss",
+      "sceneId": "ch05-main-the-name-severin-voss",
+      "title": "The Name Severin Voss",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-the-quartermasters-ledger",
+      "sceneId": "ch05-main-the-quartermasters-ledger",
+      "title": "The Quartermaster's Ledger",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch05-main-weapons-for-both-armies",
+      "sceneId": "ch05-main-weapons-for-both-armies",
+      "title": "Weapons for Both Armies",
+      "chapterId": "ch05",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-combat-jailers-under-the-chapel",
+      "sceneId": "ch06-combat-jailers-under-the-chapel",
+      "title": "Jailers Under the Chapel",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-combat-riders-on-the-evidence-road",
+      "sceneId": "ch06-combat-riders-on-the-evidence-road",
+      "title": "Riders on the Evidence Road",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-combat-the-covered-ram",
+      "sceneId": "ch06-combat-the-covered-ram",
+      "title": "The Covered Ram",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-combat-the-last-rear-guard",
+      "sceneId": "ch06-combat-the-last-rear-guard",
+      "title": "The Last Rear Guard",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-combat-the-outer-ditch-screen",
+      "sceneId": "ch06-combat-the-outer-ditch-screen",
+      "title": "The Outer-Ditch Screen",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-combat-the-west-wall-breach",
+      "sceneId": "ch06-combat-the-west-wall-breach",
+      "title": "The West-Wall Breach",
+      "chapterId": "ch06",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch06-companion-caldus-after-the-siege-bell",
+      "sceneId": "ch06-companion-caldus-after-the-siege-bell",
+      "title": "Caldus After the Siege Bell",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-caldus-beneath-the-chapel",
+      "sceneId": "ch06-companion-caldus-beneath-the-chapel",
+      "title": "Caldus Beneath the Chapel",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-caldus-confession",
+      "sceneId": "ch06-companion-caldus-confession",
+      "title": "Caldus Confesses",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-caldus-opens-the-chapel-doors",
+      "sceneId": "ch06-companion-caldus-opens-the-chapel-doors",
+      "title": "Caldus Opens the Chapel Doors",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-lyra-authenticates-the-siege-order",
+      "sceneId": "ch06-companion-lyra-authenticates-the-siege-order",
+      "title": "Lyra Authenticates the Siege Order",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-maras-evacuation-map",
+      "sceneId": "ch06-companion-maras-evacuation-map",
+      "title": "Mara's Evacuation Map",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-rukhar-holds-the-west-road",
+      "sceneId": "ch06-companion-rukhar-holds-the-west-road",
+      "title": "Rukhar Holds the West Road",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-companion-tallas-cellar-road",
+      "sceneId": "ch06-companion-tallas-cellar-road",
+      "title": "Talla's Cellar Road",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-faction-sergeant-hale-confession",
+      "sceneId": "ch06-faction-sergeant-hale-confession",
+      "title": "Sergeant Hale Finds the Source",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-faction-the-ward-leaders-record",
+      "sceneId": "ch06-faction-the-ward-leaders-record",
+      "title": "The Ward Leaders' Record",
+      "chapterId": "ch06",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch06-hub-bracken-farm-relay",
+      "sceneId": "ch06-hub-bracken-farm-relay",
+      "title": "The Bracken Farm Relay",
+      "chapterId": "ch06",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch06-hub-ilene-at-the-south-chapel",
+      "sceneId": "ch06-hub-ilene-at-the-south-chapel",
+      "title": "Ilene at the South Chapel",
+      "chapterId": "ch06",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch06-hub-nessa-coles-siege-yard",
+      "sceneId": "ch06-hub-nessa-coles-siege-yard",
+      "title": "Nessa Cole's Siege Yard",
+      "chapterId": "ch06",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch06-journey-close-the-west-sally-port",
+      "sceneId": "ch06-journey-close-the-west-sally-port",
+      "title": "Close the West Sally Port",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-evidence-or-wounded",
+      "sceneId": "ch06-journey-evidence-or-wounded",
+      "title": "Evidence or Wounded",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-fields-before-greywatch",
+      "sceneId": "ch06-journey-fields-before-greywatch",
+      "title": "Fields Before Greywatch",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-ink-in-the-charity-cipher",
+      "sceneId": "ch06-journey-ink-in-the-charity-cipher",
+      "title": "Ink in the Charity Cipher",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-bell-ringers-last-climb",
+      "sceneId": "ch06-journey-the-bell-ringers-last-climb",
+      "title": "The Bell Ringer's Last Climb",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-breach-culvert",
+      "sceneId": "ch06-journey-the-breach-culvert",
+      "title": "The Breach Culvert",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-broken-north-bridge",
+      "sceneId": "ch06-journey-the-broken-north-bridge",
+      "title": "The Broken North Bridge",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-burned-signal-post",
+      "sceneId": "ch06-journey-the-burned-signal-post",
+      "title": "The Burned Signal Post",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-chapel-ossuary",
+      "sceneId": "ch06-journey-the-chapel-ossuary",
+      "title": "The Chapel Ossuary",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-east-ward-retreat",
+      "sceneId": "ch06-journey-the-east-ward-retreat",
+      "title": "The East-Ward Retreat",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-farms-below-the-smoke",
+      "sceneId": "ch06-journey-the-farms-below-the-smoke",
+      "title": "The Farms Below the Smoke",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-last-medicine-wagon",
+      "sceneId": "ch06-journey-the-last-medicine-wagon",
+      "title": "The Last Medicine Wagon",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-novice-in-the-bell-loft",
+      "sceneId": "ch06-journey-the-novice-in-the-bell-loft",
+      "title": "The Novice in the Bell Loft",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-relay-horses",
+      "sceneId": "ch06-journey-the-relay-horses",
+      "title": "The Relay Horses",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-road-wardens",
+      "sceneId": "ch06-journey-the-road-wardens",
+      "title": "The Captured Road Wardens",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-the-siege-route-map",
+      "sceneId": "ch06-journey-the-siege-route-map",
+      "title": "The Siege-Route Map",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-journey-wall-to-wall",
+      "sceneId": "ch06-journey-wall-to-wall",
+      "title": "Wall to Wall",
+      "chapterId": "ch06",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch06-main-hostages-under-the-chapel",
+      "sceneId": "ch06-main-hostages-under-the-chapel",
+      "title": "Hostages Under the Chapel",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-smoke-over-greywatch",
+      "sceneId": "ch06-main-smoke-over-greywatch",
+      "title": "Smoke Over Greywatch",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-the-last-open-breach",
+      "sceneId": "ch06-main-the-last-open-breach",
+      "title": "The Last Open Breach",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-the-leak-in-the-watch",
+      "sceneId": "ch06-main-the-leak-in-the-watch",
+      "title": "The Leak in the Watch",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-the-message-that-broke",
+      "sceneId": "ch06-main-the-message-that-broke",
+      "title": "The Message That Broke",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-the-siege-begins",
+      "sceneId": "ch06-main-the-siege-begins",
+      "title": "The Siege Begins",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch06-main-what-remains-of-greywatch",
+      "sceneId": "ch06-main-what-remains-of-greywatch",
+      "title": "What Remains of Greywatch",
+      "chapterId": "ch06",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-combat-crossbows-over-the-quarry",
+      "sceneId": "ch07-combat-crossbows-over-the-quarry",
+      "title": "Crossbows over the Quarry",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-combat-sappers-at-the-postern",
+      "sceneId": "ch07-combat-sappers-at-the-postern",
+      "title": "Sappers at the Postern",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-combat-shields-before-the-record-hall",
+      "sceneId": "ch07-combat-shields-before-the-record-hall",
+      "title": "Shields Before the Record Hall",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-combat-the-counterweight-house",
+      "sceneId": "ch07-combat-the-counterweight-house",
+      "title": "The Counterweight House",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-combat-the-duplicate-patrol",
+      "sceneId": "ch07-combat-the-duplicate-patrol",
+      "title": "The Duplicate Patrol",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-combat-wagon-cutters-on-the-kingroad",
+      "sceneId": "ch07-combat-wagon-cutters-on-the-kingroad",
+      "title": "Wagon Cutters on the Kingroad",
+      "chapterId": "ch07",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch07-companion-caldus-and-the-abbey-delegate",
+      "sceneId": "ch07-companion-caldus-and-the-abbey-delegate",
+      "title": "Caldus and the Abbey Delegate",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-lyra-finds-the-counterfeit-governors",
+      "sceneId": "ch07-companion-lyra-finds-the-counterfeit-governors",
+      "title": "Lyra Finds the Counterfeit Governors",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-lyra-reads-the-emergency-compact",
+      "sceneId": "ch07-companion-lyra-reads-the-emergency-compact",
+      "title": "Lyra Reads the Emergency Compact",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-mara-maps-the-last-march",
+      "sceneId": "ch07-companion-mara-maps-the-last-march",
+      "title": "Mara Maps the Last March",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-rukhar-holds-the-gate-line",
+      "sceneId": "ch07-companion-rukhar-holds-the-gate-line",
+      "title": "Rukhar Holds the Gate Line",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-rukhars-witness-rides-north",
+      "sceneId": "ch07-companion-rukhars-witness-rides-north",
+      "title": "Rukhar's Witness Rides North",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-talla-finds-the-drainage-postern",
+      "sceneId": "ch07-companion-talla-finds-the-drainage-postern",
+      "title": "Talla Finds the Drainage Postern",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-companion-talla-refuses-the-stewards-price",
+      "sceneId": "ch07-companion-talla-refuses-the-stewards-price",
+      "title": "Talla Refuses the Steward's Price",
+      "chapterId": "ch07",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch07-hub-brez-at-the-abandoned-tollhouse",
+      "sceneId": "ch07-hub-brez-at-the-abandoned-tollhouse",
+      "title": "Brez at the Abandoned Tollhouse",
+      "chapterId": "ch07",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch07-hub-nessas-march-quartermaster",
+      "sceneId": "ch07-hub-nessas-march-quartermaster",
+      "title": "Nessa's March Quartermaster",
+      "chapterId": "ch07",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch07-hub-the-last-greywatch-camp",
+      "sceneId": "ch07-hub-the-last-greywatch-camp",
+      "title": "The Last Greywatch Camp",
+      "chapterId": "ch07",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch07-journey-banners-through-empty-farms",
+      "sceneId": "ch07-journey-banners-through-empty-farms",
+      "title": "Banners Through Empty Farms",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-beneath-the-keep-ridge",
+      "sceneId": "ch07-journey-beneath-the-keep-ridge",
+      "title": "Beneath the Keep Ridge",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-grain-for-the-march",
+      "sceneId": "ch07-journey-grain-for-the-march",
+      "title": "Grain for the March",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-hales-missing-scouts",
+      "sceneId": "ch07-journey-hales-missing-scouts",
+      "title": "Hale's Missing Scouts",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-names-on-the-gate-roster",
+      "sceneId": "ch07-journey-names-on-the-gate-roster",
+      "title": "Names on the Gate Roster",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-prisoners-beside-the-road",
+      "sceneId": "ch07-journey-prisoners-beside-the-road",
+      "title": "Prisoners Beside the Road",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-bridge-of-broken-wagons",
+      "sceneId": "ch07-journey-the-bridge-of-broken-wagons",
+      "title": "The Bridge of Broken Wagons",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-buried-compact-archive",
+      "sceneId": "ch07-journey-the-buried-compact-archive",
+      "title": "The Buried Compact Archive",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-closed-governors-carriage",
+      "sceneId": "ch07-journey-the-closed-governors-carriage",
+      "title": "The Closed Governor's Carriage",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-dry-aqueduct",
+      "sceneId": "ch07-journey-the-dry-aqueduct",
+      "title": "The Dry Aqueduct",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-old-kingroad-switchback",
+      "sceneId": "ch07-journey-the-old-kingroad-switchback",
+      "title": "The Old Kingroad Switchback",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-record-clerks-cell",
+      "sceneId": "ch07-journey-the-record-clerks-cell",
+      "title": "The Record Clerks' Cell",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-road-out-of-greywatch",
+      "sceneId": "ch07-journey-the-road-out-of-greywatch",
+      "title": "The Road Out of Greywatch",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-upper-ward-causeway",
+      "sceneId": "ch07-journey-the-upper-ward-causeway",
+      "title": "The Upper-Ward Causeway",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-the-wounded-on-both-stairs",
+      "sceneId": "ch07-journey-the-wounded-on-both-stairs",
+      "title": "The Wounded on Both Stairs",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-journey-tokens-from-the-outer-patrol",
+      "sceneId": "ch07-journey-tokens-from-the-outer-patrol",
+      "title": "Tokens from the Outer Patrol",
+      "chapterId": "ch07",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch07-main-banners-on-the-kingroad",
+      "sceneId": "ch07-main-banners-on-the-kingroad",
+      "title": "Banners on the Kingroad",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-council-before-the-march",
+      "sceneId": "ch07-main-council-before-the-march",
+      "title": "Council Before the March",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-inside-the-keep",
+      "sceneId": "ch07-main-inside-the-keep",
+      "title": "Inside the Keep",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-the-crownless-gate",
+      "sceneId": "ch07-main-the-crownless-gate",
+      "title": "The Crownless Gate",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-the-outer-patrol",
+      "sceneId": "ch07-main-the-outer-patrol",
+      "title": "The Outer Patrol",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-voss-last-champion",
+      "sceneId": "ch07-main-voss-last-champion",
+      "title": "Voss's Last Champion",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch07-main-wall-or-hidden-way",
+      "sceneId": "ch07-main-wall-or-hidden-way",
+      "title": "Wall or Hidden Way",
+      "chapterId": "ch07",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-combat-loyalists-in-the-upper-courtyard",
+      "sceneId": "ch08-combat-loyalists-in-the-upper-courtyard",
+      "title": "Loyalists in the Upper Courtyard",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-combat-the-archive-furnace-detail",
+      "sceneId": "ch08-combat-the-archive-furnace-detail",
+      "title": "The Archive Furnace Detail",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-combat-the-coronation-engine",
+      "sceneId": "ch08-combat-the-coronation-engine",
+      "title": "The Coronation Engine",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-combat-the-guest-guard-rotation",
+      "sceneId": "ch08-combat-the-guest-guard-rotation",
+      "title": "The Guest Guard Rotation",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-combat-the-last-record-wing-cell",
+      "sceneId": "ch08-combat-the-last-record-wing-cell",
+      "title": "The Last Record-Wing Cell",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-combat-wardens-of-the-seal-cases",
+      "sceneId": "ch08-combat-wardens-of-the-seal-cases",
+      "title": "Wardens of the Seal Cases",
+      "chapterId": "ch08",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch08-companion-caldus-tends-the-compelled-delegates",
+      "sceneId": "ch08-companion-caldus-tends-the-compelled-delegates",
+      "title": "Caldus Tends the Compelled Delegates",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-lyra-and-the-numbered-seal-cases",
+      "sceneId": "ch08-companion-lyra-and-the-numbered-seal-cases",
+      "title": "Lyra and the Numbered Seal Cases",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-lyra-builds-the-plain-case",
+      "sceneId": "ch08-companion-lyra-builds-the-plain-case",
+      "title": "Lyra Builds the Plain Case",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-lyra-closes-the-emergency-compact",
+      "sceneId": "ch08-companion-lyra-closes-the-emergency-compact",
+      "title": "Lyra Closes the Emergency Compact",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-talla-and-the-private-ledger-lock",
+      "sceneId": "ch08-companion-talla-and-the-private-ledger-lock",
+      "title": "Talla and the Private Ledger Lock",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-talla-finds-the-engine-brakes",
+      "sceneId": "ch08-companion-talla-finds-the-engine-brakes",
+      "title": "Talla Finds the Engine Brakes",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-companion-talla-takes-the-hidden-road",
+      "sceneId": "ch08-companion-talla-takes-the-hidden-road",
+      "title": "Talla Takes the Hidden Road",
+      "chapterId": "ch08",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch08-hub-ilene-beside-the-witness-gallery",
+      "sceneId": "ch08-hub-ilene-beside-the-witness-gallery",
+      "title": "Ilene Beside the Witness Gallery",
+      "chapterId": "ch08",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch08-hub-orrens-courtyard-forge",
+      "sceneId": "ch08-hub-orrens-courtyard-forge",
+      "title": "Orren's Courtyard Forge",
+      "chapterId": "ch08",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch08-hub-the-old-customs-kitchen",
+      "sceneId": "ch08-hub-the-old-customs-kitchen",
+      "title": "The Old Customs Kitchen",
+      "chapterId": "ch08",
+      "type": "hub"
+    },
+    {
+      "id": "scene-ch08-journey-across-the-quiet-record-wing",
+      "sceneId": "ch08-journey-across-the-quiet-record-wing",
+      "title": "Across the Quiet Record Wing",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-along-the-witness-gallery",
+      "sceneId": "ch08-journey-along-the-witness-gallery",
+      "title": "Along the Witness Gallery",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-audit-the-custodian-inventory",
+      "sceneId": "ch08-journey-audit-the-custodian-inventory",
+      "title": "Audit the Custodian Inventory",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-audit-voss-grain-promises",
+      "sceneId": "ch08-journey-audit-voss-grain-promises",
+      "title": "Audit Voss's Grain Promises",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-beneath-the-command-platform",
+      "sceneId": "ch08-journey-beneath-the-command-platform",
+      "title": "Beneath the Command Platform",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-from-the-hall-to-the-courtyard",
+      "sceneId": "ch08-journey-from-the-hall-to-the-courtyard",
+      "title": "From the Hall to the Courtyard",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-mercy-in-the-upper-barracks",
+      "sceneId": "ch08-journey-mercy-in-the-upper-barracks",
+      "title": "Mercy in the Upper Barracks",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-question-the-deputy-seal-clerk",
+      "sceneId": "ch08-journey-question-the-deputy-seal-clerk",
+      "title": "Question the Deputy Seal Clerk",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-search-the-guard-passage",
+      "sceneId": "ch08-journey-search-the-guard-passage",
+      "title": "Search the Guard Passage",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-the-bell-crews-families",
+      "sceneId": "ch08-journey-the-bell-crews-families",
+      "title": "The Bell Crew's Families",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-the-processional-stair",
+      "sceneId": "ch08-journey-the-processional-stair",
+      "title": "The Processional Stair",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-the-records-arcade",
+      "sceneId": "ch08-journey-the-records-arcade",
+      "title": "The Records Arcade",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-the-surrendered-standard-bearer",
+      "sceneId": "ch08-journey-the-surrendered-standard-bearer",
+      "title": "The Surrendered Standard-Bearer",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-the-ushers-family-keys",
+      "sceneId": "ch08-journey-the-ushers-family-keys",
+      "title": "The Usher's Family Keys",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-journey-through-the-lower-ward",
+      "sceneId": "ch08-journey-through-the-lower-ward",
+      "title": "Through the Lower Ward",
+      "chapterId": "ch08",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch08-main-evidence-before-the-realm",
+      "sceneId": "ch08-main-evidence-before-the-realm",
+      "title": "Evidence Before the Realm",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-guests-for-a-false-king",
+      "sceneId": "ch08-main-guests-for-a-false-king",
+      "title": "Guests for a False King",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-the-hall-of-seals",
+      "sceneId": "ch08-main-the-hall-of-seals",
+      "title": "The Hall of Seals",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-the-letter-in-cipher",
+      "sceneId": "ch08-main-the-letter-in-cipher",
+      "title": "The Letter in Cipher",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-the-marshal-and-the-banner",
+      "sceneId": "ch08-main-the-marshal-and-the-banner",
+      "title": "The Marshal and the Banner",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-voss-offers-order",
+      "sceneId": "ch08-main-voss-offers-order",
+      "title": "Voss Offers Order",
+      "chapterId": "ch08",
+      "type": "main"
+    },
+    {
+      "id": "scene-ch08-main-who-keeps-the-crownless-keep",
+      "sceneId": "ch08-main-who-keeps-the-crownless-keep",
+      "title": "Who Keeps the Crownless Keep",
+      "chapterId": "ch08",
+      "type": "main"
+    }
+  ],
+  "itemIcons": [
+    {
+      "id": "item-icon-armor-abbey-field-vestment",
+      "itemId": "armor-abbey-field-vestment",
+      "name": "Abbey Field Vestment",
+      "group": "armor",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-armor-black-banner-cuirass",
+      "itemId": "armor-black-banner-cuirass",
+      "name": "Black Banner Cuirass",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-caldus-healer-mail",
+      "itemId": "armor-caldus-healer-mail",
+      "name": "Caldus’s Healer Mail",
+      "group": "armor",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-armor-caravan-leathers",
+      "itemId": "armor-caravan-leathers",
+      "name": "Caravan Leathers",
+      "group": "armor",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-armor-cinderplate",
+      "itemId": "armor-cinderplate",
+      "name": "Cinderplate Harness",
+      "group": "armor",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-armor-conclave-sealcoat",
+      "itemId": "armor-conclave-sealcoat",
+      "name": "Conclave Sealcoat",
+      "group": "armor",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-armor-crownless-sentinel-mail",
+      "itemId": "armor-crownless-sentinel-mail",
+      "name": "Crownless Sentinel Mail",
+      "group": "armor",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-armor-embervault-apron",
+      "itemId": "armor-embervault-apron",
+      "name": "Embervault Foreman Apron",
+      "group": "armor",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-armor-ferryman-oilskin",
+      "itemId": "armor-ferryman-oilskin",
+      "name": "Ferryman Oilskin",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-flooded-chain",
+      "itemId": "armor-flooded-chain",
+      "name": "Flooded Chain Shirt",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-goblin-patchcloak",
+      "itemId": "armor-goblin-patchcloak",
+      "name": "Goblin Patchcloak",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-greywatch-guard-coat",
+      "itemId": "armor-greywatch-guard-coat",
+      "name": "Greywatch Guard Coat",
+      "group": "armor",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-armor-lyra-warded-mantle",
+      "itemId": "armor-lyra-warded-mantle",
+      "name": "Lyra’s Warded Mantle",
+      "group": "armor",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-armor-mara-raincloak",
+      "itemId": "armor-mara-raincloak",
+      "name": "Mara’s Raincloak",
+      "group": "armor",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-armor-orc-peace-lamellar",
+      "itemId": "armor-orc-peace-lamellar",
+      "name": "Free Host Peace Lamellar",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-redwater-scale",
+      "itemId": "armor-redwater-scale",
+      "name": "Redwater Scale Coat",
+      "group": "armor",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-armor-road-council-coat",
+      "itemId": "armor-road-council-coat",
+      "name": "Road Council Coat",
+      "group": "armor",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-armor-scout-halfmail",
+      "itemId": "armor-scout-halfmail",
+      "name": "Scout Halfmail",
+      "group": "armor",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-armor-stonehand-harness",
+      "itemId": "armor-stonehand-harness",
+      "name": "Stonehand Harness",
+      "group": "armor",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-armor-voss-command-plate",
+      "itemId": "armor-voss-command-plate",
+      "name": "Voss Command Plate",
+      "group": "armor",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-charm-caldus-prayer-cord",
+      "itemId": "charm-caldus-prayer-cord",
+      "name": "Caldus’s Prayer Cord",
+      "group": "charm",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-charm-crownless-door-key",
+      "itemId": "charm-crownless-door-key",
+      "name": "Crownless Door Key",
+      "group": "charm",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-charm-drowned-compass",
+      "itemId": "charm-drowned-compass",
+      "name": "Drowned Compass",
+      "group": "charm",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-charm-ember-ledger-seal",
+      "itemId": "charm-ember-ledger-seal",
+      "name": "Ember Ledger Seal",
+      "group": "charm",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-charm-forgemasters-mark",
+      "itemId": "charm-forgemasters-mark",
+      "name": "Forgemaster’s Mark",
+      "group": "charm",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-charm-goblin-brass-button",
+      "itemId": "charm-goblin-brass-button",
+      "name": "Goblin Brass Button",
+      "group": "charm",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-charm-greywatch-key",
+      "itemId": "charm-greywatch-key",
+      "name": "Greywatch Gate Key",
+      "group": "charm",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-charm-lyra-cipher-lens",
+      "itemId": "charm-lyra-cipher-lens",
+      "name": "Lyra’s Cipher Lens",
+      "group": "charm",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-charm-mara-scout-badge",
+      "itemId": "charm-mara-scout-badge",
+      "name": "Mara’s Scout Badge",
+      "group": "charm",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-charm-medicine-wagon-token",
+      "itemId": "charm-medicine-wagon-token",
+      "name": "Medicine Wagon Token",
+      "group": "charm",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-charm-redwater-peace-knot",
+      "itemId": "charm-redwater-peace-knot",
+      "name": "Redwater Peace Knot",
+      "group": "charm",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-charm-royal-fletching",
+      "itemId": "charm-royal-fletching",
+      "name": "Royal Fletching Pin",
+      "group": "charm",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-charm-rukhar-name-bead",
+      "itemId": "charm-rukhar-name-bead",
+      "name": "Rukhar’s Name Bead",
+      "group": "charm",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-charm-talla-bell-coin",
+      "itemId": "charm-talla-bell-coin",
+      "name": "Talla’s Bell Coin",
+      "group": "charm",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-charm-voss-broken-signet",
+      "itemId": "charm-voss-broken-signet",
+      "name": "Voss’s Broken Signet",
+      "group": "charm",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-charm-witness-ring",
+      "itemId": "charm-witness-ring",
+      "name": "Witness Ring",
+      "group": "charm",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-antivenom",
+      "itemId": "consumable-antivenom",
+      "name": "Marsh Antivenom",
+      "group": "consumable",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-consumable-armor-pitch",
+      "itemId": "consumable-armor-pitch",
+      "name": "Medicinal Armor Pitch",
+      "group": "consumable",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-consumable-bitterroot-tea",
+      "itemId": "consumable-bitterroot-tea",
+      "name": "Bitterroot Tea",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-blackroot-brew",
+      "itemId": "consumable-blackroot-brew",
+      "name": "Blackroot Brew",
+      "group": "consumable",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-consumable-burn-paste",
+      "itemId": "consumable-burn-paste",
+      "name": "Foreman’s Burn Paste",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-caltrop-pouch",
+      "itemId": "consumable-caltrop-pouch",
+      "name": "Caltrop Pouch",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-cleansing-herbs",
+      "itemId": "consumable-cleansing-herbs",
+      "name": "Cleansing Herb Bundle",
+      "group": "consumable",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-consumable-courage-cordial",
+      "itemId": "consumable-courage-cordial",
+      "name": "Courage Cordial",
+      "group": "consumable",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-consumable-ember-draught",
+      "itemId": "consumable-ember-draught",
+      "name": "Ember Draught",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-field-bandage",
+      "itemId": "consumable-field-bandage",
+      "name": "Field Bandage",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-focus-incense",
+      "itemId": "consumable-focus-incense",
+      "name": "Measured Focus Incense",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-frost-salve",
+      "itemId": "consumable-frost-salve",
+      "name": "Frost Salve",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-greywatch-tonic",
+      "itemId": "consumable-greywatch-tonic",
+      "name": "Greywatch Tonic",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-healing-poultice",
+      "itemId": "consumable-healing-poultice",
+      "name": "Siege Healing Poultice",
+      "group": "consumable",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-consumable-hearty-ration",
+      "itemId": "consumable-hearty-ration",
+      "name": "Hearty March Ration",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-lamp-oil",
+      "itemId": "consumable-lamp-oil",
+      "name": "Clear Lamp Oil",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-last-light-phial",
+      "itemId": "consumable-last-light-phial",
+      "name": "Last Light Phial",
+      "group": "consumable",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-consumable-magefire-flask",
+      "itemId": "consumable-magefire-flask",
+      "name": "Magefire Recovery Flask",
+      "group": "consumable",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-consumable-marsh-salts",
+      "itemId": "consumable-marsh-salts",
+      "name": "Marsh Wake Salts",
+      "group": "consumable",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-consumable-orc-field-broth",
+      "itemId": "consumable-orc-field-broth",
+      "name": "Free Host Field Broth",
+      "group": "consumable",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-consumable-redwater-stimulant",
+      "itemId": "consumable-redwater-stimulant",
+      "name": "Redwater Stimulant",
+      "group": "consumable",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-consumable-smoke-bomb",
+      "itemId": "consumable-smoke-bomb",
+      "name": "Smoke Bomb",
+      "group": "consumable",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-consumable-warding-chalk",
+      "itemId": "consumable-warding-chalk",
+      "name": "Warding Chalk Dose",
+      "group": "consumable",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-consumable-whetstone-kit",
+      "itemId": "consumable-whetstone-kit",
+      "name": "Campaign Whetstone Kit",
+      "group": "consumable",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-quest-crownless-access-seal",
+      "itemId": "quest-crownless-access-seal",
+      "name": "Crownless Access Seal",
+      "group": "artifact",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-quest-embervault-ledger",
+      "itemId": "quest-embervault-ledger",
+      "name": "Embervault Supply Ledger",
+      "group": "artifact",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-quest-greywatch-witness-statement",
+      "itemId": "quest-greywatch-witness-statement",
+      "name": "Greywatch Witness Statement",
+      "group": "artifact",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-quest-hostage-list",
+      "itemId": "quest-hostage-list",
+      "name": "Hidden Hostage List",
+      "group": "artifact",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-quest-patron-cipher-letter",
+      "itemId": "quest-patron-cipher-letter",
+      "name": "Patron's Cipher Letter",
+      "group": "artifact",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-quest-redwater-truce-copy",
+      "itemId": "quest-redwater-truce-copy",
+      "name": "Redwater Truce Copy",
+      "group": "artifact",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-quest-royal-arrowhead",
+      "itemId": "quest-royal-arrowhead",
+      "name": "Royal-Forged Arrowhead",
+      "group": "artifact",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-quest-voss-sealed-order",
+      "itemId": "quest-voss-sealed-order",
+      "name": "Voss's Sealed Order",
+      "group": "artifact",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-scroll-breaking-ward",
+      "itemId": "scroll-breaking-ward",
+      "name": "Wardbreaking Script",
+      "group": "tool",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-scroll-counterseal",
+      "itemId": "scroll-counterseal",
+      "name": "Counterseal Script",
+      "group": "tool",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-scroll-hushed-step",
+      "itemId": "scroll-hushed-step",
+      "name": "Hushed Step Script",
+      "group": "tool",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-scroll-roadward",
+      "itemId": "scroll-roadward",
+      "name": "Roadward Script",
+      "group": "tool",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-tool-field-repair-kit",
+      "itemId": "tool-field-repair-kit",
+      "name": "Field Repair Kit",
+      "group": "tool",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-tool-lockpick-roll",
+      "itemId": "tool-lockpick-roll",
+      "name": "Lockpick Roll",
+      "group": "tool",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-tool-signal-whistle",
+      "itemId": "tool-signal-whistle",
+      "name": "Signal Whistle",
+      "group": "tool",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-tool-surveyors-kit",
+      "itemId": "tool-surveyors-kit",
+      "name": "Surveyor's Kit",
+      "group": "tool",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-ashglass-dagger",
+      "itemId": "weapon-ashglass-dagger",
+      "name": "Ashglass Dagger",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-black-banner-cleaver",
+      "itemId": "weapon-black-banner-cleaver",
+      "name": "Black Banner Cleaver",
+      "group": "weapon",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-weapon-border-pike",
+      "itemId": "weapon-border-pike",
+      "name": "Border Levy Pike",
+      "group": "weapon",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-weapon-caldus-pilgrim-mace",
+      "itemId": "weapon-caldus-pilgrim-mace",
+      "name": "Caldus’s Pilgrim Mace",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-caravan-hatchet",
+      "itemId": "weapon-caravan-hatchet",
+      "name": "Caravan Hatchet",
+      "group": "weapon",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-weapon-cinderpick",
+      "itemId": "weapon-cinderpick",
+      "name": "Cinderpick",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-conclave-focus-staff",
+      "itemId": "weapon-conclave-focus-staff",
+      "name": "Conclave Focus Staff",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-crownless-halberd",
+      "itemId": "weapon-crownless-halberd",
+      "name": "Crownless Sentinel Halberd",
+      "group": "weapon",
+      "tier": 5
+    },
+    {
+      "id": "item-icon-weapon-drowned-road-trident",
+      "itemId": "weapon-drowned-road-trident",
+      "name": "Drowned Road Trident",
+      "group": "weapon",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-weapon-embervault-maul",
+      "itemId": "weapon-embervault-maul",
+      "name": "Embervault Shift Maul",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-ferryman-hook",
+      "itemId": "weapon-ferryman-hook",
+      "name": "Ferryman Boarding Hook",
+      "group": "weapon",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-weapon-goblin-foldknife",
+      "itemId": "weapon-goblin-foldknife",
+      "name": "Goblin Foldknife",
+      "group": "weapon",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-weapon-greywatch-sabre",
+      "itemId": "weapon-greywatch-sabre",
+      "name": "Greywatch Sabre",
+      "group": "weapon",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-weapon-kingroad-crossbow",
+      "itemId": "weapon-kingroad-crossbow",
+      "name": "Kingroad Windlass Crossbow",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-lyra-seal-rod",
+      "itemId": "weapon-lyra-seal-rod",
+      "name": "Lyra’s Seal Rod",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-mara-scout-knife",
+      "itemId": "weapon-mara-scout-knife",
+      "name": "Mara’s Scout Knife",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-orc-peaceblade",
+      "itemId": "weapon-orc-peaceblade",
+      "name": "Free Host Peaceblade",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-redwater-lance",
+      "itemId": "weapon-redwater-lance",
+      "name": "Redwater Cavalry Lance",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-royal-armory-sword",
+      "itemId": "weapon-royal-armory-sword",
+      "name": "Royal Armory Sword",
+      "group": "weapon",
+      "tier": 3
+    },
+    {
+      "id": "item-icon-weapon-rukhar-oath-axe",
+      "itemId": "weapon-rukhar-oath-axe",
+      "name": "Rukhar’s Oath Axe",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-scout-longbow",
+      "itemId": "weapon-scout-longbow",
+      "name": "Gloam Scout Longbow",
+      "group": "weapon",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-weapon-sealbreak-wand",
+      "itemId": "weapon-sealbreak-wand",
+      "name": "Sealbreak Wand",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-talla-slingblade",
+      "itemId": "weapon-talla-slingblade",
+      "name": "Talla’s Slingblade",
+      "group": "weapon",
+      "tier": 4
+    },
+    {
+      "id": "item-icon-weapon-voss-officer-blade",
+      "itemId": "weapon-voss-officer-blade",
+      "name": "Voss Officer Blade",
+      "group": "weapon",
+      "tier": 5
+    }
+  ],
+  "enemyPortraits": [
+    {
+      "id": "enemy-portrait-abbey-golem-01",
+      "archetypeId": "abbey-golem",
+      "name": "Abbey Golem",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-abbey-golem-02",
+      "archetypeId": "abbey-golem",
+      "name": "Abbey Golem",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-abbey-golem-03",
+      "archetypeId": "abbey-golem",
+      "name": "Abbey Golem",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-abbey-golem-04",
+      "archetypeId": "abbey-golem",
+      "name": "Abbey Golem",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-ash-magus-01",
+      "archetypeId": "ash-magus",
+      "name": "Ash Magus",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-ash-magus-02",
+      "archetypeId": "ash-magus",
+      "name": "Ash Magus",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-ash-magus-03",
+      "archetypeId": "ash-magus",
+      "name": "Ash Magus",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-ash-magus-04",
+      "archetypeId": "ash-magus",
+      "name": "Ash Magus",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-barrow-soldier-01",
+      "archetypeId": "barrow-soldier",
+      "name": "Barrow Soldier",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-barrow-soldier-02",
+      "archetypeId": "barrow-soldier",
+      "name": "Barrow Soldier",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-barrow-soldier-03",
+      "archetypeId": "barrow-soldier",
+      "name": "Barrow Soldier",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-barrow-soldier-04",
+      "archetypeId": "barrow-soldier",
+      "name": "Barrow Soldier",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-bell-apostle-01",
+      "archetypeId": "bell-apostle",
+      "name": "Bell Apostle",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-bell-apostle-02",
+      "archetypeId": "bell-apostle",
+      "name": "Bell Apostle",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-bell-apostle-03",
+      "archetypeId": "bell-apostle",
+      "name": "Bell Apostle",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-bell-apostle-04",
+      "archetypeId": "bell-apostle",
+      "name": "Bell Apostle",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-black-banner-01",
+      "archetypeId": "black-banner",
+      "name": "Black Banner Reaver",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-black-banner-02",
+      "archetypeId": "black-banner",
+      "name": "Black Banner Reaver",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-black-banner-03",
+      "archetypeId": "black-banner",
+      "name": "Black Banner Reaver",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-black-banner-04",
+      "archetypeId": "black-banner",
+      "name": "Black Banner Reaver",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-bridge-troll-01",
+      "archetypeId": "bridge-troll",
+      "name": "Bridge Troll",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-bridge-troll-02",
+      "archetypeId": "bridge-troll",
+      "name": "Bridge Troll",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-bridge-troll-03",
+      "archetypeId": "bridge-troll",
+      "name": "Bridge Troll",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-bridge-troll-04",
+      "archetypeId": "bridge-troll",
+      "name": "Bridge Troll",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-cinder-troll-01",
+      "archetypeId": "cinder-troll",
+      "name": "Cinder Troll",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-cinder-troll-02",
+      "archetypeId": "cinder-troll",
+      "name": "Cinder Troll",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-cinder-troll-03",
+      "archetypeId": "cinder-troll",
+      "name": "Cinder Troll",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-cinder-troll-04",
+      "archetypeId": "cinder-troll",
+      "name": "Cinder Troll",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-crown-devil-01",
+      "archetypeId": "crown-devil",
+      "name": "Crown Devil",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-crown-devil-02",
+      "archetypeId": "crown-devil",
+      "name": "Crown Devil",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-crown-devil-03",
+      "archetypeId": "crown-devil",
+      "name": "Crown Devil",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-crown-devil-04",
+      "archetypeId": "crown-devil",
+      "name": "Crown Devil",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-ember-fiend-01",
+      "archetypeId": "ember-fiend",
+      "name": "Ember Fiend",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-ember-fiend-02",
+      "archetypeId": "ember-fiend",
+      "name": "Ember Fiend",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-ember-fiend-03",
+      "archetypeId": "ember-fiend",
+      "name": "Ember Fiend",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-ember-fiend-04",
+      "archetypeId": "ember-fiend",
+      "name": "Ember Fiend",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-gloam-warg-01",
+      "archetypeId": "gloam-warg",
+      "name": "Gloam Warg",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-gloam-warg-02",
+      "archetypeId": "gloam-warg",
+      "name": "Gloam Warg",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-gloam-warg-03",
+      "archetypeId": "gloam-warg",
+      "name": "Gloam Warg",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-gloam-warg-04",
+      "archetypeId": "gloam-warg",
+      "name": "Gloam Warg",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-goblin-cutpurse-01",
+      "archetypeId": "goblin-cutpurse",
+      "name": "Goblin Cutpurse",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-goblin-cutpurse-02",
+      "archetypeId": "goblin-cutpurse",
+      "name": "Goblin Cutpurse",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-goblin-cutpurse-03",
+      "archetypeId": "goblin-cutpurse",
+      "name": "Goblin Cutpurse",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-goblin-cutpurse-04",
+      "archetypeId": "goblin-cutpurse",
+      "name": "Goblin Cutpurse",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-goblin-torchling-01",
+      "archetypeId": "goblin-torchling",
+      "name": "Goblin Torchling",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-goblin-torchling-02",
+      "archetypeId": "goblin-torchling",
+      "name": "Goblin Torchling",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-goblin-torchling-03",
+      "archetypeId": "goblin-torchling",
+      "name": "Goblin Torchling",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-goblin-torchling-04",
+      "archetypeId": "goblin-torchling",
+      "name": "Goblin Torchling",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-iron-deserter-01",
+      "archetypeId": "iron-deserter",
+      "name": "Iron Deserter",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-iron-deserter-02",
+      "archetypeId": "iron-deserter",
+      "name": "Iron Deserter",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-iron-deserter-03",
+      "archetypeId": "iron-deserter",
+      "name": "Iron Deserter",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-iron-deserter-04",
+      "archetypeId": "iron-deserter",
+      "name": "Iron Deserter",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-marsh-crawler-01",
+      "archetypeId": "marsh-crawler",
+      "name": "Marsh Crawler",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-marsh-crawler-02",
+      "archetypeId": "marsh-crawler",
+      "name": "Marsh Crawler",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-marsh-crawler-03",
+      "archetypeId": "marsh-crawler",
+      "name": "Marsh Crawler",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-marsh-crawler-04",
+      "archetypeId": "marsh-crawler",
+      "name": "Marsh Crawler",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-mire-enchantress-01",
+      "archetypeId": "mire-enchantress",
+      "name": "Mire Enchantress",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-mire-enchantress-02",
+      "archetypeId": "mire-enchantress",
+      "name": "Mire Enchantress",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-mire-enchantress-03",
+      "archetypeId": "mire-enchantress",
+      "name": "Mire Enchantress",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-mire-enchantress-04",
+      "archetypeId": "mire-enchantress",
+      "name": "Mire Enchantress",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-orc-freeblade-01",
+      "archetypeId": "orc-freeblade",
+      "name": "Orc Freeblade",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-orc-freeblade-02",
+      "archetypeId": "orc-freeblade",
+      "name": "Orc Freeblade",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-orc-freeblade-03",
+      "archetypeId": "orc-freeblade",
+      "name": "Orc Freeblade",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-orc-freeblade-04",
+      "archetypeId": "orc-freeblade",
+      "name": "Orc Freeblade",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-orc-hexcaller-01",
+      "archetypeId": "orc-hexcaller",
+      "name": "Orc Hexcaller",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-orc-hexcaller-02",
+      "archetypeId": "orc-hexcaller",
+      "name": "Orc Hexcaller",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-orc-hexcaller-03",
+      "archetypeId": "orc-hexcaller",
+      "name": "Orc Hexcaller",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-orc-hexcaller-04",
+      "archetypeId": "orc-hexcaller",
+      "name": "Orc Hexcaller",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-rain-wraith-01",
+      "archetypeId": "rain-wraith",
+      "name": "Black Rain Wraith",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-rain-wraith-02",
+      "archetypeId": "rain-wraith",
+      "name": "Black Rain Wraith",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-rain-wraith-03",
+      "archetypeId": "rain-wraith",
+      "name": "Black Rain Wraith",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-rain-wraith-04",
+      "archetypeId": "rain-wraith",
+      "name": "Black Rain Wraith",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-thorn-penitent-01",
+      "archetypeId": "thorn-penitent",
+      "name": "Thorn Penitent",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-thorn-penitent-02",
+      "archetypeId": "thorn-penitent",
+      "name": "Thorn Penitent",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-thorn-penitent-03",
+      "archetypeId": "thorn-penitent",
+      "name": "Thorn Penitent",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-thorn-penitent-04",
+      "archetypeId": "thorn-penitent",
+      "name": "Thorn Penitent",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-vault-gargoyle-01",
+      "archetypeId": "vault-gargoyle",
+      "name": "Vault Gargoyle",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-vault-gargoyle-02",
+      "archetypeId": "vault-gargoyle",
+      "name": "Vault Gargoyle",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-vault-gargoyle-03",
+      "archetypeId": "vault-gargoyle",
+      "name": "Vault Gargoyle",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-vault-gargoyle-04",
+      "archetypeId": "vault-gargoyle",
+      "name": "Vault Gargoyle",
+      "rankBand": "9-10"
+    }
+  ],
+  "bosses": [
+    {
+      "id": "enemy-portrait-boss-black-banner-commander",
+      "enemyId": "boss-black-banner-commander",
+      "name": "Commander Ysra Venn"
+    },
+    {
+      "id": "enemy-portrait-boss-black-banner-gatebreaker",
+      "enemyId": "boss-black-banner-gatebreaker",
+      "name": "The Black Banner Gatebreaker"
+    },
+    {
+      "id": "enemy-portrait-boss-captain-oren-dusk",
+      "enemyId": "boss-captain-oren-dusk",
+      "name": "Captain Oren Dusk"
+    },
+    {
+      "id": "enemy-portrait-boss-coronation-engine",
+      "enemyId": "boss-coronation-engine",
+      "name": "The Coronation Engine"
+    },
+    {
+      "id": "enemy-portrait-boss-crownless-gate-warden",
+      "enemyId": "boss-crownless-gate-warden",
+      "name": "Crownless Gate Warden"
+    },
+    {
+      "id": "enemy-portrait-boss-embervault-forgemaster",
+      "enemyId": "boss-embervault-forgemaster",
+      "name": "Hadrik Vale, Embervault Forgemaster"
+    },
+    {
+      "id": "enemy-portrait-boss-harrow-ferry-reaver",
+      "enemyId": "boss-harrow-ferry-reaver",
+      "name": "Harrow, Ferry Reaver"
+    },
+    {
+      "id": "enemy-portrait-boss-kargan-war-chief",
+      "enemyId": "boss-kargan-war-chief",
+      "name": "Kargan, War Chief"
+    },
+    {
+      "id": "enemy-portrait-boss-marshal-severin-voss",
+      "enemyId": "boss-marshal-severin-voss",
+      "name": "Marshal Severin Voss"
+    },
+    {
+      "id": "enemy-portrait-boss-osra-mire-witch",
+      "enemyId": "boss-osra-mire-witch",
+      "name": "Osra, Mire Witch"
+    },
+    {
+      "id": "enemy-portrait-boss-rattlehook-bridge-chief",
+      "enemyId": "boss-rattlehook-bridge-chief",
+      "name": "Rattlehook, Bridge Chief"
+    },
+    {
+      "id": "enemy-portrait-boss-redwater-provocateur",
+      "enemyId": "boss-redwater-provocateur",
+      "name": "The Redwater Provocateur"
+    },
+    {
+      "id": "enemy-portrait-boss-royal-armory-golem",
+      "enemyId": "boss-royal-armory-golem",
+      "name": "Royal Armory Golem"
+    },
+    {
+      "id": "enemy-portrait-boss-siege-engineer-malrec",
+      "enemyId": "boss-siege-engineer-malrec",
+      "name": "Siege Engineer Malrec"
+    },
+    {
+      "id": "enemy-portrait-boss-voss-champion-elian-roake",
+      "enemyId": "boss-voss-champion-elian-roake",
+      "name": "Captain Elian Roake, Voss’s Champion"
+    }
+  ],
+  "voiceCues": [
+    {
+      "id": "voice-ch01-main-a-banner-placed-too-neatly",
+      "sceneId": "ch01-main-a-banner-placed-too-neatly",
+      "speaker": "Eldrin",
+      "text": "The torn orc banner is convincing at a distance. Up close, every knot looks tied for someone to find."
+    },
+    {
+      "id": "voice-ch01-main-the-first-arrow",
+      "sceneId": "ch01-main-the-first-arrow",
+      "speaker": "Eldrin",
+      "text": "The first arrow strikes the medicine wagon, and the quiet road becomes a battlefield before anyone can name the enemy."
+    },
+    {
+      "id": "voice-ch02-companion-mara-takes-the-road",
+      "sceneId": "ch02-companion-mara-takes-the-road",
+      "speaker": "Mara",
+      "text": "I will take the road with you, but civilians do not become expendable when the evidence gets difficult."
+    },
+    {
+      "id": "voice-ch02-main-raiders-at-the-wall",
+      "sceneId": "ch02-main-raiders-at-the-wall",
+      "speaker": "Eldrin",
+      "text": "Greywatch closes its gates as raiders test the north wall. Inside, frightened families wait for orders that may already be compromised."
+    },
+    {
+      "id": "voice-ch02-main-the-witness-speaks",
+      "sceneId": "ch02-main-the-witness-speaks",
+      "speaker": "Eldrin",
+      "text": "The wounded witness names a human paymaster and a false banner. His testimony turns a border raid into a deliberate conspiracy."
+    },
+    {
+      "id": "voice-ch03-main-the-attack-with-two-banners",
+      "sceneId": "ch03-main-the-attack-with-two-banners",
+      "speaker": "Eldrin",
+      "text": "The attackers raise opposing banners on the same road. The lie survives only if both armies answer before they look closely."
+    },
+    {
+      "id": "voice-ch03-main-the-captured-courier",
+      "sceneId": "ch03-main-the-captured-courier",
+      "speaker": "Eldrin",
+      "text": "A captured courier carries two sets of orders: one meant for human patrols, and one written to provoke the Free Host."
+    },
+    {
+      "id": "voice-ch04-companion-stonehand-joins-the-road",
+      "sceneId": "ch04-companion-stonehand-joins-the-road",
+      "speaker": "Rukhar",
+      "text": "I join as an equal voice for the Free Host, not as a trophy taken from a peace table."
+    },
+    {
+      "id": "voice-ch04-main-parley-between-lines",
+      "sceneId": "ch04-main-parley-between-lines",
+      "speaker": "Eldrin",
+      "text": "Human and orc commanders meet between their lines while hidden hands prepare the violence that will make negotiation impossible."
+    },
+    {
+      "id": "voice-ch04-main-terms-at-redwater",
+      "sceneId": "ch04-main-terms-at-redwater",
+      "speaker": "Eldrin",
+      "text": "Redwater can become a truce, a withdrawal, or the first open battle of a war someone else designed."
+    },
+    {
+      "id": "voice-ch05-companion-caldus-answers-the-road",
+      "sceneId": "ch05-companion-caldus-answers-the-road",
+      "speaker": "Caldus",
+      "text": "The abbey knows my name. My duty belongs to the people its locked doors failed."
+    },
+    {
+      "id": "voice-ch05-companion-lyra-chooses-the-slower-truth",
+      "sceneId": "ch05-companion-lyra-chooses-the-slower-truth",
+      "speaker": "Lyra",
+      "text": "Careful proof travels slowly, but it survives the moment when a powerful man calls every witness a liar."
+    },
+    {
+      "id": "voice-ch05-main-forge-behind-the-wall",
+      "sceneId": "ch05-main-forge-behind-the-wall",
+      "speaker": "Eldrin",
+      "text": "One hidden forge stamps weapons for both armies. The same steel has been sharpened into two different accusations."
+    },
+    {
+      "id": "voice-ch05-main-the-name-severin-voss",
+      "sceneId": "ch05-main-the-name-severin-voss",
+      "speaker": "Eldrin",
+      "text": "The seals, payments, and witness accounts agree on one name: Marshal Severin Voss."
+    },
+    {
+      "id": "voice-ch06-companion-caldus-after-the-siege-bell",
+      "sceneId": "ch06-companion-caldus-after-the-siege-bell",
+      "speaker": "Caldus",
+      "text": "The wounded need a healer, and the evidence needs a witness. We cannot pretend either duty is painless."
+    },
+    {
+      "id": "voice-ch06-main-smoke-over-greywatch",
+      "sceneId": "ch06-main-smoke-over-greywatch",
+      "speaker": "Eldrin",
+      "text": "Smoke rises over Greywatch before the evidence can reach its council. The conspiracy has returned to destroy its own record."
+    },
+    {
+      "id": "voice-ch06-main-what-remains-of-greywatch",
+      "sceneId": "ch06-main-what-remains-of-greywatch",
+      "speaker": "Eldrin",
+      "text": "When the siege bell falls silent, survivors count more than walls. They count witnesses, families, and the truth still in their hands."
+    },
+    {
+      "id": "voice-ch07-companion-rukhar-holds-the-gate-line",
+      "sceneId": "ch07-companion-rukhar-holds-the-gate-line",
+      "speaker": "Rukhar",
+      "text": "Protect the witnesses first. A victory that loses the truth only prepares the next war."
+    },
+    {
+      "id": "voice-ch07-main-council-before-the-march",
+      "sceneId": "ch07-main-council-before-the-march",
+      "speaker": "Eldrin",
+      "text": "The march on Crownless Keep begins with a council, because a coalition that cannot agree on limits will become another occupying army."
+    },
+    {
+      "id": "voice-ch07-main-inside-the-keep",
+      "sceneId": "ch07-main-inside-the-keep",
+      "speaker": "Eldrin",
+      "text": "Beyond the inner gate, the keep is not a throne room. It is a machine of orders, cells, archives, and controlled fear."
+    },
+    {
+      "id": "voice-ch08-companion-lyra-closes-the-emergency-compact",
+      "sceneId": "ch08-companion-lyra-closes-the-emergency-compact",
+      "speaker": "Lyra",
+      "text": "Count every seal before we close the hall. No one will inherit authority from a vote that never lawfully ended."
+    },
+    {
+      "id": "voice-ch08-companion-talla-takes-the-hidden-road",
+      "sceneId": "ch08-companion-talla-takes-the-hidden-road",
+      "speaker": "Talla",
+      "text": "I will share the hidden road, but no council owns it. The people who need escape come first."
+    },
+    {
+      "id": "voice-ch08-main-the-marshal-and-the-banner",
+      "sceneId": "ch08-main-the-marshal-and-the-banner",
+      "speaker": "Voss",
+      "text": "Break my command today, and tomorrow every frightened captain will raise a banner of his own."
+    },
+    {
+      "id": "voice-ch08-main-voss-offers-order",
+      "sceneId": "ch08-main-voss-offers-order",
+      "speaker": "Voss",
+      "text": "I did not create their hatred. I built the only command strong enough to keep that hatred from consuming the border."
+    }
+  ]
+}
