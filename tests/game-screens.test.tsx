@@ -1,7 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CampScreen } from '../src/components/CampScreen';
+import { ItemIcon } from '../src/components/ItemIcon';
 import { RouteScreen } from '../src/components/RouteScreen';
+import { SceneArt, illustrationFallbackSource } from '../src/components/SceneArt';
 import { StoryPanel } from '../src/components/StoryPanel';
 import { TutorialCallout } from '../src/components/TutorialCallout';
 import { selectCampView, selectCurrentScene, selectRouteView } from '../src/ui/selectors';
@@ -66,5 +68,27 @@ describe('camp, route, and story screens', () => {
     await user.click(screen.getByRole('button', { name: 'Skip tutorials' }));
     expect(onDismiss).toHaveBeenCalledOnce();
     expect(onSkipAll).toHaveBeenCalledOnce();
+  });
+
+  it('replaces missing authored scene art with a deterministic clean chapter image', () => {
+    const illustrationId = 'scene-ch01-missing-authored';
+    render(<SceneArt illustrationId={illustrationId} alt="A wagon on the Greywatch road." />);
+    const image = screen.getByRole('img', { name: 'A wagon on the Greywatch road.' });
+    fireEvent.error(image);
+
+    expect(illustrationFallbackSource(illustrationId)).toBe('/assets/chronicle1/scenes/ch01/scene-ch01-main-a-banner-placed-too-neatly.webp');
+    expect(image).toHaveAttribute('src', illustrationFallbackSource(illustrationId));
+    expect(screen.queryByText(/illustration unavailable/i)).not.toBeInTheDocument();
+  });
+
+  it('renders item art at the canonical asset path and keeps a clean fixed-size fallback', () => {
+    const { rerender } = render(<ItemIcon iconId="item-icon-weapon-greywatch-sabre" name="Greywatch Sabre" />);
+    const image = screen.getByTestId('item-icon-image');
+    expect(image).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-weapon-greywatch-sabre.webp');
+    fireEvent.error(image);
+    expect(screen.getByTestId('item-icon-fallback')).toHaveTextContent('G');
+
+    rerender(<ItemIcon iconId={null} name="Unknown Relic" />);
+    expect(screen.getByTestId('item-icon-fallback')).toHaveTextContent('U');
   });
 });

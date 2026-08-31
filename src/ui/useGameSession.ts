@@ -8,6 +8,8 @@ import { reduceGame } from '../game/state/reducer';
 import type { GameCommand, GameStateV2 } from '../game/state/types';
 import type { HeroClass } from '../game/types';
 import type { SaveSlotSummary, UiPorts } from './types';
+import type { UiSettings } from './types';
+import { feedbackForTransition } from './feedback';
 
 export type GameSessionView = 'title' | 'preferences' | 'opening' | 'new-run' | 'game';
 
@@ -116,6 +118,11 @@ export function useGameSession(
   repository: SaveRepository,
   content: ContentIndex,
   ports: UiPorts,
+  settings: UiSettings = {
+    textScale: 1, highContrast: false, reducedMotion: false, hapticsEnabled: true, reducedHaptics: false,
+    sfxVolume: 0.8, musicVolume: 0.7, voiceVolume: 0.9, captions: true,
+    voiceReplay: 'automatic', screenReaderAnnouncements: true,
+  },
 ): GameSessionController {
   const [view, setView] = useState<GameSessionView>('title');
   const [activeSlot, setActiveSlot] = useState<SaveSlot | null>(null);
@@ -126,6 +133,7 @@ export function useGameSession(
   const latestStateRef = useRef<GameStateV2 | null>(null);
   const activeSlotRef = useRef<SaveSlot | null>(null);
   const loadedRepositoryRef = useRef<SaveRepository | null>(null);
+  const feedbackDeliveryRef = useRef<{ sequence: number; eventIds: Set<string> }>({ sequence: -1, eventIds: new Set() });
 
   useEffect(() => {
     if (loadedRepositoryRef.current === repository) return;
@@ -157,6 +165,7 @@ export function useGameSession(
       return;
     }
     latestStateRef.current = loaded.state;
+    feedbackDeliveryRef.current = { sequence: loaded.state.campaign.transitionCounter, eventIds: new Set() };
     activeSlotRef.current = slot;
     setActiveSlot(slot);
     setGame(loaded.state);
@@ -171,6 +180,7 @@ export function useGameSession(
   const beginSlot = useCallback((slot: SaveSlot) => {
     activeSlotRef.current = slot;
     latestStateRef.current = null;
+    feedbackDeliveryRef.current = { sequence: -1, eventIds: new Set() };
     setActiveSlot(slot);
     setGame(null);
     setTransitionEvents([]);
@@ -202,6 +212,7 @@ export function useGameSession(
       setNotice('The new Chronicle could not be saved. Please try again.');
       return;
     }
+    feedbackDeliveryRef.current = { sequence: state.campaign.transitionCounter, eventIds: new Set() };
     publish(slot, state, []);
     setView('game');
   }, [content, ports, publish, repository]);
@@ -216,11 +227,22 @@ export function useGameSession(
       setNotice(SAVE_FAILURE_NOTICE);
       return;
     }
+    const delivered = feedbackDeliveryRef.current;
+    const unseenEvents = transition.events.filter((event) => event.sequence > delivered.sequence
+      || (event.sequence === delivered.sequence && !delivered.eventIds.has(event.eventId)));
     publish(slot, transition.state, transition.events.map((event) => event.domain));
-  }, [content, publish, repository]);
+    if (unseenEvents.length > 0) {
+      const nextSequence = Math.max(delivered.sequence, ...unseenEvents.map((event) => event.sequence));
+      const eventIds = nextSequence === delivered.sequence ? new Set(delivered.eventIds) : new Set<string>();
+      for (const event of unseenEvents) if (event.sequence === nextSequence) eventIds.add(event.eventId);
+      feedbackDeliveryRef.current = { sequence: nextSequence, eventIds };
+      try { ports.feedback.consume(feedbackForTransition(unseenEvents.map((event) => event.domain), settings)); } catch { /* Presentation feedback never invalidates a saved action. */ }
+    }
+  }, [content, ports.feedback, publish, repository, settings]);
 
   const returnToTitle = useCallback(() => {
     latestStateRef.current = null;
+    feedbackDeliveryRef.current = { sequence: -1, eventIds: new Set() };
     activeSlotRef.current = null;
     setGame(null);
     setActiveSlot(null);
@@ -244,6 +266,7 @@ export function useGameSession(
     }
     setSlots((summaries) => replaceSummary(summaries, summaryFromState(slot, current)));
     latestStateRef.current = null;
+    feedbackDeliveryRef.current = { sequence: -1, eventIds: new Set() };
     activeSlotRef.current = null;
     setGame(null);
     setActiveSlot(null);

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CombatPanel } from '../src/components/CombatPanel';
 import { EnemyParty } from '../src/components/EnemyParty';
@@ -53,5 +53,54 @@ describe('group combat interface', () => {
     render(<EnemyParty enemies={enemies} selectedTargetId={enemies[0]!.id} onTarget={vi.fn()} feedbackClass="is-blocked" />);
     expect(screen.getByText('Guarding ally · 2 turns')).toBeVisible();
     expect(screen.getByText(base.enemies[0]!.intent.description)).toBeVisible();
+  });
+
+  it('shows mobile-safe generic enemy art and replaces a missing family with its clean species fallback', () => {
+    const base = selectCombatView(makeUiGame({ screen: 'combat' }), UI_CONTENT)!;
+    const { container } = render(<EnemyParty enemies={base.enemies} selectedTargetId={base.enemies[0]!.id} onTarget={vi.fn()} />);
+    const portrait = container.querySelector<HTMLImageElement>('.enemy-card:first-child .enemy-portrait img')!;
+    expect(portrait).toHaveAttribute('src', '/assets/enemies/enemy-ash-goblin-guard.webp');
+    fireEvent.error(portrait);
+    expect(portrait).toHaveAttribute('src', '/assets/enemies/goblin.webp');
+    fireEvent.error(portrait);
+    expect(portrait).toHaveAttribute('hidden');
+  });
+
+  it('selects a Chronicle portrait before the generic art-family fallback', () => {
+    const state = makeUiGame({ screen: 'combat' });
+    const definition = UI_CONTENT.enemies.get('ash-goblin' as never)!;
+    const portraitDefinition = {
+      ...definition,
+      portraitId: 'enemy-portrait-goblin-cutpurse-01',
+    };
+    const content = {
+      ...UI_CONTENT,
+      enemies: new Map(UI_CONTENT.enemies).set(definition.id as never, portraitDefinition),
+    };
+    const enemy = selectCombatView(state, content)!.enemies[0]!;
+    expect(enemy).toMatchObject({
+      illustrationId: 'enemy-portrait-goblin-cutpurse-01',
+      illustrationKind: 'chronicle-portrait',
+      artFamily: 'enemy-ash-goblin-guard',
+    });
+    const { container } = render(<EnemyParty enemies={[enemy]} selectedTargetId={enemy.id} onTarget={vi.fn()} />);
+    const portrait = container.querySelector<HTMLImageElement>('.enemy-portrait img')!;
+    expect(portrait).toHaveAttribute('src', '/assets/chronicle1/enemies/enemy-portrait-goblin-cutpurse-01.webp');
+    fireEvent.error(portrait);
+    expect(portrait).toHaveAttribute('src', '/assets/enemies/enemy-ash-goblin-guard.webp');
+  });
+
+  it('routes Chronicle boss portraits to the boss catalog', () => {
+    const base = selectCombatView(makeUiGame({ screen: 'combat' }), UI_CONTENT)!;
+    const enemy = {
+      ...base.enemies[0]!,
+      illustrationId: 'enemy-portrait-boss-black-banner-commander',
+      illustrationKind: 'chronicle-portrait' as const,
+    };
+    const { container } = render(<EnemyParty enemies={[enemy]} selectedTargetId={enemy.id} onTarget={vi.fn()} />);
+    expect(container.querySelector('.enemy-portrait img')).toHaveAttribute(
+      'src',
+      '/assets/chronicle1/bosses/enemy-portrait-boss-black-banner-commander.webp',
+    );
   });
 });

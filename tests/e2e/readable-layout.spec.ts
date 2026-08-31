@@ -19,13 +19,18 @@ test('keeps the medieval story and labeled menus readable on a small phone', asy
   expect(titleFits).toBe(true);
 
   await game.beginMageChronicle();
-  await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road Camp' })).toBeVisible();
   expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.getByRole('button', { name: 'Choose a Route' }).click();
+  await page.getByRole('button', { name: /King's Road/i }).click();
+  await expect(page.locator('.story-panel h1')).toBeVisible();
 
   await expect(page.getByRole('button', { name: 'Pack' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Journal' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Foes' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Companions' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
 
   const locationFits = await page.locator('.hud-location span').evaluate((element) => element.scrollWidth <= element.clientWidth);
   expect(locationFits).toBe(true);

@@ -10,9 +10,10 @@ describe('inventory, equipment, and merchant flows', () => {
     const user = userEvent.setup();
     const state = makeUiGame({ stackedPotions: 3, equippedWeapon: true, questItem: true });
     const onUse = vi.fn();
-    render(
+    const view = selectInventoryView(state, UI_CONTENT);
+    const { container } = render(
       <InventorySheet
-        view={selectInventoryView(state, UI_CONTENT)}
+        view={{ ...view, pack: view.pack.map((item) => ({ ...item, iconId: 'item-icon-consumable-field-bandage' })) }}
         context="field"
         heroClass={state.campaign.hero.heroClass}
         onUse={onUse}
@@ -22,6 +23,7 @@ describe('inventory, equipment, and merchant flows', () => {
     );
     expect(screen.getByText('1 / 24 slots')).toBeVisible();
     expect(screen.getByText('Quantity 3')).toBeVisible();
+    expect(container.querySelector('.item-card .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-consumable-field-bandage.webp');
     await user.click(screen.getByRole('button', { name: 'Use Red Mercy' }));
     expect(onUse).toHaveBeenCalledWith('stack-red-mercy');
   });
@@ -34,14 +36,15 @@ describe('inventory, equipment, and merchant flows', () => {
       ...view,
       pack: [...view.pack, {
         ...selectInventoryView(makeUiGame({ equippedWeapon: true }), UI_CONTENT).equipment.weapon!,
-        entryId: 'sword-entry', allowedClasses: ['warrior' as const], restrictionLabel: 'Warrior only',
+        entryId: 'sword-entry', iconId: 'item-icon-weapon-greywatch-sabre', allowedClasses: ['warrior' as const], restrictionLabel: 'Warrior only',
       }],
     };
-    render(<InventorySheet view={restricted} context="camp" heroClass="warden" onUse={vi.fn()} onInventoryCommand={vi.fn()} onClose={vi.fn()} />);
+    const { container } = render(<InventorySheet view={restricted} context="camp" heroClass="warden" onUse={vi.fn()} onInventoryCommand={vi.fn()} onClose={vi.fn()} />);
     await user.click(screen.getByRole('tab', { name: 'Equipment' }));
     expect(screen.getByText('Weapon')).toBeVisible();
     expect(screen.getByRole('button', { name: /Equip Greywatch Iron Sword/i })).toBeDisabled();
     expect(screen.getByText('Warrior only')).toBeVisible();
+    expect(container.querySelector('.loadout-list .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-weapon-greywatch-sabre.webp');
   });
 
   it('includes stats lost from the currently equipped item in swap comparisons', async () => {
@@ -75,10 +78,19 @@ describe('inventory, equipment, and merchant flows', () => {
     const selected = selectMerchantView(state, UI_CONTENT)!;
     const view = { ...selected, totalGold: 999, stock: selected.stock.map((item) => ({ ...item, affordable: true })) };
     const onBuy = vi.fn();
-    render(<MerchantScreen view={view} onBuy={onBuy} onSell={vi.fn()} onClose={vi.fn()} />);
-    const stock = view.stock[0]!;
+    const illustrated = {
+      ...view,
+      stock: view.stock.map((item) => ({ ...item, iconId: 'item-icon-consumable-field-bandage' })),
+      sellable: view.sellable.map((item) => ({ ...item, iconId: 'item-icon-consumable-field-bandage' })),
+    };
+    const { container } = render(<MerchantScreen view={illustrated} onBuy={onBuy} onSell={vi.fn()} onClose={vi.fn()} />);
+    const stock = illustrated.stock[0]!;
     await user.click(screen.getByRole('button', { name: `Buy ${stock.name} for ${stock.price} gold` }));
     expect(onBuy).toHaveBeenCalledWith(stock.stockEntryId);
     expect(screen.getByText(/Banked .*Carried .*Total/)).toBeVisible();
+    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/merchants/ui-merchant-art.webp');
+    expect(container.querySelector('.merchant-list .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-consumable-field-bandage.webp');
+    await user.click(screen.getByRole('tab', { name: 'Sell' }));
+    expect(container.querySelector('.merchant-list .item-icon img')).toHaveAttribute('src', '/assets/chronicle1/items/item-icon-consumable-field-bandage.webp');
   });
 });

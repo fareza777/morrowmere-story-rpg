@@ -11,9 +11,9 @@ import {
   configureGameAudio,
   createFeedbackAudioPort,
   gameAudio,
-  playDomainEvents,
   playSfx,
 } from './game/audio';
+import { consumeFeedbackHaptics } from './native/haptics';
 import { CHRONICLE1_CONTENT } from './game/content/chronicle1';
 import type { ContentIndex } from './game/content/schema';
 import { createSaveRepository } from './game/persistence/repository';
@@ -67,8 +67,14 @@ const CONTENT: ContentIndex = Object.freeze({
   audioIds: partialContent.audioIds ?? new Set(),
 });
 
+const audioFeedback = createFeedbackAudioPort(gameAudio);
 const PORTS: UiPorts = {
-  feedback: createFeedbackAudioPort(gameAudio),
+  feedback: {
+    consume(cues): void {
+      audioFeedback.consume(cues);
+      consumeFeedbackHaptics(cues);
+    },
+  },
   cinematicAudio,
   now: () => Date.now(),
 };
@@ -80,7 +86,7 @@ export default function App() {
     () => createSaveRepository(window.localStorage, () => new Date().toISOString(), CONTENT),
     [],
   );
-  const session = useGameSession(repository, CONTENT, PORTS);
+  const session = useGameSession(repository, CONTENT, PORTS, settings);
 
   useLayoutEffect(() => {
     document.documentElement.scrollTop = 0;
@@ -100,10 +106,6 @@ export default function App() {
       voiceVolume: settings.voiceVolume,
     });
   }, [settings.musicVolume, settings.sfxVolume, settings.voiceVolume]);
-
-  useEffect(() => {
-    playDomainEvents(gameAudio, session.transitionEvents);
-  }, [session.transitionEvents]);
 
   return (
     <>

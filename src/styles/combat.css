@@ -4,8 +4,13 @@
 .enemy-party { display: grid; gap: 0.65rem; }
 .enemy-card { min-inline-size: 0; padding: 0.75rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--ink-1); box-shadow: 0 4px 12px rgb(70 44 23 / 0.08); }
 .enemy-card.is-targeted { border-color: var(--accent-strong); box-shadow: inset 4px 0 var(--accent), 0 4px 12px rgb(70 44 23 / 0.1); }
-.enemy-card > header { display: flex; align-items: start; justify-content: space-between; gap: 0.6rem; }
-.enemy-card > header span { color: var(--accent-strong); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.enemy-card-top { min-inline-size: 0; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 0.7rem; align-items: start; }
+.enemy-card-top > header { min-inline-size: 0; display: flex; align-items: start; justify-content: space-between; gap: 0.6rem; }
+.enemy-card-top > header > div { min-inline-size: 0; }
+.enemy-card-top > header span { color: var(--accent-strong); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.enemy-portrait { inline-size: 72px; block-size: 72px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 10px; background: #eadcc0; }
+.enemy-portrait img { inline-size: 100%; block-size: 100%; display: block; object-fit: cover; object-position: center 22%; }
+.enemy-portrait img[hidden] { display: none; }
 .enemy-card h2 { margin: 0.15rem 0 0.45rem; font-size: 1.18rem; overflow-wrap: anywhere; }
 .enemy-card-health { block-size: 7px; overflow: hidden; border-radius: 999px; background: var(--ink-3); }
 .enemy-card-health > span { display: block; block-size: 100%; background: var(--danger); transition: inline-size 180ms ease; }
@@ -37,3 +42,4 @@
 .combat-consumables button { min-block-size: 52px; padding: 0.55rem 0.65rem; display: grid; gap: 0.15rem; border: 1px solid var(--line); border-radius: 8px; background: var(--ink-0); text-align: start; }
 .combat-consumables span { color: var(--paper-2); font-size: 0.76rem; line-height: 1.35; }
 @media (min-width: 580px) { .enemy-party { grid-template-columns: repeat(3, minmax(0, 1fr)); } .combat-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 340px) { .enemy-card-top { grid-template-columns: 60px minmax(0, 1fr); } .enemy-portrait { inline-size: 60px; block-size: 60px; } }

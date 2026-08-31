@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { playHaptic, type HapticCue, type HapticDriver } from '../src/native/haptics';
+import { consumeFeedbackHaptics, playHaptic, type HapticCue, type HapticDriver } from '../src/native/haptics';
 
 function fakeHapticDriver() {
   const impact = vi.fn(async (_style: 'light' | 'medium' | 'heavy') => undefined);
@@ -51,5 +51,19 @@ describe('playHaptic', () => {
     for (const cue of cues) {
       await expect(playHaptic(cue, { enabled: true, reduced: false }, driver)).resolves.toBeUndefined();
     }
+  });
+
+  it('consumes UI haptic patterns through the native adapter and ignores other cue types', async () => {
+    const { driver, impact, notification } = fakeHapticDriver();
+    consumeFeedbackHaptics([
+      { type: 'sfx', cueId: 'critical', volume: 0.8 },
+      { type: 'haptic', pattern: 'double' },
+      { type: 'haptic', pattern: 'level-up' },
+      { type: 'announce', message: 'Level 2 reached.' },
+    ], driver);
+    await vi.waitFor(() => expect(impact).toHaveBeenCalledTimes(2));
+    expect(impact).toHaveBeenNthCalledWith(1, 'medium');
+    expect(impact).toHaveBeenNthCalledWith(2, 'medium');
+    expect(notification).toHaveBeenCalledExactlyOnceWith('success');
   });
 });

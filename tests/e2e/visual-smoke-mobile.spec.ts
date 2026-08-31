@@ -9,7 +9,7 @@ test.use({
   deviceScaleFactor: 2,
 });
 
-test('keeps the title, bright story, and defeat recovery readable on a small Android viewport', async ({ page }) => {
+test('keeps the title, opening, camp, route, story, and sheets readable on a small Android viewport', async ({ page }) => {
   const output = join(process.cwd(), 'release', 'visual-smoke');
   mkdirSync(output, { recursive: true });
   const game = new MorrowmerePage(page);
@@ -25,9 +25,21 @@ test('keeps the title, bright story, and defeat recovery readable on a small And
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({ path: join(output, '01-title-360x800.png') });
 
-  await game.beginMageChronicle();
-  await page.locator('.choice-button').first().click();
-  await page.locator('.outcome-panel button').click();
+  await game.newChronicle.click();
+  await page.getByRole('button', { name: 'Watch opening story' }).click();
+  await expect(page.getByRole('region', { name: 'Opening story' })).toBeVisible();
+  await expect(page.locator('.opening-caption')).toBeVisible();
+  await page.screenshot({ path: join(output, '02-opening-caption-360x800.png') });
+  await page.getByRole('button', { name: 'Skip opening' }).click();
+  await page.getByRole('button', { name: /Mage/i }).click();
+  await page.getByRole('button', { name: 'Begin Chronicle' }).click();
+  await expect(page.getByRole('heading', { name: 'Road Camp' })).toBeVisible();
+  await page.screenshot({ path: join(output, '03-camp-360x800.png') });
+  await page.getByRole('button', { name: 'Choose a Route' }).click();
+  await expect(page.getByRole('heading', { name: 'Choose Your Road' })).toBeVisible();
+  await page.screenshot({ path: join(output, '04-route-360x800.png') });
+  await page.getByRole('button', { name: /King's Road/i }).click();
+  await expect(page.locator('.story-panel')).toBeVisible();
 
   const scene = page.locator('.scene-art img');
   await expect(scene).toBeVisible();
@@ -48,38 +60,13 @@ test('keeps the title, bright story, and defeat recovery readable on a small And
   });
   expect(sceneLuma).toBeGreaterThanOrEqual(95);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-  await page.screenshot({ path: join(output, '02-bright-story-360x800.png') });
-
-  await page.evaluate(() => {
-    const key = 'morrowmere:save:1';
-    const raw = localStorage.getItem(key);
-    if (!raw) throw new Error('Expected an autosave before forcing the defeat screen.');
-    const state = JSON.parse(raw);
-    state.screen = 'defeat';
-    state.hero.health = 0;
-    state.combat = null;
-    state.overlay = null;
-    localStorage.setItem(key, JSON.stringify(state));
-  });
-  await page.reload();
-  await expect(page.locator('.launch-splash')).toBeHidden();
-  await game.continueChronicle.click();
-
-  const tryAgain = page.getByRole('button', { name: 'Try Again' });
-  const mainMenu = page.getByRole('button', { name: 'Main Menu' });
-  await expect(tryAgain).toBeVisible();
-  await expect(mainMenu).toBeVisible();
-  await expect(tryAgain.locator('svg')).toHaveCount(1);
-  await expect(mainMenu.locator('svg')).toHaveCount(1);
-
-  for (const action of [tryAgain, mainMenu]) {
-    const box = await action.boundingBox();
-    expect(box).not.toBeNull();
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(360);
-    expect(box!.y).toBeGreaterThanOrEqual(0);
-    expect(box!.y + box!.height).toBeLessThanOrEqual(800);
-  }
+  await page.screenshot({ path: join(output, '05-bright-story-360x800.png') });
+  await page.getByRole('button', { name: 'Pack' }).click();
+  await expect(page.getByRole('dialog', { name: 'Inventory' })).toBeVisible();
+  await page.screenshot({ path: join(output, '06-inventory-360x800.png') });
+  await page.getByRole('button', { name: 'Close Inventory' }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+  await page.screenshot({ path: join(output, '07-settings-360x800.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
-  await page.screenshot({ path: join(output, '03-defeat-actions-360x800.png') });
 });

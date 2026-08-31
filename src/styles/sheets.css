@@ -1,11 +1,14 @@
 .inventory-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .inventory-tabs button { min-inline-size: 0; padding-inline: 0.3rem; }
-.item-card header, .merchant-list article header { display: flex; justify-content: space-between; gap: 0.65rem; }
+.item-card header, .merchant-list article header { min-inline-size: 0; display: flex; align-items: center; justify-content: space-between; gap: 0.65rem; }
 .item-card header > div, .merchant-list header > div { min-inline-size: 0; display: grid; gap: 0.15rem; }
 .item-card header span, .merchant-list header span { color: var(--accent-strong); font-size: 0.74rem; }
 .item-card header b { flex: 0 0 auto; color: var(--paper-2); font-size: 0.76rem; }
 .item-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-block-start: 0.65rem; }
-.item-actions button, .merchant-list article > button { min-block-size: 42px; padding: 0.45rem 0.65rem; display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--ink-1); font-size: 0.78rem; font-weight: 800; }
+.item-actions button, .merchant-list article > button { min-block-size: 48px; padding: 0.45rem 0.65rem; display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--ink-1); font-size: 0.78rem; font-weight: 800; }
+.item-icon { flex: 0 0 48px; inline-size: 48px; block-size: 48px; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: #eadcc0; color: var(--accent-strong); }
+.item-icon img { inline-size: 100%; block-size: 100%; display: block; object-fit: cover; }
+.item-icon > span { font-family: Georgia, serif; font-size: 1.35rem; font-weight: 800; }
 .item-actions .danger-action { color: var(--danger); }
 .restriction-copy { color: var(--danger) !important; font-size: 0.76rem; font-weight: 750; }
 .item-note { color: var(--accent-strong) !important; font-size: 0.75rem; }
@@ -14,10 +17,11 @@
 .quest-items article p { margin: 0.25rem 0; color: var(--paper-1); line-height: 1.4; }
 .quest-items article small { color: var(--paper-2); }
 .equipment-slots article { position: relative; padding-inline-end: 0.5rem; }
-.equipment-slots article > button { margin-inline-start: auto; min-block-size: 40px; border: 1px solid var(--line); border-radius: 7px; background: var(--ink-1); font-size: 0.7rem; }
+.equipment-slots article > button { margin-inline-start: auto; min-block-size: 48px; border: 1px solid var(--line); border-radius: 7px; background: var(--ink-1); font-size: 0.7rem; }
 .loadout-stats { grid-template-columns: repeat(2, 1fr); }
 .loadout-stats span { overflow-wrap: anywhere; text-align: center; }
-.loadout-list article header { display: flex; justify-content: space-between; gap: 0.5rem; }
+.loadout-list article header { display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem; }
+.loadout-list article header > span { min-inline-size: 0; display: grid; gap: 0.15rem; }
 .loadout-list article > small { display: block; margin-block-start: 0.35rem; color: var(--paper-2); }
 .merchant-screen .scene-art { margin-inline: 0; }
 .merchant-dialogue { color: var(--paper-1); line-height: 1.55; }
@@ -28,7 +32,7 @@
 .merchant-list article > p { color: var(--paper-1); line-height: 1.45; }
 .merchant-list article > small { display: block; margin-block-start: 0.4rem; color: var(--danger); }
 .journal-tabs { display: flex; gap: 0.35rem; overflow-x: auto; padding-block-end: 0.4rem; margin-block-end: 0.8rem; scrollbar-width: thin; }
-.journal-tabs button { flex: 0 0 auto; min-block-size: 44px; padding-inline: 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--ink-0); font-weight: 800; }
+.journal-tabs button { flex: 0 0 auto; min-block-size: 48px; padding-inline: 0.7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--ink-0); font-weight: 800; }
 .journal-tabs button[aria-selected="true"] { border-color: var(--accent); background: var(--ink-2); color: var(--accent-strong); }
 .journal-list { display: grid; gap: 0.55rem; }
 .journal-list article { padding: 0.65rem; display: flex; align-items: start; gap: 0.55rem; border: 1px solid var(--line); border-radius: 9px; background: var(--ink-0); }
@@ -66,7 +70,7 @@
 .reward-summary strong { overflow-wrap: anywhere; }
 .reward-bonus { margin-block-start: 1rem; padding: 0.75rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ink-1); }
 .reward-bonus p { margin: 0.25rem 0 0; color: var(--paper-2); line-height: 1.4; }
-.reward-bonus button { grid-column: 2; min-block-size: 42px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--ink-0); font-weight: 800; }
+.reward-bonus button { grid-column: 2; min-block-size: 48px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--ink-0); font-weight: 800; }
 .defeat-panel .end-actions svg { flex: 0 0 auto; }
 .defeat-panel { min-block-size: 100dvh; }
 @media (max-width: 340px) { .sheet-body { padding-inline: 0.75rem; } .inventory-tabs button { font-size: 0.7rem; } .equipment-slots article { align-items: start; flex-wrap: wrap; } .equipment-slots article > button { inline-size: 100%; } .reward-summary { grid-template-columns: 1fr; } }

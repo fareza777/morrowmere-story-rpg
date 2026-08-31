@@ -3,6 +3,7 @@ import {
   ImpactStyle as CapacitorImpactStyle,
   NotificationType as CapacitorNotificationType,
 } from '@capacitor/haptics';
+import type { FeedbackCue } from '../ui/types';
 
 export type HapticCue =
   | 'choice'
@@ -81,4 +82,34 @@ export async function playHaptic(
   } catch {
     // Browser and unsupported-device failures never interrupt gameplay.
   }
+}
+
+async function playFeedbackPattern(
+  pattern: Extract<FeedbackCue, { readonly type: 'haptic' }>['pattern'],
+  driver: HapticDriver,
+): Promise<void> {
+  try {
+    if (pattern === 'level-up') {
+      await driver.notification('success');
+    } else if (pattern === 'double') {
+      await driver.impact('medium');
+      await driver.impact('medium');
+    } else if (pattern === 'strong' || pattern === 'heavy') {
+      await driver.impact('heavy');
+    } else if (pattern === 'medium') {
+      await driver.impact('medium');
+    } else {
+      await driver.impact('light');
+    }
+  } catch {
+    // Native feedback is optional and never interrupts a saved transition.
+  }
+}
+
+/** Consumes only typed haptic cues; audio and announcements remain with their own ports. */
+export function consumeFeedbackHaptics(
+  cues: readonly FeedbackCue[],
+  driver: HapticDriver = capacitorHapticDriver,
+): void {
+  for (const cue of cues) if (cue.type === 'haptic') void playFeedbackPattern(cue.pattern, driver);
 }

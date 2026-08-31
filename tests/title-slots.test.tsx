@@ -11,7 +11,7 @@ import type {
 } from '../src/game/persistence/repository';
 import type { SaveSlot } from '../src/game/persistence/schema';
 import type { GameStateV2, ProfileState } from '../src/game/state/types';
-import type { SaveSlotSummary, UiPorts } from '../src/ui/types';
+import type { SaveSlotSummary, UiPorts, UiSettings } from '../src/ui/types';
 import { useGameSession } from '../src/ui/useGameSession';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 
@@ -49,6 +49,12 @@ const UI_PORTS: UiPorts = {
     setVolumes(): void {},
   },
   now: () => Date.parse('2026-08-31T14:00:00.000Z'),
+};
+
+const UI_SETTINGS: UiSettings = {
+  textScale: 1, highContrast: false, reducedMotion: false, hapticsEnabled: true, reducedHaptics: false,
+  sfxVolume: 0.8, musicVolume: 0.7, voiceVolume: 0.9, captions: true,
+  voiceReplay: 'automatic', screenReaderAnnouncements: true,
 };
 
 function successfulLoad(
@@ -258,5 +264,32 @@ describe('V2 session controller', () => {
     expect(result.current).toMatchObject({ activeSlot: 2, view: 'game' });
     expect(result.current.game?.campaign).toMatchObject({ heroName: 'Eira', hero: { heroClass: 'mage' } });
     expect(repository.saves).toEqual([{ slot: 2, state: result.current.game! }]);
+  });
+
+  it('saves and publishes a transition before consuming its typed feedback once', () => {
+    const game = makeUiGame({ screen: 'camp' });
+    const repository = new SessionRepository(new Map([[2, successfulLoad(game)]]));
+    let savesVisibleWhenConsumed = 0;
+    const consumed: unknown[] = [];
+    const ports: UiPorts = {
+      ...UI_PORTS,
+      feedback: {
+        consume(cues): void {
+          savesVisibleWhenConsumed = repository.saves.length;
+          consumed.push(cues);
+        },
+      },
+    };
+    const { result } = renderHook(() => useGameSession(repository, UI_CONTENT, ports, UI_SETTINGS));
+    act(() => result.current.continueSlot(2));
+    act(() => result.current.dispatch({ type: 'set-active-companion', companionId: null, updatedAt: '2026-08-31T14:05:00.000Z' }));
+
+    expect(savesVisibleWhenConsumed).toBe(1);
+    expect(consumed).toHaveLength(1);
+    expect(consumed[0]).toEqual(expect.arrayContaining([
+      { type: 'sfx', cueId: 'confirm', volume: 0.8 },
+      { type: 'haptic', pattern: 'light' },
+      { type: 'announce', message: 'Companion slot cleared.' },
+    ]));
   });
 });

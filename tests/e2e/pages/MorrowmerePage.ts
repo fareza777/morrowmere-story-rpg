@@ -9,8 +9,8 @@ export class MorrowmerePage {
   constructor(page: Page) {
     this.page = page;
     this.title = page.getByRole('heading', { name: 'MORROWMERE' });
-    this.newChronicle = page.getByRole('button', { name: 'New Chronicle' });
-    this.continueChronicle = page.getByRole('button', { name: 'Continue' });
+    this.newChronicle = page.getByRole('button', { name: 'Begin slot 1' });
+    this.continueChronicle = page.getByRole('button', { name: 'Continue slot 1' });
   }
 
   async gotoFresh() {
@@ -21,7 +21,8 @@ export class MorrowmerePage {
 
   async beginMageChronicle() {
     await this.newChronicle.click();
-    await this.page.getByRole('button', { name: 'Skip introduction' }).click();
+    await this.page.getByRole('button', { name: 'Watch opening story' }).click();
+    await this.page.getByRole('button', { name: 'Skip opening' }).click();
     await this.page.getByRole('button', { name: /Mage/i }).click();
     await this.page.getByRole('button', { name: 'Begin Chronicle' }).click();
   }

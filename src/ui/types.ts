@@ -178,6 +178,8 @@ export interface EnemyCombatViewModel {
   readonly name: string;
   readonly description: string;
   readonly illustrationId: string;
+  readonly illustrationKind: 'chronicle-portrait' | 'art-family';
+  readonly artFamily: string;
   readonly role: string;
   readonly roleLabel: string;
   readonly health: number;

@@ -379,6 +379,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       ...result.events,
       { type: 'combat_ended', encounterId, outcome: 'victory' },
       { type: 'battle_rewards_granted', rewardId, encounterId, gold: encounter.reward.gold, xp: xp.value.grantedXp, adEligible: pendingReward.adEligible },
+      ...(xp.value.levelsGained > 0 ? [{ type: 'level_up' as const, level: xp.value.hero.level }] : []),
     ]);
   }
   if (command.type === 'claim-rewards') {

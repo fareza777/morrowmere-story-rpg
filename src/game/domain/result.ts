@@ -26,6 +26,7 @@ export type DomainEvent =
   | { readonly type: 'boss_phase_changed'; readonly enemyId: string; readonly phase: number }
   | { readonly type: 'combat_ended'; readonly encounterId: EncounterId; readonly outcome: 'victory' | 'defeat' | 'fled' }
   | { readonly type: 'battle_rewards_granted'; readonly rewardId: string; readonly encounterId: EncounterId; readonly gold: number; readonly xp: number; readonly adEligible: boolean }
+  | { readonly type: 'level_up'; readonly level: number }
   | { readonly type: 'battle_reward_claimed'; readonly rewardId: string; readonly itemId: ItemId | null }
   | { readonly type: 'companion_activated'; readonly companionId: CompanionId | null }
   | { readonly type: 'trade_completed'; readonly merchantId: MerchantId; readonly tradeType: 'buy' | 'sell'; readonly itemId: ItemId; readonly quantity: number; readonly total: number; readonly unbankedSpent: number; readonly bankedSpent: number }

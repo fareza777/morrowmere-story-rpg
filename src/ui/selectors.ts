@@ -438,13 +438,18 @@ function combatEnemy(
       && enemy.species === candidate.species,
     );
   if (!definition) return null;
+  const portraitId = 'portraitId' in definition && typeof definition.portraitId === 'string'
+    ? definition.portraitId
+    : null;
   const intent = combat.enemyIntents.find((candidate) => candidate.enemyId === enemy.id);
   const intentId = intent?.intent ?? 'strike';
   return {
     id: enemy.id,
     name: definition.name,
     description: definition.description,
-    illustrationId: definition.artFamily,
+    illustrationId: portraitId ?? definition.artFamily,
+    illustrationKind: portraitId ? 'chronicle-portrait' : 'art-family',
+    artFamily: definition.artFamily,
     role: enemy.role,
     roleLabel: titleCase(enemy.role),
     health: enemy.health,
@@ -722,12 +727,15 @@ function codexEntries(state: GameStateV2, content: ContentIndex): readonly Codex
     }
     const enemy = content.enemies.get(id as EnemyId);
     if (enemy) {
+      const portraitId = 'portraitId' in enemy && typeof enemy.portraitId === 'string'
+        ? enemy.portraitId
+        : null;
       return [{
         id,
         category: 'enemy',
         title: enemy.name,
         description: enemy.description,
-        illustrationId: enemy.artFamily,
+        illustrationId: portraitId ?? enemy.artFamily,
       }];
     }
     return [];

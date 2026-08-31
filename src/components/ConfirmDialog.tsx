@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { useId, useRef } from 'react';
+import { useDialogFocus } from './useDialogFocus';
 
 export interface ConfirmDialogProps {
   readonly title: string;
@@ -7,12 +8,6 @@ export interface ConfirmDialogProps {
   readonly cancelLabel: string;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
-}
-
-function focusableElements(container: HTMLElement): readonly HTMLElement[] {
-  return [...container.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  )];
 }
 
 export function ConfirmDialog({
@@ -28,35 +23,7 @@ export function ConfirmDialog({
   const dialogRef = useRef<HTMLElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    cancelRef.current?.focus();
-    return () => opener?.focus();
-  }, []);
-
-  const containFocus = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      onCancel();
-      return;
-    }
-    if (event.key !== 'Tab' || !dialogRef.current) return;
-    const focusable = focusableElements(dialogRef.current);
-    if (focusable.length === 0) {
-      event.preventDefault();
-      dialogRef.current.focus();
-      return;
-    }
-    const first = focusable[0]!;
-    const last = focusable.at(-1)!;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
+  const containFocus = useDialogFocus(dialogRef, cancelRef, onCancel);
 
   return (
     <div className="sheet-backdrop">

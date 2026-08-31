@@ -1,13 +1,12 @@
-.game-shell { min-inline-size: 320px; overflow-x: clip; }
+.game-shell { min-inline-size: 0; overflow-x: clip; }
 .top-hud { min-block-size: 0; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "location vitals" "meta meta" "nav nav"; }
 .hud-vitals small { display: none; }
 .hud-meta { grid-area: meta; display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 0.75rem; color: var(--paper-2); font-size: 0.7rem; font-weight: 750; }
 .hud-meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
 .hud-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.screen-page { inline-size: 100%; min-block-size: calc(100dvh - 145px); padding: 1.1rem 1rem calc(1.6rem + var(--safe-bottom)); }
-.scene-art-fallback { inline-size: 100%; block-size: 100%; display: grid; place-content: center; justify-items: center; gap: 0.25rem; background: linear-gradient(135deg, #eadcc0, #f8efd9); color: var(--paper-1); text-align: center; }
-.scene-art-fallback span { font-family: Georgia, serif; font-weight: 800; }
-.scene-art-fallback small { color: var(--paper-2); }
+.screen-page { inline-size: 100%; min-block-size: calc(100dvh - 145px); padding: 1.1rem max(1rem, var(--safe-right)) calc(1.6rem + var(--safe-bottom)) max(1rem, var(--safe-left)); }
+.scene-art-fallback { inline-size: 100%; block-size: 100%; display: grid; place-content: center; background: #eadcc0; color: var(--accent-strong); text-align: center; }
+.scene-art-fallback span { display: grid; place-items: center; inline-size: 64px; block-size: 64px; border: 2px solid currentColor; border-radius: 50%; font-family: Georgia, serif; font-size: 2rem; font-weight: 800; }
 .screen-copy > p:not(.eyebrow), .route-intro { max-inline-size: 46ch; color: var(--paper-1); line-height: 1.6; }
 .screen-copy h1, .route-header h1, .merchant-header h1 { margin-block-end: 0.75rem; text-wrap: balance; }
 .objective-card { margin-block: 1rem; padding: 1rem; border: 1px solid var(--line-strong); border-inline-start: 5px solid var(--accent); border-radius: var(--radius); background: var(--ink-1); box-shadow: 0 5px 14px rgb(70 44 23 / 0.08); }

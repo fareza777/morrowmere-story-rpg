@@ -5,6 +5,7 @@ import type { ChoiceId, CompanionId, EventId, ItemId } from '../game/domain/ids'
 import type { InventoryCommand } from '../game/inventory';
 import type { GameCommand } from '../game/state/types';
 import { selectCampView, selectCombatView, selectCurrentScene, selectInventoryView, selectJournalView, selectMerchantView, selectRouteView } from '../ui/selectors';
+import { feedbackForTransition } from '../ui/feedback';
 import type { GameShellProps as BaseGameShellProps, ItemRowViewModel, UiSettings } from '../ui/types';
 import { CampScreen } from './CampScreen';
 import { CombatPanel } from './CombatPanel';
@@ -127,6 +128,8 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const inventoryCommand = (command: UiInventoryCommand) => issue({ type: 'inventory', command });
   const context = state.flow.screen === 'camp' ? 'camp' : state.flow.screen === 'combat' ? 'combat' : 'field';
   const narrationText = scene ? `${scene.title}. ${scene.paragraphs.join(' ')}` : combat ? `Battle. ${combat.enemies.map((enemy) => `${enemy.name}: ${enemy.intent.description}`).join(' ')}` : '';
+  const transitionAnnouncement = useMemo(() => feedbackForTransition(transitionEvents, settings)
+    .flatMap((cue) => cue.type === 'announce' ? [cue.message] : []).join(' '), [settings, transitionEvents]);
   const style = { '--text-scale': settings.textScale } as CSSProperties;
 
   const rewardReceipt = state.expedition?.pendingReward;
@@ -169,7 +172,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
 
   return (
     <div className={`game-shell${settings.highContrast ? ' is-high-contrast' : ''}${settings.reducedMotion ? ' is-reduced-motion' : ''}`} style={style}>
-      {settings.screenReaderAnnouncements && narrationText && <div className="sr-only" aria-live="polite" aria-atomic="true">{narrationText}</div>}
+      {settings.screenReaderAnnouncements && (transitionAnnouncement || narrationText) && <div className="sr-only" aria-live="polite" aria-atomic="true">{transitionAnnouncement || narrationText}</div>}
       {state.flow.screen !== 'defeat' && state.flow.screen !== 'ending' && <TopHud hero={camp.hero} companion={camp.activeCompanion} onOpenMenu={setOverlay} />}
       {body}
       {overlay === 'inventory' && <InventorySheet view={inventory} context={context} heroClass={state.campaign.hero.heroClass} heroLevel={state.campaign.hero.level} chapter={Number(state.campaign.chapterId.slice(2))} onUse={(entryId) => issue({ type: 'use-item', entryId })} onInventoryCommand={inventoryCommand} onClose={() => setOverlay(null)} tutorialKind={inventoryTutorial} onTutorialDismiss={() => inventoryTutorial && dismissTutorial(inventoryTutorial)} onSkipTutorials={() => setTutorialsSkipped(true)} />}

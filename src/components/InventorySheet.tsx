@@ -5,6 +5,7 @@ import type { HeroClass } from '../game/types';
 import type { InventoryViewModel, ItemRowViewModel } from '../ui/types';
 import { ConfirmDialog } from './ConfirmDialog';
 import { EquipmentSheet } from './EquipmentSheet';
+import { ItemIcon } from './ItemIcon';
 import { Sheet } from './Sheet';
 import { TutorialCallout, type TutorialKind } from './TutorialCallout';
 
@@ -42,7 +43,7 @@ function ItemCard({ item, location, context, onUse, onMove, onDiscard }: ItemCar
   const entryId = item.entryId;
   return (
     <article className="item-card">
-      <header><div><strong>{item.name}</strong><span>{item.rarityLabel} · {item.categoryLabel}</span></div>{item.quantity > 1 && <b>Quantity {item.quantity}</b>}</header>
+      <header><ItemIcon iconId={item.iconId} name={item.name} /><div><strong>{item.name}</strong><span>{item.rarityLabel} · {item.categoryLabel}</span></div>{item.quantity > 1 && <b>Quantity {item.quantity}</b>}</header>
       <p>{item.description}</p><small>{statLine(item)}</small>
       {item.restrictionLabel && <p className="restriction-copy">{item.restrictionLabel}</p>}
       <div className="item-actions">
@@ -75,7 +76,7 @@ export function InventorySheet({ view, context, heroClass, heroLevel = 1, chapte
           <>
             <div className="sheet-summary"><Backpack size={21} aria-hidden="true" /><span>{view.usedSlots} / {view.capacity} slots</span></div>
             {items.length === 0 ? <p className="empty-state">The {page} is empty.</p> : <div className="inventory-list">{items.map((item) => <ItemCard key={item.entryId ?? item.itemId} item={item} location={page} context={context} onUse={onUse} onMove={move} onDiscard={setDiscardItem} />)}</div>}
-            {view.questItems.length > 0 && <section className="quest-items"><h2>Quest items</h2>{view.questItems.map((item) => <article key={item.itemId}><Shield size={18} aria-hidden="true" /><div><strong>{item.name}</strong><p>{item.description}</p><small>Protected · does not use a pack slot</small></div></article>)}</section>}
+            {view.questItems.length > 0 && <section className="quest-items"><h2>Quest items</h2>{view.questItems.map((item) => <article key={item.itemId}><ItemIcon iconId={item.iconId} name={item.name} /><div><strong>{item.name}</strong><p>{item.description}</p><small><Shield size={15} aria-hidden="true" />Protected · does not use a pack slot</small></div></article>)}</section>}
           </>
         ) : <EquipmentSheet view={view} heroClass={heroClass} heroLevel={heroLevel} chapter={chapter} context={context} onCommand={onInventoryCommand} />}
       </Sheet>
