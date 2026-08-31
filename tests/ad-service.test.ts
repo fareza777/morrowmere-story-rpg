@@ -50,7 +50,10 @@ function createPlugin(canRequestAds = true): AdMobPort {
     removeBanner: vi.fn(async () => undefined),
     prepareRewardVideoAd: vi.fn(async ({ adId }) => ({ adUnitId: adId })),
     showRewardVideoAd: vi.fn(async () => {
-      queueMicrotask(() => rewardedListeners.forEach((listener) => listener({ type: 'gold', amount: 1 })));
+      queueMicrotask(() => {
+        rewardedListeners.forEach((listener) => listener({ type: 'gold', amount: 1 }));
+        rewardedDismissedListeners.forEach((listener) => listener());
+      });
       return { type: 'gold', amount: 1 };
     }),
     addRewardedListener: vi.fn((listener) => handle(rewardedListeners, listener)),
@@ -207,6 +210,48 @@ describe('ad service', () => {
     await expect(interstitial).resolves.toBe('shown');
     expect(interstitialRemovals).toHaveLength(2);
     interstitialRemovals.forEach((remove) => expect(remove).toHaveBeenCalledOnce());
+  });
+
+  it('records a reward event but keeps the fullscreen attempt pending until dismissal', async () => {
+    const plugin = createPlugin(true);
+    let emitReward: () => void = () => undefined;
+    let dismissRewarded: () => void = () => undefined;
+    vi.mocked(plugin.addRewardedListener).mockImplementation(async (listener) => {
+      emitReward = () => listener({ type: 'gold', amount: 1 });
+      return { remove: async () => undefined };
+    });
+    vi.mocked(plugin.addRewardedDismissedListener).mockImplementation(async (listener) => {
+      dismissRewarded = listener;
+      return { remove: async () => undefined };
+    });
+    vi.mocked(plugin.showRewardVideoAd).mockImplementation(async () => new Promise(() => undefined));
+    const service = createAdService(TEST_CONFIG, plugin);
+    await service.initialize();
+
+    let settled = false;
+    const attempt = service.showRewardedBattleGold().then((result) => {
+      settled = true;
+      return result;
+    });
+    await vi.waitFor(() => expect(plugin.showRewardVideoAd).toHaveBeenCalledOnce());
+    emitReward();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    dismissRewarded();
+    await expect(attempt).resolves.toBe('earned');
+  });
+
+  it('rechecks caller eligibility after listener setup and before native fullscreen show', async () => {
+    const plugin = createPlugin(true);
+    const service = createAdService(TEST_CONFIG, plugin);
+    await service.initialize();
+
+    await expect(service.showRewardedBattleGold(() => false)).resolves.toBe('unavailable');
+    await service.preloadInterstitial();
+    await expect(service.showInterstitial(() => false)).resolves.toBe('unavailable');
+
+    expect(plugin.showRewardVideoAd).not.toHaveBeenCalled();
+    expect(plugin.showInterstitial).not.toHaveBeenCalled();
   });
 
   it('removes the banner and listeners exactly once on destroy', async () => {

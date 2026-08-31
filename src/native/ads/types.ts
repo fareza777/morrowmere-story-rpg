@@ -31,9 +31,9 @@ export interface AdService {
   showPrivacyOptions(): Promise<void>;
   setPlacement(placement: AdPlacement, onInsetChange: (heightPx: number) => void): Promise<void>;
   preloadRewarded(): Promise<void>;
-  showRewardedBattleGold(): Promise<RewardedAdResult>;
+  showRewardedBattleGold(canShow?: () => boolean): Promise<RewardedAdResult>;
   preloadInterstitial(): Promise<void>;
-  showInterstitial(): Promise<FullScreenAdResult>;
+  showInterstitial(canShow?: () => boolean): Promise<FullScreenAdResult>;
   destroy(): Promise<void>;
 }
 

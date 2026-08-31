@@ -44,6 +44,7 @@ interface GameShellProps extends BaseGameShellProps {
   readonly onDismissRewardedGold?: (rewardOfferId: string) => void;
   readonly registerBackHandler?: (handler: (() => void) | null) => void;
   readonly onAdOverlayChange?: (open: boolean) => void;
+  readonly interactionLocked?: boolean;
   readonly privacyOptionsRequired?: boolean;
   readonly onPrivacyOptions?: () => Promise<void>;
   readonly now?: () => string;
@@ -87,7 +88,7 @@ function rewardItem(itemId: ItemId, content: BaseGameShellProps['content']): Ite
   };
 }
 
-export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, rewardBonusStatus, onRequestRewardedGold, onDismissRewardedGold, registerBackHandler, onAdOverlayChange, privacyOptionsRequired = false, onPrivacyOptions, now = () => new Date().toISOString() }: GameShellProps) {
+export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, rewardBonusStatus, onRequestRewardedGold, onDismissRewardedGold, registerBackHandler, onAdOverlayChange, interactionLocked = false, privacyOptionsRequired = false, onPrivacyOptions, now = () => new Date().toISOString() }: GameShellProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [choosingRoute, setChoosingRoute] = useState(false);
   const [exitConfirmation, setExitConfirmation] = useState(false);
@@ -109,13 +110,14 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const issue = (command: UndatedGameCommand) => dispatch({ ...command, updatedAt: now() } as GameCommand);
 
   const handleBack = useCallback(() => {
+    if (interactionLocked) return;
     const action = resolveBackAction({ overlayOpen: overlay !== null, modalOpen: exitConfirmation || choosingRoute, view: 'game' });
     if (action === 'close-overlay') setOverlay(null);
     else if (action === 'close-modal') {
       if (exitConfirmation) setExitConfirmation(false);
       else setChoosingRoute(false);
     } else if (action === 'open-exit-confirmation') setExitConfirmation(true);
-  }, [choosingRoute, exitConfirmation, overlay]);
+  }, [choosingRoute, exitConfirmation, interactionLocked, overlay]);
 
   useEffect(() => {
     registerBackHandler?.(handleBack);
@@ -160,7 +162,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const narrationText = scene ? `${scene.title}. ${scene.paragraphs.join(' ')}` : combat ? `Battle. ${combat.enemies.map((enemy) => `${enemy.name}: ${enemy.intent.description}`).join(' ')}` : '';
   const transitionAnnouncement = useMemo(() => feedbackForTransition(transitionEvents, settings, () => undefined)
     .flatMap((cue) => cue.type === 'announce' ? [cue.message] : []).join(' '), [settings, transitionEvents]);
-  const style = { '--text-scale': settings.textScale } as CSSProperties;
+  const style = { '--text-scale': settings.textScale, ...(interactionLocked ? { pointerEvents: 'none' } : {}) } as CSSProperties;
 
   const rewardReceipt = state.expedition?.pendingReward;
   const rewardView: RewardViewModel | null = rewardReceipt ? {
@@ -203,7 +205,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   }
 
   return (
-    <div className={`game-shell${settings.highContrast ? ' is-high-contrast' : ''}${settings.reducedMotion ? ' is-reduced-motion' : ''}`} style={style}>
+    <div className={`game-shell${settings.highContrast ? ' is-high-contrast' : ''}${settings.reducedMotion ? ' is-reduced-motion' : ''}`} style={style} inert={interactionLocked || undefined} aria-busy={interactionLocked}>
       {settings.screenReaderAnnouncements && (transitionAnnouncement || narrationText) && <div className="sr-only" aria-live="polite" aria-atomic="true">{transitionAnnouncement || narrationText}</div>}
       {state.flow.screen !== 'defeat' && state.flow.screen !== 'ending' && <TopHud hero={camp.hero} companion={camp.activeCompanion} onOpenMenu={setOverlay} />}
       {body}

@@ -145,6 +145,7 @@ export default function App({ dependencies }: AppProps = {}) {
   const [consent, setConsent] = useState<ConsentSnapshot>(INITIAL_CONSENT);
   const [rewardAttempt, setRewardAttempt] = useState<{ readonly offerId: string; readonly status: RewardBonusStatus } | null>(null);
   const [adOverlayOpen, setAdOverlayOpen] = useState(false);
+  const [fullScreenAdPending, setFullScreenAdPending] = useState(false);
   const now = dependencies?.now ?? BASE_PORTS.now;
   const ports = useMemo<UiPorts>(() => ({ ...BASE_PORTS, now }), [now]);
   const repository = useMemo(
@@ -157,6 +158,8 @@ export default function App({ dependencies }: AppProps = {}) {
   const settingsRef = useRef(settings);
   const replayingOpeningRef = useRef(replayingOpening);
   const adOverlayOpenRef = useRef(adOverlayOpen);
+  const safeMomentReadyRef = useRef(safeMomentReady);
+  const fullScreenAdPendingRef = useRef(fullScreenAdPending);
   const gameBackHandlerRef = useRef<(() => void) | null>(null);
   const appActiveRef = useRef(true);
   const rewardRequestInFlightRef = useRef<string | null>(null);
@@ -166,6 +169,8 @@ export default function App({ dependencies }: AppProps = {}) {
   settingsRef.current = settings;
   replayingOpeningRef.current = replayingOpening;
   adOverlayOpenRef.current = adOverlayOpen;
+  safeMomentReadyRef.current = safeMomentReady;
+  fullScreenAdPendingRef.current = fullScreenAdPending;
 
   useLayoutEffect(() => {
     document.documentElement.scrollTop = 0;
@@ -202,7 +207,7 @@ export default function App({ dependencies }: AppProps = {}) {
   }, [adService]);
 
   const currentSurface = surfaceFor(session.view, session.game, replayingOpening);
-  const currentPlacement = adOverlayOpen ? 'none' : placementForView(currentSurface);
+  const currentPlacement = !safeMomentReady || adOverlayOpen ? 'none' : placementForView(currentSurface);
   const consentSafeMoment = !adOverlayOpen && (currentSurface === 'title' || currentSurface === 'camp');
   const writeBannerInset = useCallback((heightPx: number) => {
     const safeHeight = Number.isFinite(heightPx) && heightPx > 0 ? heightPx : 0;
@@ -270,6 +275,7 @@ export default function App({ dependencies }: AppProps = {}) {
       },
       onBack: () => {
         if (replayingOpeningRef.current) setReplayingOpening(false);
+        else if (fullScreenAdPendingRef.current) return;
         else if (closeTopDialog()) return;
         else if (sessionRef.current.view === 'game') gameBackHandlerRef.current?.();
         else if (sessionRef.current.view === 'title') void minimize();
@@ -304,11 +310,19 @@ export default function App({ dependencies }: AppProps = {}) {
     const reward = current?.expedition?.pendingReward;
     if (!current || !reward || reward.rewardOfferId !== rewardOfferId || !isRewardedGoldEligible(reward, current.adPacing)) return;
     rewardRequestInFlightRef.current = rewardOfferId;
+    fullScreenAdPendingRef.current = true;
+    setFullScreenAdPending(true);
     setRewardAttempt({ offerId: rewardOfferId, status: 'pending' });
-    await adService.setPlacement('none', writeBannerInset);
-    (dependencies?.suspendAudio ?? suspendAllAudio)();
+    let audioSuspended = false;
     try {
-      const result = await adService.showRewardedBattleGold();
+      await adService.setPlacement('none', writeBannerInset);
+      (dependencies?.suspendAudio ?? suspendAllAudio)();
+      audioSuspended = true;
+      const result = await adService.showRewardedBattleGold(() => {
+        const latest = sessionRef.current.game;
+        const latestReward = latest?.expedition?.pendingReward;
+        return Boolean(latest && latestReward?.rewardOfferId === rewardOfferId && isRewardedGoldEligible(latestReward, latest.adPacing));
+      });
       if (result === 'earned') {
         const latest = sessionRef.current.game;
         const latestReward = latest?.expedition?.pendingReward;
@@ -324,9 +338,11 @@ export default function App({ dependencies }: AppProps = {}) {
       }
     } finally {
       if (rewardRequestInFlightRef.current === rewardOfferId) rewardRequestInFlightRef.current = null;
-      if (appActiveRef.current) (dependencies?.resumeAudio ?? resumeEnabledAudio)(settingsRef.current);
+      fullScreenAdPendingRef.current = false;
+      setFullScreenAdPending(false);
+      if (audioSuspended && appActiveRef.current) (dependencies?.resumeAudio ?? resumeEnabledAudio)(settingsRef.current);
       const latest = sessionRef.current;
-      const latestPlacement = adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
+      const latestPlacement = !safeMomentReadyRef.current || adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
       await adService.setPlacement(latestPlacement, writeBannerInset);
     }
   }, [adService, dependencies?.resumeAudio, dependencies?.suspendAudio, now, writeBannerInset]);
@@ -338,9 +354,13 @@ export default function App({ dependencies }: AppProps = {}) {
     if (interstitialAttemptRef.current === transition || interstitialsShownRef.current >= MAX_INTERSTITIALS_PER_SESSION || !shouldShowInterstitial(game.adPacing, now())) return;
     interstitialAttemptRef.current = transition;
     void (async () => {
-      await adService.setPlacement('none', writeBannerInset);
-      (dependencies?.suspendAudio ?? suspendAllAudio)();
+      fullScreenAdPendingRef.current = true;
+      setFullScreenAdPending(true);
+      let audioSuspended = false;
       try {
+        await adService.setPlacement('none', writeBannerInset);
+        (dependencies?.suspendAudio ?? suspendAllAudio)();
+        audioSuspended = true;
         const latest = sessionRef.current.game;
         if (
           !latest
@@ -349,14 +369,25 @@ export default function App({ dependencies }: AppProps = {}) {
           || latest.expedition
           || !shouldShowInterstitial(latest.adPacing, now())
         ) return;
-        if (await adService.showInterstitial() === 'shown') {
+        if (await adService.showInterstitial(() => {
+          const currentGame = sessionRef.current.game;
+          return Boolean(
+            currentGame
+            && currentGame.campaign.transitionCounter === transition
+            && currentGame.flow.screen === 'camp'
+            && !currentGame.expedition
+            && shouldShowInterstitial(currentGame.adPacing, now()),
+          );
+        }) === 'shown') {
           const shownAt = new Date(now()).toISOString();
           if (sessionRef.current.dispatch({ type: 'RECORD_INTERSTITIAL_SHOWN', shownAt, updatedAt: shownAt })) interstitialsShownRef.current += 1;
         }
       } finally {
-        if (appActiveRef.current) (dependencies?.resumeAudio ?? resumeEnabledAudio)(settingsRef.current);
+        fullScreenAdPendingRef.current = false;
+        setFullScreenAdPending(false);
+        if (audioSuspended && appActiveRef.current) (dependencies?.resumeAudio ?? resumeEnabledAudio)(settingsRef.current);
         const latest = sessionRef.current;
-        const latestPlacement = adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
+        const latestPlacement = !safeMomentReadyRef.current || adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
         void adService.setPlacement(latestPlacement, writeBannerInset);
       }
     })();
@@ -375,7 +406,7 @@ export default function App({ dependencies }: AppProps = {}) {
     } finally {
       if (appActiveRef.current) (dependencies?.resumeAudio ?? resumeEnabledAudio)(settingsRef.current);
       const latest = sessionRef.current;
-      const latestPlacement = adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
+      const latestPlacement = !safeMomentReadyRef.current || adOverlayOpenRef.current ? 'none' : placementForView(surfaceFor(latest.view, latest.game, replayingOpeningRef.current));
       await adService.setPlacement(latestPlacement, writeBannerInset);
     }
   }, [adService, dependencies?.resumeAudio, dependencies?.suspendAudio, writeBannerInset]);
@@ -391,7 +422,7 @@ export default function App({ dependencies }: AppProps = {}) {
           {!replayingOpening && session.view === 'new-run' && <NewRunScreen onBack={session.showOpening} onBegin={session.startCampaign} />}
           {session.view === 'game' && session.game && <div hidden={replayingOpening}>
             {session.notice && <p className="session-notice" role="status">{session.notice}</p>}
-            <GameShell state={session.game} content={CONTENT} transitionEvents={session.transitionEvents} dispatch={session.dispatch} onSaveAndExit={session.saveAndExit} onMainMenu={session.returnToTitle} onReplayOpening={() => setReplayingOpening(true)} settings={settings} onSettingsChange={changeSettings} rewardBonusStatus={rewardBonusStatus} onRequestRewardedGold={(offerId) => { void requestRewardedGold(offerId); }} onDismissRewardedGold={(offerId) => setRewardAttempt({ offerId, status: 'dismissed' })} registerBackHandler={registerBackHandler} onAdOverlayChange={setAdOverlayOpen} privacyOptionsRequired={consent.privacyOptionsRequired} onPrivacyOptions={showPrivacyOptions} now={() => new Date(ports.now()).toISOString()} />
+            <GameShell state={session.game} content={CONTENT} transitionEvents={session.transitionEvents} dispatch={session.dispatch} onSaveAndExit={session.saveAndExit} onMainMenu={session.returnToTitle} onReplayOpening={() => setReplayingOpening(true)} settings={settings} onSettingsChange={changeSettings} rewardBonusStatus={rewardBonusStatus} onRequestRewardedGold={(offerId) => { void requestRewardedGold(offerId); }} onDismissRewardedGold={(offerId) => setRewardAttempt({ offerId, status: 'dismissed' })} registerBackHandler={registerBackHandler} onAdOverlayChange={setAdOverlayOpen} interactionLocked={fullScreenAdPending} privacyOptionsRequired={consent.privacyOptionsRequired} onPrivacyOptions={showPrivacyOptions} now={() => new Date(ports.now()).toISOString()} />
           </div>}
           {replayingOpening && <OpeningCinematic sequence={OPENING_SEQUENCE} settings={settings} audio={ports.cinematicAudio} completionLabel="Return to Chronicle" onComplete={() => setReplayingOpening(false)} />}
         </>

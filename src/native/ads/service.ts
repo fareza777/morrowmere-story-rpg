@@ -329,7 +329,7 @@ export function createAdService(
       }
     },
 
-    async showRewardedBattleGold(): Promise<RewardedAdResult> {
+    async showRewardedBattleGold(canShow = () => true): Promise<RewardedAdResult> {
       if (!adsMayBeRequested() || rewardedShowing) {
         return 'unavailable';
       }
@@ -347,6 +347,8 @@ export function createAdService(
         const handles: Array<{ remove(): Promise<void> }> = [];
         let settle!: (result: RewardedAdResult) => void;
         let settled = false;
+        let rewardEarned = false;
+        let rewardObserved = false;
         const result = new Promise<RewardedAdResult>((resolve) => {
           settle = (next) => {
             if (settled) return;
@@ -356,13 +358,17 @@ export function createAdService(
         });
         try {
           handles.push(await plugin.addRewardedListener((reward) => {
-            settle(Number.isFinite(reward.amount) && reward.amount > 0 ? 'earned' : 'failed');
+            rewardObserved = true;
+            rewardEarned = Number.isFinite(reward.amount) && reward.amount > 0;
           }));
-          handles.push(await plugin.addRewardedDismissedListener(() => settle('dismissed')));
+          handles.push(await plugin.addRewardedDismissedListener(() => settle(rewardEarned ? 'earned' : rewardObserved ? 'failed' : 'dismissed')));
           handles.push(await plugin.addRewardedFailedToShowListener(() => {
             recordDiagnostic('rewarded-show-failed', 'The prepared rewarded ad failed before display.');
             settle('failed');
           }));
+          let stillEligible = false;
+          try { stillEligible = canShow(); } catch { stillEligible = false; }
+          if (!stillEligible) return 'unavailable';
           void plugin.showRewardVideoAd({ adId: config.rewardedId }).catch(() => {
             recordDiagnostic('rewarded-show-failed', 'The prepared rewarded ad could not be shown.');
             settle('failed');
@@ -409,7 +415,7 @@ export function createAdService(
       }
     },
 
-    async showInterstitial(): Promise<FullScreenAdResult> {
+    async showInterstitial(canShow = () => true): Promise<FullScreenAdResult> {
       if (!adsMayBeRequested() || interstitialShowing) {
         return 'unavailable';
       }
@@ -437,6 +443,9 @@ export function createAdService(
             recordDiagnostic('interstitial-show-failed', 'The prepared interstitial failed before display.');
             settle('failed');
           }));
+          let stillEligible = false;
+          try { stillEligible = canShow(); } catch { stillEligible = false; }
+          if (!stillEligible) return 'unavailable';
           void plugin.showInterstitial({ adId: config.interstitialId }).catch(() => {
             recordDiagnostic('interstitial-show-failed', 'The prepared interstitial ad could not be shown.');
             settle('failed');
