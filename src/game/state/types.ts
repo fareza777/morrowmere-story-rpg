@@ -36,6 +36,8 @@ export interface ProfileState {
 export interface CampaignState {
   readonly seed: number;
   readonly chapterId: ChapterId;
+  /** Display identity belongs to the campaign, never to derived hero progress. */
+  readonly heroName: string;
   readonly hero: HeroProgress;
   readonly inventory: InventoryState;
   readonly bankedGold: number;
@@ -53,6 +55,7 @@ export interface CampaignState {
 export interface CampaignCheckpointPayload {
   readonly seed: number;
   readonly chapterId: ChapterId;
+  readonly heroName: string;
   readonly hero: HeroProgress;
   readonly inventory: InventoryState;
   readonly bankedGold: number;

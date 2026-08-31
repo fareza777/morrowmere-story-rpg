@@ -1,5 +1,10 @@
 import type { GameState } from './state';
 
+// V1 callers keep these functions while controllers migrate to the injected V2 repository.
+export { createSaveRepository, legacySaveKey, profileKey, saveActiveKey, saveBackupKey } from './persistence/repository';
+export type { ProfileLoadResult, SaveRepository, SlotLoadResult, SlotSummary } from './persistence/repository';
+export { canonicalJson, checksumFor } from './persistence/checksum';
+
 export type SaveSlot = 1 | 2 | 3;
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };

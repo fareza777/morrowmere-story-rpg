@@ -49,6 +49,14 @@ const orchestrationContent: ContentIndex = {
 };
 
 describe('campaign checkpoints', () => {
+  it('keeps the requested hero name on the campaign instead of hero progress', () => {
+    const state = createCampaign({ heroClass: 'warden', name: 'Mira', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
+
+    expect(state.campaign.heroName).toBe('Mira');
+    expect(state.checkpoints.chapter.campaign.heroName).toBe('Mira');
+    expect(state.campaign.hero).not.toHaveProperty('name');
+  });
+
   it('loses expedition gains but keeps permanent progression on defeat', () => {
     const started = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const startedRoute = reduceGame(started, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;

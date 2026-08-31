@@ -45,6 +45,7 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
   const campaign = {
     seed: options.seed >>> 0,
     chapterId,
+    heroName: options.name?.trim() || 'The Oathless',
     hero: { heroClass: options.heroClass, xp: 0, level: 1, talents: [] },
     inventory: { pack: [], stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] } },
     bankedGold: 12,
