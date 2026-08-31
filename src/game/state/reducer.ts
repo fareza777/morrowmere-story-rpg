@@ -264,7 +264,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const stats = derivedMaxima(state, content);
     const expedition = {
       routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector),
-      position: { chapterId: state.campaign.chapterId, slot: 0 }, currentSceneId: null, sceneResolution: null,
+      position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, sceneResolution: null,
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
       unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
     } as const;

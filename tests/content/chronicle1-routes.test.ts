@@ -12,6 +12,7 @@ import type { Chronicle1Event } from '../../src/game/content/schema';
 import { scenePacing } from '../../src/game/director/pacing';
 import { createCampaign } from '../../src/game/state/create';
 import { applyEffectsAtomically, type EffectState } from '../../src/game/state/effects';
+import { currentSceneId, reduceGame } from '../../src/game/state/reducer';
 
 const ROUTES: readonly RouteProfileId[] = ['kings-road', 'old-forest', 'ruined-pass'];
 const initialState = (seed: number): DirectorState => ({
@@ -244,6 +245,29 @@ function simulateChronicle1(seed: number): RouteAudit {
 }
 
 describe('Chronicle I route audit', () => {
+  it('selects the first authored anchor from a fresh runtime expedition', () => {
+    const created = createCampaign({
+      heroClass: 'warrior',
+      seed: 17,
+      name: 'Route Auditor',
+      updatedAt: '2026-08-31T00:00:00.000Z',
+    }, CHRONICLE1_CONTENT);
+    const started = reduceGame(created, {
+      type: 'start-expedition',
+      routeProfile: 'kings-road',
+      updatedAt: '2026-08-31T00:01:00.000Z',
+    }, CHRONICLE1_CONTENT);
+
+    expect(started.state.expedition?.position.slot).toBe(1);
+    const selected = reduceGame(started.state, {
+      type: 'select-next-scene',
+      updatedAt: '2026-08-31T00:02:00.000Z',
+    }, CHRONICLE1_CONTENT);
+
+    expect(selected.diagnostic).toBeUndefined();
+    expect(currentSceneId(selected.state)).toBe(MAIN_ANCHOR_IDS.ch01[0]);
+  });
+
   it('keeps anchors, callbacks, variety, and recovery opportunities coherent across 64 seeded campaigns', () => {
     const signatures = new Set<string>();
 
