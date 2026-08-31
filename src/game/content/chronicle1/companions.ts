@@ -119,6 +119,6 @@ export const CHRONICLE1_COMPANIONS = deepFreeze([
     loyaltyStates: LOYALTY_STATES,
     visibleCost: 'Reject a profitable betrayal and protect the hidden refuge even when coin is scarce.',
     visibleRecruitmentCost: 'Reject a profitable betrayal and protect the hidden refuge even when coin is scarce.',
-    outcomeSceneIds: ['ch07-companion-talla-refuses-the-stewards-price'],
+    outcomeSceneIds: ['ch08-companion-talla-takes-the-hidden-road'],
   },
 ] as const) as unknown as readonly Chronicle1CompanionDefinition[];

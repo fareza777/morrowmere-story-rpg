@@ -12,6 +12,7 @@ import {
 } from '../src/game/content/validate';
 import { makeContentIndex } from './fixtures/game';
 import type { EventId } from '../src/game/domain/ids';
+import type { ChronicleDefinition } from '../src/game/content/schema';
 
 function sourceScene(overrides: Record<string, unknown> = {}) {
   return defineScene({
@@ -52,6 +53,17 @@ function validateSources(events?: readonly ReturnType<typeof sourceScene>[]) {
     events,
   });
 }
+
+function testChronicle(chapters: ChronicleDefinition['chapters']): ChronicleDefinition {
+  return { id: 'validator-chronicle', title: 'Validator Chronicle', chapters };
+}
+
+const emptySourceCatalogs = {
+  routes: [],
+  factions: [],
+  companions: [],
+  merchants: [],
+} as const;
 
 describe('Chronicle I content schema', () => {
   it('rejects duplicate IDs and broken references', () => {
@@ -161,5 +173,88 @@ describe('Chronicle I content schema', () => {
     expect(validateSources([missingSubtype, wrongOwner]).map((issue) => issue.code)).toContain('invalid_journey_subtype');
     expect(validateSources([oneChoice]).map((issue) => issue.code)).toContain('invalid_choice_count');
     expect(validateSources([continueOnly]).map((issue) => issue.code)).not.toContain('invalid_choice_count');
+  });
+
+  it('rejects companion scene links and merchant restock gates absent from supplied events', () => {
+    const anchor = sourceScene({
+      id: 'ch01-main-validator-anchor',
+      slot: 1,
+      type: 'main',
+      journeySubtype: undefined,
+      anchorOrder: 1,
+      illustrationId: 'scene-ch01-main-validator-anchor',
+    });
+    const chronicle = testChronicle([{
+      id: 'ch01', order: 1, title: 'Validator Chapter', levelBand: { min: 1, max: 2 },
+      region: 'gloamwood', anchorIds: [anchor.id],
+    }] as never);
+    const companion = {
+      ...CHRONICLE1_COMPANIONS[0]!,
+      personalQuestIds: ['ch01-companion-missing-quest'],
+      outcomeSceneIds: ['ch01-companion-missing-outcome'],
+    };
+    const merchant = {
+      ...CHRONICLE1_MERCHANTS[0]!,
+      restockGateIds: ['ch01-hub-missing-merchant-gate'],
+    };
+
+    const codes = validateChronicleSources({
+      chronicle,
+      ...emptySourceCatalogs,
+      companions: [companion],
+      merchants: [merchant],
+      events: [anchor],
+    }).map((issue) => issue.code);
+
+    expect(codes).toEqual(expect.arrayContaining([
+      'missing_companion_quest_scene',
+      'missing_companion_outcome_scene',
+      'missing_merchant_restock_gate',
+    ]));
+  });
+
+  it('requires each canonical anchor scene to use the main scene type', () => {
+    const wrongType = sourceScene({
+      id: 'ch01-main-validator-anchor',
+      slot: 1,
+      anchorOrder: 1,
+      illustrationId: 'scene-ch01-main-validator-anchor',
+    });
+    const chronicle = testChronicle([{
+      id: 'ch01', order: 1, title: 'Validator Chapter', levelBand: { min: 1, max: 2 },
+      region: 'gloamwood', anchorIds: [wrongType.id],
+    }] as never);
+
+    const codes = validateChronicleSources({ chronicle, ...emptySourceCatalogs, events: [wrongType] }).map((issue) => issue.code);
+
+    expect(codes).toContain('invalid_anchor_type');
+  });
+
+  it('rejects a callback target authored in a different chapter from its deadline', () => {
+    const source = sourceScene({
+      id: 'ch01-journey-callback-source',
+      slot: 1,
+      illustrationId: 'scene-ch01-journey-callback-source',
+      callbackPromises: [{
+        id: 'callback-cross-chapter-deadline',
+        targetEventId: 'ch02-journey-callback-target',
+        deadline: { chapterId: 'ch03', slot: 5 },
+      }],
+    });
+    const target = sourceScene({
+      id: 'ch02-journey-callback-target',
+      chapterId: 'ch02',
+      slot: 1,
+      illustrationId: 'scene-ch02-journey-callback-target',
+    });
+    const chronicle = testChronicle([
+      { id: 'ch01', order: 1, title: 'One', levelBand: { min: 1, max: 2 }, region: 'gloamwood', anchorIds: [] },
+      { id: 'ch02', order: 2, title: 'Two', levelBand: { min: 2, max: 4 }, region: 'gloamwood', anchorIds: [] },
+      { id: 'ch03', order: 3, title: 'Three', levelBand: { min: 4, max: 6 }, region: 'drowned-road', anchorIds: [] },
+    ] as never);
+
+    const codes = validateChronicleSources({ chronicle, ...emptySourceCatalogs, events: [source, target] }).map((issue) => issue.code);
+
+    expect(codes).toContain('invalid_callback_window');
   });
 });

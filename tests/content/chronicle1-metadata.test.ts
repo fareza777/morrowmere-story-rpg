@@ -5,6 +5,7 @@ import {
   MAIN_ANCHOR_IDS,
 } from '../../src/game/content/chronicle1/chronicle';
 import { CHRONICLE1_FACTIONS } from '../../src/game/content/chronicle1/factions';
+import { CHRONICLE1_COMPANIONS } from '../../src/game/content/chronicle1/companions';
 import { CHRONICLE1_MERCHANTS } from '../../src/game/content/chronicle1/merchants';
 import {
   CHRONICLE1_ROUTES,
@@ -154,20 +155,24 @@ describe('Chronicle I metadata', () => {
     ]);
     expect(CHRONICLE1_FACTIONS.some(({ id }) => id === ('border-peace' as never))).toBe(false);
     expect(
-      CHRONICLE1_MERCHANTS.map(({ id, name, stockPoolId, dialogueSetId, illustrationId }) => ({
+      CHRONICLE1_MERCHANTS.map(({ id, name, stockPoolId, dialogueSetId, illustrationId, restockGateIds }) => ({
         id,
         name,
         stockPoolId,
         dialogueSetId,
         illustrationId,
+        restockGateIds,
       })),
     ).toEqual([
-      { id: 'road-trader', name: 'Road Trader', stockPoolId: 'stock-road-trader', dialogueSetId: 'dialogue-road-trader', illustrationId: 'merchant-road-trader' },
-      { id: 'blacksmith', name: 'Blacksmith', stockPoolId: 'stock-blacksmith', dialogueSetId: 'dialogue-blacksmith', illustrationId: 'merchant-blacksmith' },
-      { id: 'apothecary', name: 'Apothecary', stockPoolId: 'stock-apothecary', dialogueSetId: 'dialogue-apothecary', illustrationId: 'merchant-apothecary' },
-      { id: 'relic-dealer', name: 'Relic Dealer', stockPoolId: 'stock-relic-dealer', dialogueSetId: 'dialogue-relic-dealer', illustrationId: 'merchant-relic-dealer' },
-      { id: 'quartermaster', name: 'Quartermaster', stockPoolId: 'stock-quartermaster', dialogueSetId: 'dialogue-quartermaster', illustrationId: 'merchant-quartermaster' },
-      { id: 'goblin-broker', name: 'Goblin Broker', stockPoolId: 'stock-goblin-broker', dialogueSetId: 'dialogue-goblin-broker', illustrationId: 'merchant-goblin-broker' },
+      { id: 'road-trader', name: 'Road Trader', stockPoolId: 'stock-road-trader', dialogueSetId: 'dialogue-road-trader', illustrationId: 'merchant-road-trader', restockGateIds: ['ch01-hub-orrens-charcoal-wagon', 'ch03-hub-sella-vains-flatboat'] },
+      { id: 'blacksmith', name: 'Blacksmith', stockPoolId: 'stock-blacksmith', dialogueSetId: 'dialogue-blacksmith', illustrationId: 'merchant-blacksmith', restockGateIds: ['ch02-hub-dorrans-wall-forge', 'ch08-hub-orrens-courtyard-forge'] },
+      { id: 'apothecary', name: 'Apothecary', stockPoolId: 'stock-apothecary', dialogueSetId: 'dialogue-apothecary', illustrationId: 'merchant-apothecary', restockGateIds: ['ch01-hub-ilenes-field-apothecary', 'ch03-hub-mother-ailsas-reed-clinic', 'ch06-hub-ilene-at-the-south-chapel', 'ch08-hub-ilene-beside-the-witness-gallery'] },
+      { id: 'relic-dealer', name: 'Relic Dealer', stockPoolId: 'stock-relic-dealer', dialogueSetId: 'dialogue-relic-dealer', illustrationId: 'merchant-relic-dealer', restockGateIds: ['ch05-hub-omarens-relic-bench'] },
+      { id: 'quartermaster', name: 'Quartermaster', stockPoolId: 'stock-quartermaster', dialogueSetId: 'dialogue-quartermaster', illustrationId: 'merchant-quartermaster', restockGateIds: ['ch02-hub-quartermaster-coles-yard', 'ch04-hub-the-neutral-quartermaster', 'ch06-hub-nessa-coles-siege-yard', 'ch07-hub-nessas-march-quartermaster'] },
+      { id: 'goblin-broker', name: 'Goblin Broker', stockPoolId: 'stock-goblin-broker', dialogueSetId: 'dialogue-goblin-broker', illustrationId: 'merchant-goblin-broker', restockGateIds: ['ch04-hub-the-nimble-nail-exchange', 'ch05-hub-vekkas-boiler-room-market', 'ch07-hub-brez-at-the-abandoned-tollhouse'] },
+    ]);
+    expect(CHRONICLE1_COMPANIONS.find(({ id }) => id === 'talla')?.outcomeSceneIds).toEqual([
+      'ch08-companion-talla-takes-the-hidden-road',
     ]);
   });
 

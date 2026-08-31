@@ -41,7 +41,11 @@ export type ContentIssueCode =
   | 'invalid_scene_weight'
   | 'duplicate_scene_slot'
   | 'missing_anchor'
+  | 'missing_companion_quest_scene'
+  | 'missing_companion_outcome_scene'
+  | 'missing_merchant_restock_gate'
   | 'invalid_anchor_order'
+  | 'invalid_anchor_type'
   | 'invalid_choice_count'
   | 'invalid_journey_subtype'
   | 'invalid_callback_window'
@@ -248,6 +252,35 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
   const chapterSlots = new Set<string>();
   const journeySubtypes = new Set(['travel', 'investigation', 'side-quest', 'dungeon', 'moral-choice']);
 
+  for (const companion of input.companions) {
+    for (const questId of companion.personalQuestIds) {
+      if (!eventIds.has(questId)) {
+        issues.push(sourceIssue(
+          'missing_companion_quest_scene',
+          `Companion ${companion.id} references missing quest scene ${questId}.`,
+        ));
+      }
+    }
+    for (const outcomeId of companion.outcomeSceneIds) {
+      if (!eventIds.has(outcomeId)) {
+        issues.push(sourceIssue(
+          'missing_companion_outcome_scene',
+          `Companion ${companion.id} references missing outcome scene ${outcomeId}.`,
+        ));
+      }
+    }
+  }
+  for (const merchant of input.merchants) {
+    for (const gateId of merchant.restockGateIds) {
+      if (!eventIds.has(gateId)) {
+        issues.push(sourceIssue(
+          'missing_merchant_restock_gate',
+          `Merchant ${merchant.id} references missing restock gate scene ${gateId}.`,
+        ));
+      }
+    }
+  }
+
   const registerMedia = (id: string, ownerId: string): void => {
     validateSourceId('media', id, issues);
     if (mediaIds.has(id)) {
@@ -368,12 +401,14 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
         promise.deadline.chapterId,
         promise.deadline.slot,
       );
+      const target = eventById.get(promise.targetEventId);
       if (
         !sourcePosition
         || !deadlinePosition
         || !Number.isSafeInteger(promise.deadline.slot)
         || promise.deadline.slot <= 0
         || !positionAfter(deadlinePosition, sourcePosition)
+        || (target !== undefined && target.chapterId !== promise.deadline.chapterId)
       ) {
         issues.push(sourceIssue(
           'invalid_callback_window',
@@ -381,7 +416,6 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
         ));
       }
 
-      const target = eventById.get(promise.targetEventId);
       const targetPosition = target
         ? chapterPosition(input.chronicle, target.chapterId, target.slot)
         : null;
@@ -421,11 +455,19 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
       const event = eventById.get(anchorId);
       if (!event) {
         issues.push(sourceIssue('missing_anchor', `Missing anchor scene ${anchorId}.`));
-      } else if (event.chapterId !== chapter.id || event.anchorOrder !== index + 1) {
-        issues.push(sourceIssue(
-          'invalid_anchor_order',
-          `Anchor ${anchorId} is not ordered as ${index + 1} in ${chapter.id}.`,
-        ));
+      } else {
+        if (event.type !== 'main') {
+          issues.push(sourceIssue(
+            'invalid_anchor_type',
+            `Anchor ${anchorId} must use the main scene type.`,
+          ));
+        }
+        if (event.chapterId !== chapter.id || event.anchorOrder !== index + 1) {
+          issues.push(sourceIssue(
+            'invalid_anchor_order',
+            `Anchor ${anchorId} is not ordered as ${index + 1} in ${chapter.id}.`,
+          ));
+        }
       }
     });
   }
