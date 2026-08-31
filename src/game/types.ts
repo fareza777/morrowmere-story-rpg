@@ -1,5 +1,19 @@
 export type HeroClass = 'warrior' | 'mage' | 'warden';
 
+export type {
+  ChapterId,
+  ChoiceId,
+  CompanionId,
+  EncounterId,
+  EnemyId,
+  EventId,
+  FactionId,
+  FlagId,
+  ItemId,
+  MerchantId,
+  StoryPosition,
+} from './domain/ids';
+
 export type RegionId = 'gloamwood' | 'drowned-road' | 'embervault' | 'crownless-keep';
 
 export type EnemySpecies =
