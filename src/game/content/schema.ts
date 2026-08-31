@@ -25,6 +25,9 @@ export type ChronicleEventType =
   | "combat"
   | "hub";
 
+/** Runtime pacing metadata. Content remains authored; the director only chooses among it. */
+export type EventPacing = "danger" | "merchant" | "recovery" | "quiet";
+
 export interface EventEligibility {
   readonly routes?: readonly string[];
   readonly minLevel?: number;
@@ -47,6 +50,10 @@ export interface ChronicleEvent {
   readonly type: ChronicleEventType;
   readonly family: string;
   readonly anchorOrder?: number;
+  readonly weight?: number;
+  readonly pacing?: EventPacing;
+  readonly threatChange?: number;
+  readonly tensionChange?: number;
   readonly illustrationId: string;
   readonly audioId?: string;
   readonly title: string;

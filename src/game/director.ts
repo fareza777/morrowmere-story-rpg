@@ -2,8 +2,20 @@ import { EVENTS, type StoryEvent } from './content/events';
 import { FINALE, FINALE_CHOICES, LIEUTENANTS, PROLOGUE } from './content/story';
 import { createRng } from './rng';
 import type { EventChoice, FactionStanding, HeroClass, RegionId } from './types';
+export { chooseRouteOptions } from './director/pacing';
+export { selectNextScene } from './director/select';
+export type {
+  DirectorContext,
+  DirectorReason,
+  DirectorState,
+  DirectorStep,
+  PendingCallback,
+  RouteOption,
+  RouteProfileId,
+  ScenePacing,
+} from './director/types';
 
-export interface DirectorContext {
+export interface LegacyDirectorContext {
   readonly seed: number;
   readonly heroClass: HeroClass;
   readonly flags: readonly string[];
@@ -32,7 +44,7 @@ export interface RouteNode {
   readonly enemyArchetypeId?: string;
 }
 
-export function getEligibleEvents(context: DirectorContext): StoryEvent[] {
+export function getEligibleEvents(context: LegacyDirectorContext): StoryEvent[] {
   return EVENTS.filter(
     (event) =>
       event.region === context.region &&
@@ -41,7 +53,7 @@ export function getEligibleEvents(context: DirectorContext): StoryEvent[] {
   );
 }
 
-export function chooseNextEvent(context: DirectorContext): StoryEvent {
+export function chooseNextEvent(context: LegacyDirectorContext): StoryEvent {
   const recent = new Set(context.recentFamilies.slice(-3));
   const encountered = new Set(context.encounteredEventIds);
   const eligible = getEligibleEvents(context);
@@ -93,7 +105,7 @@ const CONTINUE_CHOICE: readonly EventChoice[] = [
   },
 ];
 
-export function buildRoute(context: DirectorContext): RouteNode[] {
+export function buildRoute(context: LegacyDirectorContext): RouteNode[] {
   const rng = createRng(context.seed);
   const nodes: RouteNode[] = [
     {
