@@ -84,6 +84,15 @@ export function applyEffectsAtomically(
       campaign = { ...campaign, flags: effect.operation === 'add' ? unique(campaign.flags, effect.flagId) : campaign.flags.filter((flag) => flag !== effect.flagId) };
       continue;
     }
+    if (effect.type === 'evidence') {
+      campaign = {
+        ...campaign,
+        evidence: effect.operation === 'add'
+          ? unique(campaign.evidence, effect.evidenceId)
+          : campaign.evidence.filter((evidenceId) => evidenceId !== effect.evidenceId),
+      };
+      continue;
+    }
     if (effect.type === 'faction') {
       if (!Number.isFinite(effect.amount)) return failure('invalid_faction', 'Faction changes must be finite numbers.');
       campaign = { ...campaign, factions: { ...campaign.factions, [effect.factionId]: (campaign.factions[effect.factionId] ?? 0) + effect.amount } };
@@ -95,6 +104,33 @@ export function applyEffectsAtomically(
         : applyCompanionEffect(campaign.companions, { type: 'leave', companionId: effect.companionId });
       if (!roster.ok) return failure(roster.error.code, roster.error.message);
       campaign = { ...campaign, companions: roster.value };
+      continue;
+    }
+    if (
+      effect.type === 'companion-loyalty'
+      || effect.type === 'companion-quest'
+      || effect.type === 'companion-injury'
+    ) {
+      const companionEffect = effect.type === 'companion-loyalty'
+        ? { type: 'change-loyalty' as const, companionId: effect.companionId, amount: effect.amount }
+        : effect.type === 'companion-quest'
+          ? { type: 'set-quest-stage' as const, companionId: effect.companionId, questStage: effect.stage }
+          : { type: 'set-injured' as const, companionId: effect.companionId, injured: effect.injured };
+      const roster = applyCompanionEffect(campaign.companions, companionEffect);
+      if (!roster.ok) return failure(roster.error.code, roster.error.message);
+      campaign = { ...campaign, companions: roster.value };
+      continue;
+    }
+    if (effect.type === 'threat' || effect.type === 'tension') {
+      if (!Number.isSafeInteger(effect.amount)) return failure('invalid_director_value', 'Threat and tension changes must be safe whole numbers.');
+      if (!expedition) return failure('no_expedition', 'There is no expedition to change route pressure.');
+      expedition = {
+        ...expedition,
+        director: {
+          ...expedition.director,
+          [effect.type]: Math.max(0, Math.min(10, expedition.director[effect.type] + effect.amount)),
+        },
+      };
       continue;
     }
     if (effect.type === 'callback') {
