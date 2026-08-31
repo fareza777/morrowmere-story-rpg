@@ -91,23 +91,19 @@ function resolveChoice(
     promise: { targetEventId: promise.targetEventId, deadline: promise.deadline },
   }));
 
-  for (let offset = 0; offset < eligibleChoices.length; offset += 1) {
-    const choice = eligibleChoices[(firstChoiceIndex + offset) % eligibleChoices.length]!;
-    const applied = applyEffectsAtomically(
-      state,
-      [...callbackEffects, ...choice.effects],
-      CHRONICLE1_CONTENT,
-    );
-    if (applied.ok) {
-      return {
-        campaign: applied.value.campaign,
-        expedition: applied.value.expedition
-          ? { ...applied.value.expedition, currentCombat: null }
-          : null,
-      };
-    }
-  }
-  return null;
+  const choice = eligibleChoices[firstChoiceIndex]!;
+  const applied = applyEffectsAtomically(
+    state,
+    [...callbackEffects, ...choice.effects],
+    CHRONICLE1_CONTENT,
+  );
+  if (!applied.ok) return null;
+  return {
+    campaign: applied.value.campaign,
+    expedition: applied.value.expedition
+      ? { ...applied.value.expedition, currentCombat: null }
+      : null,
+  };
 }
 
 function expiredCallbackIds(pendingCallbacks: readonly PendingCallback[], position: PendingCallback['deadline']): readonly string[] {
