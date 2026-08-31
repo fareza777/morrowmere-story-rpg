@@ -1,12 +1,21 @@
 import type { CompanionRoster } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { GameEffect } from '../domain/effects';
-import type { ChapterId, EncounterId, EventId, ItemId } from '../domain/ids';
+import type { ChapterId, EncounterId, EventId, ItemId, MerchantId, StoryPosition } from '../domain/ids';
 import type { CommandDiagnostic, DomainEvent } from '../domain/result';
 import type { DirectorState, RouteProfileId } from '../director/types';
 import type { InventoryCommand, InventoryState } from '../inventory';
 import type { HeroProgress } from '../progression';
 import type { HeroClass } from '../types';
+import type { CombatAction, CombatState } from '../combat/types';
+import type { TradeIntent } from '../merchant';
+
+export interface DirectorMemory {
+  readonly rngState: number;
+  readonly seenEventIds: readonly EventId[];
+  readonly familyCooldowns: Readonly<Record<string, number>>;
+  readonly pendingCallbacks: DirectorState['pendingCallbacks'];
+}
 
 export interface ProfileState {
   readonly settings: {
@@ -34,6 +43,7 @@ export interface CampaignState {
   readonly evidence: readonly string[];
   readonly factions: Readonly<Record<string, number>>;
   readonly companions: CompanionRoster;
+  readonly directorMemory: DirectorMemory;
   /** These fields deliberately live outside checkpoint payloads. */
   readonly attemptCounters: Readonly<Partial<Record<ChapterId, number>>>;
   readonly routeSeedNonce: number;
@@ -50,6 +60,7 @@ export interface CampaignCheckpointPayload {
   readonly evidence: readonly string[];
   readonly factions: Readonly<Record<string, number>>;
   readonly companions: CompanionRoster;
+  readonly directorMemory: DirectorMemory;
 }
 
 export interface ChapterSnapshot {
@@ -68,8 +79,9 @@ export interface ExpeditionState {
   readonly routeProfile: RouteProfileId;
   readonly routeSeed: number;
   readonly director: DirectorState;
+  readonly position: StoryPosition;
   readonly currentSceneId: EventId | null;
-  readonly currentCombat: { readonly encounterId: EncounterId; readonly turn?: number; readonly rngState?: number } | null;
+  readonly currentCombat: { readonly encounterId: EncounterId; readonly combat: CombatState | null } | null;
   readonly pendingRewards: readonly ItemId[];
   readonly unbankedGold: number;
   readonly unbankedLoot: readonly ItemId[];
@@ -120,6 +132,9 @@ export type GameCommand =
   | { readonly type: 'restart-chapter'; readonly updatedAt: string }
   | { readonly type: 'apply-effects'; readonly effects: readonly GameEffect[]; readonly updatedAt: string }
   | { readonly type: 'inventory'; readonly command: InventoryCommand; readonly updatedAt: string }
+  | { readonly type: 'select-next-scene'; readonly updatedAt: string }
+  | { readonly type: 'combat-turn'; readonly action: CombatAction; readonly updatedAt: string }
+  | { readonly type: 'trade'; readonly merchantId: MerchantId; readonly restockKey: string; readonly intent: TradeIntent; readonly updatedAt: string }
   | { readonly type: 'set-scene'; readonly sceneId: EventId; readonly updatedAt: string }
   | { readonly type: 'set-defeat'; readonly updatedAt: string };
 

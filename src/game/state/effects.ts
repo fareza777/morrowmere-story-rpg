@@ -21,6 +21,8 @@ function unique(values: readonly string[], value: string): readonly string[] {
   return values.includes(value) ? values : [...values, value];
 }
 
+function chapterNumber(chapterId: string): number { return Number(chapterId.slice(2)); }
+
 /** Applies a complete authored batch to local candidates.  The caller receives no partial state on failure. */
 export function applyEffectsAtomically(
   state: EffectState,
@@ -77,13 +79,18 @@ export function applyEffectsAtomically(
     }
     if (effect.type === 'callback') {
       if (!expedition) return failure('no_expedition', 'There is no expedition to schedule that callback.');
+      const target = content.events.get(effect.promise.targetEventId);
+      if (!target) return failure('invalid_callback', 'That callback target is not available.');
+      if (target.chapterId !== effect.promise.deadline.chapterId || chapterNumber(effect.promise.deadline.chapterId) < chapterNumber(expedition.position.chapterId) || (effect.promise.deadline.chapterId === expedition.position.chapterId && effect.promise.deadline.slot < expedition.position.slot)) {
+        return failure('invalid_callback', 'That callback deadline is not valid for this route.');
+      }
       expedition = { ...expedition, director: { ...expedition.director, pendingCallbacks: [...expedition.director.pendingCallbacks, { ...effect.promise, status: 'pending', required: true }] } };
       continue;
     }
     if (effect.type === 'combat') {
       if (!content.encounters.has(effect.encounterId)) return failure('invalid_encounter', 'That encounter is not available.');
       if (!expedition) return failure('no_expedition', 'There is no expedition to start combat.');
-      expedition = { ...expedition, currentCombat: { encounterId: effect.encounterId } };
+      expedition = { ...expedition, currentCombat: { encounterId: effect.encounterId, combat: null } };
       events.push({ type: 'combat_started', encounterId: effect.encounterId });
       continue;
     }
