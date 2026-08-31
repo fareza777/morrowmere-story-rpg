@@ -41,7 +41,6 @@ export interface CompanionCombatSnapshot {
 }
 
 export type CompanionEffect =
-  | { readonly type: "recruit"; readonly companionId: CompanionId }
   | { readonly type: "leave"; readonly companionId: CompanionId }
   | { readonly type: "activate"; readonly companionId: CompanionId }
   | {
@@ -65,7 +64,8 @@ export interface CompanionError {
     | "already_recruited"
     | "companion_not_found"
     | "companion_not_recruited"
-    | "invalid_loyalty_change";
+    | "invalid_loyalty_change"
+    | "recruitment_ineligible";
   readonly message: string;
 }
 
@@ -143,6 +143,31 @@ export function evaluateRecruitment(
   return { eligible: missingRequirements.length === 0, missingRequirements };
 }
 
+export function recruitCompanion(
+  roster: CompanionRoster,
+  companionId: CompanionId,
+  campaign: CompanionCampaignContext,
+  content: ContentIndex
+): DomainResult<CompanionRoster, CompanionError> {
+  const record = recordFor(roster, companionId);
+  if (!record)
+    return failure("companion_not_found", "That companion is not known.");
+  const evaluation = evaluateRecruitment(
+    companionId,
+    { ...campaign, companions: roster },
+    content
+  );
+  if (!evaluation.eligible)
+    return failure(
+      "recruitment_ineligible",
+      "That companion is not ready to join you."
+    );
+  return {
+    ok: true,
+    value: withRecord(roster, { ...record, status: "recruited" }),
+  };
+}
+
 export function applyCompanionEffect(
   roster: CompanionRoster,
   effect: CompanionEffect
@@ -150,17 +175,6 @@ export function applyCompanionEffect(
   const record = recordFor(roster, effect.companionId);
   if (!record)
     return failure("companion_not_found", "That companion is not known.");
-  if (effect.type === "recruit") {
-    if (record.status === "recruited")
-      return failure(
-        "already_recruited",
-        "That companion has already joined you."
-      );
-    return {
-      ok: true,
-      value: withRecord(roster, { ...record, status: "recruited" }),
-    };
-  }
   if (effect.type === "leave") {
     if (record.status !== "recruited")
       return failure(

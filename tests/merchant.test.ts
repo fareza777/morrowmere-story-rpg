@@ -218,4 +218,35 @@ describe("merchants", () => {
     expect(visit.stock).toHaveLength(6);
     expect(fullInventory.pack).toHaveLength(24);
   });
+
+  it("sells a valid pack copy when another copy is equipped", () => {
+    const inventory: InventoryState = {
+      ...EMPTY_INVENTORY,
+      pack: [
+        {
+          id: "spare-kingbreaker",
+          itemId: itemId("weapon-kingbreaker"),
+          quantity: 1,
+        },
+      ],
+      equipment: {
+        weapon: itemId("weapon-kingbreaker"),
+        armor: null,
+        charms: [],
+      },
+    };
+    const visit = generateMerchantVisit(MERCHANT_CONTEXT, ROAD_TRADER);
+
+    const result = executeTrade(
+      visit,
+      inventory,
+      0,
+      { type: "sell", entryId: "spare-kingbreaker" },
+      MERCHANT_CONTEXT
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.value.inventory.pack).toEqual([]);
+    expect(result.ok && result.value.gold).toBe(27);
+  });
 });

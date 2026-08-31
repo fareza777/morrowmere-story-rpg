@@ -77,7 +77,35 @@ introduced.
 
 - The full suite emits its pre-existing jsdom `Window.scrollTo()` notices in
   unrelated UI tests. They do not cause failures.
-- The current inventory representation stores equipped item IDs rather than the
-  physical entry IDs. Merchant selling conservatively rejects a pack entry whose
-  item ID is equipped; Task 6 can refine that identity distinction if duplicate
-  equipped-item sales need to be supported.
+## Fix round 1/5 — recruitment boundary and duplicate sales
+
+### RED / GREEN evidence
+
+1. Added a companion regression that invokes the intended state-changing
+   recruitment boundary with an unknown, zero-loyalty Rukhar and no decisions,
+   plus an eligible counterpart. Before implementation,
+   `npm test -- companions.test.ts merchant.test.ts` failed because
+   `recruitCompanion` did not exist; the previous generic effect could recruit
+   without any campaign/content evaluation.
+2. Added a merchant regression with one Kingbreaker equipped and a second,
+   distinct Kingbreaker pack entry. The same RED run failed because the sale was
+   rejected solely by matching item IDs.
+3. GREEN: removed `recruit` from the generic `CompanionEffect` union and added
+   `recruitCompanion(roster, companionId, campaign, content)`. It evaluates the
+   supplied roster against the campaign and content before changing status, and
+   returns an English `recruitment_ineligible` diagnostic otherwise. Merchant
+   sales now operate on the selected pack entry; equipped entries are absent
+   from the pack under the InventoryState contract.
+
+### Verification
+
+- `npm test -- companions.test.ts merchant.test.ts` — **2 files, 16 tests
+  passed**.
+- `npm run build` — passed (`tsc -b` and Vite production build).
+
+### Updated self-review
+
+- Recruitment can no longer be performed via the generic companion effect;
+  callers must use the pure campaign/content-aware transition.
+- A duplicate item remains sellable when it is a valid pack entry even if a
+  different copy is equipped. The earlier duplicate-sale concern is resolved.

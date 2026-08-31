@@ -5,6 +5,7 @@ import {
   createCompanionRoster,
   evaluateRecruitment,
   loyaltyTier,
+  recruitCompanion,
   type CompanionCampaignContext,
   type CompanionRoster,
 } from "../src/game/companions";
@@ -105,6 +106,35 @@ function campaignWithFlags(
 }
 
 describe("companions", () => {
+  it("rejects recruitment at the state transition when campaign requirements are missing", () => {
+    const content = contentFixture();
+    const roster = createCompanionRoster(content);
+
+    const result = recruitCompanion(
+      roster,
+      companionId("rukhar"),
+      campaignWithFlags([], roster),
+      content
+    );
+
+    expect(result.ok).toBe(false);
+    expect(roster.records.find((record) => record.companionId === companionId("rukhar"))?.status).toBe("unknown");
+  });
+
+  it("recruits an eligible companion through the guarded transition", () => {
+    const content = contentFixture();
+    const roster = rosterWithProgress(content);
+
+    const result = recruitCompanion(
+      roster,
+      companionId("rukhar"),
+      campaignWithFlags(REQUIREMENTS.rukhar, roster),
+      content
+    );
+
+    expect(result.ok && result.value.records.find((record) => record.companionId === companionId("rukhar"))?.status).toBe("recruited");
+  });
+
   it("does not recruit Rukhar from a single favorable choice", () => {
     const content = contentFixture();
     expect(
@@ -156,13 +186,19 @@ describe("companions", () => {
 
   it("keeps only one recruited companion active", () => {
     const content = contentFixture();
-    const mara = applyCompanionEffect(createCompanionRoster(content), {
-      type: "recruit",
-      companionId: companionId("mara"),
-    });
-    const both = applyCompanionEffect(
-      mara.ok ? mara.value : createCompanionRoster(content),
-      { type: "recruit", companionId: companionId("rukhar") }
+    const roster = rosterWithProgress(content);
+    const mara = recruitCompanion(
+      roster,
+      companionId("mara"),
+      campaignWithFlags(REQUIREMENTS.mara, roster),
+      content
+    );
+    const maraRoster = mara.ok ? mara.value : roster;
+    const both = recruitCompanion(
+      maraRoster,
+      companionId("rukhar"),
+      campaignWithFlags(REQUIREMENTS.rukhar, maraRoster),
+      content
     );
     const maraActive = applyCompanionEffect(
       both.ok ? both.value : createCompanionRoster(content),
@@ -180,10 +216,13 @@ describe("companions", () => {
 
   it("clamps loyalty and exposes the authoritative qualitative tiers in an active combat snapshot", () => {
     const content = contentFixture();
-    const recruited = applyCompanionEffect(createCompanionRoster(content), {
-      type: "recruit",
-      companionId: companionId("rukhar"),
-    });
+    const roster = rosterWithProgress(content);
+    const recruited = recruitCompanion(
+      roster,
+      companionId("rukhar"),
+      campaignWithFlags(REQUIREMENTS.rukhar, roster),
+      content
+    );
     const active = applyCompanionEffect(
       recruited.ok ? recruited.value : createCompanionRoster(content),
       { type: "activate", companionId: companionId("rukhar") }

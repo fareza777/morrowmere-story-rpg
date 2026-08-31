@@ -58,7 +58,6 @@ export interface TradeFailureState {
 }
 export interface MerchantError {
   readonly code:
-    | "equipped_item"
     | "insufficient_gold"
     | "invalid_quantity"
     | "item_not_found"
@@ -236,12 +235,6 @@ export function quoteTrade(
   );
   if (!entry)
     return failure("item_not_found", "That item is not in your pack.");
-  if (
-    inventory.equipment.weapon === entry.itemId ||
-    inventory.equipment.armor === entry.itemId ||
-    inventory.equipment.charms.includes(entry.itemId)
-  )
-    return failure("equipped_item", "Equipped items cannot be traded.");
   const quantity = intent.quantity ?? entry.quantity;
   if (!Number.isInteger(quantity) || quantity <= 0 || quantity > entry.quantity)
     return failure(
