@@ -147,8 +147,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       musicVolume: clampVolume(changed.musicVolume ?? settings.musicVolume),
       voiceVolume: clampVolume(changed.voiceVolume ?? settings.voiceVolume),
     };
-    if (music) music.element.volume = settings.musicVolume;
-    if (ambience) ambience.element.volume = settings.musicVolume * 0.55;
+    try { if (music) music.element.volume = settings.musicVolume; } catch { /* Optional audio must fail open. */ }
+    try { if (ambience) ambience.element.volume = settings.musicVolume * 0.55; } catch { /* Optional audio must fail open. */ }
     if (!settings.musicEnabled || settings.musicVolume === 0) safePause(music?.element ?? null);
     if (!settings.ambienceEnabled || settings.musicVolume === 0) safePause(ambience?.element ?? null);
     if (!settings.voiceEnabled || settings.voiceVolume === 0) {
@@ -190,11 +190,13 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       safePause(music?.element ?? null);
       const element = make(asset.src);
       if (!element) return;
-      element.loop = true;
-      element.currentTime = asset.loopStartMs / 1_000;
+      try {
+        element.loop = true;
+        element.currentTime = asset.loopStartMs / 1_000;
+      } catch { return; }
       music = { id: asset.id, element };
     }
-    music.element.volume = settings.musicVolume;
+    try { music.element.volume = settings.musicVolume; } catch { return; }
     safePlay(music.element);
   };
 
@@ -222,10 +224,10 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       safePause(ambience?.element ?? null);
       const element = make(asset.src);
       if (!element) return;
-      element.loop = true;
+      try { element.loop = true; } catch { return; }
       ambience = { id, element };
     }
-    ambience.element.volume = settings.musicVolume * 0.55;
+    try { ambience.element.volume = settings.musicVolume * 0.55; } catch { return; }
     safePlay(ambience.element);
   };
 
@@ -252,8 +254,13 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     try { localSpeech?.cancel(); } catch { /* Captions remain authoritative. */ }
     const clip = make(options.audioSrc);
     if (!clip) { speakLocally(text, speaker); return; }
-    clip.loop = false;
-    clip.volume = settings.voiceVolume;
+    try {
+      clip.loop = false;
+      clip.volume = settings.voiceVolume;
+    } catch {
+      speakLocally(text, speaker);
+      return;
+    }
     narration = clip;
     safePlay(clip, () => {
       if (narration === clip) narration = null;
