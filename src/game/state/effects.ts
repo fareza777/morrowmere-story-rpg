@@ -2,6 +2,8 @@ import { applyCompanionEffect, recruitCompanion } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { GameEffect } from '../domain/effects';
 import type { CommandDiagnostic, DomainEvent, DomainResult } from '../domain/result';
+import { applyInventoryCommand } from '../inventory';
+import { deriveHeroStats } from '../progression';
 import type { CampaignState, ExpeditionState } from './types';
 
 export interface EffectState {
@@ -35,11 +37,15 @@ export function applyEffectsAtomically(
 
   for (const effect of effects) {
     if (effect.type === 'gold') {
-      if (!Number.isFinite(effect.amount)) return failure('invalid_gold', 'Gold changes must be finite numbers.');
-      if (effect.scope === 'banked') campaign = { ...campaign, bankedGold: Math.max(0, campaign.bankedGold + effect.amount) };
+      if (!Number.isSafeInteger(effect.amount)) return failure('invalid_gold', 'Gold changes must be safe whole numbers.');
+      if (effect.scope === 'banked') {
+        if (campaign.bankedGold + effect.amount < 0) return failure('insufficient_gold', 'You do not have enough banked gold.');
+        campaign = { ...campaign, bankedGold: campaign.bankedGold + effect.amount };
+      }
       else {
         if (!expedition) return failure('no_expedition', 'There is no expedition to receive unbanked gold.');
-        expedition = { ...expedition, unbankedGold: Math.max(0, expedition.unbankedGold + effect.amount) };
+        if (expedition.unbankedGold + effect.amount < 0) return failure('insufficient_gold', 'You do not have enough unbanked gold.');
+        expedition = { ...expedition, unbankedGold: expedition.unbankedGold + effect.amount };
       }
       events.push({ type: 'notification', message: 'Gold updated.' });
       continue;
@@ -49,14 +55,27 @@ export function applyEffectsAtomically(
       if (!Number.isInteger(effect.quantity) || effect.quantity <= 0) return failure('invalid_quantity', 'Item quantity must be a positive whole number.');
       if (!expedition) return failure('no_expedition', 'There is no expedition to receive loot.');
       const loot = [...expedition.unbankedLoot];
-      if (effect.operation === 'grant') for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
-      else {
+      let inventory = campaign.inventory;
+      if (effect.operation === 'grant') {
+        const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity }, content.items);
+        if (!added.ok) return failure(added.error.code, added.error.message);
+        inventory = added.value;
+        for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
+      } else {
         let remaining = effect.quantity;
         for (let index = loot.length - 1; index >= 0 && remaining > 0; index -= 1) {
           if (loot[index] === effect.itemId) { loot.splice(index, 1); remaining -= 1; }
         }
         if (remaining > 0) return failure('item_not_found', 'That item is not available in this expedition.');
+        for (let count = 0; count < effect.quantity; count += 1) {
+          const entry = inventory.pack.find((candidate) => candidate.itemId === effect.itemId);
+          if (!entry) return failure('item_not_found', 'That item is not available in this expedition.');
+          const removed = applyInventoryCommand(inventory, { type: 'discard', entryId: entry.id, quantity: 1 }, content.items);
+          if (!removed.ok) return failure(removed.error.code, removed.error.message);
+          inventory = removed.value;
+        }
       }
+      campaign = { ...campaign, inventory };
       expedition = { ...expedition, unbankedLoot: loot };
       events.push({ type: 'item_changed', itemId: effect.itemId, quantity: effect.operation === 'grant' ? effect.quantity : -effect.quantity });
       continue;
@@ -66,6 +85,7 @@ export function applyEffectsAtomically(
       continue;
     }
     if (effect.type === 'faction') {
+      if (!Number.isFinite(effect.amount)) return failure('invalid_faction', 'Faction changes must be finite numbers.');
       campaign = { ...campaign, factions: { ...campaign.factions, [effect.factionId]: (campaign.factions[effect.factionId] ?? 0) + effect.amount } };
       continue;
     }
@@ -90,12 +110,21 @@ export function applyEffectsAtomically(
     if (effect.type === 'combat') {
       if (!content.encounters.has(effect.encounterId)) return failure('invalid_encounter', 'That encounter is not available.');
       if (!expedition) return failure('no_expedition', 'There is no expedition to start combat.');
+      if (expedition.currentCombat) return failure('combat_active', 'Finish the current encounter first.');
       expedition = { ...expedition, currentCombat: { encounterId: effect.encounterId, combat: null } };
       events.push({ type: 'combat_started', encounterId: effect.encounterId });
       continue;
     }
     if (!expedition) return failure('no_expedition', 'There is no expedition to change vital resources.');
-    // Vitals are runtime combat/status concerns and intentionally are not persisted as derived campaign stats.
+    if ((effect.health !== undefined && !Number.isFinite(effect.health)) || (effect.resource !== undefined && !Number.isFinite(effect.resource))) return failure('invalid_vitals', 'Vital changes must be finite numbers.');
+    const maxima = deriveHeroStats(campaign.hero, campaign.inventory, content.items);
+    expedition = {
+      ...expedition,
+      heroVitals: {
+        health: Math.max(0, Math.min(maxima.maxHealth, expedition.heroVitals.health + (effect.health ?? 0))),
+        resource: Math.max(0, Math.min(maxima.maxFocus, expedition.heroVitals.resource + (effect.resource ?? 0))),
+      },
+    };
     events.push({ type: 'notification', message: 'Vital resources updated.' });
   }
   return { ok: true, value: { campaign, expedition, events } };

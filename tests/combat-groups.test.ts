@@ -6,6 +6,7 @@ import type { EnemyDefinition, ItemDefinition } from '../src/game/types';
 import { ENEMIES } from '../src/game/content/enemies';
 import { roleForEnemy } from '../src/game/combat/enemy-ai';
 import type { DomainEvent as CanonicalDomainEvent } from '../src/game/domain/result';
+import type { EncounterDefinition } from '../src/game/content/schema';
 
 const inventory = (): InventoryState => ({
   pack: [{ id: 'pack-stack-potion-red', itemId: 'potion-red' as never, quantity: 1 }],
@@ -33,9 +34,18 @@ const items = new Map<string, ItemDefinition>([['potion-red', {
   id: 'potion-red', name: 'Red Mercy', category: 'potion', description: '', allowedClasses: ['warrior', 'mage', 'warden'], stats: { health: 12 }, value: 1, tags: ['healing'],
 }]]);
 
+const encounter = (id: string, enemyIds: readonly string[], kind: 'regular' | 'boss' = 'regular'): EncounterDefinition => ({
+  id: id as never,
+  family: id,
+  kind,
+  bossEnemyId: kind === 'boss' ? enemyIds[0] as never : undefined,
+  enemyIds: enemyIds.map((enemyId) => enemyId as never),
+  reward: { xp: 0, gold: 0, itemChoices: [] },
+});
+
 describe('group combat', () => {
   it('creates one combatant per encounter enemy and exposes a primary intent', () => {
-    const combat = createEncounter(hero, { id: 'road-pack' as never, enemyIds: ['front' as never, 'rear' as never] }, {
+    const combat = createEncounter(hero, encounter('road-pack', ['front', 'rear']), {
       enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear', ['Stone Wings'])]]),
     }, 7);
 
@@ -45,7 +55,7 @@ describe('group combat', () => {
   });
 
   it('only damages the selected living target', () => {
-    const combat = createEncounter(hero, { id: 'road-pack' as never, enemyIds: ['front' as never, 'rear' as never] }, {
+    const combat = createEncounter(hero, encounter('road-pack', ['front', 'rear']), {
       enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear')]]),
     }, 7);
     const result = resolveCombatTurn(combat, { type: 'attack', targetId: 'rear' }, inventory(), { items });
@@ -55,7 +65,7 @@ describe('group combat', () => {
   });
 
   it('uses a combat consumable atomically and spends the turn', () => {
-    const combat = createEncounter(hero, { id: 'solo' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
+    const combat = createEncounter(hero, encounter('solo', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
     const wounded: CombatState = { ...combat, player: { ...combat.player, health: 20 } };
     const result = resolveCombatTurn(wounded, { type: 'consumable', instanceId: 'pack-stack-potion-red' }, inventory(), { items });
     const canonicalEvents: readonly CanonicalDomainEvent[] = result.events;
@@ -67,7 +77,7 @@ describe('group combat', () => {
   });
 
   it('enforces companion cooldown and support budget instead of making a second hero', () => {
-    const combat = createEncounter(hero, { id: 'solo' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7, false, companion);
+    const combat = createEncounter(hero, encounter('solo', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7, false, companion);
     const first = resolveCombatTurn(combat, { type: 'companion', targetId: 'front' }, inventory(), { items });
     const second = resolveCombatTurn(first.combat, { type: 'companion', targetId: 'front' }, first.inventory, { items });
 
@@ -77,7 +87,7 @@ describe('group combat', () => {
   });
 
   it('moves a boss into its next phase once at its authored health threshold', () => {
-    const combat = createEncounter(hero, { id: 'boss' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7, true);
+    const combat = createEncounter(hero, encounter('boss', ['front'], 'boss'), { enemies: new Map([['front' as never, enemy('front')]]) }, 7, true);
     const nearThreshold: CombatState = { ...combat, enemies: combat.enemies.map((candidate) => ({ ...candidate, health: 14 })), enemy: { ...combat.enemy, health: 14 } };
     const result = resolveCombatTurn(nearThreshold, { type: 'attack', targetId: 'front' }, inventory(), { items });
 
@@ -85,7 +95,7 @@ describe('group combat', () => {
   });
 
   it('does not advance a boss phase when the threshold-crossing hit is lethal', () => {
-    const combat = createEncounter(hero, { id: 'boss' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7, true);
+    const combat = createEncounter(hero, encounter('boss', ['front'], 'boss'), { enemies: new Map([['front' as never, enemy('front')]]) }, 7, true);
     const dyingBoss: CombatState = { ...combat, enemies: combat.enemies.map((candidate) => ({ ...candidate, health: 1 })), enemy: { ...combat.enemy, health: 1 } };
     const result = resolveCombatTurn(dyingBoss, { type: 'attack', targetId: 'front' }, inventory(), { items });
 
@@ -94,7 +104,7 @@ describe('group combat', () => {
   });
 
   it('keeps the compatibility enemy aligned to the first living combatant', () => {
-    const combat = createEncounter(hero, { id: 'two' as never, enemyIds: ['front' as never, 'rear' as never] }, {
+    const combat = createEncounter(hero, encounter('two', ['front', 'rear']), {
       enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear')]]),
     }, 7);
     const weakened: CombatState = { ...combat, enemies: combat.enemies.map((candidate) => candidate.id === 'front' ? { ...candidate, health: 1 } : candidate), enemy: { ...combat.enemy, health: 1 } };
@@ -119,7 +129,7 @@ describe('group combat', () => {
 
   it('gives archers a piercing shot, controllers a hindering hex, shamans a focus drain, and specialists stronger recovery', () => {
     const resolveRoleTurn = (definition: EnemyDefinition, intent: 'strike' | 'hex' | 'recover', options: { readonly player?: Partial<CombatState['player']>; readonly enemyHealth?: number } = {}) => {
-      const combat = createEncounter(hero, { id: `${definition.id}-encounter` as never, enemyIds: [definition.id as never] }, { enemies: new Map([[definition.id as never, definition]]) }, 7);
+      const combat = createEncounter(hero, encounter(`${definition.id}-encounter`, [definition.id]), { enemies: new Map([[definition.id as never, definition]]) }, 7);
       const actingEnemy = { ...combat.enemy, health: options.enemyHealth ?? combat.enemy.health };
       const forced: CombatState = {
         ...combat, player: { ...combat.player, ...options.player }, enemy: actingEnemy, enemies: [actingEnemy], rngState: 7, enemyIntent: intent,
@@ -141,12 +151,12 @@ describe('group combat', () => {
 
   it('lets summoners add a minion and commanders strengthen a living ally', () => {
     const summonerDefinition = enemy('summoner', ['Ancestor Smoke'], { hex: 1 });
-    const summoner = createEncounter(hero, { id: 'summon' as never, enemyIds: ['summoner' as never] }, { enemies: new Map([['summoner' as never, summonerDefinition]]) }, 7);
+    const summoner = createEncounter(hero, encounter('summon', ['summoner']), { enemies: new Map([['summoner' as never, summonerDefinition]]) }, 7);
     const summoned = resolveCombatTurn({ ...summoner, rngState: 7, enemyIntent: 'hex', enemyIntents: [{ enemyId: 'summoner', intent: 'hex', text: 'Calls smoke.' }] }, { type: 'guard' }, inventory(), { items });
 
     const commanderDefinition = enemy('commander', ['Deathless Drill'], { guard: 1 });
     const allyDefinition = enemy('ally', ['Shield Wall'], { strike: 1 });
-    const commanded = createEncounter(hero, { id: 'command' as never, enemyIds: ['commander' as never, 'ally' as never] }, { enemies: new Map([['commander' as never, commanderDefinition], ['ally' as never, allyDefinition]]) }, 7);
+    const commanded = createEncounter(hero, encounter('command', ['commander', 'ally']), { enemies: new Map([['commander' as never, commanderDefinition], ['ally' as never, allyDefinition]]) }, 7);
     const strengthened = resolveCombatTurn({ ...commanded, enemyIntent: 'guard', enemyIntents: [{ enemyId: 'commander', intent: 'guard', text: 'Commands.' }] }, { type: 'guard' }, inventory(), { items });
 
     expect(summoned.combat.enemies).toHaveLength(2);
@@ -155,7 +165,7 @@ describe('group combat', () => {
   });
 
   it.each([null, companion])('keeps the baseline encounter winnable with companion %s', (activeCompanion) => {
-    let combat = createEncounter(hero, { id: 'baseline' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7, false, activeCompanion);
+    let combat = createEncounter(hero, encounter('baseline', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7, false, activeCompanion);
     let pack = inventory();
     for (let turn = 0; turn < 8 && combat.outcome === 'active'; turn += 1) {
       const result = resolveCombatTurn(combat, { type: 'attack', targetId: 'front' }, pack, { items });

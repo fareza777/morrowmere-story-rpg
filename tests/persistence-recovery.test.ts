@@ -24,6 +24,11 @@ class MemoryStorage implements Storage {
 
 const content = makeContentIndex();
 const state = () => createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
+const persistedExpeditionDefaults = {
+  sceneResolution: null,
+  heroVitals: { health: 20, resource: 10 },
+  pendingReward: null,
+} as const;
 
 function makeCatalogContent(): ContentIndex {
   const base = makeContentIndex();
@@ -43,7 +48,10 @@ function makeCatalogContent(): ContentIndex {
   const enemies = new Map(base.enemies);
   enemies.set('enemy-1' as never, { id: 'enemy-1', archetypeId: 'goblin', name: 'Goblin', rank: 1, level: 1, species: 'goblin', region: 'gloamwood', maxHealth: 10, attack: 2, armor: 0, ward: 0, intentWeights: { strike: 1 }, traits: [], rewardTags: [], description: 'A foe.', artFamily: 'goblin' } as never);
   const encounters = new Map(base.encounters);
-  encounters.set('encounter-1' as never, { id: 'encounter-1' as never, enemyIds: ['enemy-1' as never] });
+  encounters.set('encounter-1' as never, {
+    id: 'encounter-1' as never, family: 'goblin', kind: 'regular', enemyIds: ['enemy-1' as never],
+    reward: { xp: 10, gold: 2, itemChoices: [] },
+  });
   const companions = new Map(base.companions);
   companions.set('companion-1' as never, { id: 'companion-1' as never, name: 'Scout', recruitment: { requiredDecisionIds: [] }, personalQuestIds: [], combat: { attack: 2, guard: 1, will: 1, actionId: 'scout-shot' } });
   const merchants = new Map(base.merchants);
@@ -70,9 +78,12 @@ function catalogState() {
       profile: { ...base.profile, discoveries: { events: ['fixture-event' as never], enemies: ['enemy-1'], codex: [] } },
       campaign,
       expedition: {
+        ...persistedExpeditionDefaults,
         routeProfile: 'kings-road' as const, routeSeed: 7,
         director: { ...initialDirector(7), usedSceneIds: ['hub-event' as never], seenEventIds: ['fixture-event' as never], pendingCallbacks: [{ targetEventId: 'callback-event' as never, deadline: { chapterId: 'ch01' as const, slot: 2 }, status: 'pending' as const, required: true }] },
-        position: { chapterId: 'ch01' as const, slot: 1 }, currentSceneId: 'hub-event' as never, currentCombat: null, pendingRewards: [], unbankedGold: 3, unbankedLoot: ['scroll-1' as never], temporaryBoons: [],
+        position: { chapterId: 'ch01' as const, slot: 1 }, currentSceneId: 'hub-event' as never,
+        sceneResolution: { eventId: 'hub-event' as never, choiceId: null }, currentCombat: null,
+        unbankedGold: 3, unbankedLoot: ['scroll-1' as never], temporaryBoons: [],
         merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:potion-1', itemId: 'potion-1' as never }] }],
       },
       flow: { screen: 'merchant' as const, overlay: null, merchant: { merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', returnScreen: 'story' as const } },
@@ -296,7 +307,7 @@ describe('V2 save recovery', () => {
     ['equipment item', (envelope: any) => { envelope.state.campaign.inventory.equipment.weapon = 'ghost-item'; }],
     ['current scene', (envelope: any) => { envelope.state.expedition.currentSceneId = 'ghost-event'; }],
     ['encounter', (envelope: any) => { envelope.state.expedition.currentCombat = { encounterId: 'ghost-encounter', combat: null }; }],
-    ['pending reward', (envelope: any) => { envelope.state.expedition.pendingRewards[0] = 'ghost-item'; }],
+    ['pending reward', (envelope: any) => { envelope.state.expedition.pendingReward = { rewardId: 'forged', encounterId: 'encounter-1', itemChoices: ['ghost-item'], baseGold: 0, grantedXp: 0, adEligible: false }; envelope.state.flow.screen = 'reward'; }],
     ['unbanked loot', (envelope: any) => { envelope.state.expedition.unbankedLoot[0] = 'ghost-item'; }],
     ['companion record', (envelope: any) => { envelope.state.campaign.companions.records[0].companionId = 'ghost-companion'; }],
     ['active companion', (envelope: any) => { envelope.state.campaign.companions.activeCompanionId = 'ghost-companion'; }],
@@ -374,7 +385,7 @@ describe('V2 save recovery', () => {
   it.each([
     ['a hero above the level cap', (candidate: any) => ({ ...candidate, campaign: { ...candidate.campaign, hero: { ...candidate.campaign.hero, level: 16 } } })],
     ['a partial attempt-counter record', (candidate: any) => ({ ...candidate, campaign: { ...candidate.campaign, attemptCounters: { ch01: 0 } } })],
-    ['director tension above its bounded range', (candidate: any) => ({ ...candidate, expedition: { routeProfile: 'kings-road', routeSeed: 1, director: { ...initialDirector(1), tension: 11 }, position: { chapterId: 'ch01', slot: 0 }, currentSceneId: null, currentCombat: null, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'story', overlay: null, merchant: null } })],
+    ['director tension above its bounded range', (candidate: any) => ({ ...candidate, expedition: { ...persistedExpeditionDefaults, routeProfile: 'kings-road', routeSeed: 1, director: { ...initialDirector(1), tension: 11 }, position: { chapterId: 'ch01', slot: 0 }, currentSceneId: null, currentCombat: null, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'story', overlay: null, merchant: null } })],
   ])('rejects %s before overwriting an active save', (_label, mutate) => {
     const storage = new MemoryStorage();
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', content);
@@ -403,7 +414,10 @@ describe('V2 save recovery', () => {
     const enemy = { id: 'enemy-1', archetypeId: 'goblin', name: 'Goblin', rank: 1, level: 1, species: 'goblin' as const, region: 'gloamwood' as const, maxHealth: 10, attack: 2, armor: 0, ward: 0, intentWeights: { strike: 1 }, traits: [], rewardTags: [], description: 'A foe.', artFamily: 'goblin' };
     (localContent.enemies as Map<never, never>).set('enemy-1' as never, enemy as never);
     (localContent.items as Map<never, never>).set('item-1' as never, { id: 'item-1', name: 'Tonic', category: 'potion', description: 'A tonic.', allowedClasses: ['mage'], stats: {}, value: 1, tags: [] } as never);
-    (localContent.encounters as Map<never, never>).set('fight-1' as never, { id: 'fight-1', enemyIds: ['enemy-1'] } as never);
+    (localContent.encounters as Map<never, never>).set('fight-1' as never, {
+      id: 'fight-1', family: 'goblin', kind: 'regular', enemyIds: ['enemy-1'],
+      reward: { xp: 0, gold: 0, itemChoices: [] },
+    } as never);
     (localContent.merchants as Map<never, never>).set('merchant-1' as never, { id: 'merchant-1', name: 'Trader', stockItemIds: ['item-1'] } as never);
     const fixture = localContent.events.get('fixture-event' as never)!;
     (localContent.events as Map<never, never>).set('merchant-hub' as never, { ...fixture, id: 'merchant-hub', type: 'hub', family: 'merchant', merchantId: 'merchant-1', merchantRestockKey: 'merchant-restock' } as never);
@@ -412,7 +426,7 @@ describe('V2 save recovery', () => {
     const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
     const complete = {
       ...base,
-      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'fight-1' as never, combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:item-1', itemId: 'item-1' as never }] }] },
+      expedition: { ...persistedExpeditionDefaults, routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'fight-1' as never, combat }, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:item-1', itemId: 'item-1' as never }] }] },
       flow: { screen: 'combat' as const, overlay: null, merchant: null },
     };
 
@@ -468,8 +482,8 @@ describe('V2 save recovery', () => {
       ['an active combat with a mismatched legacy intent', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemyIntent = 'heavy'; }],
       ['a full-health living victory on the reward screen', (envelope: any) => { envelope.state.expedition.currentCombat.combat.outcome = 'victory'; envelope.state.flow.screen = 'reward'; }],
       ['an active combat on the reward screen', (envelope: any) => { envelope.state.flow.screen = 'reward'; }],
-      ['a defeat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.player.health = 0; envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'defeat'; envelope.state.expedition.pendingRewards = []; envelope.state.flow.screen = 'defeat'; }],
-      ['a fled combat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'fled'; envelope.state.expedition.pendingRewards = []; envelope.state.flow.screen = 'reward'; }],
+      ['a defeat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.player.health = 0; envelope.state.expedition.heroVitals.health = 0; envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'defeat'; envelope.state.expedition.pendingReward = null; envelope.state.flow.screen = 'defeat'; }],
+      ['a fled combat with no living enemy', (envelope: any) => { envelope.state.expedition.currentCombat.combat.enemies[0].health = 0; envelope.state.expedition.currentCombat.combat.outcome = 'fled'; envelope.state.expedition.pendingReward = null; envelope.state.flow.screen = 'reward'; }],
     ] as const;
     for (const [_label, mutate] of impossibleRuntime) {
       const candidate = JSON.parse(before ?? '{}');
@@ -484,14 +498,17 @@ describe('V2 save recovery', () => {
     const localContent = makeContentIndex();
     const summoner = { id: 'caller', archetypeId: 'caller', name: 'Caller', rank: 1, level: 1, species: 'human' as const, region: 'gloamwood' as const, maxHealth: 20, attack: 3, armor: 0, ward: 0, intentWeights: { hex: 1 }, traits: ['summon'], rewardTags: [], description: 'Calls smoke.', artFamily: 'caller' };
     (localContent.enemies as Map<never, never>).set('caller' as never, summoner as never);
-    (localContent.encounters as Map<never, never>).set('caller-fight' as never, { id: 'caller-fight', enemyIds: ['caller'] } as never);
+    (localContent.encounters as Map<never, never>).set('caller-fight' as never, {
+      id: 'caller-fight', family: 'caller', kind: 'regular', enemyIds: ['caller'],
+      reward: { xp: 0, gold: 0, itemChoices: [] },
+    } as never);
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
     const hero = { class: 'mage' as const, name: 'Aster', level: 1, xp: 0, health: 20, maxHealth: 20, focus: 10, maxFocus: 10, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5, attackBonus: 0, guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] } };
     const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
     const beforeSummon = createCombat(hero, summoner, 7);
     const beforeSummonState = {
       ...base,
-      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'caller-fight' as never, combat: beforeSummon }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] },
+      expedition: { ...persistedExpeditionDefaults, routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'caller-fight' as never, combat: beforeSummon }, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] },
       flow: { screen: 'combat' as const, overlay: null, merchant: null },
     };
     expect(repo.saveSlot(3, beforeSummonState)).toEqual({ ok: true });
@@ -500,7 +517,12 @@ describe('V2 save recovery', () => {
     expect(summoned.combat.enemies[0]!.roleUses).toBe(0);
     const complete = {
       ...base,
-      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'caller-fight' as never, combat: summoned.combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] },
+      expedition: {
+        ...persistedExpeditionDefaults,
+        heroVitals: { health: summoned.combat.player.health, resource: summoned.combat.player.focus },
+        routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null,
+        currentCombat: { encounterId: 'caller-fight' as never, combat: summoned.combat }, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
+      },
       flow: { screen: 'combat' as const, overlay: null, merchant: null },
     };
 
@@ -535,7 +557,15 @@ describe('V2 save recovery', () => {
     expect(repo.saveSlot(1, smokeDeathLoaded.state)).toEqual({ ok: true });
     const terminalEnemies = afterSmokeDeath.enemies.map((enemy) => ({ ...enemy, health: 0 }));
     const terminal = { ...afterSmokeDeath, enemies: terminalEnemies, enemy: terminalEnemies[0]!, outcome: 'victory' as const };
-    const terminalState = { ...afterSmokeDeathState, expedition: { ...afterSmokeDeathState.expedition, currentCombat: { ...afterSmokeDeathState.expedition.currentCombat, combat: terminal } }, flow: { screen: 'reward' as const, overlay: null, merchant: null } };
+    const terminalState = {
+      ...afterSmokeDeathState,
+      expedition: {
+        ...afterSmokeDeathState.expedition,
+        currentCombat: { ...afterSmokeDeathState.expedition.currentCombat, combat: terminal },
+        pendingReward: { rewardId: '7:0:caller-fight', encounterId: 'caller-fight' as never, itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: true },
+      },
+      flow: { screen: 'reward' as const, overlay: null, merchant: null },
+    };
     expect(repo.saveSlot(1, terminalState)).toEqual({ ok: true });
     const terminalLoaded = repo.loadSlot(1);
     expect(terminalLoaded).toMatchObject({ ok: true, state: { expedition: { currentCombat: { combat: { outcome: 'victory', enemyIntents: [] } } } } });
@@ -548,11 +578,17 @@ describe('V2 save recovery', () => {
     const localContent = makeContentIndex();
     const caller = { id: 'caller', archetypeId: 'caller', name: 'Caller', rank: 1, level: 1, species: 'human' as const, region: 'gloamwood' as const, maxHealth: 20, attack: 3, armor: 0, ward: 0, intentWeights: { hex: 1 }, traits: ['summon'], rewardTags: [], description: 'Calls smoke.', artFamily: 'caller' };
     (localContent.enemies as Map<never, never>).set('caller' as never, caller as never);
-    (localContent.encounters as Map<never, never>).set('duplicate-callers' as never, { id: 'duplicate-callers' as never, enemyIds: ['caller' as never, 'caller' as never] } as never);
+    (localContent.encounters as Map<never, never>).set('duplicate-callers' as never, {
+      id: 'duplicate-callers' as never, family: 'caller', kind: 'regular', enemyIds: ['caller' as never, 'caller' as never],
+      reward: { xp: 0, gold: 0, itemChoices: [] },
+    } as never);
     const hero = { class: 'mage' as const, name: 'Aster', level: 1, xp: 0, health: 20, maxHealth: 20, focus: 10, maxFocus: 10, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5, attackBonus: 0, guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] } };
     const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
-    const combat = createEncounter(hero, { id: 'duplicate-callers' as never, enemyIds: ['caller' as never, 'caller' as never] }, localContent, 7);
-    const stateWithCombat = { ...base, expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'duplicate-callers' as never, combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'combat' as const, overlay: null, merchant: null } };
+    const combat = createEncounter(hero, {
+      id: 'duplicate-callers' as never, family: 'caller', kind: 'regular', enemyIds: ['caller' as never, 'caller' as never],
+      reward: { xp: 0, gold: 0, itemChoices: [] },
+    }, localContent, 7);
+    const stateWithCombat = { ...base, expedition: { ...persistedExpeditionDefaults, routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'duplicate-callers' as never, combat }, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] }, flow: { screen: 'combat' as const, overlay: null, merchant: null } };
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
 
     expect(repo.saveSlot(1, stateWithCombat)).toEqual({ ok: true });
@@ -565,7 +601,14 @@ describe('V2 save recovery', () => {
 
     const summoned = resolveCombatTurn(combat, { type: 'guard' }, base.campaign.inventory, { items: localContent.items });
     expect(summoned.combat.enemies.map((enemy) => enemy.id)).toEqual(['caller', 'caller-2', 'caller-smoke-1', 'caller-2-smoke-1']);
-    const stateWithSummons = { ...stateWithCombat, expedition: { ...stateWithCombat.expedition, currentCombat: { ...stateWithCombat.expedition.currentCombat, combat: summoned.combat } } };
+    const stateWithSummons = {
+      ...stateWithCombat,
+      expedition: {
+        ...stateWithCombat.expedition,
+        heroVitals: { health: summoned.combat.player.health, resource: summoned.combat.player.focus },
+        currentCombat: { ...stateWithCombat.expedition.currentCombat, combat: summoned.combat },
+      },
+    };
     expect(repo.saveSlot(1, stateWithSummons)).toEqual({ ok: true });
     const forged = JSON.parse(repo.exportSlot(1) ?? '{}');
     forged.state.expedition.currentCombat.combat.enemies[3].instanceId = 'caller-2-smoke-2';

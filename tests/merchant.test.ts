@@ -148,7 +148,7 @@ describe("merchants", () => {
       { type: "sell", entryId: "potion-stack", quantity: 2 },
       context
     );
-    expect(buy.ok && buy.value.unitPrice).toBe(17);
+    expect(buy.ok && buy.value.unitPrice).toBe(15);
     expect(sell.ok && sell.value.unitPrice).toBe(5);
   });
 

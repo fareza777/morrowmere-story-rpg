@@ -17,6 +17,10 @@ export type {
   GameCommand as GameCommandV2,
   GameStateV2,
   GameTransition,
+  HeroVitals,
+  SceneResolution,
+  PendingBattleReward,
+  CampSnapshot,
   ProfileState,
   SequencedDomainEvent,
 } from './state/types';

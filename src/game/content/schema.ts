@@ -71,7 +71,15 @@ export interface ChronicleEvent {
 
 export interface EncounterDefinition {
   readonly id: EncounterId;
+  readonly family: string;
+  readonly kind: "regular" | "lieutenant" | "boss";
   readonly enemyIds: readonly EnemyId[];
+  readonly bossEnemyId?: EnemyId;
+  readonly reward: {
+    readonly xp: number;
+    readonly gold: number;
+    readonly itemChoices: readonly ItemId[];
+  };
 }
 
 export interface CompanionDefinition {

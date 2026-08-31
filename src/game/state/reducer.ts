@@ -1,17 +1,25 @@
-import { applyInventoryCommand } from '../inventory';
-import type { ContentIndex } from '../content/schema';
-import type { CommandDiagnostic, DomainEvent } from '../domain/result';
+import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companions';
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
-import { selectNextScene, beginDirectorRun } from '../director';
-import { executeTrade, generateMerchantVisit } from '../merchant';
-import { deriveHeroStats } from '../progression';
-import { buildCompanionCombatSnapshot } from '../companions';
-import type { EncounterId } from '../domain/ids';
+import type { ContentIndex } from '../content/schema';
+import type { EncounterId, ItemId } from '../domain/ids';
+import type { DomainEvent } from '../domain/result';
+import { beginDirectorRun, selectNextScene } from '../director';
 import type { DirectorState } from '../director/types';
+import { applyInventoryCommand, useItem, type InventoryState } from '../inventory';
+import { generateMerchantVisit, quoteTrade } from '../merchant';
+import { deriveHeroStats, grantExperience } from '../progression';
 import { campaignPayload, cloneCampaignPayload, initialDirector } from './create';
 import { applyEffectsAtomically } from './effects';
-import type { CampSnapshot, GameCommand, GameStateV2, GameTransition, SequencedDomainEvent } from './types';
+import type {
+  CampSnapshot,
+  CampaignCheckpointPayload,
+  GameCommand,
+  GameStateV2,
+  GameTransition,
+  HeroVitals,
+  SequencedDomainEvent,
+} from './types';
 
 function diagnostic(state: GameStateV2, code: string, message: string): GameTransition {
   return { state, events: [], diagnostic: { code, message } };
@@ -25,7 +33,15 @@ function sequenced(events: readonly DomainEvent[], transition: number): readonly
   return events.map((domain, index) => ({ domain, eventId: `${transition}:${index}`, sequence: transition }));
 }
 
-function commit(state: GameStateV2, changed: Omit<GameStateV2, 'campaign'> & { readonly campaign: GameStateV2['campaign'] }, rawEvents: readonly DomainEvent[]): GameTransition {
+function transient(events: readonly DomainEvent[], sequence: number, commandId: string): readonly SequencedDomainEvent[] {
+  return events.map((domain, index) => ({ domain, eventId: `transient:${commandId}:${index}`, sequence }));
+}
+
+function commit(
+  state: GameStateV2,
+  changed: Omit<GameStateV2, 'campaign'> & { readonly campaign: GameStateV2['campaign'] },
+  rawEvents: readonly DomainEvent[],
+): GameTransition {
   const transition = state.campaign.transitionCounter + 1;
   const campaign = { ...changed.campaign, transitionCounter: transition };
   return { state: { ...changed, campaign }, events: sequenced(rawEvents, transition) };
@@ -53,21 +69,55 @@ function merchantRestockKey(state: GameStateV2, scene: NonNullable<ReturnType<ty
   return `${state.expedition!.routeSeed}:${scene.merchantId!}:${scene.merchantRestockKey!}`;
 }
 
-function heroCombatant(state: GameStateV2, content: ContentIndex) {
-  const stats = deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
+function derivedMaxima(state: GameStateV2, content: ContentIndex) {
+  return deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
+}
+
+function clampedVitals(vitals: HeroVitals, state: GameStateV2, content: ContentIndex): HeroVitals {
+  const stats = derivedMaxima(state, content);
   return {
-    class: stats.heroClass, name: state.campaign.heroName, level: stats.level, xp: stats.xp,
-    health: stats.maxHealth, maxHealth: stats.maxHealth, focus: stats.maxFocus, maxFocus: stats.maxFocus,
-    strength: stats.strength, cunning: stats.cunning, will: stats.will, armor: stats.armor, ward: stats.ward, attackBonus: Math.max(0, stats.attack - stats.strength),
-    guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] },
+    health: Math.max(0, Math.min(stats.maxHealth, vitals.health)),
+    resource: Math.max(0, Math.min(stats.maxFocus, vitals.resource)),
+  };
+}
+
+function heroCombatant(state: GameStateV2, content: ContentIndex) {
+  const stats = derivedMaxima(state, content);
+  const vitals = clampedVitals(state.expedition!.heroVitals, state, content);
+  return {
+    class: stats.heroClass,
+    name: state.campaign.heroName,
+    level: stats.level,
+    xp: stats.xp,
+    health: vitals.health,
+    maxHealth: stats.maxHealth,
+    focus: vitals.resource,
+    maxFocus: stats.maxFocus,
+    strength: stats.strength,
+    cunning: stats.cunning,
+    will: stats.will,
+    armor: stats.armor,
+    ward: stats.ward,
+    attackBonus: Math.max(0, stats.attack - stats.strength),
+    guarding: false,
+    statuses: [],
+    inventory: [],
+    equipment: { weapon: null, armor: null, charms: [] },
   };
 }
 
 function beginCombat(state: GameStateV2, encounterId: EncounterId, content: ContentIndex) {
   const encounter = content.encounters.get(encounterId);
-  if (!encounter) return null;
+  if (!encounter || !state.expedition || state.expedition.heroVitals.health <= 0) return null;
   try {
-    return createEncounter(heroCombatant(state, content), encounter, content, state.expedition!.director.rngState, false, buildCompanionCombatSnapshot(state.campaign.companions, content));
+    return createEncounter(
+      heroCombatant(state, content),
+      encounter,
+      content,
+      state.expedition.director.rngState,
+      undefined,
+      buildCompanionCombatSnapshot(state.campaign.companions, content),
+    );
   } catch {
     return null;
   }
@@ -80,6 +130,26 @@ function incrementAttempt(campaign: GameStateV2['campaign']) {
     attemptCounters: { ...campaign.attemptCounters, [chapterId]: (campaign.attemptCounters[chapterId] ?? 0) + 1 },
     routeSeedNonce: campaign.routeSeedNonce + 1,
   };
+}
+
+function removeOneUnbanked(values: readonly ItemId[], itemId: ItemId): readonly ItemId[] {
+  const index = values.indexOf(itemId);
+  return index < 0 ? values : [...values.slice(0, index), ...values.slice(index + 1)];
+}
+
+function removeQuantityByItem(inventory: InventoryState, itemId: ItemId, quantity: number, content: ContentIndex): InventoryState | null {
+  let next = inventory;
+  let remaining = quantity;
+  while (remaining > 0) {
+    const entry = next.pack.find((candidate) => candidate.itemId === itemId);
+    if (!entry) return null;
+    const amount = Math.min(remaining, entry.quantity);
+    const removed = applyInventoryCommand(next, { type: 'discard', entryId: entry.id, quantity: amount }, content.items);
+    if (!removed.ok) return null;
+    remaining -= amount;
+    next = removed.value;
+  }
+  return next;
 }
 
 /** The defeat flow remains visible until this command is explicitly requested. */
@@ -95,17 +165,18 @@ export function returnToCampAfterDefeat(state: GameStateV2, _content: ContentInd
     flags: state.campaign.flags,
     evidence: state.campaign.evidence,
     factions: state.campaign.factions,
+    encounterFamilyVictories: state.campaign.encounterFamilyVictories,
     companions: state.campaign.companions,
     directorMemory: directorMemory(state.expedition.director),
     bankedGold: restored.bankedGold + recoveredGold,
   });
-  const campaign = incrementAttempt({
-    ...state.campaign,
-    ...secured,
-  });
+  const campaign = incrementAttempt({ ...state.campaign, ...secured });
   const provisional: GameStateV2 = {
-    ...state, campaign, expedition: null,
-    flow: { ...state.flow, screen: 'camp', overlay: null, merchant: null }, updatedAt,
+    ...state,
+    campaign,
+    expedition: null,
+    flow: { ...state.flow, screen: 'camp', overlay: null, merchant: null },
+    updatedAt,
   };
   return { ...provisional, checkpoints: { ...provisional.checkpoints, camp: checkpointAtCamp(provisional, camp.campSceneId, updatedAt) } };
 }
@@ -114,8 +185,11 @@ export function restartChapter(state: GameStateV2, _content: ContentIndex, updat
   const restored = cloneCampaignPayload(state.checkpoints.chapter.campaign);
   const campaign = incrementAttempt({ ...state.campaign, ...restored });
   const provisional: GameStateV2 = {
-    ...state, campaign, expedition: null,
-    flow: { ...state.flow, screen: 'camp', overlay: null, merchant: null }, updatedAt,
+    ...state,
+    campaign,
+    expedition: null,
+    flow: { ...state.flow, screen: 'camp', overlay: null, merchant: null },
+    updatedAt,
   };
   return { ...provisional, checkpoints: { ...provisional.checkpoints, camp: checkpointAtCamp(provisional, null, updatedAt) } };
 }
@@ -128,81 +202,172 @@ export function currentSceneId(state: GameStateV2) {
   return state.expedition?.currentSceneId ?? null;
 }
 
+function commitCampMutation(state: GameStateV2, campaign: GameStateV2['campaign'], updatedAt: string, events: readonly DomainEvent[]): GameTransition {
+  const provisional = { ...state, campaign, updatedAt };
+  const campSceneId = state.checkpoints.camp?.campSceneId ?? null;
+  return commit(state, { ...provisional, checkpoints: { ...state.checkpoints, camp: checkpointAtCamp(provisional, campSceneId, updatedAt) } }, events);
+}
+
 export function reduceGame(state: GameStateV2, command: GameCommand, content: ContentIndex): GameTransition {
   if (command.type === 'return-to-camp-after-defeat') {
     const next = returnToCampAfterDefeat(state, content, command.updatedAt);
-    return next === state ? diagnostic(state, 'defeat_required', 'You can return to camp only after defeat.') : commit(state, next, [{ type: 'notification', message: 'Returned to camp.' }]);
+    return next === state
+      ? diagnostic(state, 'defeat_required', 'You can return to camp only after defeat.')
+      : commit(state, next, [{ type: 'notification', message: 'Returned to camp.' }]);
   }
   if (command.type === 'restart-chapter') {
-    const next = restartChapter(state, content, command.updatedAt);
-    return commit(state, next, [{ type: 'notification', message: 'Chapter restarted.' }]);
+    return commit(state, restartChapter(state, content, command.updatedAt), [{ type: 'notification', message: 'Chapter restarted.' }]);
+  }
+  if (command.type === 'set-active-companion') {
+    if (state.flow.screen !== 'camp' || state.expedition) return diagnostic(state, 'camp_required', 'Choose a companion while at camp.');
+    if (command.companionId === null) {
+      const companions = { ...state.campaign.companions, activeCompanionId: null };
+      return commitCampMutation(state, { ...state.campaign, companions }, command.updatedAt, [{ type: 'companion_activated', companionId: null }]);
+    }
+    const activated = applyCompanionEffect(state.campaign.companions, { type: 'activate', companionId: command.companionId });
+    if (!activated.ok) return diagnostic(state, activated.error.code, activated.error.message);
+    return commitCampMutation(state, { ...state.campaign, companions: activated.value }, command.updatedAt, [{ type: 'companion_activated', companionId: command.companionId }]);
   }
   if (command.type === 'start-expedition') {
-    if (state.flow.screen !== 'camp') return diagnostic(state, 'camp_required', 'Start a route from camp.');
+    if (state.flow.screen !== 'camp' || state.expedition) return diagnostic(state, 'camp_required', 'Start a route from camp.');
     const seed = routeSeed(state.campaign.seed, state.campaign.routeSeedNonce);
-    const seededDirector = { ...initialDirector(seed), ...state.campaign.directorMemory, usedSceneIds: [], recentSceneKinds: [], recentFamilies: [], currentRunBlockedFamilies: [], tension: 2, threat: 0 };
+    const seededDirector = {
+      ...initialDirector(seed),
+      ...state.campaign.directorMemory,
+      usedSceneIds: [],
+      recentSceneKinds: [],
+      recentFamilies: [],
+      currentRunBlockedFamilies: [],
+      tension: 2,
+      threat: 0,
+    };
+    const stats = derivedMaxima(state, content);
     const expedition = {
-      routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector), position: { chapterId: state.campaign.chapterId, slot: 0 }, currentSceneId: null,
-      currentCombat: null, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
+      routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector),
+      position: { chapterId: state.campaign.chapterId, slot: 0 }, currentSceneId: null, sceneResolution: null,
+      heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
+      unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
     } as const;
     return commit(state, { ...state, expedition, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Expedition started.' }]);
   }
   if (command.type === 'bank-camp') {
-    if (!state.expedition) return diagnostic(state, 'nothing_to_bank', 'There is nothing to bank at camp.');
-    if (state.expedition.unbankedGold === 0 && state.expedition.unbankedLoot.length === 0 && state.expedition.temporaryBoons.length === 0) return diagnostic(state, 'nothing_to_bank', 'There is nothing to bank at camp.');
-    let inventory = state.campaign.inventory;
-    for (const itemId of state.expedition.unbankedLoot) {
-      const applied = applyInventoryCommand(inventory, { type: 'add', itemId, destination: 'stash' }, content.items);
-      if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
-      inventory = applied.value;
-    }
-    const campaign = { ...state.campaign, inventory, bankedGold: state.campaign.bankedGold + state.expedition.unbankedGold, directorMemory: directorMemory(state.expedition.director) };
-    const provisional = { ...state, campaign, expedition: { ...state.expedition, unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], pendingRewards: [], currentCombat: null }, flow: { ...state.flow, screen: 'camp' as const, merchant: null }, updatedAt: command.updatedAt };
-    return commit(state, { ...provisional, checkpoints: { ...provisional.checkpoints, camp: checkpointAtCamp(provisional, command.campSceneId ?? provisional.expedition.currentSceneId, command.updatedAt) } }, [{ type: 'notification', message: 'Camp gains secured.' }]);
-  }
-  if (command.type === 'apply-effects') {
-    const applied = applyEffectsAtomically(state, command.effects, content);
-    if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
-    if (applied.value.expedition?.currentCombat && !applied.value.expedition.currentCombat.combat) {
-      const temporary = { ...state, campaign: applied.value.campaign, expedition: applied.value.expedition };
-      const combat = beginCombat(temporary, applied.value.expedition.currentCombat.encounterId, content);
-      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
-      return commit(state, { ...state, campaign: applied.value.campaign, expedition: { ...applied.value.expedition, currentCombat: { ...applied.value.expedition.currentCombat, combat } }, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, applied.value.events);
-    }
-    return commit(state, { ...state, campaign: applied.value.campaign, expedition: applied.value.expedition, updatedAt: command.updatedAt }, applied.value.events);
+    if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward || state.flow.merchant) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
+    const scene = currentScene(state, content);
+    if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
+    const gold = state.expedition.unbankedGold;
+    const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
+    const provisional: GameStateV2 = { ...state, campaign, expedition: null, flow: { ...state.flow, screen: 'camp', merchant: null }, updatedAt: command.updatedAt };
+    return commit(state, { ...provisional, checkpoints: { ...provisional.checkpoints, camp: checkpointAtCamp(provisional, scene.id, command.updatedAt) } }, [{ type: 'camp_banked', sceneId: scene.id, gold }]);
   }
   if (command.type === 'inventory') {
+    if (state.expedition?.currentCombat && (command.command.type === 'equip' || command.command.type === 'unequip')) return diagnostic(state, 'combat_active', 'Equipment cannot be changed during combat.');
+    if (command.command.type === 'move' && (state.flow.screen !== 'camp' || state.expedition)) return diagnostic(state, 'camp_required', 'Move items to or from the stash while at camp.');
     const inventoryCommand = command.command.type === 'equip' ? { ...command.command, heroClass: state.campaign.hero.heroClass } : command.command;
     const result = applyInventoryCommand(state.campaign.inventory, inventoryCommand, content.items);
     if (!result.ok) return diagnostic(state, result.error.code, result.error.message);
-    return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.value }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
+    const campaign = { ...state.campaign, inventory: result.value };
+    let expedition = state.expedition;
+    if (expedition) expedition = { ...expedition, heroVitals: clampedVitals(expedition.heroVitals, { ...state, campaign }, content) };
+    if (state.flow.screen === 'camp' && !expedition) return commitCampMutation(state, campaign, command.updatedAt, [{ type: 'notification', message: 'Inventory updated.' }]);
+    return commit(state, { ...state, campaign, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
   if (command.type === 'select-next-scene') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
+    const current = currentScene(state, content);
+    if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
     const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content);
     if (step.kind !== 'selected') return diagnostic(state, 'scene_unavailable', step.diagnostic);
-    const expedition = { ...state.expedition, director: step.state, currentSceneId: step.sceneId, position: { ...state.expedition.position, slot: state.expedition.position.slot + 1 } };
+    const expedition = { ...state.expedition, director: step.state, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...state.expedition.position, slot: state.expedition.position.slot + 1 } };
     return commit(state, { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(step.state) }, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Scene ready.' }]);
+  }
+  if (command.type === 'resolve-choice') {
+    if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Resolve choices while travelling.');
+    const scene = currentScene(state, content);
+    if (!scene || scene.id !== command.eventId) return diagnostic(state, 'stale_event', 'That story choice is no longer current.');
+    if (state.expedition.sceneResolution?.eventId === scene.id) return diagnostic(state, 'choice_resolved', 'That choice has already been resolved.');
+    const choice = scene.choices.find((candidate) => candidate.id === command.choiceId);
+    if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
+    const applied = applyEffectsAtomically(state, choice.effects, content);
+    if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
+    let expedition = { ...applied.value.expedition!, sceneResolution: { eventId: scene.id, choiceId: choice.id } };
+    const events: DomainEvent[] = [{ type: 'choice_resolved', eventId: scene.id, choiceId: choice.id }, ...applied.value.events];
+    if (expedition.heroVitals.health <= 0) {
+      expedition = { ...expedition, currentCombat: null, pendingReward: null };
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, events);
+    }
+    if (expedition.currentCombat && !expedition.currentCombat.combat) {
+      const temporary = { ...state, campaign: applied.value.campaign, expedition };
+      const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
+      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
+      expedition = { ...expedition, currentCombat: { ...expedition.currentCombat, combat } };
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
+    }
+    return commit(state, { ...state, campaign: applied.value.campaign, expedition, updatedAt: command.updatedAt }, events);
+  }
+  if (command.type === 'use-item') {
+    if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat) return diagnostic(state, 'field_required', 'Use that item while travelling outside combat.');
+    const entry = state.campaign.inventory.pack.find((candidate) => candidate.id === command.entryId);
+    const item = entry ? content.items.get(entry.itemId) : undefined;
+    if (!entry || !item) return diagnostic(state, 'entry_not_found', 'That item is not in your pack.');
+    if (item.stats.attack !== undefined || item.stats.armor !== undefined || item.stats.ward !== undefined || item.stats.will !== undefined) return diagnostic(state, 'item_not_usable', 'That item needs an explicit field-duration effect.');
+    const stats = derivedMaxima(state, content);
+    const nextVitals = { health: Math.min(stats.maxHealth, state.expedition.heroVitals.health + (item.stats.health ?? 0)), resource: Math.min(stats.maxFocus, state.expedition.heroVitals.resource + (item.stats.focus ?? 0)) };
+    if (nextVitals.health === state.expedition.heroVitals.health && nextVitals.resource === state.expedition.heroVitals.resource) return diagnostic(state, 'item_no_effect', 'That item would have no effect right now.');
+    const used = useItem(state.campaign.inventory, command.entryId, 'field', content.items);
+    if (!used.ok) return diagnostic(state, used.error.code, used.error.message);
+    return commit(state, { ...state, campaign: { ...state.campaign, inventory: used.value.inventory }, expedition: { ...state.expedition, heroVitals: nextVitals, unbankedLoot: removeOneUnbanked(state.expedition.unbankedLoot, entry.itemId) }, updatedAt: command.updatedAt }, [{ type: 'consumable_used', instanceId: command.entryId }]);
   }
   if (command.type === 'combat-turn') {
     if (!state.expedition?.currentCombat?.combat || state.flow.screen !== 'combat') return diagnostic(state, 'combat_required', 'Take combat actions only during combat.');
-    const result = resolveCombatTurn(state.expedition.currentCombat.combat, command.action, state.campaign.inventory, { items: content.items });
-    if (result.combat === state.expedition.currentCombat.combat && result.inventory === state.campaign.inventory) {
-      return { state, events: sequenced(result.events, state.campaign.transitionCounter) };
+    const beforeInventory = state.campaign.inventory;
+    const consumedInstanceId = command.action.type === 'consumable' ? command.action.instanceId : null;
+    const usedItemId = consumedInstanceId ? beforeInventory.pack.find((entry) => entry.id === consumedInstanceId)?.itemId ?? null : null;
+    const result = resolveCombatTurn(state.expedition.currentCombat.combat, command.action, beforeInventory, { items: content.items });
+    if (result.combat === state.expedition.currentCombat.combat && result.inventory === beforeInventory) return { state, events: transient(result.events, state.campaign.transitionCounter, command.commandId) };
+    const encounterId = state.expedition.currentCombat.encounterId;
+    const encounter = content.encounters.get(encounterId);
+    if (!encounter) return diagnostic(state, 'invalid_encounter', 'That encounter is no longer available.');
+    const heroVitals = { health: result.combat.player.health, resource: result.combat.player.focus };
+    const unbankedLoot = usedItemId ? removeOneUnbanked(state.expedition.unbankedLoot, usedItemId) : state.expedition.unbankedLoot;
+    if (result.combat.outcome === 'active') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat } }, updatedAt: command.updatedAt }, result.events);
+    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: null, pendingReward: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
+    const priorVictories = state.campaign.encounterFamilyVictories[encounter.family] ?? 0;
+    const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
+    if (!xp.ok) return diagnostic(state, xp.error.code, xp.error.message);
+    const rewardId = `${state.expedition.routeSeed}:${state.expedition.position.slot}:${encounterId}`;
+    const pendingReward = { rewardId, encounterId, itemChoices: [...encounter.reward.itemChoices], baseGold: encounter.reward.gold, grantedXp: xp.value.grantedXp, adEligible: encounter.kind === 'regular' };
+    const campaign = { ...state.campaign, hero: xp.value.hero, inventory: result.inventory, encounterFamilyVictories: { ...state.campaign.encounterFamilyVictories, [encounter.family]: priorVictories + 1 } };
+    const completedCombat = { ...result.combat, player: { ...result.combat.player, level: xp.value.hero.level, xp: xp.value.hero.xp } };
+    return commit(state, { ...state, campaign, expedition: { ...state.expedition, heroVitals, unbankedLoot, unbankedGold: state.expedition.unbankedGold + encounter.reward.gold, currentCombat: { encounterId, combat: completedCombat }, pendingReward }, flow: { ...state.flow, screen: 'reward', merchant: null }, updatedAt: command.updatedAt }, [
+      ...result.events,
+      { type: 'combat_ended', encounterId, outcome: 'victory' },
+      { type: 'battle_rewards_granted', rewardId, encounterId, gold: encounter.reward.gold, xp: xp.value.grantedXp, adEligible: pendingReward.adEligible },
+    ]);
+  }
+  if (command.type === 'claim-rewards') {
+    const receipt = state.expedition?.pendingReward;
+    if (!state.expedition || state.flow.screen !== 'reward' || !receipt || receipt.rewardId !== command.rewardId) return diagnostic(state, 'reward_required', 'That battle reward is no longer available.');
+    if ((receipt.itemChoices.length === 0 && command.itemId !== null) || (receipt.itemChoices.length > 0 && (command.itemId === null || !receipt.itemChoices.includes(command.itemId)))) return diagnostic(state, 'invalid_reward', 'Choose one item from this battle reward.');
+    let inventory = state.campaign.inventory;
+    let unbankedLoot = state.expedition.unbankedLoot;
+    if (command.itemId !== null) {
+      const added = applyInventoryCommand(inventory, { type: 'add', itemId: command.itemId }, content.items);
+      if (!added.ok) return diagnostic(state, added.error.code, added.error.message);
+      inventory = added.value;
+      unbankedLoot = [...unbankedLoot, command.itemId];
     }
-    const screen = result.combat.outcome === 'defeat' ? 'defeat' : result.combat.outcome === 'active' ? 'combat' : 'reward';
-    return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, currentCombat: { ...state.expedition.currentCombat, combat: result.combat } }, flow: { ...state.flow, screen, merchant: null }, updatedAt: command.updatedAt }, result.events);
+    return commit(state, { ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
   }
   if (command.type === 'open-merchant') {
-    if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');
+    if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward) return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');
     const scene = currentScene(state, content);
-    if (!scene || scene.type !== 'hub' || !scene.merchantId || !scene.merchantRestockKey) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
+    if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id || !scene.merchantId || !scene.merchantRestockKey) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
     const merchant = content.merchants.get(scene.merchantId);
     if (!merchant) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
     const restockKey = merchantRestockKey(state, scene);
     const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === scene.merchantId && visit.restockKey === restockKey);
-    const context = { content, seed: state.expedition.routeSeed, restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
-    const visit = generateMerchantVisit(context, merchant);
+    const visit = generateMerchantVisit({ content, seed: state.expedition.routeSeed, restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit }, merchant);
     const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== scene.merchantId || candidate.restockKey !== restockKey), visit];
     return commit(state, { ...state, expedition: { ...state.expedition, merchantVisits }, flow: { ...state.flow, screen: 'merchant', merchant: { merchantId: scene.merchantId, restockKey, returnScreen: 'story' } }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Merchant opened.' }]);
   }
@@ -215,15 +380,49 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const scene = currentScene(state, content);
     if (!scene || scene.type !== 'hub' || scene.merchantId !== state.flow.merchant.merchantId || !scene.merchantRestockKey || merchantRestockKey(state, scene) !== state.flow.merchant.restockKey) return diagnostic(state, 'merchant_unavailable', 'That merchant is not available at this scene.');
     const merchant = content.merchants.get(state.flow.merchant.merchantId);
-    if (!merchant) return diagnostic(state, 'merchant_not_found', 'That merchant is not available.');
-    const persistedVisit = state.expedition.merchantVisits.find((visit) => visit.merchantId === state.flow.merchant!.merchantId && visit.restockKey === state.flow.merchant!.restockKey);
-    if (!persistedVisit) return diagnostic(state, 'merchant_state_missing', 'That merchant visit is no longer available.');
-    const context = { content, seed: state.expedition.routeSeed, restockKey: state.flow.merchant.restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit };
-    const trade = executeTrade(persistedVisit, state.campaign.inventory, state.expedition.unbankedGold, command.intent, context);
-    if (!trade.ok) return diagnostic(state, trade.error.code, trade.error.message);
-    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== state.flow.merchant!.merchantId || candidate.restockKey !== state.flow.merchant!.restockKey), trade.value.visit];
-    return commit(state, { ...state, campaign: { ...state.campaign, inventory: trade.value.inventory }, expedition: { ...state.expedition, merchantVisits, unbankedGold: trade.value.gold }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Trade completed.' }]);
+    const visit = state.expedition.merchantVisits.find((candidate) => candidate.merchantId === state.flow.merchant!.merchantId && candidate.restockKey === state.flow.merchant!.restockKey);
+    if (!merchant || !visit) return diagnostic(state, 'merchant_state_missing', 'That merchant visit is no longer available.');
+    const context = { content, seed: state.expedition.routeSeed, restockKey: state.flow.merchant.restockKey, heroLevel: state.campaign.hero.level, chapter: Number(state.campaign.chapterId.slice(2)), reputation: 0, scarcityMultiplier: 1, persistedVisit: visit };
+    const quote = quoteTrade(visit, state.campaign.inventory, command.intent, context);
+    if (!quote.ok) return diagnostic(state, quote.error.code, quote.error.message);
+    let inventory: InventoryState;
+    let nextVisit = visit;
+    let unbankedGold = state.expedition.unbankedGold;
+    let bankedGold = state.campaign.bankedGold;
+    let campCampaign: CampaignCheckpointPayload | null = state.checkpoints.camp?.campaign ?? null;
+    let unbankedLoot = state.expedition.unbankedLoot;
+    let unbankedSpent = 0;
+    let bankedSpent = 0;
+    if (command.intent.type === 'buy') {
+      const stockEntryId = command.intent.stockEntryId;
+      if (unbankedGold + bankedGold < quote.value.total) return diagnostic(state, 'insufficient_gold', 'You do not have enough gold.');
+      const added = applyInventoryCommand(state.campaign.inventory, { type: 'add', itemId: quote.value.itemId }, content.items);
+      if (!added.ok) return diagnostic(state, added.error.code, added.error.message);
+      inventory = added.value;
+      unbankedSpent = Math.min(unbankedGold, quote.value.total);
+      bankedSpent = quote.value.total - unbankedSpent;
+      unbankedGold -= unbankedSpent;
+      bankedGold -= bankedSpent;
+      if (campCampaign) campCampaign = { ...campCampaign, bankedGold: campCampaign.bankedGold - bankedSpent };
+      unbankedLoot = [...unbankedLoot, quote.value.itemId];
+      nextVisit = { ...visit, stock: visit.stock.filter((entry) => entry.id !== stockEntryId) };
+    } else {
+      const removed = applyInventoryCommand(state.campaign.inventory, { type: 'discard', entryId: command.intent.entryId, quantity: quote.value.quantity }, content.items);
+      if (!removed.ok) return diagnostic(state, removed.error.code, removed.error.message);
+      inventory = removed.value;
+      unbankedGold += quote.value.total;
+      const unsecuredBefore = unbankedLoot.filter((itemId) => itemId === quote.value.itemId).length;
+      const unsecuredSold = Math.min(unsecuredBefore, quote.value.quantity);
+      for (let count = 0; count < unsecuredSold; count += 1) unbankedLoot = removeOneUnbanked(unbankedLoot, quote.value.itemId);
+      const securedSold = quote.value.quantity - unsecuredSold;
+      if (securedSold > 0 && campCampaign) {
+        const checkpointInventory = removeQuantityByItem(campCampaign.inventory, quote.value.itemId, securedSold, content);
+        if (!checkpointInventory) return diagnostic(state, 'merchant_state_missing', 'The secured inventory no longer matches this trade.');
+        campCampaign = { ...campCampaign, inventory: checkpointInventory };
+      }
+    }
+    const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== visit.merchantId || candidate.restockKey !== visit.restockKey), nextVisit];
+    return commit(state, { ...state, campaign: { ...state.campaign, inventory, bankedGold }, expedition: { ...state.expedition, merchantVisits, unbankedGold, unbankedLoot }, checkpoints: { ...state.checkpoints, camp: state.checkpoints.camp && campCampaign ? { ...state.checkpoints.camp, campaign: cloneCampaignPayload(campCampaign) } : state.checkpoints.camp }, updatedAt: command.updatedAt }, [{ type: 'trade_completed', merchantId: visit.merchantId, tradeType: quote.value.type, itemId: quote.value.itemId, quantity: quote.value.quantity, total: quote.value.total, unbankedSpent, bankedSpent }]);
   }
-  if (!state.expedition) return diagnostic(state, 'no_expedition', 'There is no expedition to defeat.');
-  return commit(state, { ...state, flow: { ...state.flow, screen: 'defeat' }, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Defeat.' }]);
+  return diagnostic(state, 'unsupported_command', 'That command is not available.');
 }

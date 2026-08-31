@@ -16,6 +16,7 @@ export function eligibleScenes(
   return [...content.events.values()]
     .filter((event) => event.chapterId === context.position.chapterId)
     .filter((event) => !used.has(event.id))
+    .filter((event) => !event.oneShot || !state.seenEventIds.includes(event.id))
     .filter((event) => !reservedCallbacks.has(event.id))
     .filter((event) => (event.eligibility.minLevel ?? 0) <= context.level)
     .filter((event) => (event.eligibility.maxLevel ?? Number.POSITIVE_INFINITY) >= context.level)

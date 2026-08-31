@@ -1,6 +1,7 @@
 import { buildCompanionCombatSnapshot } from '../companions';
-import type { ContentIndex } from '../content/schema';
+import type { ContentIndex, EncounterDefinition } from '../content/schema';
 import { roleForEnemy } from '../combat/enemy-ai';
+import { calculateCompanionSupportCeiling } from '../combat/encounters';
 import type { CombatState, EnemyCombatant, HeroCombatant, StatusEffect } from '../combat/types';
 import type { EnemyDefinition } from '../types';
 import { generateMerchantVisit, merchantRestockSeed } from '../merchant';
@@ -27,7 +28,7 @@ import {
 } from './schema';
 
 const rootKeys = ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt'];
-const campaignKeys = ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'companions', 'directorMemory', 'attemptCounters', 'routeSeedNonce', 'transitionCounter'];
+const campaignKeys = ['seed', 'chapterId', 'heroName', 'hero', 'inventory', 'bankedGold', 'flags', 'evidence', 'factions', 'encounterFamilyVictories', 'companions', 'directorMemory', 'attemptCounters', 'routeSeedNonce', 'transitionCounter'];
 const checkpointCampaignKeys = campaignKeys.slice(0, -3);
 const inventoryKeys = ['pack', 'stash', 'questItems', 'equipment'];
 const directorMemoryKeys = ['rngState', 'seenEventIds', 'familyCooldowns', 'pendingCallbacks'];
@@ -96,6 +97,7 @@ function validCompanionsContent(value: CampaignDto['companions'], content: Conte
 
 function validCampaignCheckpointContent(value: CampaignCheckpointDto, content: ContentIndex): boolean {
   return validInventoryContent(value.inventory, value.hero.heroClass, content)
+    && Object.keys(value.encounterFamilyVictories).every((family) => [...content.encounters.values()].some((encounter) => encounter.family === family))
     && validCompanionsContent(value.companions, content)
     && validDirectorMemoryContent(value.directorMemory, content);
 }
@@ -180,13 +182,14 @@ function validHydratedEnemy(value: EnemyCombatDto, content: ContentIndex): boole
     : value.roleUses === 0;
 }
 
-function validCombatContent(value: CombatDto, campaign: CampaignDto, encounterEnemyIds: readonly string[], content: ContentIndex): boolean {
+function validCombatContent(value: CombatDto, campaign: CampaignDto, encounter: EncounterDefinition, content: ContentIndex): boolean {
   if (!validHydratedPlayer(value.player, campaign, content)) return false;
-  const direct = expectedDirectEnemies(encounterEnemyIds);
+  const direct = expectedDirectEnemies(encounter.enemyIds);
   if (value.enemies.length < direct.length || new Set(value.enemies.map((enemy) => enemy.instanceId)).size !== value.enemies.length || !value.enemies.every((enemy) => validHydratedEnemy(enemy, content))) return false;
   for (const [index, expected] of direct.entries()) {
     const enemy = value.enemies[index]!;
     if (enemy.source.kind !== 'catalog' || enemy.source.enemyId !== expected.enemyId || enemy.instanceId !== expected.instanceId) return false;
+    if (enemy.isBoss !== (encounter.kind === 'boss' && encounter.bossEnemyId === expected.enemyId)) return false;
   }
   const directCombatants = value.enemies.slice(0, direct.length);
   const summonedOwners = new Set<string>();
@@ -220,9 +223,11 @@ function validCombatContent(value: CombatDto, campaign: CampaignDto, encounterEn
   } else if (value.outcome === 'defeat') {
     if (value.player.health !== 0 || living.length === 0) return false;
   } else if (value.outcome === 'fled' && (value.player.health <= 0 || living.length === 0)) return false;
-  if (value.companionId === null) return value.companionCooldown === 0 && value.companionDamageDealt === 0 && value.companionSupportBudget === 0;
-  return campaign.companions.records.some((record) => record.companionId === value.companionId && record.status === 'recruited')
-    && value.companionDamageDealt <= value.companionSupportBudget;
+  if (value.companionId === null) return value.companionCooldown === 0 && value.companionDamageDealt === 0;
+  const companion = buildCompanionCombatSnapshot(decodeCampaign(campaign).companions, content);
+  const definitions = encounter.enemyIds.map((enemyId) => content.enemies.get(enemyId)).filter((enemy): enemy is EnemyDefinition => Boolean(enemy));
+  const supportBudget = calculateCompanionSupportCeiling(encounter, definitions, campaign.hero.level, companion);
+  return companion?.companionId === value.companionId && value.companionDamageDealt <= supportBudget;
 }
 
 function validMerchantVisitsContent(value: ExpeditionDto, campaign: CampaignDto, content: ContentIndex): boolean {
@@ -244,12 +249,25 @@ function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, con
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
   if (!validDirectorContent(value.director, content)) return false;
   if (value.currentSceneId !== null && (!scene || scene.chapterId !== value.position.chapterId)) return false;
+  if (value.sceneResolution !== null) {
+    if (!scene || value.sceneResolution.eventId !== scene.id) return false;
+    if (value.sceneResolution.choiceId === null ? scene.choices.length !== 0 : !scene.choices.some((choice) => choice.id === value.sceneResolution!.choiceId)) return false;
+  } else if (scene && scene.choices.length === 0) return false;
+  const decodedCampaign = decodeCampaign(campaign);
+  const maxima = deriveHeroStats(decodedCampaign.hero, decodedCampaign.inventory, content.items);
+  if (value.heroVitals.health > maxima.maxHealth || value.heroVitals.resource > maxima.maxFocus) return false;
   if (value.currentCombat !== null) {
-    if (!encounter || (value.currentCombat.combat !== null && !validCombatContent(value.currentCombat.combat, campaign, encounter.enemyIds, content))) return false;
+    if (!encounter || (value.currentCombat.combat !== null && !validCombatContent(value.currentCombat.combat, campaign, encounter, content))) return false;
   }
   const combat = value.currentCombat?.combat;
-  if (value.pendingRewards.length !== 0 && combat?.outcome !== 'victory') return false;
-  return hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.pendingRewards)
+  if (combat && (combat.player.health !== value.heroVitals.health || combat.player.focus !== value.heroVitals.resource)) return false;
+  if (value.pendingReward !== null) {
+    const rewardEncounter = content.encounters.get(value.pendingReward.encounterId as never);
+    if (!rewardEncounter || combat?.outcome !== 'victory' || value.currentCombat?.encounterId !== value.pendingReward.encounterId) return false;
+    const expectedId = `${value.routeSeed}:${value.position.slot}:${value.pendingReward.encounterId}`;
+    if (value.pendingReward.rewardId !== expectedId || !sameArray(value.pendingReward.itemChoices, rewardEncounter.reward.itemChoices) || value.pendingReward.baseGold !== rewardEncounter.reward.gold || value.pendingReward.grantedXp > rewardEncounter.reward.xp || value.pendingReward.adEligible !== (rewardEncounter.kind === 'regular')) return false;
+  } else if (combat?.outcome === 'victory') return false;
+  return hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.pendingReward?.itemChoices ?? [])
     && hasCatalogIds(content.items as ReadonlyMap<string, unknown>, value.unbankedLoot)
     && validMerchantVisitsContent(value, campaign, content);
 }
@@ -267,7 +285,8 @@ function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
   const combat = expedition?.currentCombat?.combat ?? null;
   if (combat === null) return !['combat', 'reward'].includes(flow.screen);
   if (combat.outcome === 'active') return flow.screen === 'combat';
-  if (combat.outcome === 'victory' || combat.outcome === 'fled') return flow.screen === 'reward';
+  if (combat.outcome === 'victory') return flow.screen === 'reward' && expedition?.pendingReward !== null;
+  if (combat.outcome === 'fled') return false;
   return flow.screen === 'defeat';
 }
 
@@ -342,19 +361,19 @@ function encodeCompanions(value: CampaignState['companions']): CampaignDto['comp
 }
 
 function encodeCampaignCheckpoint(value: CampaignCheckpointPayload): CampaignCheckpointDto | null {
-  if (!exact(value, checkpointCampaignKeys) || !finiteInteger(value.seed) || value.seed < 0 || typeof value.chapterId !== 'string' || !id(value.heroName) || value.heroName.length > 48 || !exact(value.hero, ['heroClass', 'level', 'xp', 'talents']) || !['warrior', 'mage', 'warden'].includes(value.hero.heroClass) || !finiteInteger(value.hero.level) || value.hero.level < 1 || !finiteInteger(value.hero.xp) || value.hero.xp < 0 || !strings(value.hero.talents) || !strings(value.flags) || !strings(value.evidence) || !finiteInteger(value.bankedGold) || value.bankedGold < 0 || !record(value.factions) || !Object.values(value.factions).every(finite)) return null;
+  if (!exact(value, checkpointCampaignKeys) || !finiteInteger(value.seed) || value.seed < 0 || typeof value.chapterId !== 'string' || !id(value.heroName) || value.heroName.length > 48 || !exact(value.hero, ['heroClass', 'level', 'xp', 'talents']) || !['warrior', 'mage', 'warden'].includes(value.hero.heroClass) || !finiteInteger(value.hero.level) || value.hero.level < 1 || !finiteInteger(value.hero.xp) || value.hero.xp < 0 || !strings(value.hero.talents) || !strings(value.flags) || !strings(value.evidence) || !finiteInteger(value.bankedGold) || value.bankedGold < 0 || !record(value.factions) || !Object.values(value.factions).every(finite) || !record(value.encounterFamilyVictories) || !Object.values(value.encounterFamilyVictories).every((entry) => finiteInteger(entry) && entry >= 0)) return null;
   const inventory = encodeInventory(value.inventory);
   const companions = encodeCompanions(value.companions);
   const directorMemory = encodeDirectorMemory(value.directorMemory);
   return inventory && companions && directorMemory ? {
     seed: value.seed, chapterId: value.chapterId, heroName: value.heroName, hero: { heroClass: value.hero.heroClass, level: value.hero.level, xp: value.hero.xp, talents: [...value.hero.talents] }, inventory,
-    bankedGold: value.bankedGold, flags: [...value.flags], evidence: [...value.evidence], factions: { ...value.factions }, companions, directorMemory,
+    bankedGold: value.bankedGold, flags: [...value.flags], evidence: [...value.evidence], factions: { ...value.factions }, encounterFamilyVictories: { ...value.encounterFamilyVictories }, companions, directorMemory,
   } : null;
 }
 
 function encodeCampaign(value: CampaignState): CampaignDto | null {
   if (!exact(value, campaignKeys) || !record(value.attemptCounters) || !Object.entries(value.attemptCounters).every(([key, entry]) => /^ch0[1-8]$/.test(key) && finiteInteger(entry) && entry >= 0) || !finiteInteger(value.routeSeedNonce) || value.routeSeedNonce < 0 || !finiteInteger(value.transitionCounter) || value.transitionCounter < 0) return null;
-  const checkpoint = encodeCampaignCheckpoint({ seed: value.seed, chapterId: value.chapterId, heroName: value.heroName, hero: value.hero, inventory: value.inventory, bankedGold: value.bankedGold, flags: value.flags, evidence: value.evidence, factions: value.factions, companions: value.companions, directorMemory: value.directorMemory } as CampaignCheckpointPayload);
+  const checkpoint = encodeCampaignCheckpoint({ seed: value.seed, chapterId: value.chapterId, heroName: value.heroName, hero: value.hero, inventory: value.inventory, bankedGold: value.bankedGold, flags: value.flags, evidence: value.evidence, factions: value.factions, encounterFamilyVictories: value.encounterFamilyVictories, companions: value.companions, directorMemory: value.directorMemory } as CampaignCheckpointPayload);
   return checkpoint ? { ...checkpoint, attemptCounters: { ...value.attemptCounters }, routeSeedNonce: value.routeSeedNonce, transitionCounter: value.transitionCounter } : null;
 }
 
@@ -425,7 +444,7 @@ function validRuntimeCompanion(value: unknown): boolean {
     && typeof value.injured === 'boolean' && finite(value.attack) && finite(value.guard) && finite(value.will) && id(value.actionId);
 }
 
-function encodeCombat(value: CombatState, campaign: CampaignState, campaignDto: CampaignDto, encounterEnemyIds: readonly string[], content: ContentIndex): CombatDto | null {
+function encodeCombat(value: CombatState, campaign: CampaignState, campaignDto: CampaignDto, encounter: EncounterDefinition, content: ContentIndex): CombatDto | null {
   if (!exact(value, ['turn', 'rngState', 'player', 'enemy', 'enemies', 'enemyIntent', 'enemyIntents', 'intentText', 'outcome', 'log', 'missedAttacks', 'companion', 'companionCooldown', 'companionDamageDealt', 'companionSupportBudget']) || !record(value.player) || !record(value.enemy) || !Array.isArray(value.enemies) || !Array.isArray(value.enemyIntents) || !Array.isArray(value.log) || !finiteInteger(value.turn) || value.turn < 1 || !finiteInteger(value.rngState) || value.rngState < 0 || value.enemies.length === 0 || !['strike', 'heavy', 'guard', 'hex', 'recover', 'flee'].includes(value.enemyIntent) || !['active', 'victory', 'defeat', 'fled'].includes(value.outcome) || !finiteInteger(value.missedAttacks) || value.missedAttacks < 0 || !finiteInteger(value.companionCooldown) || value.companionCooldown < 0 || !finite(value.companionDamageDealt) || !finite(value.companionSupportBudget)) return null;
   if (value.companion !== null && !validRuntimeCompanion(value.companion)) return null;
   const base = basePlayer(campaign, content);
@@ -452,19 +471,21 @@ function encodeCombat(value: CombatState, campaign: CampaignState, campaignDto: 
     companionId: companion?.companionId ?? null,
     companionCooldown: value.companionCooldown,
     companionDamageDealt: value.companionDamageDealt,
-    companionSupportBudget: value.companionSupportBudget,
   };
-  return validCombatContent(dto, campaignDto, encounterEnemyIds, content) ? dto : null;
+  const definitions = encounter.enemyIds.map((enemyId) => content.enemies.get(enemyId)).filter((enemy): enemy is EnemyDefinition => Boolean(enemy));
+  const expectedSupport = calculateCompanionSupportCeiling(encounter, definitions, campaign.hero.level, companion);
+  return value.companionSupportBudget === expectedSupport && validCombatContent(dto, campaignDto, encounter, content) ? dto : null;
 }
 
 function encodeExpedition(value: ExpeditionState, campaign: CampaignState, campaignDto: CampaignDto, content: ContentIndex): ExpeditionDto | null {
-  if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'currentCombat', 'pendingRewards', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits']) || !['kings-road', 'old-forest', 'ruined-pass'].includes(value.routeProfile) || !finiteInteger(value.routeSeed) || value.routeSeed < 0 || !exact(value.position, ['chapterId', 'slot']) || typeof value.position.chapterId !== 'string' || !finiteInteger(value.position.slot) || value.position.slot < 0 || (value.currentSceneId !== null && !id(value.currentSceneId)) || !strings(value.pendingRewards) || !finiteInteger(value.unbankedGold) || value.unbankedGold < 0 || !strings(value.unbankedLoot) || !strings(value.temporaryBoons) || !Array.isArray(value.merchantVisits)) return null;
+  if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits']) || !['kings-road', 'old-forest', 'ruined-pass'].includes(value.routeProfile) || !finiteInteger(value.routeSeed) || value.routeSeed < 0 || !exact(value.position, ['chapterId', 'slot']) || typeof value.position.chapterId !== 'string' || !finiteInteger(value.position.slot) || value.position.slot < 0 || (value.currentSceneId !== null && !id(value.currentSceneId)) || (value.sceneResolution !== null && (!exact(value.sceneResolution, ['eventId', 'choiceId']) || !id(value.sceneResolution.eventId) || (value.sceneResolution.choiceId !== null && !id(value.sceneResolution.choiceId)))) || !exact(value.heroVitals, ['health', 'resource']) || !finite(value.heroVitals.health) || value.heroVitals.health < 0 || !finite(value.heroVitals.resource) || value.heroVitals.resource < 0 || (value.pendingReward !== null && (!exact(value.pendingReward, ['rewardId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible']) || !id(value.pendingReward.rewardId) || !id(value.pendingReward.encounterId) || !strings(value.pendingReward.itemChoices) || !finiteInteger(value.pendingReward.baseGold) || value.pendingReward.baseGold < 0 || !finiteInteger(value.pendingReward.grantedXp) || value.pendingReward.grantedXp < 0 || typeof value.pendingReward.adEligible !== 'boolean')) || !finiteInteger(value.unbankedGold) || value.unbankedGold < 0 || !strings(value.unbankedLoot) || !strings(value.temporaryBoons) || !Array.isArray(value.merchantVisits)) return null;
   const director = encodeDirector(value.director);
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId);
-  const currentCombat = value.currentCombat === null ? null : exact(value.currentCombat, ['encounterId', 'combat']) && id(value.currentCombat.encounterId) && encounter !== null && encounter !== undefined ? { encounterId: value.currentCombat.encounterId, combat: value.currentCombat.combat === null ? null : encodeCombat(value.currentCombat.combat, campaign, campaignDto, encounter.enemyIds, content) } : null;
+  const currentCombat = value.currentCombat === null ? null : exact(value.currentCombat, ['encounterId', 'combat']) && id(value.currentCombat.encounterId) && encounter !== null && encounter !== undefined ? { encounterId: value.currentCombat.encounterId, combat: value.currentCombat.combat === null ? null : encodeCombat(value.currentCombat.combat, campaign, campaignDto, encounter, content) } : null;
   if (!director || (value.currentCombat !== null && (!currentCombat || currentCombat.combat === null && value.currentCombat.combat !== null))) return null;
   const merchantVisits = value.merchantVisits.map((visit) => exact(visit, ['merchantId', 'restockKey', 'restockSeed', 'generatedAtLevel', 'stock']) && id(visit.merchantId) && id(visit.restockKey) && finiteInteger(visit.restockSeed) && visit.restockSeed >= 0 && finiteInteger(visit.generatedAtLevel) && visit.generatedAtLevel >= 1 && visit.generatedAtLevel <= 15 && Array.isArray(visit.stock) && visit.stock.every((entry) => exact(entry, ['id', 'itemId']) && id(entry.id) && id(entry.itemId)) ? { merchantId: visit.merchantId, restockKey: visit.restockKey, generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId })) } : null);
-  return merchantVisits.some((entry) => entry === null) ? null : { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director, position: { chapterId: value.position.chapterId, slot: value.position.slot }, currentSceneId: value.currentSceneId, currentCombat: currentCombat as ExpeditionDto['currentCombat'], pendingRewards: [...value.pendingRewards], unbankedGold: value.unbankedGold, unbankedLoot: [...value.unbankedLoot], temporaryBoons: [...value.temporaryBoons], merchantVisits: merchantVisits as readonly ExpeditionDto['merchantVisits'][number][] };
+  if (merchantVisits.some((entry) => entry === null)) return null;
+  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director, position: { chapterId: value.position.chapterId, slot: value.position.slot }, currentSceneId: value.currentSceneId, sceneResolution: value.sceneResolution ? { ...value.sceneResolution } : null, heroVitals: { ...value.heroVitals }, currentCombat: currentCombat as ExpeditionDto['currentCombat'], pendingReward: value.pendingReward ? { ...value.pendingReward, itemChoices: [...value.pendingReward.itemChoices] } : null, unbankedGold: value.unbankedGold, unbankedLoot: [...value.unbankedLoot], temporaryBoons: [...value.temporaryBoons], merchantVisits: merchantVisits as readonly ExpeditionDto['merchantVisits'][number][] };
 }
 
 function validRuntimeShell(state: GameStateV2): boolean {
@@ -490,7 +511,7 @@ export function encodeSaveState(state: GameStateV2, content: ContentIndex): Save
 
 function decodeInventory(value: InventoryDto): CampaignState['inventory'] { return { pack: value.pack.map((entry) => ({ id: entry.id, itemId: entry.itemId as never, quantity: entry.quantity })), stash: value.stash.map((entry) => ({ id: entry.id, itemId: entry.itemId as never, quantity: entry.quantity })), questItems: value.questItems as never, equipment: { weapon: value.equipment.weapon as never, armor: value.equipment.armor as never, charms: value.equipment.charms as never } }; }
 function decodeDirectorMemory(value: DirectorMemoryDto): CampaignState['directorMemory'] { return { rngState: value.rngState, seenEventIds: value.seenEventIds as never, familyCooldowns: { ...value.familyCooldowns }, pendingCallbacks: value.pendingCallbacks.map((entry) => ({ targetEventId: entry.targetEventId as never, deadline: { chapterId: entry.deadline.chapterId as never, slot: entry.deadline.slot }, status: entry.status, required: entry.required })) }; }
-function decodeCampaignCheckpoint(value: CampaignCheckpointDto): CampaignCheckpointPayload { return { seed: value.seed, chapterId: value.chapterId as never, heroName: value.heroName, hero: { heroClass: value.hero.heroClass, level: value.hero.level, xp: value.hero.xp, talents: [...value.hero.talents] }, inventory: decodeInventory(value.inventory), bankedGold: value.bankedGold, flags: [...value.flags], evidence: [...value.evidence], factions: { ...value.factions }, companions: { activeCompanionId: value.companions.activeCompanionId as never, records: value.companions.records.map((entry) => ({ companionId: entry.companionId as never, status: entry.status, questStage: entry.questStage as never, loyalty: entry.loyalty, injured: entry.injured })) }, directorMemory: decodeDirectorMemory(value.directorMemory) }; }
+function decodeCampaignCheckpoint(value: CampaignCheckpointDto): CampaignCheckpointPayload { return { seed: value.seed, chapterId: value.chapterId as never, heroName: value.heroName, hero: { heroClass: value.hero.heroClass, level: value.hero.level, xp: value.hero.xp, talents: [...value.hero.talents] }, inventory: decodeInventory(value.inventory), bankedGold: value.bankedGold, flags: [...value.flags], evidence: [...value.evidence], factions: { ...value.factions }, encounterFamilyVictories: { ...value.encounterFamilyVictories }, companions: { activeCompanionId: value.companions.activeCompanionId as never, records: value.companions.records.map((entry) => ({ companionId: entry.companionId as never, status: entry.status, questStage: entry.questStage as never, loyalty: entry.loyalty, injured: entry.injured })) }, directorMemory: decodeDirectorMemory(value.directorMemory) }; }
 function decodeCampaign(value: CampaignDto): CampaignState { return { ...decodeCampaignCheckpoint(value), attemptCounters: { ...value.attemptCounters } as never, routeSeedNonce: value.routeSeedNonce, transitionCounter: value.transitionCounter }; }
 function statusLabel(id: string): string { return id.replace(/[-_]+/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase()); }
 function decodeStatuses(value: readonly CombatStatusDto[]): readonly StatusEffect[] { return value.map((entry) => ({ id: entry.id, label: statusLabel(entry.id), duration: entry.duration, potency: entry.potency })); }
@@ -504,7 +525,7 @@ function decodeEnemy(value: EnemyCombatDto, content: ContentIndex): EnemyCombata
   return [enemy.maxHealth, enemy.attack, enemy.armor, enemy.ward, enemy.evasion, enemy.blockChance, enemy.parryChance, enemy.health].every(finite) && enemy.maxHealth >= 1 && enemy.health >= 0 && enemy.health <= enemy.maxHealth ? enemy : null;
 }
 function intentText(intent: string): string { return intent; }
-function decodeCombat(value: CombatDto, campaign: CampaignState, content: ContentIndex): CombatState | null {
+function decodeCombat(value: CombatDto, campaign: CampaignState, encounter: EncounterDefinition, content: ContentIndex): CombatState | null {
   const base = basePlayer(campaign, content);
   const player: HeroCombatant = { ...base, attackBonus: base.attackBonus + value.player.modifiers.attackBonus, armor: base.armor + value.player.modifiers.armor, ward: base.ward + value.player.modifiers.ward, maxHealth: base.maxHealth + value.player.modifiers.maxHealth, maxFocus: base.maxFocus + value.player.modifiers.maxFocus, strength: base.strength + value.player.modifiers.strength, cunning: base.cunning + value.player.modifiers.cunning, will: base.will + value.player.modifiers.will, health: value.player.health, focus: value.player.focus, guarding: value.player.guarding, statuses: decodeStatuses(value.player.statuses) };
   if (![player.attackBonus, player.armor, player.ward, player.maxHealth, player.maxFocus, player.strength, player.cunning, player.will, player.health, player.focus].every(finite) || player.maxHealth < 1 || player.maxFocus < 0 || player.health < 0 || player.health > player.maxHealth || player.focus < 0 || player.focus > player.maxFocus) return null;
@@ -517,13 +538,16 @@ function decodeCombat(value: CombatDto, campaign: CampaignState, content: Conten
   const terminal = value.outcome !== 'active';
   const enemyIntents = terminal ? [] : value.enemyIntents.map((entry) => ({ enemyId: entry.enemyId, intent: entry.intent, text: intentText(entry.intent) }));
   const enemyIntent = terminal ? 'strike' : value.enemyIntent;
-  return { turn: value.turn, rngState: value.rngState, player, enemy: primary, enemies: hydratedEnemies, enemyIntent, enemyIntents, intentText: intentText(enemyIntent), outcome: value.outcome, log: [], missedAttacks: value.missedAttacks, companion, companionCooldown: value.companionCooldown, companionDamageDealt: value.companionDamageDealt, companionSupportBudget: value.companionSupportBudget };
+  const definitions = encounter.enemyIds.map((enemyId) => content.enemies.get(enemyId)).filter((enemy): enemy is EnemyDefinition => Boolean(enemy));
+  const companionSupportBudget = calculateCompanionSupportCeiling(encounter, definitions, campaign.hero.level, companion);
+  return { turn: value.turn, rngState: value.rngState, player, enemy: primary, enemies: hydratedEnemies, enemyIntent, enemyIntents, intentText: intentText(enemyIntent), outcome: value.outcome, log: [], missedAttacks: value.missedAttacks, companion, companionCooldown: value.companionCooldown, companionDamageDealt: value.companionDamageDealt, companionSupportBudget };
 }
 function decodeDirector(value: DirectorDto): ExpeditionState['director'] { return { ...decodeDirectorMemory(value), usedSceneIds: value.usedSceneIds as never, recentSceneKinds: [...value.recentSceneKinds], recentFamilies: [...value.recentFamilies], currentRunBlockedFamilies: [...value.currentRunBlockedFamilies], tension: value.tension, threat: value.threat }; }
 function decodeExpedition(value: ExpeditionDto, campaign: CampaignState, content: ContentIndex): ExpeditionState | null {
-  const currentCombat = value.currentCombat === null ? null : { encounterId: value.currentCombat.encounterId as never, combat: value.currentCombat.combat === null ? null : decodeCombat(value.currentCombat.combat, campaign, content) };
+  const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
+  const currentCombat = value.currentCombat === null ? null : { encounterId: value.currentCombat.encounterId as never, combat: value.currentCombat.combat === null || !encounter ? null : decodeCombat(value.currentCombat.combat, campaign, encounter, content) };
   if (value.currentCombat !== null && value.currentCombat.combat !== null && currentCombat?.combat === null) return null;
-  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, currentCombat, pendingRewards: value.pendingRewards as never, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
+  return { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, sceneResolution: value.sceneResolution === null ? null : { eventId: value.sceneResolution.eventId as never, choiceId: value.sceneResolution.choiceId as never }, heroVitals: { ...value.heroVitals }, currentCombat, pendingReward: value.pendingReward === null ? null : { rewardId: value.pendingReward.rewardId, encounterId: value.pendingReward.encounterId as never, itemChoices: value.pendingReward.itemChoices as never, baseGold: value.pendingReward.baseGold, grantedXp: value.pendingReward.grantedXp, adEligible: value.pendingReward.adEligible }, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) };
 }
 
 export function decodeSaveState(value: unknown, content: ContentIndex): GameStateV2 | null {

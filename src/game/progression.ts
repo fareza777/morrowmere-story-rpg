@@ -6,11 +6,12 @@ import type { HeroClass } from './types';
 
 export const LEVEL_CAP = 15;
 const XP_BY_LEVEL = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250, 3850, 4500, 5200, 5950] as const;
-const CHAPTER_SOFT_CAP: Readonly<Record<ChapterId, number>> = { ch01: 3, ch02: 5, ch03: 7, ch04: 9, ch05: 11, ch06: 13, ch07: 15, ch08: 15 };
+export const CHAPTER_LEVEL_CAPS: Readonly<Record<ChapterId, number>> = { ch01: 2, ch02: 4, ch03: 6, ch04: 8, ch05: 10, ch06: 12, ch07: 14, ch08: 15 };
+export const REPEAT_COMBAT_XP = [1, 0.5, 0.25, 0.1, 0] as const;
 
 /** The highest progression level that Chronicle I awards within a chapter. */
 export function chapterLevelCap(chapterId: ChapterId): number {
-  return CHAPTER_SOFT_CAP[chapterId];
+  return CHAPTER_LEVEL_CAPS[chapterId];
 }
 
 export type DerivedStatName = 'attack' | 'armor' | 'ward' | 'maxHealth' | 'maxFocus' | 'strength' | 'cunning' | 'will';
@@ -53,6 +54,7 @@ export interface LevelReward {
 export interface ExperienceGrant {
   readonly amount: number;
   readonly chapterId: ChapterId;
+  readonly source?: 'combat' | 'story' | 'quest' | 'companion';
   readonly priorEncounterVictories?: number;
 }
 
@@ -128,9 +130,12 @@ export function levelReward(level: number): LevelReward {
 export function grantExperience(hero: HeroProgress, grant: ExperienceGrant): DomainResult<ExperienceResult, ProgressionError> {
   if (!Number.isFinite(grant.amount) || grant.amount < 0) return failure('invalid_experience', 'Experience must be a non-negative number.');
   const victories = Math.max(0, Math.floor(grant.priorEncounterVictories ?? 0));
-  const grantedXp = Math.floor(grant.amount * 0.5 ** victories);
+  const multiplier = (grant.source ?? 'combat') === 'combat'
+    ? REPEAT_COMBAT_XP[Math.min(victories, REPEAT_COMBAT_XP.length - 1)]!
+    : 1;
+  const grantedXp = Math.floor(grant.amount * multiplier);
   const xp = hero.xp + grantedXp;
-  const level = Math.max(hero.level, Math.min(LEVEL_CAP, CHAPTER_SOFT_CAP[grant.chapterId], levelForXp(xp)));
+  const level = Math.max(hero.level, Math.min(LEVEL_CAP, CHAPTER_LEVEL_CAPS[grant.chapterId], levelForXp(xp)));
   return { ok: true, value: { hero: { ...hero, xp, level }, grantedXp, levelsGained: Math.max(0, level - hero.level) } };
 }
 

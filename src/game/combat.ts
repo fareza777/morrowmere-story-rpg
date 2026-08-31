@@ -7,7 +7,7 @@ import type { CombatAction, CombatState, HeroCombatant } from './combat/types';
 
 export * from './combat/types';
 export { calculateDamage } from './combat/attack';
-export { createEncounter } from './combat/encounters';
+export { calculateCompanionSupportCeiling, createEncounter } from './combat/encounters';
 export { resolveCombatTurn } from './combat/resolve';
 
 /** @deprecated Use `createEncounter` with a catalog encounter definition. */

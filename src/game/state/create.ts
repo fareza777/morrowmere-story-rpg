@@ -19,7 +19,7 @@ export function cloneCampaignPayload(payload: CampaignCheckpointPayload): Campai
       pack: payload.inventory.pack.map((entry) => ({ ...entry })), stash: payload.inventory.stash.map((entry) => ({ ...entry })), questItems: [...payload.inventory.questItems],
       equipment: { weapon: payload.inventory.equipment.weapon, armor: payload.inventory.equipment.armor, charms: [...payload.inventory.equipment.charms] },
     },
-    flags: [...payload.flags], evidence: [...payload.evidence], factions: { ...payload.factions },
+    flags: [...payload.flags], evidence: [...payload.evidence], factions: { ...payload.factions }, encounterFamilyVictories: { ...payload.encounterFamilyVictories },
     companions: { activeCompanionId: payload.companions.activeCompanionId, records: payload.companions.records.map((record) => ({ ...record })) },
     directorMemory: { rngState: payload.directorMemory.rngState, seenEventIds: [...payload.directorMemory.seenEventIds], familyCooldowns: { ...payload.directorMemory.familyCooldowns }, pendingCallbacks: payload.directorMemory.pendingCallbacks.map((callback) => ({ ...callback, deadline: { ...callback.deadline } })) },
   };
@@ -52,6 +52,7 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
     inventory: { pack: [], stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] } },
     bankedGold: 12,
     flags: [], evidence: [], factions: {}, companions: createCompanionRoster(content), directorMemory: initialDirectorMemory(options.seed),
+    encounterFamilyVictories: {},
     attemptCounters: initialAttemptCounters(), routeSeedNonce: 0, transitionCounter: 0,
   } as const;
   const payload = campaignPayload(campaign);

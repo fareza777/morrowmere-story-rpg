@@ -32,7 +32,7 @@ export type InventoryCommand =
   | { readonly type: 'discard'; readonly entryId: string; readonly quantity?: number };
 
 export interface InventoryError {
-  readonly code: 'entry_not_found' | 'equipment_slot_full' | 'invalid_item' | 'invalid_quantity' | 'item_not_usable' | 'pack_full' | 'quest_item_protected';
+  readonly code: 'entry_not_found' | 'equipment_slot_full' | 'invalid_item' | 'invalid_quantity' | 'item_not_usable' | 'pack_full' | 'quest_item_protected' | 'stack_limit';
   readonly message: string;
 }
 
@@ -54,6 +54,11 @@ function failure<T>(code: InventoryError['code'], message: string): DomainResult
 
 function isStackable(item: ItemDefinition): boolean {
   return item.category === 'potion' || item.category === 'scroll';
+}
+
+export function itemStackLimit(item: ItemDefinition): number {
+  if (!isStackable(item)) return 1;
+  return item.stats.health !== undefined || item.stats.focus !== undefined ? 3 : 2;
 }
 
 function isEquipment(item: ItemDefinition): item is ItemDefinition & { readonly category: 'weapon' | 'armor' | 'charm' } {
@@ -120,6 +125,8 @@ export function applyInventoryCommand(
     }
     const destination = command.destination ?? 'pack';
     const entries = partition(inventory, destination);
+    const existingQuantity = entries.find((entry) => entry.itemId === command.itemId)?.quantity ?? 0;
+    if (isStackable(item) && existingQuantity + quantity > itemStackLimit(item)) return failure('stack_limit', 'That item stack is already full.');
     const newSlots = isStackable(item) && entries.some((entry) => entry.itemId === command.itemId) ? 0 : isStackable(item) ? 1 : quantity;
     if (destination === 'pack' && inventorySlotUsage(inventory).available < newSlots) return failure('pack_full', 'Your pack has no room for that item.');
     return { ok: true, value: withPartition(inventory, destination, addToPartition(entries, item, command.itemId, quantity, destination)) };
@@ -134,6 +141,8 @@ export function applyInventoryCommand(
     const item = items.get(entry.itemId);
     if (!item) return failure('invalid_item', 'That item is not available.');
     const destinationEntries = partition(inventory, command.destination);
+    const destinationQuantity = destinationEntries.find((candidate) => candidate.itemId === entry.itemId)?.quantity ?? 0;
+    if (isStackable(item) && destinationQuantity + entry.quantity > itemStackLimit(item)) return failure('stack_limit', 'That item stack is already full.');
     const newSlot = !isStackable(item) || !destinationEntries.some((candidate) => candidate.itemId === entry.itemId);
     if (command.destination === 'pack' && newSlot && inventorySlotUsage(inventory).available < 1) return failure('pack_full', 'Your pack has no room for that item.');
     const withoutSource = withPartition(inventory, source, sourceEntries.filter((candidate) => candidate.id !== entry.id));

@@ -28,9 +28,9 @@ describe('progression', () => {
   it('levels from the XP curve but does not exceed the chapter soft cap', () => {
     const result = grantExperience(warrior, { amount: 1_000, chapterId: 'ch01' });
 
-    expect(result.ok && result.value.hero.level).toBe(3);
+    expect(result.ok && result.value.hero.level).toBe(2);
     expect(result.ok && result.value.hero.xp).toBe(1_000);
-    expect(result.ok && result.value.levelsGained).toBe(2);
+    expect(result.ok && result.value.levelsGained).toBe(1);
   });
 
   it('never lowers a hero level when granting XP under an earlier chapter soft cap', () => {

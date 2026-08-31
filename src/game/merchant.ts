@@ -6,8 +6,8 @@ import { createRng } from "./rng";
 
 export const SELL_PRICE_MINIMUM = 0.35;
 export const SELL_PRICE_MAXIMUM = 0.45;
-const BUY_MULTIPLIER_MINIMUM = 0.85;
-const BUY_MULTIPLIER_MAXIMUM = 1.25;
+export const BUY_MULTIPLIER_MINIMUM = 0.86;
+export const BUY_MULTIPLIER_MAXIMUM = 1.21;
 const REPUTATION_MULTIPLIER_MINIMUM = 0.85;
 const REPUTATION_MULTIPLIER_MAXIMUM = 1.15;
 const DEFAULT_STOCK_SIZE = 6;
@@ -119,7 +119,7 @@ function stockEligible(
 }
 function reputationMultiplier(reputation: number): number {
   return clamp(
-    1 + clamp(reputation, -100, 100) * 0.0015,
+    1 - clamp(reputation, -100, 100) * 0.0015,
     REPUTATION_MULTIPLIER_MINIMUM,
     REPUTATION_MULTIPLIER_MAXIMUM
   );
@@ -130,11 +130,10 @@ function buyPrice(value: number, context: MerchantContext): number {
     Math.round(
       value *
         clamp(
-          context.scarcityMultiplier,
+          context.scarcityMultiplier * reputationMultiplier(context.reputation),
           BUY_MULTIPLIER_MINIMUM,
           BUY_MULTIPLIER_MAXIMUM
-        ) *
-        reputationMultiplier(context.reputation)
+        )
     )
   );
 }

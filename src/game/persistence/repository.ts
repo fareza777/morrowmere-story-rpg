@@ -1,9 +1,8 @@
 import type { ContentIndex } from '../content/schema';
 import type { GameStateV2, ProfileState } from '../state/types';
-import type { SaveSlot } from '../persistence';
 import { migrateSave } from './migrate';
 import { decodeSaveState, encodeSaveState, isContentBackedProfile } from './codec';
-import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope } from './schema';
+import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope, type SaveSlot } from './schema';
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
 export type SlotLoadResult =

@@ -20,6 +20,9 @@ export type ContentIssueCode =
   | 'missing_merchant_stock'
   | 'missing_event_merchant'
   | 'invalid_event_merchant'
+  | 'invalid_encounter_family'
+  | 'invalid_encounter_reward'
+  | 'invalid_boss_identity'
   | 'invalid_route';
 
 export interface ContentIssue {
@@ -93,10 +96,21 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
   }
 
   for (const encounter of index.encounters.values()) {
+    if (!encounter.family.trim()) issues.push({ code: 'invalid_encounter_family', message: `Invalid encounter family: ${encounter.id}` });
+    if (!Number.isSafeInteger(encounter.reward.xp) || encounter.reward.xp < 0 || !Number.isSafeInteger(encounter.reward.gold) || encounter.reward.gold < 0 || encounter.reward.itemChoices.some((itemId) => !index.items.has(itemId))) {
+      issues.push({ code: 'invalid_encounter_reward', message: `Invalid encounter reward: ${encounter.id}` });
+    }
+    const bossOccurrences = encounter.bossEnemyId === undefined ? 0 : encounter.enemyIds.filter((enemyId) => enemyId === encounter.bossEnemyId).length;
+    if ((encounter.kind === 'boss' && bossOccurrences !== 1) || (encounter.kind !== 'boss' && encounter.bossEnemyId !== undefined)) {
+      issues.push({ code: 'invalid_boss_identity', message: `Invalid boss identity: ${encounter.id}` });
+    }
     for (const enemyId of encounter.enemyIds) {
       if (!index.enemies.has(enemyId)) {
         issues.push({ code: 'missing_enemy', message: `Missing enemy: ${enemyId}` });
       }
+    }
+    for (const itemId of encounter.reward.itemChoices) {
+      if (!index.items.has(itemId)) issues.push({ code: 'missing_item', message: `Missing item: ${itemId}` });
     }
   }
 
