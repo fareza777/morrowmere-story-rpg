@@ -9,6 +9,8 @@ assets-v2/
 .vscode/
 *.log
 *.tsbuildinfo
+.media-work/
+.env*.local
 android/.gradle/
 android/local.properties
 android/app/build/

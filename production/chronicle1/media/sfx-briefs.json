@@ -1,0 +1,677 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "id": "sfx-sword-light-1",
+      "group": "weapons",
+      "design": "blade-light",
+      "durationMs": 320,
+      "variant": 0,
+      "brief": "Fast light sword cut with a close steel edge and short air tail."
+    },
+    {
+      "id": "sfx-sword-light-2",
+      "group": "weapons",
+      "design": "blade-light",
+      "durationMs": 350,
+      "variant": 1,
+      "brief": "Diagonal light sword cut with brighter steel contact."
+    },
+    {
+      "id": "sfx-sword-light-3",
+      "group": "weapons",
+      "design": "blade-light",
+      "durationMs": 300,
+      "variant": 2,
+      "brief": "Compact thrust-and-cut with a dry metal finish."
+    },
+    {
+      "id": "sfx-sword-heavy-1",
+      "group": "weapons",
+      "design": "blade-heavy",
+      "durationMs": 520,
+      "variant": 3,
+      "brief": "Heavy two-handed sword swing ending in a dense impact."
+    },
+    {
+      "id": "sfx-sword-heavy-2",
+      "group": "weapons",
+      "design": "blade-heavy",
+      "durationMs": 570,
+      "variant": 4,
+      "brief": "Broad heavy sword arc with lower steel resonance."
+    },
+    {
+      "id": "sfx-axe-hit-1",
+      "group": "weapons",
+      "design": "axe",
+      "durationMs": 470,
+      "variant": 5,
+      "brief": "Axe head bites wood and armor with a short haft rattle."
+    },
+    {
+      "id": "sfx-axe-hit-2",
+      "group": "weapons",
+      "design": "axe",
+      "durationMs": 510,
+      "variant": 6,
+      "brief": "Deeper axe chop with a hard split and low body."
+    },
+    {
+      "id": "sfx-mace-hit-1",
+      "group": "weapons",
+      "design": "mace",
+      "durationMs": 490,
+      "variant": 7,
+      "brief": "Blunt mace impact with armor ring and low thump."
+    },
+    {
+      "id": "sfx-mace-hit-2",
+      "group": "weapons",
+      "design": "mace",
+      "durationMs": 540,
+      "variant": 8,
+      "brief": "Heavy rounded mace blow with a different metal decay."
+    },
+    {
+      "id": "sfx-bow-release",
+      "group": "weapons",
+      "design": "bow",
+      "durationMs": 380,
+      "variant": 9,
+      "brief": "Bowstring snap, limb recoil, and brief arrow departure."
+    },
+    {
+      "id": "sfx-arrow-hit",
+      "group": "weapons",
+      "design": "arrow-hit",
+      "durationMs": 430,
+      "variant": 10,
+      "brief": "Arrow strikes a firm target with shaft vibration."
+    },
+    {
+      "id": "sfx-arrow-miss",
+      "group": "weapons",
+      "design": "arrow-miss",
+      "durationMs": 620,
+      "variant": 11,
+      "brief": "Arrow passes through air without any impact."
+    },
+    {
+      "id": "sfx-shield-block-1",
+      "group": "defense",
+      "design": "shield",
+      "durationMs": 520,
+      "variant": 0,
+      "brief": "Sword caught on a wooden shield with iron rim resonance."
+    },
+    {
+      "id": "sfx-shield-block-2",
+      "group": "defense",
+      "design": "shield",
+      "durationMs": 570,
+      "variant": 1,
+      "brief": "Heavy shield block with a low board thump."
+    },
+    {
+      "id": "sfx-shield-block-3",
+      "group": "defense",
+      "design": "shield",
+      "durationMs": 480,
+      "variant": 2,
+      "brief": "Glancing shield catch with a short rim scrape."
+    },
+    {
+      "id": "sfx-parry-1",
+      "group": "defense",
+      "design": "parry",
+      "durationMs": 420,
+      "variant": 3,
+      "brief": "Quick blade parry with two distinct steel contacts."
+    },
+    {
+      "id": "sfx-parry-2",
+      "group": "defense",
+      "design": "parry",
+      "durationMs": 460,
+      "variant": 4,
+      "brief": "Firm crossed-blade parry with brighter ring."
+    },
+    {
+      "id": "sfx-armor-hit-1",
+      "group": "defense",
+      "design": "armor",
+      "durationMs": 500,
+      "variant": 5,
+      "brief": "Weapon glances from plate over padded cloth."
+    },
+    {
+      "id": "sfx-armor-hit-2",
+      "group": "defense",
+      "design": "armor",
+      "durationMs": 540,
+      "variant": 6,
+      "brief": "Lower armor impact with linked metal rattle."
+    },
+    {
+      "id": "sfx-guard-set",
+      "group": "defense",
+      "design": "guard",
+      "durationMs": 450,
+      "variant": 7,
+      "brief": "Shield and boots settle into a defensive stance."
+    },
+    {
+      "id": "sfx-fire-cast",
+      "group": "magic",
+      "design": "magic-cast-fire",
+      "durationMs": 820,
+      "variant": 0,
+      "brief": "Fire gathers with a rising heated rush."
+    },
+    {
+      "id": "sfx-fire-impact",
+      "group": "magic",
+      "design": "magic-impact-fire",
+      "durationMs": 930,
+      "variant": 1,
+      "brief": "Fire spell lands in a contained burst."
+    },
+    {
+      "id": "sfx-ice-cast",
+      "group": "magic",
+      "design": "magic-cast-ice",
+      "durationMs": 860,
+      "variant": 2,
+      "brief": "Ice forms through bright crystalline tones."
+    },
+    {
+      "id": "sfx-ice-impact",
+      "group": "magic",
+      "design": "magic-impact-ice",
+      "durationMs": 980,
+      "variant": 3,
+      "brief": "Ice impact cracks into several clean fragments."
+    },
+    {
+      "id": "sfx-lightning-cast",
+      "group": "magic",
+      "design": "magic-cast-lightning",
+      "durationMs": 680,
+      "variant": 4,
+      "brief": "Electric charge rises in uneven pulses."
+    },
+    {
+      "id": "sfx-lightning-impact",
+      "group": "magic",
+      "design": "magic-impact-lightning",
+      "durationMs": 760,
+      "variant": 5,
+      "brief": "Lightning snaps into a hard dry strike."
+    },
+    {
+      "id": "sfx-ward-cast",
+      "group": "magic",
+      "design": "magic-cast-ward",
+      "durationMs": 900,
+      "variant": 6,
+      "brief": "Protective ward opens with a stable harmonic swell."
+    },
+    {
+      "id": "sfx-ward-impact",
+      "group": "magic",
+      "design": "magic-impact-ward",
+      "durationMs": 720,
+      "variant": 7,
+      "brief": "Ward absorbs force with a rounded magical knock."
+    },
+    {
+      "id": "sfx-heal-cast",
+      "group": "magic",
+      "design": "magic-cast-heal",
+      "durationMs": 980,
+      "variant": 8,
+      "brief": "Healing energy rises in warm separated tones."
+    },
+    {
+      "id": "sfx-heal-impact",
+      "group": "magic",
+      "design": "magic-impact-heal",
+      "durationMs": 1050,
+      "variant": 9,
+      "brief": "Healing resolves with a soft grounded cadence."
+    },
+    {
+      "id": "sfx-curse-cast",
+      "group": "magic",
+      "design": "magic-cast-curse",
+      "durationMs": 960,
+      "variant": 10,
+      "brief": "Curse gathers in an unstable descending texture."
+    },
+    {
+      "id": "sfx-curse-impact",
+      "group": "magic",
+      "design": "magic-impact-curse",
+      "durationMs": 1020,
+      "variant": 11,
+      "brief": "Curse lands with a dry low pulse and dissonant tail."
+    },
+    {
+      "id": "sfx-status-poison",
+      "group": "status",
+      "design": "status-poison",
+      "durationMs": 760,
+      "variant": 0,
+      "brief": "Poison status with liquid movement and a muted warning tone."
+    },
+    {
+      "id": "sfx-status-bleed",
+      "group": "status",
+      "design": "status-bleed",
+      "durationMs": 520,
+      "variant": 1,
+      "brief": "Bleed status with two restrained heartbeat-like hits."
+    },
+    {
+      "id": "sfx-status-burn",
+      "group": "status",
+      "design": "status-burn",
+      "durationMs": 720,
+      "variant": 2,
+      "brief": "Burn status with close flame and a clear hot tick."
+    },
+    {
+      "id": "sfx-status-freeze",
+      "group": "status",
+      "design": "status-freeze",
+      "durationMs": 780,
+      "variant": 3,
+      "brief": "Freeze status closes in with a brittle ice lock."
+    },
+    {
+      "id": "sfx-status-stun",
+      "group": "status",
+      "design": "status-stun",
+      "durationMs": 580,
+      "variant": 4,
+      "brief": "Stun status with a blunt onset and short ringing disorientation."
+    },
+    {
+      "id": "sfx-status-cleanse",
+      "group": "status",
+      "design": "status-cleanse",
+      "durationMs": 860,
+      "variant": 5,
+      "brief": "Cleanse lifts a noisy layer into a calm resolving tone."
+    },
+    {
+      "id": "sfx-status-buff",
+      "group": "status",
+      "design": "status-buff",
+      "durationMs": 780,
+      "variant": 6,
+      "brief": "Positive buff climbs in three firm steps."
+    },
+    {
+      "id": "sfx-status-debuff",
+      "group": "status",
+      "design": "status-debuff",
+      "durationMs": 820,
+      "variant": 7,
+      "brief": "Negative debuff falls in uneven muted steps."
+    },
+    {
+      "id": "sfx-goblin-hit",
+      "group": "enemy",
+      "design": "voice-goblin-hit",
+      "durationMs": 480,
+      "variant": 0,
+      "brief": "Small goblin pain bark without speech."
+    },
+    {
+      "id": "sfx-goblin-death",
+      "group": "enemy",
+      "design": "voice-goblin-death",
+      "durationMs": 880,
+      "variant": 1,
+      "brief": "Goblin defeat cry falling into breath."
+    },
+    {
+      "id": "sfx-orc-hit",
+      "group": "enemy",
+      "design": "voice-orc-hit",
+      "durationMs": 560,
+      "variant": 2,
+      "brief": "Deep orc pain grunt without words."
+    },
+    {
+      "id": "sfx-orc-death",
+      "group": "enemy",
+      "design": "voice-orc-death",
+      "durationMs": 1080,
+      "variant": 3,
+      "brief": "Orc defeat growl with a heavy final breath."
+    },
+    {
+      "id": "sfx-human-hit",
+      "group": "enemy",
+      "design": "voice-human-hit",
+      "durationMs": 460,
+      "variant": 4,
+      "brief": "Human combat pain grunt without words."
+    },
+    {
+      "id": "sfx-human-death",
+      "group": "enemy",
+      "design": "voice-human-death",
+      "durationMs": 980,
+      "variant": 5,
+      "brief": "Human defeat exhale without intelligible speech."
+    },
+    {
+      "id": "sfx-beast-hit",
+      "group": "enemy",
+      "design": "voice-beast-hit",
+      "durationMs": 540,
+      "variant": 6,
+      "brief": "Wounded beast snarl with rough breath."
+    },
+    {
+      "id": "sfx-beast-death",
+      "group": "enemy",
+      "design": "voice-beast-death",
+      "durationMs": 1120,
+      "variant": 7,
+      "brief": "Beast defeat cry descending into a growl."
+    },
+    {
+      "id": "sfx-undead-hit",
+      "group": "enemy",
+      "design": "voice-undead-hit",
+      "durationMs": 620,
+      "variant": 8,
+      "brief": "Dry undead reaction with bone-like rattle."
+    },
+    {
+      "id": "sfx-undead-death",
+      "group": "enemy",
+      "design": "voice-undead-death",
+      "durationMs": 1180,
+      "variant": 9,
+      "brief": "Undead collapse with breathless rasp and brittle debris."
+    },
+    {
+      "id": "sfx-boss-roar",
+      "group": "enemy",
+      "design": "voice-boss-roar",
+      "durationMs": 1650,
+      "variant": 10,
+      "brief": "Large boss roar built from layered nonverbal formants."
+    },
+    {
+      "id": "sfx-boss-phase",
+      "group": "enemy",
+      "design": "boss-phase",
+      "durationMs": 1450,
+      "variant": 11,
+      "brief": "Boss phase change with a low surge and sharp reveal."
+    },
+    {
+      "id": "sfx-ui-tap",
+      "group": "ui",
+      "design": "ui-tap",
+      "durationMs": 90,
+      "variant": 0,
+      "brief": "Dry readable button tap."
+    },
+    {
+      "id": "sfx-ui-confirm",
+      "group": "ui",
+      "design": "ui-confirm",
+      "durationMs": 260,
+      "variant": 1,
+      "brief": "Short positive confirmation pair."
+    },
+    {
+      "id": "sfx-ui-back",
+      "group": "ui",
+      "design": "ui-back",
+      "durationMs": 220,
+      "variant": 2,
+      "brief": "Soft descending back-navigation cue."
+    },
+    {
+      "id": "sfx-ui-page",
+      "group": "ui",
+      "design": "ui-page",
+      "durationMs": 360,
+      "variant": 3,
+      "brief": "Parchment page movement without excessive texture."
+    },
+    {
+      "id": "sfx-ui-inventory",
+      "group": "ui",
+      "design": "ui-inventory",
+      "durationMs": 420,
+      "variant": 4,
+      "brief": "Leather pack opens with a small buckle click."
+    },
+    {
+      "id": "sfx-ui-equip",
+      "group": "ui",
+      "design": "ui-equip",
+      "durationMs": 430,
+      "variant": 5,
+      "brief": "Equipment settles with leather and metal contact."
+    },
+    {
+      "id": "sfx-ui-unequip",
+      "group": "ui",
+      "design": "ui-unequip",
+      "durationMs": 390,
+      "variant": 6,
+      "brief": "Equipment releases with a softer reversed gesture."
+    },
+    {
+      "id": "sfx-ui-consume",
+      "group": "ui",
+      "design": "ui-consume",
+      "durationMs": 520,
+      "variant": 7,
+      "brief": "Consumable use with stopper and clear finish."
+    },
+    {
+      "id": "sfx-ui-loot",
+      "group": "ui",
+      "design": "ui-loot",
+      "durationMs": 620,
+      "variant": 8,
+      "brief": "Loot discovery with cloth movement and bright marker."
+    },
+    {
+      "id": "sfx-ui-coins",
+      "group": "ui",
+      "design": "ui-coins",
+      "durationMs": 560,
+      "variant": 9,
+      "brief": "Several distinct coins settle on wood."
+    },
+    {
+      "id": "sfx-ui-buy",
+      "group": "ui",
+      "design": "ui-buy",
+      "durationMs": 480,
+      "variant": 10,
+      "brief": "Purchase confirms with coin and low positive tick."
+    },
+    {
+      "id": "sfx-ui-sell",
+      "group": "ui",
+      "design": "ui-sell",
+      "durationMs": 500,
+      "variant": 11,
+      "brief": "Sale confirms with two coins and a different cadence."
+    },
+    {
+      "id": "sfx-ui-level-up",
+      "group": "ui",
+      "design": "ui-level-up",
+      "durationMs": 1200,
+      "variant": 12,
+      "brief": "Level gain rises through a restrained heroic cadence."
+    },
+    {
+      "id": "sfx-ui-quest-update",
+      "group": "ui",
+      "design": "ui-quest",
+      "durationMs": 820,
+      "variant": 13,
+      "brief": "Quest update uses page, stamp, and a clear final tone."
+    },
+    {
+      "id": "sfx-narrative-choice",
+      "group": "narrative",
+      "design": "narrative-choice",
+      "durationMs": 420,
+      "variant": 0,
+      "brief": "Meaningful choice locks in with a low paired tone."
+    },
+    {
+      "id": "sfx-narrative-warning",
+      "group": "narrative",
+      "design": "narrative-warning",
+      "durationMs": 780,
+      "variant": 1,
+      "brief": "Readable warning pulse without alarm fatigue."
+    },
+    {
+      "id": "sfx-narrative-reveal",
+      "group": "narrative",
+      "design": "narrative-reveal",
+      "durationMs": 1050,
+      "variant": 2,
+      "brief": "Evidence reveal opens from low tension into clarity."
+    },
+    {
+      "id": "sfx-narrative-chapter-title",
+      "group": "narrative",
+      "design": "narrative-chapter",
+      "durationMs": 1450,
+      "variant": 3,
+      "brief": "Chapter title cadence with drum and restrained low strings."
+    },
+    {
+      "id": "sfx-narrative-camp-arrival",
+      "group": "narrative",
+      "design": "narrative-camp",
+      "durationMs": 1080,
+      "variant": 4,
+      "brief": "Camp arrival settles into warm wood and cloth."
+    },
+    {
+      "id": "sfx-combat-victory",
+      "group": "narrative",
+      "design": "combat-victory",
+      "durationMs": 1600,
+      "variant": 5,
+      "brief": "Victory cadence is confident but not bombastic."
+    },
+    {
+      "id": "sfx-combat-defeat",
+      "group": "narrative",
+      "design": "combat-defeat",
+      "durationMs": 1700,
+      "variant": 6,
+      "brief": "Defeat cadence falls without melodramatic distortion."
+    },
+    {
+      "id": "sfx-combat-miss",
+      "group": "narrative",
+      "design": "combat-miss",
+      "durationMs": 520,
+      "variant": 7,
+      "brief": "Weapon misses through open air with no impact layer."
+    },
+    {
+      "id": "sfx-combat-critical",
+      "group": "narrative",
+      "design": "combat-critical",
+      "durationMs": 860,
+      "variant": 8,
+      "brief": "Critical hit combines hard body impact, metal crack, and brief high marker."
+    },
+    {
+      "id": "sfx-combat-flee",
+      "group": "narrative",
+      "design": "combat-flee",
+      "durationMs": 1100,
+      "variant": 9,
+      "brief": "Successful retreat uses quick steps and a receding threat pulse."
+    },
+    {
+      "id": "sfx-narrative-door",
+      "group": "narrative",
+      "design": "narrative-door",
+      "durationMs": 1180,
+      "variant": 10,
+      "brief": "Heavy keep door opens with wood, hinge, and latch."
+    },
+    {
+      "id": "sfx-narrative-coronation-bell",
+      "group": "narrative",
+      "design": "narrative-bell",
+      "durationMs": 2600,
+      "variant": 11,
+      "brief": "Large coronation bell toll with a controlled long decay."
+    },
+    {
+      "id": "ambience-rain",
+      "group": "ambience",
+      "design": "ambience-rain",
+      "durationMs": 8000,
+      "variant": 0,
+      "brief": "Steady readable rain with no thunder spike."
+    },
+    {
+      "id": "ambience-forest",
+      "group": "ambience",
+      "design": "ambience-forest",
+      "durationMs": 8000,
+      "variant": 1,
+      "brief": "Woodland air, leaves, and sparse distant bird shapes."
+    },
+    {
+      "id": "ambience-flood",
+      "group": "ambience",
+      "design": "ambience-flood",
+      "durationMs": 8000,
+      "variant": 2,
+      "brief": "Moving flood water with occasional close eddies."
+    },
+    {
+      "id": "ambience-forge",
+      "group": "ambience",
+      "design": "ambience-forge",
+      "durationMs": 8000,
+      "variant": 3,
+      "brief": "Forge room with fire bed, bellows, and distant measured metal."
+    },
+    {
+      "id": "ambience-siege",
+      "group": "ambience",
+      "design": "ambience-siege",
+      "durationMs": 8000,
+      "variant": 4,
+      "brief": "Distant siege activity, wind, and restrained impacts."
+    },
+    {
+      "id": "ambience-keep",
+      "group": "ambience",
+      "design": "ambience-keep",
+      "durationMs": 8000,
+      "variant": 5,
+      "brief": "Stone keep interior with low air and occasional distant door movement."
+    }
+  ]
+}

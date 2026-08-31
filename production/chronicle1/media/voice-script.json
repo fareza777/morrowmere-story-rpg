@@ -1,0 +1,333 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "id": "voice-opening-01",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 0,
+      "endMs": 15000,
+      "spokenText": "The job should have taken three days. Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost. In Morrowmere, that counts as honest work.",
+      "captionText": "The job should have taken three days. Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost. In Morrowmere, that counts as honest work.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-02",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 15000,
+      "endMs": 35000,
+      "spokenText": "The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade. Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.",
+      "captionText": "The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade. Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-03",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 35000,
+      "endMs": 41000,
+      "spokenText": "Until this morning.",
+      "captionText": "Until this morning.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-04",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 41000,
+      "endMs": 62000,
+      "spokenText": "The first arrow kills the driver. The second carries the mark of the royal armory. When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.",
+      "captionText": "The first arrow kills the driver. The second carries the mark of the royal armory. When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-05",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 62000,
+      "endMs": 70000,
+      "spokenText": "Someone is preparing a war.",
+      "captionText": "Someone is preparing a war.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-06",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 70000,
+      "endMs": 93000,
+      "spokenText": "You have no title, no army, and no lord to protect you. You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.",
+      "captionText": "You have no title, no army, and no lord to protect you. You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-07",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 93000,
+      "endMs": 109000,
+      "spokenText": "By nightfall, half the border will want what you carry.",
+      "captionText": "By nightfall, half the border will want what you carry.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-opening-08",
+      "group": "opening",
+      "speaker": "Eldrin",
+      "startMs": 109000,
+      "endMs": 120000,
+      "spokenText": "This is where your chronicle begins.",
+      "captionText": "This is where your chronicle begins.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch01-main-a-banner-placed-too-neatly",
+      "group": "main",
+      "sceneId": "ch01-main-a-banner-placed-too-neatly",
+      "speaker": "Eldrin",
+      "spokenText": "The torn orc banner is convincing at a distance. Up close, every knot looks tied for someone to find.",
+      "captionText": "The torn orc banner is convincing at a distance. Up close, every knot looks tied for someone to find.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch01-main-the-first-arrow",
+      "group": "main",
+      "sceneId": "ch01-main-the-first-arrow",
+      "speaker": "Eldrin",
+      "spokenText": "The first arrow strikes the medicine wagon, and the quiet road becomes a battlefield before anyone can name the enemy.",
+      "captionText": "The first arrow strikes the medicine wagon, and the quiet road becomes a battlefield before anyone can name the enemy.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch02-companion-mara-takes-the-road",
+      "group": "main",
+      "sceneId": "ch02-companion-mara-takes-the-road",
+      "speaker": "Mara",
+      "spokenText": "I will take the road with you, but civilians do not become expendable when the evidence gets difficult.",
+      "captionText": "I will take the road with you, but civilians do not become expendable when the evidence gets difficult.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch02-main-raiders-at-the-wall",
+      "group": "main",
+      "sceneId": "ch02-main-raiders-at-the-wall",
+      "speaker": "Eldrin",
+      "spokenText": "Greywatch closes its gates as raiders test the north wall. Inside, frightened families wait for orders that may already be compromised.",
+      "captionText": "Greywatch closes its gates as raiders test the north wall. Inside, frightened families wait for orders that may already be compromised.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch02-main-the-witness-speaks",
+      "group": "main",
+      "sceneId": "ch02-main-the-witness-speaks",
+      "speaker": "Eldrin",
+      "spokenText": "The wounded witness names a human paymaster and a false banner. His testimony turns a border raid into a deliberate conspiracy.",
+      "captionText": "The wounded witness names a human paymaster and a false banner. His testimony turns a border raid into a deliberate conspiracy.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch03-main-the-attack-with-two-banners",
+      "group": "main",
+      "sceneId": "ch03-main-the-attack-with-two-banners",
+      "speaker": "Eldrin",
+      "spokenText": "The attackers raise opposing banners on the same road. The lie survives only if both armies answer before they look closely.",
+      "captionText": "The attackers raise opposing banners on the same road. The lie survives only if both armies answer before they look closely.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch03-main-the-captured-courier",
+      "group": "main",
+      "sceneId": "ch03-main-the-captured-courier",
+      "speaker": "Eldrin",
+      "spokenText": "A captured courier carries two sets of orders: one meant for human patrols, and one written to provoke the Free Host.",
+      "captionText": "A captured courier carries two sets of orders: one meant for human patrols, and one written to provoke the Free Host.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch04-companion-stonehand-joins-the-road",
+      "group": "main",
+      "sceneId": "ch04-companion-stonehand-joins-the-road",
+      "speaker": "Rukhar",
+      "spokenText": "I join as an equal voice for the Free Host, not as a trophy taken from a peace table.",
+      "captionText": "I join as an equal voice for the Free Host, not as a trophy taken from a peace table.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch04-main-parley-between-lines",
+      "group": "main",
+      "sceneId": "ch04-main-parley-between-lines",
+      "speaker": "Eldrin",
+      "spokenText": "Human and orc commanders meet between their lines while hidden hands prepare the violence that will make negotiation impossible.",
+      "captionText": "Human and orc commanders meet between their lines while hidden hands prepare the violence that will make negotiation impossible.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch04-main-terms-at-redwater",
+      "group": "main",
+      "sceneId": "ch04-main-terms-at-redwater",
+      "speaker": "Eldrin",
+      "spokenText": "Redwater can become a truce, a withdrawal, or the first open battle of a war someone else designed.",
+      "captionText": "Redwater can become a truce, a withdrawal, or the first open battle of a war someone else designed.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch05-companion-caldus-answers-the-road",
+      "group": "main",
+      "sceneId": "ch05-companion-caldus-answers-the-road",
+      "speaker": "Caldus",
+      "spokenText": "The abbey knows my name. My duty belongs to the people its locked doors failed.",
+      "captionText": "The abbey knows my name. My duty belongs to the people its locked doors failed.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch05-companion-lyra-chooses-the-slower-truth",
+      "group": "main",
+      "sceneId": "ch05-companion-lyra-chooses-the-slower-truth",
+      "speaker": "Lyra",
+      "spokenText": "Careful proof travels slowly, but it survives the moment when a powerful man calls every witness a liar.",
+      "captionText": "Careful proof travels slowly, but it survives the moment when a powerful man calls every witness a liar.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch05-main-forge-behind-the-wall",
+      "group": "main",
+      "sceneId": "ch05-main-forge-behind-the-wall",
+      "speaker": "Eldrin",
+      "spokenText": "One hidden forge stamps weapons for both armies. The same steel has been sharpened into two different accusations.",
+      "captionText": "One hidden forge stamps weapons for both armies. The same steel has been sharpened into two different accusations.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch05-main-the-name-severin-voss",
+      "group": "main",
+      "sceneId": "ch05-main-the-name-severin-voss",
+      "speaker": "Eldrin",
+      "spokenText": "The seals, payments, and witness accounts agree on one name: Marshal Severin Voss.",
+      "captionText": "The seals, payments, and witness accounts agree on one name: Marshal Severin Voss.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch06-companion-caldus-after-the-siege-bell",
+      "group": "main",
+      "sceneId": "ch06-companion-caldus-after-the-siege-bell",
+      "speaker": "Caldus",
+      "spokenText": "The wounded need a healer, and the evidence needs a witness. We cannot pretend either duty is painless.",
+      "captionText": "The wounded need a healer, and the evidence needs a witness. We cannot pretend either duty is painless.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch06-main-smoke-over-greywatch",
+      "group": "main",
+      "sceneId": "ch06-main-smoke-over-greywatch",
+      "speaker": "Eldrin",
+      "spokenText": "Smoke rises over Greywatch before the evidence can reach its council. The conspiracy has returned to destroy its own record.",
+      "captionText": "Smoke rises over Greywatch before the evidence can reach its council. The conspiracy has returned to destroy its own record.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch06-main-what-remains-of-greywatch",
+      "group": "companion",
+      "sceneId": "ch06-main-what-remains-of-greywatch",
+      "speaker": "Eldrin",
+      "spokenText": "When the siege bell falls silent, survivors count more than walls. They count witnesses, families, and the truth still in their hands.",
+      "captionText": "When the siege bell falls silent, survivors count more than walls. They count witnesses, families, and the truth still in their hands.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch07-companion-rukhar-holds-the-gate-line",
+      "group": "companion",
+      "sceneId": "ch07-companion-rukhar-holds-the-gate-line",
+      "speaker": "Rukhar",
+      "spokenText": "Protect the witnesses first. A victory that loses the truth only prepares the next war.",
+      "captionText": "Protect the witnesses first. A victory that loses the truth only prepares the next war.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch07-main-council-before-the-march",
+      "group": "companion",
+      "sceneId": "ch07-main-council-before-the-march",
+      "speaker": "Eldrin",
+      "spokenText": "The march on Crownless Keep begins with a council, because a coalition that cannot agree on limits will become another occupying army.",
+      "captionText": "The march on Crownless Keep begins with a council, because a coalition that cannot agree on limits will become another occupying army.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch07-main-inside-the-keep",
+      "group": "companion",
+      "sceneId": "ch07-main-inside-the-keep",
+      "speaker": "Eldrin",
+      "spokenText": "Beyond the inner gate, the keep is not a throne room. It is a machine of orders, cells, archives, and controlled fear.",
+      "captionText": "Beyond the inner gate, the keep is not a throne room. It is a machine of orders, cells, archives, and controlled fear.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch08-companion-lyra-closes-the-emergency-compact",
+      "group": "companion",
+      "sceneId": "ch08-companion-lyra-closes-the-emergency-compact",
+      "speaker": "Lyra",
+      "spokenText": "Count every seal before we close the hall. No one will inherit authority from a vote that never lawfully ended.",
+      "captionText": "Count every seal before we close the hall. No one will inherit authority from a vote that never lawfully ended.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch08-companion-talla-takes-the-hidden-road",
+      "group": "companion",
+      "sceneId": "ch08-companion-talla-takes-the-hidden-road",
+      "speaker": "Talla",
+      "spokenText": "I will share the hidden road, but no council owns it. The people who need escape come first.",
+      "captionText": "I will share the hidden road, but no council owns it. The people who need escape come first.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch08-main-the-marshal-and-the-banner",
+      "group": "companion",
+      "sceneId": "ch08-main-the-marshal-and-the-banner",
+      "speaker": "Voss",
+      "spokenText": "Break my command today, and tomorrow every frightened captain will raise a banner of his own.",
+      "captionText": "Break my command today, and tomorrow every frightened captain will raise a banner of his own.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    },
+    {
+      "id": "voice-ch08-main-voss-offers-order",
+      "group": "companion",
+      "sceneId": "ch08-main-voss-offers-order",
+      "speaker": "Voss",
+      "spokenText": "I did not create their hatred. I built the only command strong enough to keep that hatred from consuming the border.",
+      "captionText": "I did not create their hatred. I built the only command strong enough to keep that hatred from consuming the border.",
+      "audioSrc": null,
+      "delivery": "local-web-speech-fallback"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "speaker": "Eldrin",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.86,
+        "pitch": 0.78
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Mara",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.98,
+        "pitch": 0.92
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Rukhar",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.86,
+        "pitch": 0.7
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Caldus",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.9,
+        "pitch": 0.86
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Lyra",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.96,
+        "pitch": 1.02
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Talla",
+      "local": {
+        "lang": "en-GB",
+        "rate": 1.04,
+        "pitch": 1.08
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    },
+    {
+      "speaker": "Voss",
+      "local": {
+        "lang": "en-GB",
+        "rate": 0.82,
+        "pitch": 0.64
+      },
+      "provider": {
+        "voiceId": null,
+        "modelId": "eleven_v3",
+        "status": "not-selected"
+      }
+    }
+  ]
+}
