@@ -17,6 +17,7 @@ import {
   CHRONICLE1_NEW_ITEMS,
   CHRONICLE1_SCENES,
 } from '../../src/game/content/chronicle1';
+import type { ItemId } from '../../src/game/domain/ids';
 
 const REPOSITORY_ROOT = process.cwd();
 const EXPORTER_PATH = join(REPOSITORY_ROOT, 'scripts/content/export-chronicle1-manifest.mjs');
@@ -59,7 +60,7 @@ describe('Chronicle I production content index', () => {
     );
 
     for (const item of CHRONICLE1_NEW_ITEMS) {
-      const runtimeItem = CHRONICLE1_CONTENT.items.get(item.id);
+      const runtimeItem = CHRONICLE1_CONTENT.items.get(item.id as ItemId);
       expect(runtimeItem, item.id).toBeDefined();
       expect(runtimeItem!.tags, item.id).toContain(`min-chapter:${item.gates.minChapter}`);
       if (item.gates.minReputation !== undefined) {

@@ -114,15 +114,19 @@ describe.each([
     expect(hubs.filter((scene) => scene.merchantId !== undefined).length).toBe(2);
 
     const relationshipOwners = scenes
-      .filter((scene) => scene.type === 'companion' && scene.relationship?.kind === 'companion')
-      .map((scene) => scene.relationship.kind === 'companion' ? scene.relationship.companionId : '')
+      .flatMap((scene) => {
+        const relationship = scene.relationship;
+        return scene.type === 'companion' && relationship?.kind === 'companion'
+          ? [relationship.companionId]
+          : [];
+      })
       .sort();
     expect(relationshipOwners).toEqual([...companionIds].sort());
   });
 });
 
 it('contains the locked early companion quest scenes', () => {
-  const ids = new Set([...CH01_SCENES, ...CH02_SCENES].map((scene) => scene.id));
+  const ids = new Set<string>([...CH01_SCENES, ...CH02_SCENES].map((scene) => scene.id));
   expect(ids.has('ch01-companion-mara-at-the-burning-bridge')).toBe(true);
   expect(ids.has('ch01-companion-talla-and-the-spared-courier')).toBe(true);
   expect(ids.has('ch02-companion-mara-the-broken-command')).toBe(true);

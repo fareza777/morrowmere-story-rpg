@@ -133,10 +133,10 @@ describe('Chronicle I companion contracts', () => {
       const recruitmentScene = recruitmentScenes[0]!;
       expect(companion.personalQuestIds).not.toContain(recruitmentScene.id);
       expect(recruitmentScene.eligibility.requiredFlags).toEqual(
-        expect.arrayContaining(companion.recruitment.requiredDecisionIds),
+        expect.arrayContaining([...companion.recruitment.requiredDecisionIds]),
       );
       expect(recruitmentScene.eligibility.excludedFlags).toEqual(
-        expect.arrayContaining(companion.recruitment.blockingDecisionIds ?? []),
+        expect.arrayContaining([...(companion.recruitment.blockingDecisionIds ?? [])]),
       );
       expect(recruitmentScene.choices.some((choice) => choice.effects.every((effect) => (
         effect.type !== 'companion' || effect.operation !== 'recruit'

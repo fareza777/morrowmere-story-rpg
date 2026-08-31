@@ -136,10 +136,10 @@ it('keeps twelve distinct combat premises across the two chapters', () => {
 
 it('earns Rukhar through callbacks, five decisions, a blocker, and a later recruitment scene', () => {
   const scenes = [...CH03_SCENES, ...CH04_SCENES];
-  const sceneIds = new Set(scenes.map((scene) => scene.id));
+  const sceneIds = new Set<string>(scenes.map((scene) => scene.id));
   for (const callbackId of RUKHAR_CALLBACKS) expect(sceneIds.has(callbackId), callbackId).toBe(true);
 
-  const addedFlags = new Set(
+  const addedFlags = new Set<string>(
     scenes.flatMap((scene) => scene.choices).flatMap((choice) => choice.effects)
       .filter((effect) => effect.type === 'flag' && effect.operation === 'add')
       .map((effect) => effect.type === 'flag' ? effect.flagId : ''),

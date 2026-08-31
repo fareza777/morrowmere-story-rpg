@@ -54,10 +54,11 @@ function relationshipOwners(scenes: readonly Scene[]) {
     .sort();
 }
 
-function addedFlags(choice: Scene['choices'][number]) {
+function addedFlags(choice: Scene['choices'][number]): string[] {
   return choice.effects
-    .filter((effect) => effect.type === 'flag' && effect.operation === 'add')
-    .map((effect) => effect.type === 'flag' ? effect.flagId : '');
+    .flatMap((effect) => (
+      effect.type === 'flag' && effect.operation === 'add' ? [effect.flagId] : []
+    ));
 }
 
 function expectConcreteCopy(scene: Scene) {

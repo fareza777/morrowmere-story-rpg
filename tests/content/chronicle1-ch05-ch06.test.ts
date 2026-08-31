@@ -147,22 +147,24 @@ it('offers exactly one mutually exclusive Greywatch result per eligible aftermat
   expect(aftermath?.choices).toHaveLength(3);
 
   const added = aftermath?.choices.map((choice) => choice.effects
-    .filter((effect) => effect.type === 'flag' && effect.operation === 'add')
-    .map((effect) => effect.flagId)
+    .flatMap((effect) => (
+      effect.type === 'flag' && effect.operation === 'add' ? [effect.flagId] : []
+    ))
     .filter((flagId) => GREYWATCH_OUTCOME_FLAGS.includes(flagId as typeof GREYWATCH_OUTCOME_FLAGS[number])));
   expect(added).toEqual([['greywatch-held'], ['greywatch-damaged'], ['greywatch-fallen']]);
 
   for (const choice of aftermath?.choices ?? []) {
     const removed = choice.effects
-      .filter((effect) => effect.type === 'flag' && effect.operation === 'remove')
-      .map((effect) => effect.flagId)
+      .flatMap((effect) => (
+        effect.type === 'flag' && effect.operation === 'remove' ? [effect.flagId] : []
+      ))
       .filter((flagId) => GREYWATCH_OUTCOME_FLAGS.includes(flagId as typeof GREYWATCH_OUTCOME_FLAGS[number]));
     expect(removed).toHaveLength(2);
   }
 });
 
 it('keeps Caldus and Lyra recruitment after their final personal-quest requirement', () => {
-  const ids = new Set(CH05_SCENES.map((scene) => scene.id));
+  const ids = new Set<string>(CH05_SCENES.map((scene) => scene.id));
   expect(ids.has('ch05-companion-caldus-keeps-confidence')).toBe(true);
   expect(ids.has('ch05-companion-caldus-the-first-hostages')).toBe(true);
   expect(ids.has('ch05-companion-caldus-answers-the-road')).toBe(true);

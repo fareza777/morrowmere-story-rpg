@@ -55,7 +55,7 @@ function validateSources(events?: readonly ReturnType<typeof sourceScene>[]) {
 }
 
 function testChronicle(chapters: ChronicleDefinition['chapters']): ChronicleDefinition {
-  return { id: 'validator-chronicle', title: 'Validator Chronicle', chapters };
+  return { ...CHRONICLE1, chapters };
 }
 
 const emptySourceCatalogs = {
@@ -190,12 +190,12 @@ describe('Chronicle I content schema', () => {
     }] as never);
     const companion = {
       ...CHRONICLE1_COMPANIONS[0]!,
-      personalQuestIds: ['ch01-companion-missing-quest'],
-      outcomeSceneIds: ['ch01-companion-missing-outcome'],
+      personalQuestIds: ['ch01-companion-missing-quest' as EventId],
+      outcomeSceneIds: ['ch01-companion-missing-outcome' as EventId],
     };
     const merchant = {
       ...CHRONICLE1_MERCHANTS[0]!,
-      restockGateIds: ['ch01-hub-missing-merchant-gate'],
+      restockGateIds: ['ch01-hub-missing-merchant-gate' as EventId],
     };
 
     const codes = validateChronicleSources({
