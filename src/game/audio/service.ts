@@ -125,6 +125,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
   let settings = { ...DEFAULT_PREFERENCES };
   let music: { readonly id: string; readonly element: AudioElementLike } | null = null;
   let ambience: { readonly id: string; readonly element: AudioElementLike } | null = null;
+  let narration: AudioElementLike | null = null;
   let resumeMusic = false;
   let resumeAmbience = false;
 
@@ -166,7 +167,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       pool = { elements: [], cursor: 0 };
       sfxPools.set(asset.src, pool);
     }
-    let element = pool.elements[pool.cursor];
+    let element: AudioElementLike | undefined = pool.elements[pool.cursor];
     if (!element) {
       element = make(asset.src) ?? undefined;
       if (!element) return;
@@ -245,15 +246,24 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
   const narrateCaption = (text: string, options: NarrationOptions = {}): void => {
     if (!text.trim() || !settings.voiceEnabled || settings.voiceVolume === 0) return;
     const speaker = options.speaker ?? 'Eldrin';
+    safePause(narration);
+    narration = null;
     if (!options.audioSrc) { speakLocally(text, speaker); return; }
+    try { localSpeech?.cancel(); } catch { /* Captions remain authoritative. */ }
     const clip = make(options.audioSrc);
     if (!clip) { speakLocally(text, speaker); return; }
     clip.loop = false;
     clip.volume = settings.voiceVolume;
-    safePlay(clip, () => speakLocally(text, speaker));
+    narration = clip;
+    safePlay(clip, () => {
+      if (narration === clip) narration = null;
+      speakLocally(text, speaker);
+    });
   };
 
   const cancelNarration = (): void => {
+    safePause(narration);
+    narration = null;
     try { localSpeech?.cancel(); } catch { /* Optional narration. */ }
   };
 
@@ -377,7 +387,8 @@ export function createCinematicAudioPort(service: AudioService): CinematicAudioP
       const sfx = [...new Set(active.shots.flatMap((shot) => [...shot.sfxCueIds, ...(OPENING_SHOT_SFX[shot.id] ?? [])]))]
         .map((id) => sfxAsset(id)?.src)
         .filter((src): src is string => Boolean(src));
-      await service.preload([...(music ? [music.src] : []), ...sfx]);
+      const voice = OPENING_VOICE_CUES.map((cue) => cue.audioSrc).filter((src): src is string => Boolean(src));
+      await service.preload([...(music ? [music.src] : []), ...sfx, ...voice]);
     },
     async play(active, fromMs): Promise<void> {
       clearTimers();
