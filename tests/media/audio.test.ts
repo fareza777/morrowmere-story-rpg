@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CinematicSequence } from '../../src/ui/types';
-import { OPENING_NARRATION } from '../../src/ui/openingSequence';
+import { OPENING_NARRATION, OPENING_SEQUENCE } from '../../src/ui/openingSequence';
 import {
   AUDIO_MANIFEST,
   MUSIC_ASSETS,
@@ -165,9 +165,18 @@ describe('Chronicle I offline audio pack', () => {
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'opening')).toHaveLength(8);
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'main')).toHaveLength(16);
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'companion')).toHaveLength(8);
+    expect(VOICE_SCRIPT.filter((cue) => cue.group === 'main').every((cue) => cue.sceneId?.includes('-main-'))).toBe(true);
+    expect(VOICE_SCRIPT.filter((cue) => cue.group === 'companion').every((cue) => cue.sceneId?.includes('-companion-'))).toBe(true);
+    expect(Object.fromEntries(['Mara', 'Rukhar', 'Caldus', 'Lyra', 'Talla'].map((speaker) => [
+      speaker,
+      VOICE_SCRIPT.filter((cue) => cue.group === 'companion' && cue.speaker === speaker).length,
+    ]))).toEqual({ Mara: 1, Rukhar: 2, Caldus: 2, Lyra: 2, Talla: 1 });
     expect(VOICE_SCRIPT.every((cue) => cue.captionText === cue.spokenText)).toBe(true);
     expect(OPENING_VOICE_CUES).toHaveLength(8);
     expect(OPENING_VOICE_CUES.map((cue) => cue.spokenText)).toEqual(OPENING_NARRATION);
+    expect(OPENING_VOICE_CUES[0]?.startMs).toBe(0);
+    expect(OPENING_VOICE_CUES.at(-1)?.endMs).toBe(OPENING_SEQUENCE.durationMs);
+    expect(OPENING_VOICE_CUES.slice(1).every((cue, index) => cue.startMs === OPENING_VOICE_CUES[index]?.endMs)).toBe(true);
     expect(JSON.stringify({ script: VOICE_SCRIPT, profiles: VOICE_PROFILES })).not.toMatch(CREDENTIAL_PATTERN);
   });
 });

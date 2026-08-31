@@ -146,7 +146,7 @@ const OPENING_LINES = [
   'This is where your chronicle begins.',
 ];
 
-const OPENING_TIMES = [[0, 15_000], [15_000, 35_000], [35_000, 41_000], [41_000, 62_000], [62_000, 70_000], [70_000, 93_000], [93_000, 109_000], [109_000, 120_000]];
+const OPENING_TIMES = [[0, 21_000], [21_000, 36_000], [36_000, 42_000], [42_000, 64_000], [64_000, 71_000], [71_000, 86_000], [86_000, 96_000], [96_000, 105_000]];
 
 function stableSeed(text) {
   const digest = createHash('sha256').update(text).digest();
@@ -451,9 +451,9 @@ const openingScript = OPENING_LINES.map((text, index) => ({
   audioSrc: null,
   delivery: 'local-web-speech-fallback',
 }));
-const storyScript = contentContract.voiceCues.map((cue, index) => ({
+const storyScript = contentContract.voiceCues.map((cue) => ({
   id: cue.id,
-  group: index < 16 ? 'main' : 'companion',
+  group: cue.sceneId.includes('-companion-') ? 'companion' : 'main',
   sceneId: cue.sceneId,
   speaker: cue.speaker,
   spokenText: cue.text,

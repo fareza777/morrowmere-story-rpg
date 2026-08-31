@@ -10,6 +10,7 @@ const MANIFEST_PATH = resolve(ROOT, 'production/chronicle1/media/audio-manifest.
 const PROVENANCE_PATH = resolve(ROOT, 'production/chronicle1/media/audio-provenance.json');
 const VOICE_SCRIPT_PATH = resolve(ROOT, 'production/chronicle1/media/voice-script.json');
 const VOICE_PROFILES_PATH = resolve(ROOT, 'production/chronicle1/media/voice-profiles.json');
+const OPENING_TIMELINE_PATH = resolve(ROOT, 'production/chronicle1/media/opening-timeline.json');
 
 const MUSIC_IDS = [
   'music-title', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
@@ -79,8 +80,8 @@ async function listMp3(directory) {
 }
 
 async function main() {
-  const [manifest, provenance, voiceScript, voiceProfiles] = await Promise.all([
-    readJson(MANIFEST_PATH), readJson(PROVENANCE_PATH), readJson(VOICE_SCRIPT_PATH), readJson(VOICE_PROFILES_PATH),
+  const [manifest, provenance, voiceScript, voiceProfiles, openingTimeline] = await Promise.all([
+    readJson(MANIFEST_PATH), readJson(PROVENANCE_PATH), readJson(VOICE_SCRIPT_PATH), readJson(VOICE_PROFILES_PATH), readJson(OPENING_TIMELINE_PATH),
   ]);
   const serializedMetadata = JSON.stringify({ manifest, provenance, voiceScript, voiceProfiles });
   assert(!SECRET_PATTERN.test(serializedMetadata), 'Audio metadata contains a credential-like value.');
@@ -143,6 +144,13 @@ async function main() {
 
   const groupCounts = Object.fromEntries(['opening', 'main', 'companion'].map((group) => [group, voiceScript.cues.filter((cue) => cue.group === group).length]));
   assert(JSON.stringify(groupCounts) === JSON.stringify({ opening: 8, main: 16, companion: 8 }), 'Voice script must contain 8 opening, 16 main, and 8 companion cues.');
+  const openingVoice = voiceScript.cues.filter((cue) => cue.group === 'opening');
+  assert(openingVoice[0].startMs === 0 && openingVoice.at(-1).endMs === openingTimeline.durationMs, 'Opening voice timing must fill the cinematic without overrunning it.');
+  assert(openingVoice.slice(1).every((cue, index) => cue.startMs === openingVoice[index].endMs), 'Opening voice timing must be ordered and contiguous.');
+  assert(voiceScript.cues.filter((cue) => cue.group === 'main').every((cue) => cue.sceneId.includes('-main-')), 'Main voice cues must reference main scenes.');
+  assert(voiceScript.cues.filter((cue) => cue.group === 'companion').every((cue) => cue.sceneId.includes('-companion-')), 'Companion voice cues must reference companion scenes.');
+  const companionSpeakers = Object.fromEntries(['Mara', 'Rukhar', 'Caldus', 'Lyra', 'Talla'].map((speaker) => [speaker, voiceScript.cues.filter((cue) => cue.group === 'companion' && cue.speaker === speaker).length]));
+  assert(JSON.stringify(companionSpeakers) === JSON.stringify({ Mara: 1, Rukhar: 2, Caldus: 2, Lyra: 2, Talla: 1 }), 'Companion voice allocation differs from the approved script.');
   assert(voiceScript.cues.every((cue) => cue.spokenText === cue.captionText), 'Every voice line must exactly match its caption.');
   assert(voiceScript.cues.every((cue) => cue.audioSrc === null && cue.delivery === 'local-web-speech-fallback'), 'Unapproved paid voice files must not be represented as shipped clips.');
   assert(voiceProfiles.profiles.length === 7 && voiceProfiles.profiles.every((profile) => profile.provider.voiceId === null), 'Provider voices must remain unselected until an authorized audition.');
