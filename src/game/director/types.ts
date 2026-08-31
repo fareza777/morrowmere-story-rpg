@@ -28,8 +28,10 @@ export interface DirectorState {
   readonly recentSceneKinds: readonly ScenePacing[];
   readonly recentFamilies: readonly string[];
   readonly seenEventIds: readonly EventId[];
-  /** Family -> remaining runs before the family may be shown again. */
+  /** Family -> future run starts that still need to block this family. */
   readonly familyCooldowns: Readonly<Record<string, number>>;
+  /** Derived at each run boundary from `familyCooldowns`; never carries a prior run's block. */
+  readonly currentRunBlockedFamilies: readonly string[];
   readonly pendingCallbacks: readonly PendingCallback[];
   readonly tension: number;
   readonly threat: number;

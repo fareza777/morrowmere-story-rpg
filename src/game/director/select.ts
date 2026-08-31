@@ -34,10 +34,22 @@ function selectPacedEvent(
   return weightedPick(pacingCandidates(unseen.length > 0 ? unseen : coherent, state), random, context);
 }
 
-/** Advances persisted multi-run cooldowns once at a new-run boundary. */
+/**
+ * Starts the next run atomically. A positive cooldown blocks this new run,
+ * then decrements so `cooldownRuns: 2` blocks exactly the next two runs.
+ */
 export function beginDirectorRun(state: DirectorState): DirectorState {
+  const currentRunBlockedFamilies = Object.entries(state.familyCooldowns)
+    .filter(([, remaining]) => remaining > 0)
+    .map(([family]) => family);
   return {
     ...state,
+    usedSceneIds: [],
+    recentSceneKinds: [],
+    recentFamilies: [],
+    tension: 2,
+    threat: 0,
+    currentRunBlockedFamilies,
     familyCooldowns: Object.fromEntries(
       Object.entries(state.familyCooldowns).map(([family, remaining]) => [family, Math.max(0, remaining - 1)]),
     ),

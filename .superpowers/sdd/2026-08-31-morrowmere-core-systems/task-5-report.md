@@ -39,3 +39,17 @@ Run immediately before commit:
 - RED: lifecycle/terminal/route-validation tests failed because `beginDirectorRun` and typed terminal results were absent, empty pools threw, invalid route data passed validation, and the legacy context type was masked at build time.
 - RED: after adding the trailing gap assertion, the enumeration found merchant/recovery scenes could be consumed early and leave a seven-scene trailing drought.
 - GREEN: reserving support scenes until their pacing windows and spacing them through the fixture route makes all focused director, content, and compatibility tests pass.
+
+## Run-boundary completion follow-up
+
+### Delivered
+
+- Made `beginDirectorRun` an atomic run boundary: it clears per-run scene uniqueness and pacing windows, resets tension and threat, and derives the newly blocked families for that run.
+- Preserved persistent seen history, pending campaign callbacks, exact RNG continuation, and the persistent cooldown countdown.
+- Defined cooldown timing explicitly: `cooldownRuns: 2` blocks the next two complete runs and is selectable in the third subsequent run.
+- Added the explicit anchor-presence assertion before checking every route's anchor delivery slot in the 1,000-seed regression.
+
+### TDD evidence
+
+- RED: the direct run-boundary test showed the previous API retained used scenes, pacing state, tension/threat, and did not mark the immediate new run as blocked; the two-run cooldown test also required a manual `usedSceneIds` reset.
+- GREEN: the direct API now resets all run-local fields, blocks the first and second subsequent runs, and permits the third; focused director/content tests and build pass.

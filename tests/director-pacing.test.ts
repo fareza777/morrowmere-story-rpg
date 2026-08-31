@@ -46,7 +46,7 @@ function content(events: readonly ChronicleEvent[]): ContentIndex {
 function state(overrides: Partial<DirectorState> = {}): DirectorState {
   return {
     rngState: 31, usedSceneIds: [], recentSceneKinds: [], recentFamilies: [], seenEventIds: [],
-    familyCooldowns: {}, pendingCallbacks: [], tension: 2, threat: 0, ...overrides,
+    familyCooldowns: {}, currentRunBlockedFamilies: [], pendingCallbacks: [], tension: 2, threat: 0, ...overrides,
   };
 }
 
@@ -79,6 +79,7 @@ describe('Chronicle I journey pacing', () => {
       state({
         usedSceneIds: [asEventId('used')],
         familyCooldowns: { 'recent-family': 3 },
+        currentRunBlockedFamilies: ['recent-family'],
       }),
       context(),
       fixture,
@@ -149,6 +150,7 @@ describe('Chronicle I journey pacing', () => {
       supportGaps.push(selected.length - supportSlots[supportSlots.length - 1]! - 1);
       expect(Math.max(...supportGaps)).toBeLessThanOrEqual(4);
       expect(new Set(selected).size).toBe(selected.length);
+      expect(selected).toContain('anchor');
       expect(selected.indexOf('anchor') + 1).toBeLessThanOrEqual(3);
       expect(selected.indexOf('callback') + 1).toBeLessThanOrEqual(6);
       expect(director.pendingCallbacks[0]?.status).toBe('fulfilled');

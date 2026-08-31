@@ -59,6 +59,7 @@ function state(overrides: Partial<DirectorState> = {}): DirectorState {
     recentFamilies: [],
     seenEventIds: [],
     familyCooldowns: {},
+    currentRunBlockedFamilies: [],
     pendingCallbacks: [],
     tension: 2,
     threat: 0,
@@ -142,29 +143,53 @@ describe('Chronicle I callback scheduling', () => {
     );
   });
 
-  it('decrements a family cooldown once per new run without changing run history', () => {
+  it('atomically resets a run and blocks a two-run cooldown for the next two complete runs', () => {
+    const pendingCallbacks = [{
+      targetEventId: asEventId('campaign-callback'),
+      deadline: { chapterId: 'ch03' as ChapterId, slot: 8 },
+      status: 'pending' as const,
+      required: true,
+    }];
     const first = selected(selectNextScene(
-      state(),
+      state({
+        recentSceneKinds: ['merchant'],
+        recentFamilies: ['road-trader'],
+        pendingCallbacks,
+        tension: 7,
+        threat: 5,
+      }),
       context(),
       content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
     ));
-    const secondRun = beginDirectorRun(first.state);
-    const blocked = selectNextScene(
-      { ...secondRun, usedSceneIds: [] },
+    const nextRun = beginDirectorRun(first.state);
+    const blockedFirst = selectNextScene(
+      nextRun,
       context(),
       content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
     );
-    const thirdRun = beginDirectorRun(secondRun);
+    const followingRun = beginDirectorRun(nextRun);
+    const blockedSecond = selectNextScene(
+      followingRun,
+      context(),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+    );
+    const thirdSubsequentRun = beginDirectorRun(followingRun);
     const available = selectNextScene(
-      { ...thirdRun, usedSceneIds: [] },
+      thirdSubsequentRun,
       context(),
       content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
     );
 
-    expect(secondRun.familyCooldowns).toEqual({ 'callback-family': 1 });
-    expect(secondRun.usedSceneIds).toEqual(first.state.usedSceneIds);
-    expect(secondRun.seenEventIds).toEqual(first.state.seenEventIds);
-    expect(blocked.kind).toBe('terminal');
+    expect(nextRun).toMatchObject({
+      usedSceneIds: [], recentSceneKinds: [], recentFamilies: [], tension: 2, threat: 0,
+      familyCooldowns: { 'callback-family': 1 }, currentRunBlockedFamilies: ['callback-family'],
+      seenEventIds: first.state.seenEventIds, pendingCallbacks, rngState: first.state.rngState,
+    });
+    expect(blockedFirst.kind).toBe('terminal');
+    expect(followingRun.currentRunBlockedFamilies).toEqual(['callback-family']);
+    expect(followingRun.familyCooldowns).toEqual({ 'callback-family': 0 });
+    expect(blockedSecond.kind).toBe('terminal');
+    expect(thirdSubsequentRun.currentRunBlockedFamilies).toEqual([]);
     expect(available.kind).toBe('selected');
     expect(available.kind === 'selected' && available.sceneId).toBe('cooled-callback-family');
   });

@@ -22,7 +22,7 @@ export function eligibleScenes(
     .filter((event) => event.eligibility.requiredFlags?.every((flag) => context.flags.includes(flag)) ?? true)
     .filter((event) => event.eligibility.excludedFlags?.every((flag) => !context.flags.includes(flag)) ?? true)
     .filter((event) => event.eligibility.routes?.includes(context.routeProfile) ?? true)
-    .filter((event) => (state.familyCooldowns[event.family] ?? 0) <= 0)
+    .filter((event) => !state.currentRunBlockedFamilies.includes(event.family))
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
