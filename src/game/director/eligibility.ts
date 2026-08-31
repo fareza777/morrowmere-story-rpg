@@ -1,10 +1,10 @@
 import type { ChronicleEvent, ContentIndex } from '../content/schema';
 import type { EventId } from '../domain/ids';
-import type { DirectorContext, DirectorState } from './types';
+import type { DirectorState, JourneyDirectorContext } from './types';
 
 export function eligibleScenes(
   state: DirectorState,
-  context: DirectorContext,
+  context: JourneyDirectorContext,
   content: ContentIndex,
 ): ChronicleEvent[] {
   const used = new Set<EventId>(state.usedSceneIds);
@@ -28,7 +28,7 @@ export function eligibleScenes(
 
 export function callbackScene(
   state: DirectorState,
-  context: DirectorContext,
+  context: JourneyDirectorContext,
   content: ContentIndex,
 ): ChronicleEvent | undefined {
   const used = new Set<EventId>(state.usedSceneIds);

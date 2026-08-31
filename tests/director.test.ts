@@ -1,8 +1,8 @@
 import { EVENTS, SCENE_VARIANT_KEYS } from '../src/game/content/events';
 import { buildRoute, chooseNextEvent, getEligibleEvents } from '../src/game/director';
-import type { LegacyDirectorContext } from '../src/game/director';
+import type { DirectorContext } from '../src/game/director';
 
-const baseContext: LegacyDirectorContext = {
+const baseContext: DirectorContext = {
   seed: 1943,
   heroClass: 'warden',
   flags: [],

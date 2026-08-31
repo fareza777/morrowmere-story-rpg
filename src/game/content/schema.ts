@@ -1,4 +1,5 @@
 import type { GameEffect } from "../domain/effects";
+import type { RouteProfileId } from "../director/types";
 import type {
   ChapterId,
   ChoiceId,
@@ -29,7 +30,7 @@ export type ChronicleEventType =
 export type EventPacing = "danger" | "merchant" | "recovery" | "quiet";
 
 export interface EventEligibility {
-  readonly routes?: readonly string[];
+  readonly routes?: readonly RouteProfileId[];
   readonly minLevel?: number;
   readonly maxLevel?: number;
   readonly requiredFlags?: readonly string[];

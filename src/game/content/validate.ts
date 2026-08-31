@@ -1,5 +1,6 @@
 import type { GameEffect } from '../domain/effects';
 import type { ContentIndex } from './schema';
+import { ROUTE_OPTIONS } from '../director/pacing';
 
 export type ContentIssueCode =
   | 'duplicate_event_id'
@@ -16,7 +17,8 @@ export type ContentIssueCode =
   | 'missing_encounter'
   | 'missing_enemy'
   | 'missing_callback_target'
-  | 'missing_merchant_stock';
+  | 'missing_merchant_stock'
+  | 'invalid_route';
 
 export interface ContentIssue {
   readonly code: ContentIssueCode;
@@ -70,6 +72,11 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
     }
     if (event.audioId && !index.audioIds.has(event.audioId)) {
       issues.push({ code: 'missing_audio', message: `Missing audio: ${event.audioId}` });
+    }
+    for (const route of event.eligibility.routes ?? []) {
+      if (!ROUTE_OPTIONS.some((option) => option.id === route)) {
+        issues.push({ code: 'invalid_route', message: `Invalid route profile: ${route}` });
+      }
     }
     issues.push(...duplicateIssues(event.choices, 'duplicate_choice_id'));
     for (const choice of event.choices) {

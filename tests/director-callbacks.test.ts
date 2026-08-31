@@ -2,12 +2,21 @@ import { describe, expect, it } from 'vitest';
 import type { ChronicleEvent, ContentIndex } from '../src/game/content/schema';
 import type { ChapterId, EventId } from '../src/game/domain/ids';
 import {
+  beginDirectorRun,
   selectNextScene,
-  type DirectorContext,
+  type DirectorSelectedStep,
+  type DirectorStep,
+  type JourneyDirectorContext,
   type DirectorState,
 } from '../src/game/director';
 
 const asEventId = (value: string) => value as EventId;
+
+function selected(step: DirectorStep): DirectorSelectedStep {
+  expect(step.kind).toBe('selected');
+  if (step.kind !== 'selected') throw new Error(step.diagnostic);
+  return step;
+}
 
 function event(
   id: string,
@@ -57,7 +66,7 @@ function state(overrides: Partial<DirectorState> = {}): DirectorState {
   };
 }
 
-function context(overrides: Partial<DirectorContext> = {}): DirectorContext {
+function context(overrides: Partial<JourneyDirectorContext> = {}): JourneyDirectorContext {
   return {
     position: { chapterId: 'ch03', slot: 2 },
     level: 5,
@@ -70,7 +79,7 @@ function context(overrides: Partial<DirectorContext> = {}): DirectorContext {
 
 describe('Chronicle I callback scheduling', () => {
   it('fulfils a promised callback at its deadline before an eligible anchor', () => {
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state({
         pendingCallbacks: [{
           targetEventId: asEventId('rukhar-callback-03'),
@@ -84,7 +93,7 @@ describe('Chronicle I callback scheduling', () => {
         event('rukhar-callback-03'),
         event('chapter-anchor', { type: 'main', anchorOrder: 2 }),
       ),
-    );
+    ));
 
     expect(step.sceneId).toBe('rukhar-callback-03');
     expect(step.reason).toBe('callback');
@@ -92,7 +101,7 @@ describe('Chronicle I callback scheduling', () => {
   });
 
   it('selects the oldest due main anchor when no callback is due', () => {
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state(),
       context({ position: { chapterId: 'ch03', slot: 4 } }),
       content(
@@ -100,14 +109,14 @@ describe('Chronicle I callback scheduling', () => {
         event('anchor-four', { type: 'main', anchorOrder: 4 }),
         event('road-event'),
       ),
-    );
+    ));
 
     expect(step.sceneId).toBe('anchor-one');
     expect(step.reason).toBe('anchor');
   });
 
   it('reserves a required callback scene until its deadline', () => {
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state({
         pendingCallbacks: [{
           targetEventId: asEventId('reserved-callback'),
@@ -118,7 +127,7 @@ describe('Chronicle I callback scheduling', () => {
       }),
       context({ position: { chapterId: 'ch03', slot: 1 } }),
       content(event('reserved-callback', { weight: 100 }), event('ordinary-road-scene')),
-    );
+    ));
 
     expect(step.sceneId).toBe('ordinary-road-scene');
     expect(step.state.pendingCallbacks[0]?.status).toBe('pending');
@@ -128,8 +137,49 @@ describe('Chronicle I callback scheduling', () => {
     const saved = state();
     const fixture = content(event('first'), event('second'), event('third'));
 
-    expect(selectNextScene(saved, context(), fixture)).toEqual(
-      selectNextScene(saved, context(), fixture),
+    expect(selected(selectNextScene(saved, context(), fixture))).toEqual(
+      selected(selectNextScene(saved, context(), fixture)),
     );
+  });
+
+  it('decrements a family cooldown once per new run without changing run history', () => {
+    const first = selected(selectNextScene(
+      state(),
+      context(),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+    ));
+    const secondRun = beginDirectorRun(first.state);
+    const blocked = selectNextScene(
+      { ...secondRun, usedSceneIds: [] },
+      context(),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+    );
+    const thirdRun = beginDirectorRun(secondRun);
+    const available = selectNextScene(
+      { ...thirdRun, usedSceneIds: [] },
+      context(),
+      content(event('cooled-callback-family', { family: 'callback-family', cooldownRuns: 2 })),
+    );
+
+    expect(secondRun.familyCooldowns).toEqual({ 'callback-family': 1 });
+    expect(secondRun.usedSceneIds).toEqual(first.state.usedSceneIds);
+    expect(secondRun.seenEventIds).toEqual(first.state.seenEventIds);
+    expect(blocked.kind).toBe('terminal');
+    expect(available.kind).toBe('selected');
+    expect(available.kind === 'selected' && available.sceneId).toBe('cooled-callback-family');
+  });
+
+  it('returns a typed terminal result for empty and exhausted pools without advancing RNG', () => {
+    const empty = selectNextScene(state(), context(), content());
+    const exhausted = selectNextScene(
+      state({ usedSceneIds: [asEventId('finished-scene')] }),
+      context(),
+      content(event('finished-scene')),
+    );
+
+    expect(empty).toMatchObject({ kind: 'terminal', terminal: 'precondition', diagnostic: expect.stringMatching(/No Chronicle scenes/i) });
+    expect(exhausted).toMatchObject({ kind: 'terminal', terminal: 'completed', diagnostic: expect.stringMatching(/remaining eligible/i) });
+    expect(empty.state.rngState).toBe(1943);
+    expect(exhausted.state.rngState).toBe(1943);
   });
 });

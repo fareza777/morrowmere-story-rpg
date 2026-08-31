@@ -3,19 +3,21 @@ import { FINALE, FINALE_CHOICES, LIEUTENANTS, PROLOGUE } from './content/story';
 import { createRng } from './rng';
 import type { EventChoice, FactionStanding, HeroClass, RegionId } from './types';
 export { chooseRouteOptions } from './director/pacing';
-export { selectNextScene } from './director/select';
+export { beginDirectorRun, selectNextScene } from './director/select';
 export type {
-  DirectorContext,
   DirectorReason,
+  DirectorSelectedStep,
   DirectorState,
   DirectorStep,
+  DirectorTerminalStep,
+  JourneyDirectorContext,
   PendingCallback,
   RouteOption,
   RouteProfileId,
   ScenePacing,
 } from './director/types';
 
-export interface LegacyDirectorContext {
+export interface DirectorContext {
   readonly seed: number;
   readonly heroClass: HeroClass;
   readonly flags: readonly string[];
@@ -44,7 +46,10 @@ export interface RouteNode {
   readonly enemyArchetypeId?: string;
 }
 
-export function getEligibleEvents(context: LegacyDirectorContext): StoryEvent[] {
+/** @deprecated Use the lazy journey director for Chronicle I selection. */
+export type LegacyDirectorContext = DirectorContext;
+
+export function getEligibleEvents(context: DirectorContext): StoryEvent[] {
   return EVENTS.filter(
     (event) =>
       event.region === context.region &&
@@ -53,7 +58,7 @@ export function getEligibleEvents(context: LegacyDirectorContext): StoryEvent[] 
   );
 }
 
-export function chooseNextEvent(context: LegacyDirectorContext): StoryEvent {
+export function chooseNextEvent(context: DirectorContext): StoryEvent {
   const recent = new Set(context.recentFamilies.slice(-3));
   const encountered = new Set(context.encounteredEventIds);
   const eligible = getEligibleEvents(context);
@@ -105,7 +110,7 @@ const CONTINUE_CHOICE: readonly EventChoice[] = [
   },
 ];
 
-export function buildRoute(context: LegacyDirectorContext): RouteNode[] {
+export function buildRoute(context: DirectorContext): RouteNode[] {
   const rng = createRng(context.seed);
   const nodes: RouteNode[] = [
     {

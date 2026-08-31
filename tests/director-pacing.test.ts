@@ -4,11 +4,19 @@ import type { EventId } from '../src/game/domain/ids';
 import {
   chooseRouteOptions,
   selectNextScene,
-  type DirectorContext,
+  type DirectorSelectedStep,
+  type DirectorStep,
+  type JourneyDirectorContext,
   type DirectorState,
 } from '../src/game/director';
 
 const asEventId = (value: string) => value as EventId;
+
+function selected(step: DirectorStep): DirectorSelectedStep {
+  expect(step.kind).toBe('selected');
+  if (step.kind !== 'selected') throw new Error(step.diagnostic);
+  return step;
+}
 
 function event(id: string, overrides: Partial<ChronicleEvent> = {}): ChronicleEvent {
   return {
@@ -42,7 +50,7 @@ function state(overrides: Partial<DirectorState> = {}): DirectorState {
   };
 }
 
-function context(overrides: Partial<DirectorContext> = {}): DirectorContext {
+function context(overrides: Partial<JourneyDirectorContext> = {}): JourneyDirectorContext {
   return {
     position: { chapterId: 'ch01', slot: 1 }, level: 1, flags: [], inventoryTags: [], routeProfile: 'old-forest', ...overrides,
   };
@@ -50,11 +58,11 @@ function context(overrides: Partial<DirectorContext> = {}): DirectorContext {
 
 describe('Chronicle I journey pacing', () => {
   it('takes an eligible threat encounter before an ordinary paced event', () => {
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state({ threat: 6 }),
       context(),
       content([event('combat', { type: 'combat' }), event('ordinary')]),
-    );
+    ));
 
     expect(step.sceneId).toBe('combat');
     expect(step.reason).toBe('threat');
@@ -67,14 +75,14 @@ describe('Chronicle I journey pacing', () => {
       event('cooled', { family: 'recent-family', cooldownRuns: 2 }),
       event('available'),
     ]);
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state({
         usedSceneIds: [asEventId('used')],
         familyCooldowns: { 'recent-family': 3 },
       }),
       context(),
       fixture,
-    );
+    ));
 
     expect(step.sceneId).toBe('available');
     expect(step.state.usedSceneIds).toEqual([asEventId('used'), asEventId('available')]);
@@ -82,11 +90,11 @@ describe('Chronicle I journey pacing', () => {
 
   it('gives unseen eligible scenes a randomized priority over seen scenes', () => {
     const fixture = content([event('seen'), event('unseen-a'), event('unseen-b')]);
-    const step = selectNextScene(
+    const step = selected(selectNextScene(
       state({ seenEventIds: [asEventId('seen')] }),
       context(),
       fixture,
-    );
+    ));
 
     expect(['unseen-a', 'unseen-b']).toContain(step.sceneId);
   });
@@ -125,6 +133,8 @@ describe('Chronicle I journey pacing', () => {
       const selected: string[] = [];
       for (let slot = 1; slot <= 12; slot += 1) {
         const step = selectNextScene(director, context({ position: { chapterId: 'ch01', slot } }), fixture);
+        expect(step.kind).toBe('selected');
+        if (step.kind !== 'selected') throw new Error(step.diagnostic);
         selected.push(step.sceneId);
         director = step.state;
       }
@@ -133,10 +143,14 @@ describe('Chronicle I journey pacing', () => {
         .filter(({ id }) => id === 'merchant' || id === 'recovery')
         .map(({ index }) => index);
       expect(supportSlots).not.toEqual([]);
-      expect(Math.max(...supportSlots.map((slot, index) => index === 0 ? slot + 1 : slot - supportSlots[index - 1]!))).toBeLessThanOrEqual(4);
+      const supportGaps = supportSlots.map((slot, index) =>
+        index === 0 ? slot : slot - supportSlots[index - 1]! - 1,
+      );
+      supportGaps.push(selected.length - supportSlots[supportSlots.length - 1]! - 1);
+      expect(Math.max(...supportGaps)).toBeLessThanOrEqual(4);
       expect(new Set(selected).size).toBe(selected.length);
-      expect(selected).toContain('anchor');
-      expect(selected).toContain('callback');
+      expect(selected.indexOf('anchor') + 1).toBeLessThanOrEqual(3);
+      expect(selected.indexOf('callback') + 1).toBeLessThanOrEqual(6);
       expect(director.pendingCallbacks[0]?.status).toBe('fulfilled');
     }
   });

@@ -13,4 +13,10 @@ describe('Chronicle I content schema', () => {
   it('accepts the minimal deterministic fixture', () => {
     expect(validateContent(makeContentIndex())).toEqual([]);
   });
+
+  it('rejects event routes outside the three Chronicle route profiles', () => {
+    expect(validateContent(makeContentIndex({ invalidRoute: true })).map((issue) => issue.code)).toContain(
+      'invalid_route',
+    );
+  });
 });

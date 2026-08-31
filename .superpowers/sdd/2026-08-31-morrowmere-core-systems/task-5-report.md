@@ -23,3 +23,19 @@ Run immediately before commit:
 - `npm run build`
 - `npm run test:run`
 - `git diff --check`
+
+## Hardening follow-up — run lifecycle and terminal safety
+
+### Delivered
+
+- Added `beginDirectorRun`, which decrements every positive persisted family cooldown exactly once per explicit run-boundary call and leaves run uniqueness/history intact.
+- Replaced director throws and empty weighted selection with a discriminated `DirectorStep`: `selected` steps carry the scene fields, and `terminal` steps carry English `completed` or `precondition` diagnostics without changing RNG state.
+- Restored the exact legacy `DirectorContext` facade export and renamed the new lazy API context to `JourneyDirectorContext`.
+- Typed authored event routes to the three route-profile IDs and reject invalid route references during content validation.
+- Extended the 1,000-route test to check leading, internal, and trailing support gaps and to verify anchor/callback delivery by slots 3 and 6 for every seed.
+
+### TDD evidence
+
+- RED: lifecycle/terminal/route-validation tests failed because `beginDirectorRun` and typed terminal results were absent, empty pools threw, invalid route data passed validation, and the legacy context type was masked at build time.
+- RED: after adding the trailing gap assertion, the enumeration found merchant/recovery scenes could be consumed early and leave a seven-scene trailing drought.
+- GREEN: reserving support scenes until their pacing windows and spacing them through the fixture route makes all focused director, content, and compatibility tests pass.

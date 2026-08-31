@@ -1,5 +1,5 @@
 import type { ChronicleEvent } from '../content/schema';
-import type { DirectorContext, DirectorState, RouteOption, ScenePacing } from './types';
+import type { DirectorState, JourneyDirectorContext, RouteOption, ScenePacing } from './types';
 
 export const ROUTE_OPTIONS: readonly RouteOption[] = [
   {
@@ -16,7 +16,7 @@ export const ROUTE_OPTIONS: readonly RouteOption[] = [
   },
 ] as const;
 
-export function chooseRouteOptions(_state: DirectorState, _context: DirectorContext): readonly RouteOption[] {
+export function chooseRouteOptions(_state: DirectorState, _context: JourneyDirectorContext): readonly RouteOption[] {
   return ROUTE_OPTIONS;
 }
 
@@ -39,25 +39,29 @@ export function pacingCandidates(events: readonly ChronicleEvent[], state: Direc
   );
   const merchantMissing = !state.recentSceneKinds.includes('merchant');
   const recoveryMissing = !state.recentSceneKinds.includes('recovery');
-  if (supportSince >= 2 && merchantMissing) {
+  if (supportSince >= 3 && merchantMissing) {
     const merchants = events.filter((event) => scenePacing(event) === 'merchant');
     if (merchants.length > 0) return merchants;
   }
-  if (supportSince >= 2 && recoveryMissing) {
+  if (supportSince >= 3 && recoveryMissing) {
     const recovery = events.filter((event) => scenePacing(event) === 'recovery');
     if (recovery.length > 0) return recovery;
   }
-  if (supportSince >= 2) {
+  if (supportSince >= 3) {
     const support = events.filter((event) => {
       const pacing = scenePacing(event);
       return pacing === 'merchant' || pacing === 'recovery';
     });
     if (support.length > 0) return support;
   }
-  return events;
+  const nonSupport = events.filter((event) => {
+    const pacing = scenePacing(event);
+    return pacing !== 'merchant' && pacing !== 'recovery';
+  });
+  return nonSupport.length > 0 ? nonSupport : events;
 }
 
-export function routeWeight(event: ChronicleEvent, context: DirectorContext): number {
+export function routeWeight(event: ChronicleEvent, context: JourneyDirectorContext): number {
   const profile = ROUTE_OPTIONS.find((option) => option.id === context.routeProfile)!;
   const pacing = scenePacing(event);
   const base = event.weight ?? 1;

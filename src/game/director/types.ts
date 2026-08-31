@@ -35,7 +35,7 @@ export interface DirectorState {
   readonly threat: number;
 }
 
-export interface DirectorContext {
+export interface JourneyDirectorContext {
   readonly position: StoryPosition;
   readonly level: number;
   readonly flags: readonly string[];
@@ -43,9 +43,19 @@ export interface DirectorContext {
   readonly routeProfile: RouteProfileId;
 }
 
-export interface DirectorStep {
+export interface DirectorSelectedStep {
+  readonly kind: 'selected';
   readonly sceneId: EventId;
   readonly event: ChronicleEvent;
   readonly reason: DirectorReason;
   readonly state: DirectorState;
 }
+
+export interface DirectorTerminalStep {
+  readonly kind: 'terminal';
+  readonly terminal: 'completed' | 'precondition';
+  readonly diagnostic: string;
+  readonly state: DirectorState;
+}
+
+export type DirectorStep = DirectorSelectedStep | DirectorTerminalStep;

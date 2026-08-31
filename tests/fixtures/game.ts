@@ -4,6 +4,7 @@ import type { EventId } from '../../src/game/domain/ids';
 export interface ContentIndexOptions {
   readonly duplicateEventId?: boolean;
   readonly missingArtId?: boolean;
+  readonly invalidRoute?: boolean;
 }
 
 const eventId = 'fixture-event' as EventId;
@@ -17,7 +18,7 @@ function makeEvent(options: ContentIndexOptions): ChronicleEvent {
     illustrationId: options.missingArtId ? 'missing-art' : 'fixture-art',
     title: 'Fixture Event',
     narrative: ['A deterministic fixture scene.'],
-    eligibility: {},
+    eligibility: options.invalidRoute ? { routes: ['invalid-route'] as never } : {},
     cooldownRuns: 0,
     oneShot: true,
     choices: [],
