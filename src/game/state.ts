@@ -249,6 +249,15 @@ export function gameReducer(state: GameState, command: GameCommand): GameState {
     const selected = node?.choices.find((choice) => choice.id === command.choiceId);
     if (!node || !selected) return state;
     const changed = applyEffect(state, selected.effect);
+    if (changed.hero.health <= 0) {
+      return {
+        ...changed,
+        screen: 'defeat',
+        combat: null,
+        lastOutcome: selected.outcome,
+        discoveredEvents: addUnique(state.discoveredEvents, [node.id]),
+      };
+    }
     const archetypeId = selected.effect.startCombat ?? node.enemyArchetypeId;
     if (archetypeId) return beginCombat(changed, archetypeId, node.kind === 'lieutenant' || node.kind === 'finale');
     return {

@@ -45,6 +45,20 @@ describe('chronicle state', () => {
     expect(Number.isFinite(result.corruption)).toBe(true);
   });
 
+  it('ends the chronicle when a story consequence reduces health to zero', () => {
+    const initial = startNewRun({ heroClass: 'mage', seed: 1943 });
+    const firstNode = initial.route[0];
+    const firstChoice = firstNode?.choices[0];
+    if (!firstNode || !firstChoice) throw new Error('Seeded route did not provide a choice');
+    const lethalChoice = { ...firstChoice, id: 'lethal-choice', effect: { ...firstChoice.effect, health: -999 } };
+    const route = [{ ...firstNode, choices: [lethalChoice, ...firstNode.choices.slice(1)] }, ...initial.route.slice(1)];
+
+    const result = gameReducer({ ...initial, route }, { type: 'CHOOSE', choiceId: lethalChoice.id });
+
+    expect(result.hero.health).toBe(0);
+    expect(result.screen).toBe('defeat');
+  });
+
   it.each([
     ['destroy-crown', 'crown-destroyed'],
     ['restore-crown', 'crown-restored'],

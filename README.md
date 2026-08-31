@@ -69,7 +69,7 @@ The design specification and implementation plan are preserved under `docs/super
 - Product name: `MORROWMERE`
 - Subtitle: `A Sword & Sorcery Chronicle`
 - Android application ID: `com.morrowmere.game`
-- Version: `1.1.0` (`versionCode 2`)
+- Version: `1.1.1` (`versionCode 3`)
 - Minimum Android: API 24
 - Target Android: API 36
 

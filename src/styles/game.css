@@ -145,6 +145,7 @@
 .reward-panel h1, .end-panel h1 { max-inline-size: 18ch; text-wrap: balance; }
 .reward-list { display: grid; gap: 0.75rem; margin-block-start: 1rem; }
 .end-panel > p:not(.eyebrow) { max-inline-size: 43ch; color: var(--paper-1); font-size: 1.08rem; line-height: 1.65; }
+.end-actions { inline-size: min(100%, 30rem); margin-block-start: 1rem; display: grid; gap: 0.7rem; }
 
 .sheet-backdrop { position: fixed; z-index: var(--layer-overlay); inset: 0; display: flex; align-items: end; justify-content: center; background: rgb(45 31 19 / 0.5); }
 .sheet { inline-size: min(100%, 900px); max-block-size: min(92dvh, 820px); border: 1px solid var(--line-strong); border-block-end: 0; border-radius: 18px 18px 0 0; background: var(--ink-1); box-shadow: var(--shadow); overflow: hidden; }

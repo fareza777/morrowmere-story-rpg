@@ -2,10 +2,10 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    VitePWA({
+    ...(mode === 'android' ? [] : [VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['assets/icons/app-icon.webp'],
       manifest: {
@@ -27,12 +27,14 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cacheId: 'morrowmere-1-1-bright',
+        dontCacheBustURLsMatching: /assets\/index-[A-Za-z0-9_-]+\.(?:js|css)$/,
         globPatterns: ['**/*.{js,css,html,png,webp}'],
         globIgnores: ['assets/icons/app-icon.webp', 'assets/icons/pwa-192.png', 'assets/icons/pwa-512.png'],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
       },
-    }),
+    })]),
   ],
   test: {
     environment: 'jsdom',
@@ -42,4 +44,4 @@ export default defineConfig({
     css: true,
     execArgv: ['--no-webstorage'],
   },
-});
+}));

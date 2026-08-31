@@ -1,3 +1,4 @@
+import { ArrowCounterClockwise, House } from '@phosphor-icons/react';
 import { useLayoutEffect, type CSSProperties } from 'react';
 import type { GameCommand, GameState } from '../game/state';
 import { BestiarySheet } from './BestiarySheet';
@@ -13,9 +14,11 @@ import { TopHud } from './TopHud';
 interface GameShellProps {
   readonly state: GameState;
   readonly dispatch: (command: GameCommand) => void;
+  readonly onRetry?: () => void;
+  readonly onExit?: () => void;
 }
 
-export function GameShell({ state, dispatch }: GameShellProps) {
+export function GameShell({ state, dispatch, onRetry, onExit }: GameShellProps) {
   const node = state.route[state.routeIndex];
   const combatArt = state.combat?.enemy.artFamily;
   const combatEnemyId = state.combat?.enemy.id;
@@ -44,7 +47,23 @@ export function GameShell({ state, dispatch }: GameShellProps) {
         {state.screen === 'story' && <StoryPanel state={state} dispatch={dispatch} />}
         {state.screen === 'combat' && <CombatPanel state={state} dispatch={dispatch} />}
         {state.screen === 'reward' && <RewardPanel state={state} dispatch={dispatch} />}
-        {state.screen === 'defeat' && <section className="end-panel"><p className="eyebrow">Chronicle ended</p><h1>The road keeps your name.</h1><p>Your choices remain in this save, but this run has ended beneath the black rain.</p></section>}
+        {state.screen === 'defeat' && (
+          <section className="end-panel">
+            <p className="eyebrow">Chronicle ended</p>
+            <h1>The road keeps your name.</h1>
+            <p>This run is over, but another road is waiting.</p>
+            <div className="end-actions" aria-label="Defeat actions">
+              <button className="button button-primary" type="button" onClick={onRetry}>
+                <ArrowCounterClockwise size={21} weight="bold" aria-hidden="true" />
+                Try Again
+              </button>
+              <button className="button button-secondary" type="button" onClick={onExit}>
+                <House size={21} weight="bold" aria-hidden="true" />
+                Main Menu
+              </button>
+            </div>
+          </section>
+        )}
         {state.screen === 'ending' && state.ending && <section className="end-panel"><p className="eyebrow">Epilogue</p><h1>{state.ending.title}</h1><strong>{state.ending.verdict}</strong><p>{state.ending.epilogue}</p></section>}
       </main>
       {state.overlay === 'inventory' && <InventorySheet state={state} dispatch={dispatch} onClose={closeOverlay} />}

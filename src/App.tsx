@@ -57,6 +57,19 @@ export default function App() {
     }
   };
 
+  const retryRun = () => {
+    if (!game) return;
+    playSfx('ui');
+    begin(game.hero.class, game.hero.name);
+  };
+
+  const returnToTitle = () => {
+    playSfx('ui');
+    gameRef.current = null;
+    setGame(null);
+    setView('title');
+  };
+
   return (
     <>
     <LaunchSplash />
@@ -70,7 +83,7 @@ export default function App() {
       )}
       {view === 'onboarding' && <OnboardingScreen onBack={() => setView('title')} onComplete={() => setView('new-run')} />}
       {view === 'new-run' && <NewRunScreen onBack={() => setView('title')} onBegin={begin} />}
-      {view === 'game' && game && <GameShell state={game} dispatch={dispatch} />}
+      {view === 'game' && game && <GameShell state={game} dispatch={dispatch} onRetry={retryRun} onExit={returnToTitle} />}
     </ErrorBoundary>
     </>
   );

@@ -74,4 +74,20 @@ describe('portrait game interface', () => {
 
     expect(screen.getByText(/Narration: When the Black Rain Rings/)).toHaveAttribute('aria-live', 'polite');
   });
+
+  it('offers retry and main menu actions after defeat', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    const onExit = vi.fn();
+    const run = startNewRun({ heroClass: 'warrior', seed: 91, name: 'Aldren' });
+    const state = { ...run, hero: { ...run.hero, health: 0 }, screen: 'defeat' as const };
+
+    render(<GameShell state={state} dispatch={() => undefined} onRetry={onRetry} onExit={onExit} />);
+
+    await user.click(screen.getByRole('button', { name: 'Try Again' }));
+    await user.click(screen.getByRole('button', { name: 'Main Menu' }));
+
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(onExit).toHaveBeenCalledOnce();
+  });
 });

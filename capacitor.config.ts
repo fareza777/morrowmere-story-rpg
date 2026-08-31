@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'MORROWMERE',
   webDir: 'dist',
   server: {
+    hostname: 'morrowmere.local',
     androidScheme: 'https',
   },
   android: {
