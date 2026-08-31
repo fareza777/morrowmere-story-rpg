@@ -1,4 +1,5 @@
 import type { CompanionCombatSnapshot } from '../companions';
+import type { DomainEvent } from '../domain/result';
 import type { InventoryState } from '../inventory';
 import type { EnemyDefinition, EnemyIntent, HeroClass, ItemDefinition } from '../types';
 
@@ -45,10 +46,13 @@ export interface EnemyCombatant extends EnemyDefinition {
   readonly blockChance: number;
   readonly parryChance: number;
   readonly phase: number;
+  /** Summoners spend this finite counter before they can call another minion. */
+  readonly roleUses?: number;
 }
 
 export type CombatOutcome = 'active' | 'victory' | 'defeat' | 'fled';
-export type AttackOutcome = 'miss' | 'glancing' | 'hit' | 'critical' | 'blocked' | 'parried';
+export type { AttackOutcome } from '../domain/combat';
+export type { DomainEvent } from '../domain/result';
 
 export interface EnemyIntentView {
   readonly enemyId: string;
@@ -84,17 +88,6 @@ export type CombatAction =
   | { readonly type: 'flee' }
   /** Legacy vertical-slice command. */
   | { readonly type: 'item'; readonly itemId: string };
-
-export type DomainEvent =
-  | { readonly type: 'attack_resolved'; readonly attackerId: string; readonly targetId: string; readonly outcome: AttackOutcome; readonly damage: number; readonly powerVariation: number }
-  | { readonly type: 'combat_action_rejected'; readonly reason: 'invalid_target' | 'insufficient_resource' | 'item_unavailable' | 'companion_unavailable' | 'companion_cooling_down' | 'companion_support_budget' | 'boss_cannot_flee' }
-  | { readonly type: 'combatant_defeated'; readonly combatantId: string }
-  | { readonly type: 'status_ticked'; readonly combatantId: string; readonly statusId: string; readonly remainingDuration: number }
-  | { readonly type: 'intent_revealed'; readonly enemyId: string; readonly intent: EnemyIntent }
-  | { readonly type: 'consumable_used'; readonly instanceId: string }
-  | { readonly type: 'companion_commanded'; readonly companionId: string; readonly damage: number }
-  | { readonly type: 'flee_resolved'; readonly escaped: boolean }
-  | { readonly type: 'boss_phase_changed'; readonly enemyId: string; readonly phase: number };
 
 export interface CombatTurnResult {
   readonly combat: CombatState;

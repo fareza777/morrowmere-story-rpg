@@ -58,4 +58,23 @@ describe('deterministic attack outcomes', () => {
     expect(event && event.powerVariation).toBeLessThanOrEqual(1.15);
     expect(result.combat.rngState).not.toBe(42);
   });
+
+  it('uses bounded saved power variation for enemy attacks too', () => {
+    const combat = combatFixtureForOutcome('hit');
+    const state: CombatState = {
+      ...combat,
+      rngState: 7,
+      enemyIntent: 'strike',
+      enemy: { ...combat.enemy, attack: 12 },
+      enemyIntents: [{ enemyId: 'enemy-1', intent: 'strike', text: 'The foe attacks.' }],
+    };
+    const result = resolveCombatTurn(state, { type: 'guard' }, emptyInventory(), { items: new Map() });
+    const event = result.events.find((candidate) => candidate.type === 'attack_resolved' && candidate.attackerId === 'enemy-1');
+
+    expect(event?.type).toBe('attack_resolved');
+    if (!event || event.type !== 'attack_resolved') throw new Error('Expected the enemy attack event.');
+    expect(event.powerVariation).toBeGreaterThanOrEqual(0.88);
+    expect(event.powerVariation).toBeLessThanOrEqual(1.15);
+    expect(event.powerVariation).not.toBe(1);
+  });
 });

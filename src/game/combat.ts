@@ -1,5 +1,6 @@
 /** Compatibility facade for the vertical slice while tactical modules stay pure. */
 import type { EnemyDefinition } from './types';
+import { ITEMS } from './content/items';
 import { createCombatFromEnemies } from './combat/encounters';
 import { resolveCombatTurn } from './combat/resolve';
 import type { CombatAction, CombatState, HeroCombatant } from './combat/types';
@@ -19,6 +20,8 @@ export interface CombatResult {
   readonly events: readonly string[];
 }
 
+const LEGACY_ITEMS = new Map(ITEMS.map((item) => [item.id, item] as const));
+
 function legacyInventory(hero: HeroCombatant) {
   return {
     pack: hero.inventory.map((itemId) => ({ id: itemId, itemId: itemId as never, quantity: 1 })),
@@ -33,7 +36,7 @@ export function resolveCombatAction(state: CombatState, action: CombatAction): C
     enemies: [state.enemy],
     enemyIntents: [{ enemyId: state.enemy.id, intent: state.enemyIntent, text: state.intentText }],
   };
-  const result = resolveCombatTurn(legacyState, action, legacyInventory(state.player), { items: new Map() });
+  const result = resolveCombatTurn(legacyState, action, legacyInventory(state.player), { items: LEGACY_ITEMS });
   const player = { ...result.combat.player, inventory: result.inventory.pack.flatMap((entry) => Array.from({ length: entry.quantity }, () => entry.itemId)) };
   const next = { ...result.combat, player };
   const events = result.events.map((event) => {

@@ -56,3 +56,40 @@ The group suite includes deterministic baseline simulations with no companion an
 ## Concerns / follow-up
 
 Enemy role behavior is intentionally compact in this task: roles select defensible defaults (evasion, block, parry, intent weighting source) and expose primary intents. Chapter-specific enemy combinations, authored phase rules beyond phase two, and broader balance sweeps belong to the later content and integration tasks.
+
+## Fix round 1 — review findings
+
+### RED evidence
+
+Focused regressions were added first for the legacy Red Mercy facade path, the eight shipped enemy-role classifications and their role actions, lethal boss phase thresholds, enemy power variance, and the group compatibility enemy alias.
+
+```powershell
+npm test -- --run tests/combat.test.ts tests/combat-attack.test.ts tests/combat-groups.test.ts
+```
+
+Result before the fixes: 7 failures. They showed that the legacy facade rejected `potion-red`, enemy variation was `1`, lethal boss hits still emitted `boss_phase_changed`, the legacy enemy alias remained the dead front combatant, shipped trait classification fell back to `specialist`, and role actions did not produce their required effects.
+
+The canonical event-contract regression was then added as a real turn-result assignment to `DomainEvent[]` imported from `src/game/domain/result.ts`.
+
+```powershell
+npm run build
+```
+
+Result before consolidation: expected TS2322 error because `CombatTurnResult.events` used the separate combat-local `DomainEvent` union rather than the canonical domain union.
+
+### GREEN evidence
+
+- The combat regressions now pass: 29/29 tests in `combat.test.ts`, `combat-attack.test.ts`, and `combat-groups.test.ts`.
+- A combined combat, state, and interface check passes: 47/47 tests across five files. The existing interface suite prints jsdom `Window.scrollTo()` notices but passes.
+- `npm run build` passes after moving `AttackOutcome` and combat intent vocabulary to `src/game/domain/combat.ts`, adding all combat variants to `src/game/domain/result.ts`, and making `CombatTurnResult` import that canonical `DomainEvent` type.
+- `git diff --check` passes.
+- `npm run test:run` was attempted. The runner emitted the repository's known jsdom `Window.scrollTo()` notices but the shell integration did not return a final suite summary; focused and affected suites above completed normally.
+
+### Changes made
+
+- The legacy facade now supplies the real immutable item catalog, so the existing CombatPanel `potion-red` command heals, removes the item, and advances the turn.
+- Shipped trait names now explicitly classify all eight roles. Defenders block, assassins evade/parry and strike harder, archers pierce guard, controllers apply Hindered, shamans drain Focus, summoners create one smoke minion, commanders buff living allies, and specialists recover more health.
+- Bosses only enter phase two while alive; a lethal hit produces defeat/victory events without a phase-change event.
+- Enemy attacks now use the same saved 88–115% power variation as player attacks and serialize that value in `attack_resolved`.
+- Group combat keeps compatibility `enemy` synchronized to the first living combatant selected by the visible intent list.
+- `DomainEvent` now has one canonical declaration in `src/game/domain/result.ts`; combat re-exports that type for compatibility rather than declaring a competing union.

@@ -1,5 +1,6 @@
 import { createRng, type SeededRng } from '../rng';
-import type { EnemyCombatant, HeroCombatant, AttackOutcome } from './types';
+import type { AttackOutcome } from '../domain/combat';
+import type { EnemyCombatant, HeroCombatant } from './types';
 
 export function calculateDamage(input: { readonly power: number; readonly kind: 'physical' | 'sorcery'; readonly armor: number; readonly ward: number; readonly guarding?: boolean }): number {
   const defense = input.kind === 'physical' ? input.armor : input.ward;
@@ -38,6 +39,7 @@ export function resolveAttack(input: {
   readonly kind: 'physical' | 'sorcery';
   readonly missedAttacks?: number;
   readonly varyPower?: boolean;
+  readonly ignoreGuard?: boolean;
 }): AttackResolution {
   const rng: SeededRng = createRng(input.rngState);
   const accuracyRoll = rng.int(1, 100);
@@ -58,6 +60,6 @@ export function resolveAttack(input: {
   const modifiedPower = input.power * variation * (outcome === 'critical' ? 1.75 : outcome === 'glancing' ? 0.5 : 1);
   const damage = outcome === 'miss' || outcome === 'parried'
     ? 0
-    : calculateDamage({ power: modifiedPower, kind: input.kind, armor: input.target.armor, ward: input.target.ward, guarding: input.target.guarding });
+    : calculateDamage({ power: modifiedPower, kind: input.kind, armor: input.target.armor, ward: input.target.ward, guarding: input.target.guarding && !input.ignoreGuard });
   return { outcome, damage, powerVariation: variation, rngState: rng.state };
 }

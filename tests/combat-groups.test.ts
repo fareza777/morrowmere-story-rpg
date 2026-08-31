@@ -3,15 +3,18 @@ import { createEncounter, resolveCombatTurn, type CombatState } from '../src/gam
 import type { CompanionCombatSnapshot } from '../src/game/companions';
 import type { InventoryState } from '../src/game/inventory';
 import type { EnemyDefinition, ItemDefinition } from '../src/game/types';
+import { ENEMIES } from '../src/game/content/enemies';
+import { roleForEnemy } from '../src/game/combat/enemy-ai';
+import type { DomainEvent as CanonicalDomainEvent } from '../src/game/domain/result';
 
 const inventory = (): InventoryState => ({
   pack: [{ id: 'pack-stack-potion-red', itemId: 'potion-red' as never, quantity: 1 }],
   stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] },
 });
 
-const enemy = (id: string, role: 'defender' | 'archer' | 'commander' = 'defender'): EnemyDefinition => ({
+const enemy = (id: string, traits: readonly string[] = ['Shield Wall'], intentWeights: EnemyDefinition['intentWeights'] = { strike: 1 }): EnemyDefinition => ({
   id, archetypeId: id, name: id, rank: 1, level: 1, species: 'human', region: 'gloamwood', maxHealth: 30,
-  attack: 3, armor: 0, ward: 0, intentWeights: { strike: 1 }, traits: [role], rewardTags: [], description: '', artFamily: '',
+  attack: 3, armor: 0, ward: 0, intentWeights, traits, rewardTags: [], description: '', artFamily: '',
 });
 
 const hero = {
@@ -33,7 +36,7 @@ const items = new Map<string, ItemDefinition>([['potion-red', {
 describe('group combat', () => {
   it('creates one combatant per encounter enemy and exposes a primary intent', () => {
     const combat = createEncounter(hero, { id: 'road-pack' as never, enemyIds: ['front' as never, 'rear' as never] }, {
-      enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear', 'archer')]]),
+      enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear', ['Stone Wings'])]]),
     }, 7);
 
     expect(combat.enemies).toHaveLength(2);
@@ -55,10 +58,12 @@ describe('group combat', () => {
     const combat = createEncounter(hero, { id: 'solo' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
     const wounded: CombatState = { ...combat, player: { ...combat.player, health: 20 } };
     const result = resolveCombatTurn(wounded, { type: 'consumable', instanceId: 'pack-stack-potion-red' }, inventory(), { items });
+    const canonicalEvents: readonly CanonicalDomainEvent[] = result.events;
 
     expect(result.inventory.pack).toEqual([]);
     expect(result.combat.player.health).toBeGreaterThan(20);
     expect(result.combat.turn).toBe(2);
+    expect(canonicalEvents).toEqual(result.events);
   });
 
   it('enforces companion cooldown and support budget instead of making a second hero', () => {
@@ -77,6 +82,76 @@ describe('group combat', () => {
     const result = resolveCombatTurn(nearThreshold, { type: 'attack', targetId: 'front' }, inventory(), { items });
 
     expect(result.events).toContainEqual(expect.objectContaining({ type: 'boss_phase_changed', phase: 2 }));
+  });
+
+  it('does not advance a boss phase when the threshold-crossing hit is lethal', () => {
+    const combat = createEncounter(hero, { id: 'boss' as never, enemyIds: ['front' as never] }, { enemies: new Map([['front' as never, enemy('front')]]) }, 7, true);
+    const dyingBoss: CombatState = { ...combat, enemies: combat.enemies.map((candidate) => ({ ...candidate, health: 1 })), enemy: { ...combat.enemy, health: 1 } };
+    const result = resolveCombatTurn(dyingBoss, { type: 'attack', targetId: 'front' }, inventory(), { items });
+
+    expect(result.combat.outcome).toBe('victory');
+    expect(result.events).not.toContainEqual(expect.objectContaining({ type: 'boss_phase_changed' }));
+  });
+
+  it('keeps the compatibility enemy aligned to the first living combatant', () => {
+    const combat = createEncounter(hero, { id: 'two' as never, enemyIds: ['front' as never, 'rear' as never] }, {
+      enemies: new Map([['front' as never, enemy('front')], ['rear' as never, enemy('rear')]]),
+    }, 7);
+    const weakened: CombatState = { ...combat, enemies: combat.enemies.map((candidate) => candidate.id === 'front' ? { ...candidate, health: 1 } : candidate), enemy: { ...combat.enemy, health: 1 } };
+    const result = resolveCombatTurn(weakened, { type: 'attack', targetId: 'front' }, inventory(), { items });
+
+    expect(result.combat.enemy.id).toBe('rear');
+    expect(result.combat.enemy.id).toBe(result.combat.enemyIntents[0]?.enemyId);
+  });
+
+  it('classifies shipped traits into all eight tactical roles', () => {
+    const archetype = (id: string) => ENEMIES.find((candidate) => candidate.archetypeId === id)!;
+
+    expect(roleForEnemy(archetype('iron-deserter'))).toBe('defender');
+    expect(roleForEnemy(archetype('gloam-warg'))).toBe('assassin');
+    expect(roleForEnemy(archetype('vault-gargoyle'))).toBe('archer');
+    expect(roleForEnemy(archetype('ash-magus'))).toBe('shaman');
+    expect(roleForEnemy(archetype('mire-enchantress'))).toBe('controller');
+    expect(roleForEnemy(archetype('orc-hexcaller'))).toBe('summoner');
+    expect(roleForEnemy(archetype('barrow-soldier'))).toBe('commander');
+    expect(roleForEnemy(archetype('bridge-troll'))).toBe('specialist');
+  });
+
+  it('gives archers a piercing shot, controllers a hindering hex, shamans a focus drain, and specialists stronger recovery', () => {
+    const resolveRoleTurn = (definition: EnemyDefinition, intent: 'strike' | 'hex' | 'recover', options: { readonly player?: Partial<CombatState['player']>; readonly enemyHealth?: number } = {}) => {
+      const combat = createEncounter(hero, { id: `${definition.id}-encounter` as never, enemyIds: [definition.id as never] }, { enemies: new Map([[definition.id as never, definition]]) }, 7);
+      const actingEnemy = { ...combat.enemy, health: options.enemyHealth ?? combat.enemy.health };
+      const forced: CombatState = {
+        ...combat, player: { ...combat.player, ...options.player }, enemy: actingEnemy, enemies: [actingEnemy], rngState: 7, enemyIntent: intent,
+        enemyIntents: [{ enemyId: combat.enemy.id, intent, text: 'The enemy acts.' }],
+      };
+      return resolveCombatTurn(forced, { type: 'guard' }, inventory(), { items });
+    };
+
+    const archer = resolveRoleTurn({ ...enemy('archer', ['Stone Wings'], { strike: 1 }), attack: 10 }, 'strike', { player: { health: 40, armor: 0 } });
+    const controller = resolveRoleTurn(enemy('controller', ['Drowning Word'], { hex: 1 }), 'hex');
+    const shaman = resolveRoleTurn({ ...enemy('shaman', ['Witchfire'], { hex: 1 }), species: 'mage' }, 'hex');
+    const specialist = resolveRoleTurn(enemy('specialist', ['Regeneration'], { recover: 1 }), 'recover', { enemyHealth: 10 });
+
+    expect(archer.combat.player.health).toBeLessThan(32);
+    expect(controller.combat.player.statuses).toContainEqual(expect.objectContaining({ id: 'hindered' }));
+    expect(shaman.combat.player.focus).toBeLessThan(hero.focus);
+    expect(specialist.combat.enemies[0]?.health).toBeGreaterThanOrEqual(16);
+  });
+
+  it('lets summoners add a minion and commanders strengthen a living ally', () => {
+    const summonerDefinition = enemy('summoner', ['Ancestor Smoke'], { hex: 1 });
+    const summoner = createEncounter(hero, { id: 'summon' as never, enemyIds: ['summoner' as never] }, { enemies: new Map([['summoner' as never, summonerDefinition]]) }, 7);
+    const summoned = resolveCombatTurn({ ...summoner, rngState: 7, enemyIntent: 'hex', enemyIntents: [{ enemyId: 'summoner', intent: 'hex', text: 'Calls smoke.' }] }, { type: 'guard' }, inventory(), { items });
+
+    const commanderDefinition = enemy('commander', ['Deathless Drill'], { guard: 1 });
+    const allyDefinition = enemy('ally', ['Shield Wall'], { strike: 1 });
+    const commanded = createEncounter(hero, { id: 'command' as never, enemyIds: ['commander' as never, 'ally' as never] }, { enemies: new Map([['commander' as never, commanderDefinition], ['ally' as never, allyDefinition]]) }, 7);
+    const strengthened = resolveCombatTurn({ ...commanded, enemyIntent: 'guard', enemyIntents: [{ enemyId: 'commander', intent: 'guard', text: 'Commands.' }] }, { type: 'guard' }, inventory(), { items });
+
+    expect(summoned.combat.enemies).toHaveLength(2);
+    expect(summoned.combat.enemies[1]?.name).toContain('Smoke');
+    expect(strengthened.combat.enemies.find((candidate) => candidate.id === 'ally')?.attack).toBe(4);
   });
 
   it.each([null, companion])('keeps the baseline encounter winnable with companion %s', (activeCompanion) => {

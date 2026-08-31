@@ -1,3 +1,5 @@
+import type { CombatIntent } from './domain/combat';
+
 export type HeroClass = 'warrior' | 'mage' | 'warden';
 
 export type {
@@ -28,7 +30,7 @@ export type EnemySpecies =
   | 'cultist'
   | 'demon';
 
-export type EnemyIntent = 'strike' | 'heavy' | 'guard' | 'hex' | 'recover' | 'flee';
+export type EnemyIntent = CombatIntent;
 
 export interface EnemyDefinition {
   readonly id: string;

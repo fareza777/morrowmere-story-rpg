@@ -43,7 +43,8 @@ describe('combat rules', () => {
 
     const result = resolveCombatAction(state, { type: 'guard' });
 
-    expect(result.state.player.health).toBe(36);
+    expect(40 - result.state.player.health).toBeGreaterThanOrEqual(3);
+    expect(40 - result.state.player.health).toBeLessThanOrEqual(5);
     expect(result.state.player.guarding).toBe(false);
     expect(result.state.player.statuses[0]?.duration).toBe(1);
   });
@@ -54,6 +55,21 @@ describe('combat rules', () => {
 
     expect(result.state.outcome).toBe('active');
     expect(result.events.join(' ')).toContain('There is no road out');
+  });
+
+  it('uses Red Mercy through the legacy facade and spends the combat turn', () => {
+    const initial = createCombat(createHero('warrior'), ENEMIES[0], 41);
+    const state: CombatState = {
+      ...initial,
+      enemyIntent: 'guard',
+      player: { ...initial.player, health: 10 },
+    };
+
+    const result = resolveCombatAction(state, { type: 'item', itemId: 'potion-red' });
+
+    expect(result.state.player.health).toBe(22);
+    expect(result.state.player.inventory).not.toContain('potion-red');
+    expect(result.state.turn).toBe(2);
   });
 
   it('produces deterministic misses and critical hits across seeded attacks', () => {
