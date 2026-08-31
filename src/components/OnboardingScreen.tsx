@@ -1,31 +1,115 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Shield, Sparkle, Sword } from './icons';
+import type { UiSettings } from '../ui/types';
+import { ArrowLeft, ArrowRight } from './icons';
 
-interface OnboardingScreenProps { readonly onBack: () => void; readonly onComplete: () => void; }
+interface OnboardingScreenProps {
+  readonly initialSettings: UiSettings;
+  readonly onBack: () => void;
+  readonly onComplete: (settings: UiSettings) => void;
+}
 
-const SLIDES = [
-  { eyebrow: 'Every choice leaves a scar', title: 'Your chronicle remembers', body: 'Mercy, corruption, secrets, and faction loyalties reshape later encounters and decide which ending survives you.', image: '/assets/onboarding/chronicle.webp', icon: Sword, note: 'No two twelve-scene journeys resolve the same way.' },
-  { eyebrow: 'Tactical, readable combat', title: 'Read the enemy', body: 'Enemy intent is shown before every turn. Guard a heavy blow, risk a critical strike, cast through armor, or flee when the road permits it.', image: '/assets/onboarding/combat.webp', icon: Shield, note: 'Attacks can miss, hit, or land a critical blow.' },
-  { eyebrow: 'Build your oathless hero', title: 'Carry what changes you', body: 'Collect sixty named relics, equip a weapon, armor, and two charms, then build around Warrior, Mage, or Warden strengths.', image: '/assets/onboarding/loadout.webp', icon: Sparkle, note: 'Equipment bonuses apply instantly and can be changed anytime.' },
-] as const;
+type VolumeKey = 'musicVolume' | 'sfxVolume' | 'voiceVolume';
 
-export function OnboardingScreen({ onBack, onComplete }: OnboardingScreenProps) {
-  const [index, setIndex] = useState(0);
-  const slide = SLIDES[index];
-  const Icon = slide.icon;
-  const isLast = index === SLIDES.length - 1;
+function percent(value: number): number {
+  return Math.round(value * 100);
+}
+
+export function OnboardingScreen({ initialSettings, onBack, onComplete }: OnboardingScreenProps) {
+  const [settings, setSettings] = useState(initialSettings);
+
+  const changeVolume = (key: VolumeKey, value: string) => {
+    setSettings((current) => ({ ...current, [key]: Number(value) / 100 }));
+  };
+
   return (
     <main className="onboarding-screen">
-      <div className="onboarding-art" style={{ backgroundImage: `url('${slide.image}')` }} aria-hidden="true" />
-      <section className="onboarding-copy" aria-live="polite">
-        <div className="onboarding-progress" aria-label={`Introduction ${index + 1} of ${SLIDES.length}`}>{SLIDES.map((entry, step) => <span key={entry.title} className={step <= index ? 'is-active' : ''} />)}</div>
-        <p className="eyebrow">{slide.eyebrow}</p><h1>{slide.title}</h1><p>{slide.body}</p>
-        <div className="onboarding-note"><Icon size={22} weight="duotone" aria-hidden="true" /><span>{slide.note}</span></div>
-        <div className="onboarding-actions">
-          <button className="button button-secondary" type="button" onClick={index === 0 ? onBack : () => setIndex((value) => value - 1)}><ArrowLeft size={18} aria-hidden="true" />{index === 0 ? 'Back' : 'Previous'}</button>
-          <button className="button button-primary" type="button" onClick={isLast ? onComplete : () => setIndex((value) => value + 1)}>{isLast ? 'Choose Your Path' : 'Next'}{!isLast && <ArrowRight size={18} aria-hidden="true" />}</button>
+      <div
+        className="onboarding-art"
+        style={{ backgroundImage: "url('/assets/onboarding/chronicle.webp')" }}
+        aria-hidden="true"
+      />
+      <section className="onboarding-copy">
+        <p className="eyebrow">Before the road begins</p>
+        <h1>Set your opening preferences</h1>
+        <p>
+          Set sound and feedback now. You can change every option later from Settings.
+        </p>
+
+        <div className="onboarding-preferences" aria-label="Opening preferences">
+          <label className="setting-range">
+            <span><strong>Music</strong><output>{percent(settings.musicVolume)}%</output></span>
+            <input
+              aria-label="Music volume"
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={percent(settings.musicVolume)}
+              onChange={(event) => changeVolume('musicVolume', event.target.value)}
+            />
+          </label>
+
+          <label className="setting-range">
+            <span><strong>Sound effects</strong><output>{percent(settings.sfxVolume)}%</output></span>
+            <input
+              aria-label="Sound effects volume"
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={percent(settings.sfxVolume)}
+              onChange={(event) => changeVolume('sfxVolume', event.target.value)}
+            />
+          </label>
+
+          <label className="setting-range">
+            <span><strong>Voice</strong><output>{percent(settings.voiceVolume)}%</output></span>
+            <input
+              aria-label="Voice volume"
+              type="range"
+              min="0"
+              max="100"
+              step="10"
+              value={percent(settings.voiceVolume)}
+              onChange={(event) => changeVolume('voiceVolume', event.target.value)}
+            />
+          </label>
+
+          <label className="setting-toggle">
+            <span>
+              <strong>Show captions</strong>
+              <small>Recommended even when voice is off.</small>
+            </span>
+            <input
+              aria-label="Show captions"
+              type="checkbox"
+              checked={settings.captions}
+              onChange={(event) => setSettings((current) => ({ ...current, captions: event.target.checked }))}
+            />
+          </label>
+
+          <label className="setting-toggle">
+            <span>
+              <strong>Use haptics</strong>
+              <small>Restrained feedback for major impacts.</small>
+            </span>
+            <input
+              aria-label="Use haptics"
+              type="checkbox"
+              checked={settings.hapticsEnabled}
+              onChange={(event) => setSettings((current) => ({ ...current, hapticsEnabled: event.target.checked }))}
+            />
+          </label>
         </div>
-        <button className="onboarding-skip" type="button" onClick={onComplete}>Skip introduction</button>
+
+        <div className="onboarding-actions">
+          <button className="button button-secondary" type="button" onClick={onBack}>
+            <ArrowLeft size={18} aria-hidden="true" />Back
+          </button>
+          <button className="button button-primary" type="button" onClick={() => onComplete(settings)}>
+            Watch opening story<ArrowRight size={18} aria-hidden="true" />
+          </button>
+        </div>
       </section>
     </main>
   );
