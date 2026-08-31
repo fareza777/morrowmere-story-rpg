@@ -136,11 +136,11 @@ describe('inventory', () => {
         { id: 'charm-c', itemId: itemId('charm-wolf-tooth'), quantity: 1 },
       ],
     };
-    const weapon = applyInventoryCommand(inventory, { type: 'equip', entryId: 'sword-a' }, ITEMS_FIXTURE);
-    const armor = applyInventoryCommand(weapon.ok ? weapon.value : inventory, { type: 'equip', entryId: 'mail-a' }, ITEMS_FIXTURE);
-    const charmA = applyInventoryCommand(armor.ok ? armor.value : inventory, { type: 'equip', entryId: 'charm-a' }, ITEMS_FIXTURE);
-    const charmB = applyInventoryCommand(charmA.ok ? charmA.value : inventory, { type: 'equip', entryId: 'charm-b' }, ITEMS_FIXTURE);
-    const charmC = applyInventoryCommand(charmB.ok ? charmB.value : inventory, { type: 'equip', entryId: 'charm-c' }, ITEMS_FIXTURE);
+    const weapon = applyInventoryCommand(inventory, { type: 'equip', entryId: 'sword-a', heroClass: 'warrior' }, ITEMS_FIXTURE);
+    const armor = applyInventoryCommand(weapon.ok ? weapon.value : inventory, { type: 'equip', entryId: 'mail-a', heroClass: 'warrior' }, ITEMS_FIXTURE);
+    const charmA = applyInventoryCommand(armor.ok ? armor.value : inventory, { type: 'equip', entryId: 'charm-a', heroClass: 'warrior' }, ITEMS_FIXTURE);
+    const charmB = applyInventoryCommand(charmA.ok ? charmA.value : inventory, { type: 'equip', entryId: 'charm-b', heroClass: 'warrior' }, ITEMS_FIXTURE);
+    const charmC = applyInventoryCommand(charmB.ok ? charmB.value : inventory, { type: 'equip', entryId: 'charm-c', heroClass: 'warrior' }, ITEMS_FIXTURE);
 
     expect(charmB.ok && charmB.value.equipment).toEqual({
       weapon: 'weapon-rust-sword',
@@ -149,6 +149,16 @@ describe('inventory', () => {
     });
     expect(charmC.ok).toBe(false);
     expect(charmC.ok ? null : charmC.error.code).toBe('equipment_slot_full');
+  });
+
+  it('rejects equipment the hero class cannot use without moving the pack entry', () => {
+    const inventory = inventoryWith('weapon-rust-sword', 1);
+
+    const result = applyInventoryCommand(inventory, { type: 'equip', entryId: 'stack-weapon-rust-sword', heroClass: 'mage' }, ITEMS_FIXTURE);
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? null : result.error).toEqual({ code: 'item_not_usable', message: 'That hero class cannot equip this item.' });
+    expect(inventory.pack).toHaveLength(1);
   });
 
   it('unequips only one copy when both charm slots contain the same charm', () => {

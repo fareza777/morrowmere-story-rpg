@@ -1,0 +1,95 @@
+import { applyCompanionEffect, recruitCompanion } from '../companions';
+import type { ContentIndex } from '../content/schema';
+import type { GameEffect } from '../domain/effects';
+import type { CommandDiagnostic, DomainEvent, DomainResult } from '../domain/result';
+import type { CampaignState, ExpeditionState } from './types';
+
+export interface EffectState {
+  readonly campaign: CampaignState;
+  readonly expedition: ExpeditionState | null;
+}
+
+export interface AppliedEffects extends EffectState {
+  readonly events: readonly DomainEvent[];
+}
+
+function failure<T>(code: string, message: string): DomainResult<T, CommandDiagnostic> {
+  return { ok: false, error: { code, message } };
+}
+
+function unique(values: readonly string[], value: string): readonly string[] {
+  return values.includes(value) ? values : [...values, value];
+}
+
+/** Applies a complete authored batch to local candidates.  The caller receives no partial state on failure. */
+export function applyEffectsAtomically(
+  state: EffectState,
+  effects: readonly GameEffect[],
+  content: ContentIndex,
+): DomainResult<AppliedEffects, CommandDiagnostic> {
+  let campaign = state.campaign;
+  let expedition = state.expedition;
+  const events: DomainEvent[] = [];
+
+  for (const effect of effects) {
+    if (effect.type === 'gold') {
+      if (!Number.isFinite(effect.amount)) return failure('invalid_gold', 'Gold changes must be finite numbers.');
+      if (effect.scope === 'banked') campaign = { ...campaign, bankedGold: Math.max(0, campaign.bankedGold + effect.amount) };
+      else {
+        if (!expedition) return failure('no_expedition', 'There is no expedition to receive unbanked gold.');
+        expedition = { ...expedition, unbankedGold: Math.max(0, expedition.unbankedGold + effect.amount) };
+      }
+      events.push({ type: 'notification', message: 'Gold updated.' });
+      continue;
+    }
+    if (effect.type === 'item') {
+      if (!content.items.has(effect.itemId)) return failure('invalid_item', 'That item is not available.');
+      if (!Number.isInteger(effect.quantity) || effect.quantity <= 0) return failure('invalid_quantity', 'Item quantity must be a positive whole number.');
+      if (!expedition) return failure('no_expedition', 'There is no expedition to receive loot.');
+      const loot = [...expedition.unbankedLoot];
+      if (effect.operation === 'grant') for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
+      else {
+        let remaining = effect.quantity;
+        for (let index = loot.length - 1; index >= 0 && remaining > 0; index -= 1) {
+          if (loot[index] === effect.itemId) { loot.splice(index, 1); remaining -= 1; }
+        }
+        if (remaining > 0) return failure('item_not_found', 'That item is not available in this expedition.');
+      }
+      expedition = { ...expedition, unbankedLoot: loot };
+      events.push({ type: 'item_changed', itemId: effect.itemId, quantity: effect.operation === 'grant' ? effect.quantity : -effect.quantity });
+      continue;
+    }
+    if (effect.type === 'flag') {
+      campaign = { ...campaign, flags: effect.operation === 'add' ? unique(campaign.flags, effect.flagId) : campaign.flags.filter((flag) => flag !== effect.flagId) };
+      continue;
+    }
+    if (effect.type === 'faction') {
+      campaign = { ...campaign, factions: { ...campaign.factions, [effect.factionId]: (campaign.factions[effect.factionId] ?? 0) + effect.amount } };
+      continue;
+    }
+    if (effect.type === 'companion') {
+      const roster = effect.operation === 'recruit'
+        ? recruitCompanion(campaign.companions, effect.companionId, campaign, content)
+        : applyCompanionEffect(campaign.companions, { type: 'leave', companionId: effect.companionId });
+      if (!roster.ok) return failure(roster.error.code, roster.error.message);
+      campaign = { ...campaign, companions: roster.value };
+      continue;
+    }
+    if (effect.type === 'callback') {
+      if (!expedition) return failure('no_expedition', 'There is no expedition to schedule that callback.');
+      expedition = { ...expedition, director: { ...expedition.director, pendingCallbacks: [...expedition.director.pendingCallbacks, { ...effect.promise, status: 'pending', required: true }] } };
+      continue;
+    }
+    if (effect.type === 'combat') {
+      if (!content.encounters.has(effect.encounterId)) return failure('invalid_encounter', 'That encounter is not available.');
+      if (!expedition) return failure('no_expedition', 'There is no expedition to start combat.');
+      expedition = { ...expedition, currentCombat: { encounterId: effect.encounterId } };
+      events.push({ type: 'combat_started', encounterId: effect.encounterId });
+      continue;
+    }
+    if (!expedition) return failure('no_expedition', 'There is no expedition to change vital resources.');
+    // Vitals are runtime combat/status concerns and intentionally are not persisted as derived campaign stats.
+    events.push({ type: 'notification', message: 'Vital resources updated.' });
+  }
+  return { ok: true, value: { campaign, expedition, events } };
+}

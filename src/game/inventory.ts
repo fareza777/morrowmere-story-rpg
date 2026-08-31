@@ -1,6 +1,7 @@
 import type { ItemDefinition } from './content/schema';
 import type { ItemId } from './domain/ids';
 import type { DomainResult } from './domain/result';
+import type { HeroClass } from './types';
 
 export const PACK_CAPACITY = 24;
 export type InventoryContext = 'combat' | 'field';
@@ -26,7 +27,7 @@ export interface InventoryState {
 export type InventoryCommand =
   | { readonly type: 'add'; readonly itemId: ItemId; readonly quantity?: number; readonly destination?: InventoryPartition }
   | { readonly type: 'move'; readonly entryId: string; readonly destination: InventoryPartition }
-  | { readonly type: 'equip'; readonly entryId: string }
+  | { readonly type: 'equip'; readonly entryId: string; readonly heroClass: HeroClass }
   | { readonly type: 'unequip'; readonly itemId: ItemId }
   | { readonly type: 'discard'; readonly entryId: string; readonly quantity?: number };
 
@@ -145,6 +146,7 @@ export function applyInventoryCommand(
     if (!entry) return failure('entry_not_found', 'That item is not in your pack.');
     const item = items.get(entry.itemId);
     if (!item || !isEquipment(item)) return failure('invalid_item', 'That item cannot be equipped.');
+    if (!item.allowedClasses.includes(command.heroClass)) return failure('item_not_usable', 'That hero class cannot equip this item.');
     if (item.category === 'charm') {
       if (inventory.equipment.charms.length >= 2) return failure('equipment_slot_full', 'Both charm slots are already occupied.');
       return { ok: true, value: { ...inventory, pack: removeFromEntries(inventory.pack, entry.id, 1), equipment: { ...inventory.equipment, charms: [...inventory.equipment.charms, entry.itemId] } } };

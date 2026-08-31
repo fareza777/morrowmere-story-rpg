@@ -5,6 +5,22 @@ import { resolveEnding, type Ending } from './content/story';
 import { buildRoute, type RouteNode } from './director';
 import type { EventEffect, FactionStanding, HeroClass, ItemCategory, ItemDefinition } from './types';
 
+export { createCampaign } from './state/create';
+export { currentScene, currentSceneId, reduceGame, restartChapter, returnToCampAfterDefeat } from './state/reducer';
+export type {
+  CampaignCheckpointPayload,
+  CampaignState as CampaignStateV2,
+  ChapterSnapshot,
+  CreateCampaignOptions,
+  ExpeditionState,
+  FlowState,
+  GameCommand as GameCommandV2,
+  GameStateV2,
+  GameTransition,
+  ProfileState,
+  SequencedDomainEvent,
+} from './state/types';
+
 export interface GameSettings {
   readonly textScale: number;
   readonly highContrast: boolean;
