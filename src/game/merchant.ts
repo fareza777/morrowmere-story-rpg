@@ -85,7 +85,7 @@ function tradeFailure<T>(
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
 }
-function restockSeed(
+export function merchantRestockSeed(
   seed: number,
   merchantId: MerchantId,
   restockKey: string
@@ -181,7 +181,7 @@ export function generateMerchantVisit(
     context.persistedVisit.restockKey === context.restockKey
   )
     return context.persistedVisit;
-  const seed = restockSeed(context.seed, merchant.id, context.restockKey);
+  const seed = merchantRestockSeed(context.seed, merchant.id, context.restockKey);
   const distinctEligible = [...new Set(merchant.stockItemIds)].filter(
     (itemId) => {
       const item = context.content.items.get(itemId);

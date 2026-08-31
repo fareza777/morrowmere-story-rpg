@@ -2,6 +2,7 @@ import type { ContentIndex } from '../content/schema';
 import type { GameStateV2, ProfileState } from '../state/types';
 import type { SaveSlot } from '../persistence';
 import { migrateSave } from './migrate';
+import { decodeSaveState, encodeSaveState } from './codec';
 import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope } from './schema';
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
@@ -21,7 +22,13 @@ const EMPTY_CONTENT: ContentIndex = {
 };
 
 function message(error: unknown, fallback: string): string { return error instanceof Error ? error.message : fallback; }
-function parseEnvelope(raw: string | null): SaveEnvelope | null { if (raw === null) return null; try { const value: unknown = JSON.parse(raw); return isSaveEnvelope(value) ? value : null; } catch { return null; } }
+function parseEnvelope(raw: string | null, expectedSlot?: SaveSlot): SaveEnvelope | null {
+  if (raw === null) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return isSaveEnvelope(value) && (expectedSlot === undefined || value.slot === expectedSlot) ? value : null;
+  } catch { return null; }
+}
 function parseProfile(raw: string | null) { if (raw === null) return null; try { const value: unknown = JSON.parse(raw); return isProfileEnvelope(value) ? value : null; } catch { return null; } }
 function summary(envelope: SaveEnvelope): SlotSummary { const campaign = envelope.state.campaign; return { title: 'Chronicle I — The Black Banner', heroName: campaign.heroName, heroClass: campaign.hero.heroClass.slice(0, 1).toUpperCase() + campaign.hero.heroClass.slice(1), level: campaign.hero.level, chapter: `Chapter ${Number(campaign.chapterId.slice(2))}`, updatedAt: envelope.savedAt }; }
 
@@ -44,16 +51,21 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
     const nextRaw = JSON.stringify(envelope);
     try {
       const currentRaw = storage.getItem(saveActiveKey(slot));
-      const current = parseEnvelope(currentRaw);
-      if (currentRaw !== null && current) storage.setItem(saveBackupKey(slot), currentRaw);
+      const current = parseEnvelope(currentRaw, slot);
+      if (currentRaw !== null && current && decodeSaveState(current.state, content)) storage.setItem(saveBackupKey(slot), currentRaw);
       storage.setItem(saveActiveKey(slot), nextRaw);
       return { ok: true };
     } catch (error) { return { ok: false, error: message(error, 'Unable to save the Chronicle.') }; }
   };
   return {
     saveSlot(slot, state) {
-      if (!isSaveEnvelope(createSaveEnvelope(slot, state, clock()))) return { ok: false, error: 'Invalid save state.' };
-      return saveEnvelope(slot, createSaveEnvelope(slot, state, clock()));
+      let encoded;
+      try { encoded = encodeSaveState(state, content); }
+      catch { return { ok: false, error: 'Invalid save state.' }; }
+      if (!encoded) return { ok: false, error: 'Invalid save state.' };
+      const envelope = createSaveEnvelope(slot, encoded, clock());
+      if (!isSaveEnvelope(envelope)) return { ok: false, error: 'Invalid save state.' };
+      return saveEnvelope(slot, envelope);
     },
     loadSlot(slot) {
       let activeRaw: string | null;
@@ -61,14 +73,16 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       try { activeRaw = storage.getItem(saveActiveKey(slot)); backupRaw = storage.getItem(saveBackupKey(slot)); }
       catch (error) { return { ok: false, reason: 'corrupt', error: message(error, 'Unable to read the Chronicle.') }; }
       const recoveryKeys: string[] = [];
-      const active = parseEnvelope(activeRaw);
+      const activeEnvelope = parseEnvelope(activeRaw, slot);
+      const active = activeEnvelope ? decodeSaveState(activeEnvelope.state, content) : null;
       if (activeRaw !== null && !active) { const key = archive(slot, 'active', activeRaw); if (key) recoveryKeys.push(key); }
-      const backup = parseEnvelope(backupRaw);
+      const backupEnvelope = parseEnvelope(backupRaw, slot);
+      const backup = backupEnvelope ? decodeSaveState(backupEnvelope.state, content) : null;
       if (backupRaw !== null && !backup) { const key = archive(slot, 'backup', backupRaw); if (key) recoveryKeys.push(key); }
-      if (active) return { ok: true, state: active.state, source: 'active', summary: summary(active) };
-      if (backup) {
+      if (active && activeEnvelope) return { ok: true, state: active, source: 'active', summary: summary(activeEnvelope) };
+      if (backup && backupEnvelope) {
         try { storage.setItem(saveActiveKey(slot), backupRaw!); } catch { /* Recovery remains usable even if promotion cannot persist. */ }
-        return { ok: true, state: backup.state, source: 'backup', summary: summary(backup) };
+        return { ok: true, state: backup, source: 'backup', summary: summary(backupEnvelope) };
       }
       if (activeRaw !== null || backupRaw !== null) return { ok: false, reason: 'corrupt', recoveryKeys };
       let legacyRaw: string | null;
@@ -81,20 +95,21 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
         archive(slot, 'v1', legacyRaw, 'legacy');
         const written = this.saveSlot(slot, migrated);
         if (!written.ok) return { ok: false, reason: 'corrupt', error: written.error };
-        const envelope = parseEnvelope(storage.getItem(saveActiveKey(slot)))!;
+        const envelope = parseEnvelope(storage.getItem(saveActiveKey(slot)), slot)!;
         return { ok: true, state: migrated, source: 'migrated', summary: summary(envelope), notice: 'Your prior save was archived. Chronicle I begins at Chapter 1.' };
       } catch (error) { const key = archive(slot, 'legacy-invalid', legacyRaw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [], error: message(error, 'Unable to migrate the Chronicle.') }; }
     },
     exportSlot(slot) {
-      try { const raw = storage.getItem(saveActiveKey(slot)); return parseEnvelope(raw) ? raw : null; } catch { return null; }
+      try { const raw = storage.getItem(saveActiveKey(slot)); const envelope = parseEnvelope(raw, slot); return envelope && decodeSaveState(envelope.state, content) ? raw : null; } catch { return null; }
     },
     importSlot(slot, raw) {
       const incoming = parseEnvelope(raw);
-      if (!incoming) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
+      const state = incoming ? decodeSaveState(incoming.state, content) : null;
+      if (!incoming || !state) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
       const target = createSaveEnvelope(slot, incoming.state, clock());
       const written = saveEnvelope(slot, target);
       if (!written.ok) return { ok: false, reason: 'corrupt', error: written.error };
-      return { ok: true, state: incoming.state, source: 'active', summary: summary(target) };
+      return { ok: true, state, source: 'active', summary: summary(target) };
     },
     saveProfile(profile) {
       if (!isProfileState(profile)) return { ok: false, error: 'Invalid profile.' };
