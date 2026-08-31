@@ -133,6 +133,18 @@ describe('Chronicle I encounter catalog', () => {
     expect(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id).sort()).toEqual(sceneEncounterIds);
   });
 
+  it('resolves every direct and choice-driven scene encounter reference', () => {
+    const encounterIds = new Set<string>(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id));
+    const referencedIds = CHRONICLE1_SCENES.flatMap((scene) => [
+      ...(scene.encounterId ? [scene.encounterId] : []),
+      ...scene.choices.flatMap((choice) => choice.effects.flatMap((effect) => (
+        effect.type === 'combat' ? [effect.encounterId] : []
+      ))),
+    ]);
+
+    expect(referencedIds.filter((encounterId) => !encounterIds.has(encounterId))).toEqual([]);
+  });
+
   it('uses every unique boss once and stays inside authored chapter threat ceilings', () => {
     const usedBosses = CHRONICLE1_ENCOUNTERS.flatMap((encounter) => encounter.enemyIds)
       .filter((enemyId) => (BOSS_IDS as readonly string[]).includes(enemyId))

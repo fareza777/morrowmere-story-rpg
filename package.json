@@ -15,8 +15,11 @@
     "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor-community/admob": "8.1.0",
     "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "8.1.1",
     "@capacitor/core": "^8.5.0",
+    "@capacitor/haptics": "8.0.2",
     "@phosphor-icons/react": "^2.1.10",
     "react": "19.2.8",
     "react-dom": "19.2.8"
