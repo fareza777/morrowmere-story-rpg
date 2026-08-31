@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createCampaign } from '../src/game/state';
+import { createCampaign, reduceGame } from '../src/game/state';
 import { createCombat, createEncounter } from '../src/game/combat';
 import { initialDirector } from '../src/game/state/create';
 import { encodeSaveState } from '../src/game/persistence/codec';
 import { resolveCombatTurn } from '../src/game/combat/resolve';
 import { merchantRestockSeed } from '../src/game/merchant';
 import { canonicalJson, checksumFor } from '../src/game/persistence/checksum';
-import { createSaveRepository, saveActiveKey, saveBackupKey } from '../src/game/persistence/repository';
+import { createSaveRepository, profileKey, saveActiveKey, saveBackupKey } from '../src/game/persistence/repository';
 import { subscribeToAppBackground, type BrowserLifecycleDriver } from '../src/native/lifecycle';
 import type { ContentIndex } from '../src/game/content/schema';
 import { makeContentIndex } from './fixtures/game';
@@ -94,6 +94,36 @@ function catalogState() {
 function signed(raw: Record<string, unknown>): string {
   const { checksum: _checksum, ...unsigned } = raw;
   return JSON.stringify({ ...unsigned, checksum: checksumFor(unsigned) });
+}
+
+function legacyRewardFixture() {
+  const localContent = makeCatalogContent();
+  const fixture = localContent.events.get('fixture-event' as never)!;
+  const events = localContent.events as Map<never, never>;
+  events.clear();
+  events.set('legacy-reward-fight' as never, {
+    ...fixture,
+    id: 'legacy-reward-fight',
+    family: 'legacy-reward',
+    anchorOrder: 0,
+    choices: [{
+      id: 'legacy-fight-choice',
+      label: 'Fight',
+      detail: 'Defeat the patrol.',
+      effects: [{ type: 'combat', encounterId: 'encounter-1' }],
+      outcome: 'The patrol attacks.',
+    }],
+  } as never);
+  const enemy = localContent.enemies.get('enemy-1' as never)!;
+  (localContent.enemies as Map<never, never>).set('enemy-1' as never, { ...enemy, maxHealth: 1 } as never);
+
+  const created = createCampaign({ heroClass: 'warrior', name: 'Mira', seed: 2, updatedAt: '2026-08-31T12:00:00.000Z' }, localContent);
+  const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T12:01:00.000Z' }, localContent).state;
+  const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: '2026-08-31T12:02:00.000Z' }, localContent).state;
+  const combat = reduceGame(selected, { type: 'resolve-choice', eventId: 'legacy-reward-fight' as never, choiceId: 'legacy-fight-choice' as never, updatedAt: '2026-08-31T12:03:00.000Z' }, localContent).state;
+  const won = reduceGame(combat, { type: 'combat-turn', commandId: 'legacy-victory', action: { type: 'attack' }, updatedAt: '2026-08-31T12:04:00.000Z' }, localContent).state;
+  if (won.flow.screen !== 'reward' || !won.expedition?.pendingReward) throw new Error('Expected a legacy reward fixture.');
+  return { content: localContent, state: won };
 }
 
 describe('V2 save recovery', () => {
@@ -204,6 +234,71 @@ describe('V2 save recovery', () => {
     expect(repo.loadProfile()).toEqual({ ok: true, profile });
     storage.setItem('morrowmere:profile:v2', '{bad');
     expect(repo.loadProfile()).toMatchObject({ ok: false, reason: 'corrupt' });
+  });
+
+  it('normalizes an exact legacy V2 reward save and profile to current defaults during import and profile load', () => {
+    const fixture = legacyRewardFixture();
+    const storage = new MemoryStorage();
+    const repo = createSaveRepository(storage, () => '2026-08-31T12:05:00.000Z', fixture.content);
+    expect(repo.saveSlot(1, fixture.state)).toEqual({ ok: true });
+    const envelope = JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}');
+    delete envelope.state.profile.settings.haptics;
+    delete envelope.state.profile.settings.reducedHaptics;
+    delete envelope.state.adPacing;
+    delete envelope.state.expedition.pendingReward.rewardOfferId;
+    delete envelope.state.expedition.pendingReward.rewardedGoldSettlement;
+
+    expect(Object.keys(envelope.state.profile.settings).sort()).toEqual([
+      'highContrast', 'music', 'narration', 'reducedMotion', 'sound', 'textScale',
+    ]);
+    expect(envelope.state).not.toHaveProperty('adPacing');
+    expect(envelope.state.expedition.pendingReward).not.toHaveProperty('rewardOfferId');
+    expect(envelope.state.expedition.pendingReward).not.toHaveProperty('rewardedGoldSettlement');
+
+    const imported = repo.importSlot(2, signed(envelope));
+    expect(imported).toMatchObject({ ok: true, source: 'active' });
+    if (!imported.ok || !imported.state.expedition?.pendingReward) throw new Error('Expected the legacy reward save to import.');
+    expect(imported.state.profile.settings).toEqual({
+      textScale: 1,
+      highContrast: false,
+      reducedMotion: false,
+      sound: true,
+      music: true,
+      narration: false,
+      haptics: true,
+      reducedHaptics: false,
+    });
+    expect(imported.state.adPacing).toEqual({
+      lastInterstitialAt: null,
+      expeditionBreaksSinceInterstitial: 0,
+      rewardedShownAtCurrentBreak: false,
+      claimedRewardOfferIds: [],
+      rewardedClaimsThisExpedition: 0,
+    });
+    expect(imported.state.expedition.pendingReward.rewardOfferId).toBe(
+      `reward:${imported.state.campaign.seed}:${imported.state.expedition.pendingReward.rewardId}`,
+    );
+    expect(imported.state.expedition.pendingReward.rewardedGoldSettlement).toBe('available');
+
+    const normalized = JSON.parse(storage.getItem(saveActiveKey(2)) ?? '{}');
+    expect(normalized.state.profile.settings).toHaveProperty('haptics', true);
+    expect(normalized.state.profile.settings).toHaveProperty('reducedHaptics', false);
+    expect(normalized.state.adPacing).toEqual(imported.state.adPacing);
+    expect(normalized.state.expedition.pendingReward).toMatchObject({
+      rewardOfferId: imported.state.expedition.pendingReward.rewardOfferId,
+      rewardedGoldSettlement: 'available',
+    });
+
+    expect(repo.saveProfile(fixture.state.profile)).toEqual({ ok: true });
+    const profileEnvelope = JSON.parse(storage.getItem(profileKey) ?? '{}');
+    delete profileEnvelope.profile.settings.haptics;
+    delete profileEnvelope.profile.settings.reducedHaptics;
+    storage.setItem(profileKey, signed(profileEnvelope));
+
+    expect(repo.loadProfile()).toMatchObject({
+      ok: true,
+      profile: { settings: { haptics: true, reducedHaptics: false } },
+    });
   });
 
   it.each([
@@ -562,7 +657,7 @@ describe('V2 save recovery', () => {
       expedition: {
         ...afterSmokeDeathState.expedition,
         currentCombat: { ...afterSmokeDeathState.expedition.currentCombat, combat: terminal },
-        pendingReward: { rewardId: '7:0:caller-fight', encounterId: 'caller-fight' as never, itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: true },
+        pendingReward: { rewardId: '7:0:caller-fight', rewardOfferId: 'reward:99:7:0:caller-fight', encounterId: 'caller-fight' as never, itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: true, rewardedGoldSettlement: 'ineligible' as const },
       },
       flow: { screen: 'reward' as const, overlay: null, merchant: null },
     };
