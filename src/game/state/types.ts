@@ -90,8 +90,9 @@ export interface ExpeditionState {
 }
 
 export interface FlowState {
-  readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'defeat' | 'ending';
+  readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending';
   readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null;
+  readonly merchant: { readonly merchantId: MerchantId; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null;
 }
 
 export interface GameStateV2 {
@@ -134,6 +135,8 @@ export type GameCommand =
   | { readonly type: 'inventory'; readonly command: InventoryCommand; readonly updatedAt: string }
   | { readonly type: 'select-next-scene'; readonly updatedAt: string }
   | { readonly type: 'combat-turn'; readonly action: CombatAction; readonly updatedAt: string }
+  | { readonly type: 'open-merchant'; readonly merchantId: MerchantId; readonly restockKey: string; readonly updatedAt: string }
+  | { readonly type: 'close-merchant'; readonly updatedAt: string }
   | { readonly type: 'trade'; readonly merchantId: MerchantId; readonly restockKey: string; readonly intent: TradeIntent; readonly updatedAt: string }
   | { readonly type: 'set-scene'; readonly sceneId: EventId; readonly updatedAt: string }
   | { readonly type: 'set-defeat'; readonly updatedAt: string };

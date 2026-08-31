@@ -62,6 +62,8 @@ export interface ChronicleEvent {
   readonly eligibility: EventEligibility;
   readonly cooldownRuns: number;
   readonly oneShot: boolean;
+  /** A hub scene may authorize exactly one merchant identity. */
+  readonly merchantId?: MerchantId;
   readonly choices: readonly ChronicleChoice[];
 }
 

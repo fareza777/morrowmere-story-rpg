@@ -81,7 +81,7 @@ export function applyEffectsAtomically(
       if (!expedition) return failure('no_expedition', 'There is no expedition to schedule that callback.');
       const target = content.events.get(effect.promise.targetEventId);
       if (!target) return failure('invalid_callback', 'That callback target is not available.');
-      if (target.chapterId !== effect.promise.deadline.chapterId || chapterNumber(effect.promise.deadline.chapterId) < chapterNumber(expedition.position.chapterId) || (effect.promise.deadline.chapterId === expedition.position.chapterId && effect.promise.deadline.slot < expedition.position.slot)) {
+      if (!Number.isSafeInteger(effect.promise.deadline.slot) || effect.promise.deadline.slot < 1 || target.chapterId !== effect.promise.deadline.chapterId || chapterNumber(effect.promise.deadline.chapterId) < chapterNumber(expedition.position.chapterId) || (effect.promise.deadline.chapterId === expedition.position.chapterId && effect.promise.deadline.slot < expedition.position.slot) || (target.anchorOrder !== undefined && target.anchorOrder > effect.promise.deadline.slot)) {
         return failure('invalid_callback', 'That callback deadline is not valid for this route.');
       }
       expedition = { ...expedition, director: { ...expedition.director, pendingCallbacks: [...expedition.director.pendingCallbacks, { ...effect.promise, status: 'pending', required: true }] } };

@@ -23,6 +23,12 @@ const orchestrationContent: ContentIndex = {
   events: new Map([[sceneId('route-scene'), {
     id: sceneId('route-scene'), chapterId: 'ch01', type: 'main', family: 'road', anchorOrder: 0,
     illustrationId: 'camp-art', title: 'Road', narrative: ['A road.'], eligibility: {}, cooldownRuns: 2, oneShot: true, choices: [],
+  }], [sceneId('merchant-scene'), {
+    id: sceneId('merchant-scene'), chapterId: 'ch01', type: 'hub', family: 'merchant', merchantId: 'merchant-1' as never,
+    illustrationId: 'camp-art', title: 'Trader', narrative: ['A trader waits.'], eligibility: {}, cooldownRuns: 0, oneShot: false, choices: [],
+  }], [sceneId('late-scene'), {
+    id: sceneId('late-scene'), chapterId: 'ch01', type: 'main', family: 'late', anchorOrder: 5,
+    illustrationId: 'camp-art', title: 'Late', narrative: ['Too late.'], eligibility: {}, cooldownRuns: 0, oneShot: true, choices: [],
   }]]),
   enemies: new Map([['enemy-1' as never, {
     id: 'enemy-1', archetypeId: 'goblin', name: 'Goblin', rank: 1, level: 1, species: 'goblin', region: 'gloamwood',
@@ -30,6 +36,10 @@ const orchestrationContent: ContentIndex = {
   }]]),
   encounters: new Map([['encounter-1' as never, { id: 'encounter-1' as never, enemyIds: ['enemy-1' as never] }]]),
   merchants: new Map([['merchant-1' as never, { id: 'merchant-1' as never, name: 'Trader', stockItemIds: [itemId('warrior-blade')] }]]),
+  companions: new Map([['companion-1' as never, {
+    id: 'companion-1' as never, name: 'Scout', recruitment: { requiredDecisionIds: [] }, personalQuestIds: [],
+    combat: { attack: 3, guard: 1, will: 2, actionId: 'scout-shot' },
+  }]]),
 };
 
 describe('campaign checkpoints', () => {
@@ -141,7 +151,9 @@ describe('campaign checkpoints', () => {
     const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
     const combat = reduceGame(selected, { type: 'apply-effects', updatedAt: '2026-08-31T00:03:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, orchestrationContent).state;
     const turned = reduceGame(combat, { type: 'combat-turn', action: { type: 'attack' }, updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent).state;
-    const traded = reduceGame({ ...turned, expedition: { ...turned.expedition!, unbankedGold: 20 }, flow: { ...turned.flow, screen: 'story' } }, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'camp-1', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
+    const merchantScene = reduceGame({ ...turned, expedition: { ...turned.expedition!, unbankedGold: 20 } }, { type: 'set-scene', sceneId: sceneId('merchant-scene'), updatedAt: '2026-08-31T00:04:30.000Z' }, orchestrationContent).state;
+    const opened = reduceGame(merchantScene, { type: 'open-merchant', merchantId: 'merchant-1' as never, restockKey: 'camp-1', updatedAt: '2026-08-31T00:04:45.000Z' }, orchestrationContent).state;
+    const traded = reduceGame(opened, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'camp-1', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
 
     expect(selected.expedition!.currentSceneId).toBe(sceneId('route-scene'));
     expect(selected.campaign.directorMemory.seenEventIds).toContain(sceneId('route-scene'));
@@ -150,6 +162,44 @@ describe('campaign checkpoints', () => {
     expect(traded.expedition!.merchantVisits[0]?.stock).toEqual([]);
     expect(traded.campaign.inventory.pack[0]?.itemId).toBe(itemId('warrior-blade'));
     expect(traded.expedition!.unbankedGold).toBeLessThan(20);
+  });
+
+  it('includes only an active recruited companion in V2 combat', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const roster = { activeCompanionId: 'companion-1' as never, records: [{ companionId: 'companion-1' as never, status: 'recruited' as const, questStage: 3 as const, loyalty: 70, injured: false }] };
+    const started = reduceGame({ ...created, campaign: { ...created.campaign, companions: roster } }, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const withCompanion = reduceGame(started, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, orchestrationContent).state;
+    const withoutCompanion = reduceGame(createCampaign({ heroClass: 'warrior', seed: 3, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent), { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const noCompanionCombat = reduceGame(withoutCompanion, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'combat', encounterId: 'encounter-1' as never }] }, orchestrationContent).state;
+
+    expect(withCompanion.expedition!.currentCombat!.combat!.companion?.companionId).toBe('companion-1');
+    expect(withCompanion.expedition!.currentCombat!.combat!.companionCooldown).toBe(0);
+    expect(withCompanion.expedition!.currentCombat!.combat!.companionSupportBudget).toBeGreaterThan(0);
+    expect(noCompanionCombat.expedition!.currentCombat!.combat!.companion).toBeNull();
+  });
+
+  it('permits trade only through an authored matching merchant window and closes back to story', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const arbitraryInput = { ...started, expedition: { ...started.expedition!, unbankedGold: 20 } };
+    const arbitrary = reduceGame(arbitraryInput, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'camp-1', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent);
+    const combatInput = { ...arbitraryInput, flow: { ...arbitraryInput.flow, screen: 'combat' as const } };
+    const combatRejected = reduceGame(combatInput, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'camp-1', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:02:10.000Z' }, orchestrationContent);
+    const defeatInput = { ...arbitraryInput, flow: { ...arbitraryInput.flow, screen: 'defeat' as const } };
+    const defeatRejected = reduceGame(defeatInput, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'camp-1', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:02:20.000Z' }, orchestrationContent);
+    const atMerchant = reduceGame(started, { type: 'set-scene', sceneId: sceneId('merchant-scene'), updatedAt: '2026-08-31T00:02:30.000Z' }, orchestrationContent).state;
+    const opened = reduceGame(atMerchant, { type: 'open-merchant', merchantId: 'merchant-1' as never, restockKey: 'camp-1', updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
+    const mismatch = reduceGame(opened, { type: 'trade', merchantId: 'merchant-1' as never, restockKey: 'other', intent: { type: 'buy', stockEntryId: 'merchant-1:camp-1:0:warrior-blade' }, updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent);
+    const closed = reduceGame(opened, { type: 'close-merchant', updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
+
+    expect(arbitrary.state).toBe(arbitraryInput);
+    expect(arbitrary.diagnostic?.code).toBe('merchant_required');
+    expect(combatRejected.state).toBe(combatInput);
+    expect(defeatRejected.state).toBe(defeatInput);
+    expect(mismatch.state).toBe(opened);
+    expect(mismatch.diagnostic?.code).toBe('merchant_mismatch');
+    expect(closed.flow.screen).toBe('story');
+    expect(closed.flow.merchant).toBeNull();
   });
 
   it('keeps director memory across defeat and begins the next run with the saved cooldowns', () => {
@@ -178,6 +228,45 @@ describe('campaign checkpoints', () => {
 
     expect(result.state).toBe(state);
     expect(result.diagnostic).toEqual({ code: 'invalid_callback', message: 'That callback target is not available.' });
+  });
+
+  it.each([NaN, Infinity, 1.5, -1])('rejects unsafe callback deadline slot %s atomically', (slot) => {
+    const initial = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const state = reduceGame(initial, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const result = reduceGame(state, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'callback', promise: { targetEventId: sceneId('route-scene'), deadline: { chapterId: 'ch01', slot } } }] }, orchestrationContent);
+
+    expect(result.state).toBe(state);
+    expect(result.diagnostic?.code).toBe('invalid_callback');
+  });
+
+  it('rejects a callback whose target cannot occur before its deadline', () => {
+    const initial = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const state = reduceGame(initial, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const result = reduceGame(state, { type: 'apply-effects', updatedAt: '2026-08-31T00:02:00.000Z', effects: [{ type: 'callback', promise: { targetEventId: sceneId('late-scene'), deadline: { chapterId: 'ch01', slot: 1 } } }] }, orchestrationContent);
+
+    expect(result.state).toBe(state);
+    expect(result.diagnostic?.code).toBe('invalid_callback');
+  });
+
+  it('does not alias nested checkpoint payloads after defeat or chapter restart', () => {
+    const initial = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const withSnapshot = { ...initial, checkpoints: { ...initial.checkpoints, chapter: { ...initial.checkpoints.chapter, campaign: { ...initial.checkpoints.chapter.campaign, flags: ['entry'], companions: { activeCompanionId: 'companion-1' as never, records: [{ companionId: 'companion-1' as never, status: 'recruited' as const, questStage: 3 as const, loyalty: 50, injured: false }] } } } } };
+    const routed = reduceGame(withSnapshot, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const returned = returnToCampAfterDefeat({ ...routed, expedition: { ...routed.expedition!, unbankedGold: 2 }, flow: { ...routed.flow, screen: 'defeat' } }, orchestrationContent, '2026-08-31T00:02:00.000Z');
+    const returnedUnsafe = returned as any;
+    returnedUnsafe.campaign.inventory.equipment.charms.push('defeat-mutation');
+    expect(returned.checkpoints.camp!.campaign.inventory.equipment.charms).toEqual([]);
+    const restarted = restartChapter(returned, orchestrationContent, '2026-08-31T00:03:00.000Z');
+    const unsafe = restarted as any;
+    unsafe.campaign.flags.push('mutated');
+    unsafe.campaign.inventory.equipment.charms.push('mutated');
+    unsafe.campaign.companions.records[0].loyalty = -100;
+    unsafe.campaign.directorMemory.pendingCallbacks.push({ targetEventId: sceneId('route-scene'), deadline: { chapterId: 'ch01', slot: 1 }, status: 'pending', required: true });
+
+    expect(restarted.checkpoints.chapter.campaign.flags).toEqual(['entry']);
+    expect(restarted.checkpoints.chapter.campaign.inventory.equipment.charms).toEqual([]);
+    expect(restarted.checkpoints.chapter.campaign.companions.records[0]?.loyalty).toBe(50);
+    expect(restarted.checkpoints.chapter.campaign.directorMemory.pendingCallbacks).toEqual([]);
   });
 
   it('creates independent profile and checkpoint payload references', () => {

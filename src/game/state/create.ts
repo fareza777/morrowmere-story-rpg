@@ -9,8 +9,7 @@ const DEFAULT_PROFILE: ProfileState = {
   discoveries: { events: [], enemies: [], codex: [] },
 };
 
-export function campaignPayload(state: GameStateV2['campaign']) {
-  const { attemptCounters: _attemptCounters, routeSeedNonce: _routeSeedNonce, transitionCounter: _transitionCounter, ...payload } = state;
+export function cloneCampaignPayload(payload: CampaignCheckpointPayload): CampaignCheckpointPayload {
   return {
     ...payload,
     hero: { ...payload.hero, talents: [...payload.hero.talents] },
@@ -21,7 +20,12 @@ export function campaignPayload(state: GameStateV2['campaign']) {
     flags: [...payload.flags], evidence: [...payload.evidence], factions: { ...payload.factions },
     companions: { activeCompanionId: payload.companions.activeCompanionId, records: payload.companions.records.map((record) => ({ ...record })) },
     directorMemory: { rngState: payload.directorMemory.rngState, seenEventIds: [...payload.directorMemory.seenEventIds], familyCooldowns: { ...payload.directorMemory.familyCooldowns }, pendingCallbacks: payload.directorMemory.pendingCallbacks.map((callback) => ({ ...callback, deadline: { ...callback.deadline } })) },
-  } satisfies CampaignCheckpointPayload;
+  };
+}
+
+export function campaignPayload(state: GameStateV2['campaign']) {
+  const { attemptCounters: _attemptCounters, routeSeedNonce: _routeSeedNonce, transitionCounter: _transitionCounter, ...payload } = state;
+  return cloneCampaignPayload(payload);
 }
 
 export function initialDirector(seed: number): DirectorState {
@@ -51,6 +55,6 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
   return {
     schemaVersion: 2, profile: createProfile(), campaign, expedition: null,
     checkpoints: { chapter: { campaign: campaignPayload(campaign), enteredAt: options.updatedAt }, camp: { campaign: payload, campSceneId: null, savedAt: options.updatedAt } },
-    flow: { screen: 'camp', overlay: null }, updatedAt: options.updatedAt,
+    flow: { screen: 'camp', overlay: null, merchant: null }, updatedAt: options.updatedAt,
   };
 }
