@@ -1,16 +1,25 @@
 import type { GameEffect } from "../domain/effects";
 import type { RouteProfileId } from "../director/types";
 import type {
+  CallbackId,
   ChapterId,
   ChoiceId,
   CompanionId,
+  DecisionId,
   EncounterId,
   EnemyId,
   EventId,
+  FactionId,
+  IllustrationId,
   ItemId,
+  MerchantDialogueSetId,
   MerchantId,
+  MerchantStockPoolId,
+  SceneFamilyId,
+  StoryPosition,
+  VoiceCueId,
 } from "../domain/ids";
-import type { EnemyDefinition, ItemDefinition } from "../types";
+import type { EnemyDefinition, ItemDefinition, RegionId } from "../types";
 
 /**
  * Immutable catalog item contracts are consumed by pure game systems through
@@ -104,6 +113,241 @@ export interface MerchantDefinition {
   readonly stockItemIds: readonly ItemId[];
 }
 
+export type JourneySubtype =
+  | 'travel'
+  | 'investigation'
+  | 'side-quest'
+  | 'dungeon'
+  | 'moral-choice';
+
+export interface ChronicleRequirement {
+  readonly type: 'flag';
+  readonly flagId: string;
+  readonly present: boolean;
+}
+
+export type ChronicleRelationship =
+  | { readonly kind: 'companion'; readonly companionId: CompanionId }
+  | { readonly kind: 'faction'; readonly factionId: FactionId };
+
+export interface ChronicleCallbackPromise {
+  readonly id?: CallbackId;
+  readonly targetEventId: EventId;
+  readonly deadline: StoryPosition;
+  readonly fallbackEventId?: EventId;
+}
+
+export interface ChronicleVoiceCue {
+  readonly id: VoiceCueId;
+  readonly speaker: string;
+  readonly text: string;
+}
+
+/**
+ * Chronicle-only effects remain separate from the atomic core effect union.
+ * The production content adapter must normalize these variants before the
+ * core reducer receives them.
+ */
+export type ChronicleEffect =
+  | GameEffect
+  | { readonly type: 'evidence'; readonly operation: 'add' | 'remove'; readonly evidenceId: string }
+  | { readonly type: 'companion-loyalty'; readonly companionId: CompanionId; readonly amount: number }
+  | { readonly type: 'companion-quest'; readonly companionId: CompanionId; readonly stage: 0 | 1 | 2 | 3 }
+  | { readonly type: 'companion-injury'; readonly companionId: CompanionId; readonly injured: boolean }
+  | { readonly type: 'threat'; readonly amount: number }
+  | { readonly type: 'tension'; readonly amount: number };
+
+export interface Chronicle1Choice {
+  readonly id: DecisionId;
+  readonly label: string;
+  readonly detail: string;
+  readonly requirements?: readonly ChronicleRequirement[];
+  readonly exclusions?: readonly ChronicleRequirement[];
+  readonly effects: readonly ChronicleEffect[];
+  readonly outcome: string;
+}
+
+export interface Chronicle1Event
+  extends Omit<ChronicleEvent, 'id' | 'family' | 'weight' | 'illustrationId' | 'choices'> {
+  readonly id: EventId;
+  readonly region: RegionId;
+  /** Positive, chapter-local position used by source validation and callbacks. */
+  readonly slot: number;
+  readonly family: SceneFamilyId;
+  readonly weight: number;
+  readonly illustrationId: IllustrationId;
+  readonly journeySubtype?: JourneySubtype;
+  readonly relationship?: ChronicleRelationship;
+  readonly requirements?: readonly ChronicleRequirement[];
+  readonly exclusions?: readonly ChronicleRequirement[];
+  readonly followUps: readonly EventId[];
+  readonly callbackPromises: readonly ChronicleCallbackPromise[];
+  readonly encounterId?: EncounterId;
+  readonly voiceCues?: readonly ChronicleVoiceCue[];
+  /** One non-selective choice is legal only when this marker is true. */
+  readonly continueOnly?: boolean;
+  readonly choices: readonly Chronicle1Choice[];
+}
+
+/**
+ * Authored files use literal strings. `defineScene` is the sole branding
+ * boundary and turns this source shape into a deeply immutable event.
+ */
+export type ChronicleEffectSource =
+  | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
+  | { readonly type: 'item'; readonly operation: 'grant' | 'remove'; readonly itemId: string; readonly quantity: number }
+  | { readonly type: 'flag'; readonly operation: 'add' | 'remove'; readonly flagId: string }
+  | { readonly type: 'faction'; readonly factionId: string; readonly amount: number }
+  | { readonly type: 'companion'; readonly companionId: string; readonly operation: 'recruit' | 'dismiss' }
+  | { readonly type: 'vitals'; readonly health?: number; readonly resource?: number }
+  | { readonly type: 'callback'; readonly promise: { readonly targetEventId: string; readonly deadline: StoryPosition } }
+  | { readonly type: 'combat'; readonly encounterId: string }
+  | { readonly type: 'evidence'; readonly operation: 'add' | 'remove'; readonly evidenceId: string }
+  | { readonly type: 'companion-loyalty'; readonly companionId: string; readonly amount: number }
+  | { readonly type: 'companion-quest'; readonly companionId: string; readonly stage: 0 | 1 | 2 | 3 }
+  | { readonly type: 'companion-injury'; readonly companionId: string; readonly injured: boolean }
+  | { readonly type: 'threat'; readonly amount: number }
+  | { readonly type: 'tension'; readonly amount: number };
+
+export interface ChronicleRequirementSource {
+  readonly type: 'flag';
+  readonly flagId: string;
+  /** Older authored chapter drafts default to requiring the flag to exist. */
+  readonly present?: boolean;
+}
+
+export interface Chronicle1ChoiceSource {
+  readonly id: string;
+  readonly label: string;
+  readonly detail: string;
+  readonly requirements?: readonly ChronicleRequirementSource[];
+  readonly exclusions?: readonly ChronicleRequirementSource[];
+  readonly effects: readonly ChronicleEffectSource[];
+  readonly outcome: string;
+}
+
+export interface Chronicle1EventSource {
+  readonly id: string;
+  readonly chapterId: ChapterId;
+  readonly region: RegionId;
+  readonly slot: number;
+  readonly type: ChronicleEventType;
+  readonly family: string;
+  readonly anchorOrder?: number;
+  readonly weight: number;
+  readonly pacing?: EventPacing;
+  readonly threatChange?: number;
+  readonly tensionChange?: number;
+  readonly journeySubtype?: JourneySubtype;
+  readonly relationship?:
+    | { readonly kind: 'companion'; readonly companionId: string }
+    | { readonly kind: 'faction'; readonly factionId: string };
+  readonly illustrationId: string;
+  readonly audioId?: string;
+  readonly voiceCues?: readonly { readonly id: string; readonly speaker: string; readonly text: string }[];
+  readonly title: string;
+  readonly narrative: readonly string[];
+  readonly eligibility: EventEligibility;
+  readonly requirements?: readonly ChronicleRequirementSource[];
+  readonly exclusions?: readonly ChronicleRequirementSource[];
+  readonly cooldownRuns: number;
+  readonly oneShot: boolean;
+  readonly merchantId?: string;
+  readonly merchantRestockKey?: string;
+  readonly followUps: readonly string[];
+  readonly callbackPromises: readonly {
+    readonly id?: string;
+    readonly targetEventId: string;
+    readonly deadline: StoryPosition;
+    readonly fallbackEventId?: string;
+  }[];
+  readonly encounterId?: string;
+  readonly continueOnly?: boolean;
+  readonly choices: readonly Chronicle1ChoiceSource[];
+}
+
+export type SevenAnchorIds = readonly [
+  EventId,
+  EventId,
+  EventId,
+  EventId,
+  EventId,
+  EventId,
+  EventId,
+];
+
+export interface ChapterDefinition {
+  readonly id: ChapterId;
+  readonly order: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  readonly title: string;
+  readonly levelBand: { readonly min: number; readonly max: number };
+  readonly region: RegionId;
+  readonly anchorIds: SevenAnchorIds;
+}
+
+export interface ChronicleDefinition {
+  readonly id: 'chronicle-1';
+  readonly title: 'Chronicle I — The Black Banner';
+  readonly chapters: readonly [
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+    ChapterDefinition,
+  ];
+}
+
+export interface ChronicleRouteDefinition {
+  readonly id: RouteProfileId;
+  readonly label: string;
+  readonly description: string;
+  readonly danger: number;
+  readonly recoveryWeight: number;
+  readonly merchantWeight: number;
+  readonly companionWeight: number;
+  readonly relicWeight: number;
+}
+
+export interface ChronicleFactionDefinition {
+  readonly id: FactionId;
+  readonly name: string;
+  readonly description: string;
+}
+
+export interface Chronicle1CompanionDefinition extends Omit<CompanionDefinition, 'combat'> {
+  readonly values: readonly string[];
+  readonly explorationCapability: {
+    readonly id: string;
+    readonly label: string;
+    readonly description: string;
+  };
+  readonly passive: {
+    readonly id: string;
+    readonly label: string;
+    readonly description: string;
+  };
+  readonly combat: CompanionDefinition['combat'] & { readonly commandCooldown: 2 };
+  /** Compatibility alias for consumers that present command rules outside combat. */
+  readonly commandCooldown: 2;
+  readonly loyaltyStates: Readonly<Record<'wary' | 'respectful' | 'loyal', string>>;
+  readonly visibleCost: string;
+  /** Compatibility alias retained for early content consumers. */
+  readonly visibleRecruitmentCost: string;
+  readonly outcomeSceneIds: readonly EventId[];
+}
+
+export interface Chronicle1MerchantDefinition {
+  readonly id: MerchantId;
+  readonly name: string;
+  readonly stockPoolId: MerchantStockPoolId;
+  readonly dialogueSetId: MerchantDialogueSetId;
+  readonly illustrationId: IllustrationId;
+  readonly restockGateIds: readonly EventId[];
+}
+
 export interface ContentIndex {
   readonly events: ReadonlyMap<EventId, ChronicleEvent>;
   readonly items: ReadonlyMap<ItemId, ItemDefinition>;
@@ -116,13 +360,21 @@ export interface ContentIndex {
 }
 
 export type {
+  CallbackId,
   ChapterId,
   ChoiceId,
   CompanionId,
+  DecisionId,
   EncounterId,
   EnemyId,
   EventId,
+  FactionId,
+  IllustrationId,
   ItemId,
+  MerchantDialogueSetId,
   MerchantId,
+  MerchantStockPoolId,
+  SceneFamilyId,
+  VoiceCueId,
 };
 export type { EnemyDefinition, ItemDefinition } from "../types";

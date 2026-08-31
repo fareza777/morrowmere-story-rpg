@@ -10,6 +10,13 @@ export type CompanionId = BrandedId<'CompanionId'>;
 export type MerchantId = BrandedId<'MerchantId'>;
 export type FlagId = BrandedId<'FlagId'>;
 export type FactionId = BrandedId<'FactionId'>;
+export type DecisionId = BrandedId<'DecisionId'>;
+export type SceneFamilyId = BrandedId<'SceneFamilyId'>;
+export type IllustrationId = BrandedId<'IllustrationId'>;
+export type VoiceCueId = BrandedId<'VoiceCueId'>;
+export type CallbackId = BrandedId<'CallbackId'>;
+export type MerchantStockPoolId = BrandedId<'MerchantStockPoolId'>;
+export type MerchantDialogueSetId = BrandedId<'MerchantDialogueSetId'>;
 
 export interface StoryPosition {
   readonly chapterId: ChapterId;

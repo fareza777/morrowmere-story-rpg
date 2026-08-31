@@ -1,5 +1,13 @@
 import type { GameEffect } from '../domain/effects';
-import type { ContentIndex } from './schema';
+import type {
+  Chronicle1CompanionDefinition,
+  Chronicle1Event,
+  Chronicle1MerchantDefinition,
+  ChronicleDefinition,
+  ChronicleFactionDefinition,
+  ChronicleRouteDefinition,
+  ContentIndex,
+} from './schema';
 import { ROUTE_OPTIONS } from '../director/pacing';
 
 export type ContentIssueCode =
@@ -23,7 +31,22 @@ export type ContentIssueCode =
   | 'invalid_encounter_family'
   | 'invalid_encounter_reward'
   | 'invalid_boss_identity'
-  | 'invalid_route';
+  | 'invalid_route'
+  | 'invalid_id'
+  | 'source_key_mismatch'
+  | 'duplicate_illustration_id'
+  | 'duplicate_media_id'
+  | 'invalid_chapter_region'
+  | 'invalid_scene_slot'
+  | 'invalid_scene_weight'
+  | 'duplicate_scene_slot'
+  | 'missing_anchor'
+  | 'invalid_anchor_order'
+  | 'invalid_choice_count'
+  | 'invalid_journey_subtype'
+  | 'invalid_callback_window'
+  | 'unreachable_callback'
+  | 'missing_follow_up';
 
 export interface ContentIssue {
   readonly code: ContentIssueCode;
@@ -120,6 +143,291 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
         issues.push({ code: 'missing_merchant_stock', message: `Missing merchant stock item: ${itemId}` });
       }
     }
+  }
+
+  return issues;
+}
+
+export interface ChronicleSourceInput {
+  readonly chronicle: ChronicleDefinition;
+  readonly routes: readonly ChronicleRouteDefinition[];
+  readonly factions: readonly ChronicleFactionDefinition[];
+  readonly companions: readonly Chronicle1CompanionDefinition[];
+  readonly merchants: readonly Chronicle1MerchantDefinition[];
+  /** Omit events while validating only the Task 1 metadata catalogs. */
+  readonly events?: readonly Chronicle1Event[];
+}
+
+const SOURCE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function sourceIssue(code: ContentIssueCode, message: string): ContentIssue {
+  return { code, message };
+}
+
+function validateSourceId(label: string, id: string, issues: ContentIssue[]): void {
+  if (!SOURCE_ID_PATTERN.test(id)) {
+    issues.push(sourceIssue('invalid_id', `Invalid ${label} ID: ${id}`));
+  }
+}
+
+/** Validates dictionary keys without forcing authored scene arrays into wrappers. */
+export function validateChronicleSourceKey(
+  key: string,
+  source: { readonly id: string },
+): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  validateSourceId('source key', key, issues);
+  validateSourceId('source record', source.id, issues);
+  if (key !== source.id) {
+    issues.push(sourceIssue(
+      'source_key_mismatch',
+      `Source key ${key} does not match record ID ${source.id}.`,
+    ));
+  }
+  return issues;
+}
+
+function chapterPosition(
+  chronicle: ChronicleDefinition,
+  chapterId: string,
+  slot: number,
+): readonly [number, number] | null {
+  const chapter = chronicle.chapters.find((entry) => entry.id === chapterId);
+  return chapter ? [chapter.order, slot] : null;
+}
+
+function positionAfter(
+  left: readonly [number, number],
+  right: readonly [number, number],
+): boolean {
+  return left[0] > right[0] || (left[0] === right[0] && left[1] > right[1]);
+}
+
+/**
+ * Validates immutable source arrays before Map construction can hide duplicate
+ * records. This deliberately remains independent from the V1 ContentIndex
+ * validator above.
+ */
+export function validateChronicleSources(input: ChronicleSourceInput): ContentIssue[] {
+  const issues: ContentIssue[] = [
+    ...duplicateIssues(input.companions, 'duplicate_companion_id'),
+    ...duplicateIssues(input.merchants, 'duplicate_merchant_id'),
+  ];
+
+  validateSourceId('chronicle', input.chronicle.id, issues);
+  for (const chapter of input.chronicle.chapters) {
+    validateSourceId('chapter', chapter.id, issues);
+    for (const anchorId of chapter.anchorIds) validateSourceId('anchor', anchorId, issues);
+  }
+  for (const route of input.routes) validateSourceId('route', route.id, issues);
+  for (const faction of input.factions) validateSourceId('faction', faction.id, issues);
+  for (const companion of input.companions) {
+    validateSourceId('companion', companion.id, issues);
+    validateSourceId('companion action', companion.combat.actionId, issues);
+    validateSourceId('exploration capability', companion.explorationCapability.id, issues);
+    validateSourceId('passive', companion.passive.id, issues);
+    for (const questId of companion.personalQuestIds) validateSourceId('personal quest', questId, issues);
+    for (const outcomeId of companion.outcomeSceneIds) validateSourceId('companion outcome', outcomeId, issues);
+  }
+  for (const merchant of input.merchants) {
+    validateSourceId('merchant', merchant.id, issues);
+    validateSourceId('merchant stock pool', merchant.stockPoolId, issues);
+    validateSourceId('merchant dialogue set', merchant.dialogueSetId, issues);
+    validateSourceId('merchant illustration', merchant.illustrationId, issues);
+    for (const gateId of merchant.restockGateIds) validateSourceId('merchant restock gate', gateId, issues);
+  }
+
+  if (!input.events) return issues;
+
+  issues.push(...duplicateIssues(input.events, 'duplicate_event_id'));
+
+  const eventIds = new Set(input.events.map((event) => event.id));
+  const eventById = new Map(input.events.map((event) => [event.id, event]));
+  const illustrationIds = new Set<string>();
+  const mediaIds = new Set<string>();
+  const chapterSlots = new Set<string>();
+  const journeySubtypes = new Set(['travel', 'investigation', 'side-quest', 'dungeon', 'moral-choice']);
+
+  const registerMedia = (id: string, ownerId: string): void => {
+    validateSourceId('media', id, issues);
+    if (mediaIds.has(id)) {
+      issues.push(sourceIssue('duplicate_media_id', `Duplicate media ID ${id} in scene ${ownerId}.`));
+    }
+    mediaIds.add(id);
+  };
+
+  for (const event of input.events) {
+    validateSourceId('event', event.id, issues);
+    validateSourceId('scene family', event.family, issues);
+    validateSourceId('illustration', event.illustrationId, issues);
+    if (illustrationIds.has(event.illustrationId)) {
+      issues.push(sourceIssue(
+        'duplicate_illustration_id',
+        `Duplicate illustration ID ${event.illustrationId}.`,
+      ));
+    }
+    illustrationIds.add(event.illustrationId);
+    registerMedia(event.illustrationId, event.id);
+    if (event.audioId) registerMedia(event.audioId, event.id);
+    for (const cue of event.voiceCues ?? []) {
+      registerMedia(cue.id, event.id);
+    }
+    if (event.encounterId) validateSourceId('encounter', event.encounterId, issues);
+    if (event.merchantId) validateSourceId('event merchant', event.merchantId, issues);
+    if (event.merchantRestockKey) validateSourceId('merchant restock key', event.merchantRestockKey, issues);
+    if (event.relationship?.kind === 'companion') {
+      validateSourceId('relationship companion', event.relationship.companionId, issues);
+    } else if (event.relationship?.kind === 'faction') {
+      validateSourceId('relationship faction', event.relationship.factionId, issues);
+    }
+    for (const flagId of event.eligibility.requiredFlags ?? []) validateSourceId('eligibility flag', flagId, issues);
+    for (const flagId of event.eligibility.excludedFlags ?? []) validateSourceId('eligibility flag', flagId, issues);
+
+    const chapter = input.chronicle.chapters.find((entry) => entry.id === event.chapterId);
+    if (!chapter || chapter.region !== event.region) {
+      issues.push(sourceIssue(
+        'invalid_chapter_region',
+        `Scene ${event.id} uses region ${event.region} outside chapter ${event.chapterId}.`,
+      ));
+    }
+
+    if (!Number.isSafeInteger(event.slot) || event.slot <= 0) {
+      issues.push(sourceIssue('invalid_scene_slot', `Scene ${event.id} has invalid slot ${event.slot}.`));
+    }
+    const slotKey = `${event.chapterId}:${event.slot}`;
+    if (chapterSlots.has(slotKey)) {
+      issues.push(sourceIssue('duplicate_scene_slot', `Duplicate chapter slot ${slotKey}.`));
+    }
+    chapterSlots.add(slotKey);
+
+    if (!Number.isFinite(event.weight) || event.weight <= 0) {
+      issues.push(sourceIssue('invalid_scene_weight', `Scene ${event.id} has invalid authored weight ${event.weight}.`));
+    }
+
+    const choiceCountIsValid = event.continueOnly
+      ? event.choices.length === 1
+      : event.choices.length >= 2 && event.choices.length <= 4;
+    if (!choiceCountIsValid) {
+      issues.push(sourceIssue(
+        'invalid_choice_count',
+        `Scene ${event.id} has ${event.choices.length} choices for its selection mode.`,
+      ));
+    }
+
+    if (
+      (event.type === 'journey' && (!event.journeySubtype || !journeySubtypes.has(event.journeySubtype)))
+      || (event.type !== 'journey' && event.journeySubtype !== undefined)
+    ) {
+      issues.push(sourceIssue(
+        'invalid_journey_subtype',
+        `Scene ${event.id} has invalid journey subtype metadata.`,
+      ));
+    }
+
+    for (const requirement of [...(event.requirements ?? []), ...(event.exclusions ?? [])]) {
+      validateSourceId('requirement flag', requirement.flagId, issues);
+    }
+    for (const choice of event.choices) {
+      validateSourceId('choice', choice.id, issues);
+      for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) {
+        validateSourceId('choice requirement flag', requirement.flagId, issues);
+      }
+      for (const effect of choice.effects) {
+        if (effect.type === 'item') validateSourceId('effect item', effect.itemId, issues);
+        if (effect.type === 'flag') validateSourceId('effect flag', effect.flagId, issues);
+        if (effect.type === 'faction') validateSourceId('effect faction', effect.factionId, issues);
+        if (effect.type === 'companion' || effect.type === 'companion-loyalty' || effect.type === 'companion-quest' || effect.type === 'companion-injury') {
+          validateSourceId('effect companion', effect.companionId, issues);
+        }
+        if (effect.type === 'combat') validateSourceId('effect encounter', effect.encounterId, issues);
+        if (effect.type === 'evidence') validateSourceId('effect evidence', effect.evidenceId, issues);
+      }
+    }
+
+    issues.push(...duplicateIssues(event.choices, 'duplicate_choice_id'));
+
+    for (const followUpId of event.followUps) {
+      validateSourceId('follow-up', followUpId, issues);
+      if (!eventIds.has(followUpId)) {
+        issues.push(sourceIssue('missing_follow_up', `Scene ${event.id} references missing follow-up ${followUpId}.`));
+      }
+    }
+
+    const callbackPromises = [
+      ...event.callbackPromises,
+      ...event.choices.flatMap((choice) => choice.effects.flatMap((effect) => (
+        effect.type === 'callback' ? [effect.promise] : []
+      ))),
+    ];
+    for (const promise of callbackPromises) {
+      if ('id' in promise && promise.id) validateSourceId('callback', promise.id, issues);
+      validateSourceId('callback target', promise.targetEventId, issues);
+      const sourcePosition = chapterPosition(input.chronicle, event.chapterId, event.slot);
+      const deadlinePosition = chapterPosition(
+        input.chronicle,
+        promise.deadline.chapterId,
+        promise.deadline.slot,
+      );
+      if (
+        !sourcePosition
+        || !deadlinePosition
+        || !Number.isSafeInteger(promise.deadline.slot)
+        || promise.deadline.slot <= 0
+        || !positionAfter(deadlinePosition, sourcePosition)
+      ) {
+        issues.push(sourceIssue(
+          'invalid_callback_window',
+          `Scene ${event.id} has an invalid callback deadline for ${promise.targetEventId}.`,
+        ));
+      }
+
+      const target = eventById.get(promise.targetEventId);
+      const targetPosition = target
+        ? chapterPosition(input.chronicle, target.chapterId, target.slot)
+        : null;
+      if (
+        !targetPosition
+        || !sourcePosition
+        || !positionAfter(targetPosition, sourcePosition)
+        || (deadlinePosition && positionAfter(targetPosition, deadlinePosition))
+      ) {
+        issues.push(sourceIssue(
+          'unreachable_callback',
+          `Scene ${event.id} cannot reach callback target ${promise.targetEventId} within its window.`,
+        ));
+      }
+
+      if ('fallbackEventId' in promise && promise.fallbackEventId && !eventIds.has(promise.fallbackEventId)) {
+        issues.push(sourceIssue(
+          'unreachable_callback',
+          `Scene ${event.id} references missing callback fallback ${promise.fallbackEventId}.`,
+        ));
+      }
+    }
+
+    if (event.anchorOrder !== undefined) {
+      const expectedOrder = chapter?.anchorIds.findIndex((anchorId) => anchorId === event.id) ?? -1;
+      if (expectedOrder < 0 || event.anchorOrder !== expectedOrder + 1) {
+        issues.push(sourceIssue(
+          'invalid_anchor_order',
+          `Scene ${event.id} has invalid anchor order ${event.anchorOrder}.`,
+        ));
+      }
+    }
+  }
+
+  for (const chapter of input.chronicle.chapters) {
+    chapter.anchorIds.forEach((anchorId, index) => {
+      const event = eventById.get(anchorId);
+      if (!event) {
+        issues.push(sourceIssue('missing_anchor', `Missing anchor scene ${anchorId}.`));
+      } else if (event.chapterId !== chapter.id || event.anchorOrder !== index + 1) {
+        issues.push(sourceIssue(
+          'invalid_anchor_order',
+          `Anchor ${anchorId} is not ordered as ${index + 1} in ${chapter.id}.`,
+        ));
+      }
+    });
   }
 
   return issues;
