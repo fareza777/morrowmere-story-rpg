@@ -76,7 +76,7 @@ export const CH02_MAIN = Object.freeze([
     type: 'main', family: 'evidence-council', anchorOrder: 6, weight: 100, pacing: 'quiet', tensionChange: 1,
     illustrationId: 'scene-ch02-main-greywatch-council', title: 'Greywatch Council',
     narrative: [
-      'Greywatch\'s council gathers in the map room: Captain Elian Ward, Quartermaster Nessa Cole, Sergeant Hale, and two civilian ward leaders. They agree the raid was organized but divide over who should hold the evidence.',
+      'Greywatch\'s council gathers in the map room: Captain Coren Ward, Quartermaster Nessa Cole, Sergeant Hale, and two civilian ward leaders. They agree the raid was organized but divide over who should hold the evidence.',
       'Captain Ward proposes sending copies to Marshal Severin Voss, the respected border commander currently inspecting western forts. Lyra warns that an unknown clerk has already copied military seal methods.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 2, maxLevel: 4 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [],
