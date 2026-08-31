@@ -488,8 +488,16 @@ describe('V2 save recovery', () => {
     const repo = createSaveRepository(storage, () => '2026-08-31T00:00:00.000Z', localContent);
     const hero = { class: 'mage' as const, name: 'Aster', level: 1, xp: 0, health: 20, maxHealth: 20, focus: 10, maxFocus: 10, strength: 3, cunning: 5, will: 9, armor: 1, ward: 5, attackBonus: 0, guarding: false, statuses: [], inventory: [], equipment: { weapon: null, armor: null, charms: [] } };
     const base = createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, localContent);
-    const summoned = resolveCombatTurn(createCombat(hero, summoner, 7), { type: 'guard' }, base.campaign.inventory, { items: localContent.items });
+    const beforeSummon = createCombat(hero, summoner, 7);
+    const beforeSummonState = {
+      ...base,
+      expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'caller-fight' as never, combat: beforeSummon }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] },
+      flow: { screen: 'combat' as const, overlay: null, merchant: null },
+    };
+    expect(repo.saveSlot(3, beforeSummonState)).toEqual({ ok: true });
+    const summoned = resolveCombatTurn(beforeSummon, { type: 'guard' }, base.campaign.inventory, { items: localContent.items });
     expect(summoned.combat.enemies).toHaveLength(2);
+    expect(summoned.combat.enemies[0]!.roleUses).toBe(0);
     const complete = {
       ...base,
       expedition: { routeProfile: 'kings-road' as const, routeSeed: 7, director: initialDirector(7), position: { chapterId: 'ch01' as const, slot: 0 }, currentSceneId: null, currentCombat: { encounterId: 'caller-fight' as never, combat: summoned.combat }, pendingRewards: [], unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [] },
@@ -501,6 +509,13 @@ describe('V2 save recovery', () => {
     expect(persisted.state.expedition.currentCombat.combat.enemies).toEqual(expect.arrayContaining([
       expect.objectContaining({ source: { kind: 'summon-smoke', originEnemyId: 'caller' } }),
     ]));
+    const smokePresentWithUnusedSummon = JSON.parse(repo.exportSlot(1) ?? '{}');
+    smokePresentWithUnusedSummon.state.expedition.currentCombat.combat.enemies[0].roleUses = 1;
+    expect(repo.importSlot(2, signed(smokePresentWithUnusedSummon))).toMatchObject({ ok: false, reason: 'corrupt' });
+    const noSmokeAfterUse = JSON.parse(repo.exportSlot(1) ?? '{}');
+    noSmokeAfterUse.state.expedition.currentCombat.combat.enemies = noSmokeAfterUse.state.expedition.currentCombat.combat.enemies.filter((enemy: { source: { kind: string } }) => enemy.source.kind !== 'summon-smoke');
+    noSmokeAfterUse.state.expedition.currentCombat.combat.enemyIntents = noSmokeAfterUse.state.expedition.currentCombat.combat.enemyIntents.filter((intent: { enemyId: string }) => intent.enemyId === 'caller');
+    expect(repo.importSlot(2, signed(noSmokeAfterUse))).toMatchObject({ ok: false, reason: 'corrupt' });
     const loaded = repo.loadSlot(1);
     if (!loaded.ok || !loaded.state.expedition?.currentCombat?.combat) throw new Error('Expected hydrated summoned combat.');
     const originalNext = resolveCombatTurn(summoned.combat, { type: 'guard' }, complete.campaign.inventory, { items: localContent.items });
@@ -508,6 +523,24 @@ describe('V2 save recovery', () => {
     expect(hydratedNext.events).toEqual(originalNext.events);
     expect(hydratedNext.combat.rngState).toBe(originalNext.combat.rngState);
     expect(repo.saveSlot(1, loaded.state)).toEqual({ ok: true });
+
+    const deadSmokeEnemies = summoned.combat.enemies.map((enemy) => enemy.id === 'caller-smoke-1' ? { ...enemy, health: 0 } : enemy);
+    const directIntent = summoned.combat.enemyIntents.find((intent) => intent.enemyId === 'caller')!;
+    const afterSmokeDeath = { ...summoned.combat, enemies: deadSmokeEnemies, enemy: deadSmokeEnemies[0]!, enemyIntent: directIntent.intent, enemyIntents: [directIntent], intentText: directIntent.text };
+    const afterSmokeDeathState = { ...complete, expedition: { ...complete.expedition, currentCombat: { ...complete.expedition.currentCombat, combat: afterSmokeDeath } } };
+    expect(repo.saveSlot(1, afterSmokeDeathState)).toEqual({ ok: true });
+    const smokeDeathLoaded = repo.loadSlot(1);
+    expect(smokeDeathLoaded).toMatchObject({ ok: true, state: { expedition: { currentCombat: { combat: { enemies: [expect.objectContaining({ id: 'caller', roleUses: 0 }), expect.objectContaining({ id: 'caller-smoke-1', health: 0 })] } } } } });
+    if (!smokeDeathLoaded.ok) throw new Error('Expected a hydrated dead-smoke save.');
+    expect(repo.saveSlot(1, smokeDeathLoaded.state)).toEqual({ ok: true });
+    const terminalEnemies = afterSmokeDeath.enemies.map((enemy) => ({ ...enemy, health: 0 }));
+    const terminal = { ...afterSmokeDeath, enemies: terminalEnemies, enemy: terminalEnemies[0]!, outcome: 'victory' as const };
+    const terminalState = { ...afterSmokeDeathState, expedition: { ...afterSmokeDeathState.expedition, currentCombat: { ...afterSmokeDeathState.expedition.currentCombat, combat: terminal } }, flow: { screen: 'reward' as const, overlay: null, merchant: null } };
+    expect(repo.saveSlot(1, terminalState)).toEqual({ ok: true });
+    const terminalLoaded = repo.loadSlot(1);
+    expect(terminalLoaded).toMatchObject({ ok: true, state: { expedition: { currentCombat: { combat: { outcome: 'victory', enemyIntents: [] } } } } });
+    if (!terminalLoaded.ok) throw new Error('Expected a hydrated terminal summoner save.');
+    expect(repo.saveSlot(1, terminalLoaded.state)).toEqual({ ok: true });
   });
 
   it('binds duplicate direct enemies and summoned smoke to their canonical occurrence IDs', () => {

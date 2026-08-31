@@ -198,6 +198,15 @@ function validCombatContent(value: CombatDto, campaign: CampaignDto, encounterEn
     if (!definition || roleForEnemy(definition) !== 'summoner' || enemy.source.originEnemyId !== owner.source.enemyId || summonedOwners.has(owner.instanceId)) return false;
     summonedOwners.add(owner.instanceId);
   }
+  for (const enemy of directCombatants) {
+    if (enemy.source.kind !== 'catalog') return false;
+    const definition = content.enemies.get(enemy.source.enemyId as never);
+    if (!definition) return false;
+    const smokePresent = summonedOwners.has(enemy.instanceId);
+    if (roleForEnemy(definition) === 'summoner') {
+      if (enemy.roleUses !== (smokePresent ? 0 : 1)) return false;
+    } else if (enemy.roleUses !== 0) return false;
+  }
   const primaryEnemyId = compatibilityEnemyId(value.enemies);
   if (primaryEnemyId === null || value.primaryEnemyId !== primaryEnemyId) return false;
   const living = value.enemies.filter((enemy) => enemy.health > 0);
