@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GameShell } from './components/GameShell';
 import { LaunchSplash } from './components/LaunchSplash';
@@ -20,6 +20,10 @@ export default function App() {
   const [game, setGame] = useState<GameState | null>(null);
   const gameRef = useRef<GameState | null>(null);
   const [hasSave, setHasSave] = useState(() => loadGame(1).ok);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   useEffect(() => {
     if (!game) return;

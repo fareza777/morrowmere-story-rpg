@@ -16,7 +16,7 @@ export function OnboardingScreen({ onBack, onComplete }: OnboardingScreenProps) 
   const isLast = index === SLIDES.length - 1;
   return (
     <main className="onboarding-screen">
-      <div className="onboarding-art" style={{ backgroundImage: `linear-gradient(180deg, transparent 48%, var(--ink-0)), url('${slide.image}')` }} aria-hidden="true" />
+      <div className="onboarding-art" style={{ backgroundImage: `url('${slide.image}')` }} aria-hidden="true" />
       <section className="onboarding-copy" aria-live="polite">
         <div className="onboarding-progress" aria-label={`Introduction ${index + 1} of ${SLIDES.length}`}>{SLIDES.map((entry, step) => <span key={entry.title} className={step <= index ? 'is-active' : ''} />)}</div>
         <p className="eyebrow">{slide.eyebrow}</p><h1>{slide.title}</h1><p>{slide.body}</p>

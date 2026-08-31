@@ -45,7 +45,7 @@ describe('portrait game interface', () => {
     await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
 
-    await user.click(screen.getByRole('button', { name: 'Open settings' }));
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
 
     expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
     expect(screen.getByRole('slider', { name: 'Text size' })).toHaveValue('100');
@@ -60,7 +60,7 @@ describe('portrait game interface', () => {
     await user.click(screen.getByRole('button', { name: 'Skip introduction' }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
 
-    await user.click(screen.getByRole('button', { name: 'Open inventory' }));
+    await user.click(screen.getByRole('button', { name: 'Pack' }));
 
     expect(screen.getByRole('dialog', { name: 'Inventory' })).toBeVisible();
     expect(screen.getByText('Red Mercy')).toBeVisible();

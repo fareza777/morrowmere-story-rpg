@@ -39,8 +39,8 @@ Full description:
 
 Suggested alt text:
 
-- Icon: `A broken iron crown arches over a sword in rising black rain.`
-- Feature graphic: `Three adventurers approach a ruined crown-shaped keep through black rain.`
+- Icon: `A clear heraldic sword and broken crown emblem on a warm gold field.`
+- Feature graphic: `Three adventurers approach a ruined keep along a sunlit medieval road.`
 - Title screenshot: `MORROWMERE title screen with a lone warrior approaching a ruined keep.`
 - Story screenshot: `Readable story scene in Gloamwood with a large narrative choice.`
 - Combat screenshot: `A Gloam Warg encounter showing health, enemy intent, and four combat actions.`

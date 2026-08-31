@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, type CSSProperties } from 'react';
 import type { GameCommand, GameState } from '../game/state';
 import { BestiarySheet } from './BestiarySheet';
 import { ChronicleSheet } from './ChronicleSheet';
@@ -30,6 +30,10 @@ export function GameShell({ state, dispatch }: GameShellProps) {
           : '';
   const style = { '--text-scale': state.settings.textScale } as CSSProperties;
   const closeOverlay = () => dispatch({ type: 'CLOSE_OVERLAY' });
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [state.routeIndex, state.screen]);
 
   return (
     <div className={`game-shell ${state.settings.highContrast ? 'is-high-contrast' : ''} ${state.settings.reducedMotion ? 'is-reduced-motion' : ''}`} style={style}>

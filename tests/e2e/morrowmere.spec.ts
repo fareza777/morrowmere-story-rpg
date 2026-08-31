@@ -20,7 +20,7 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   await expect(game.continueChronicle).toBeEnabled();
   await game.continueChronicle.click();
   await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
-  await page.getByRole('button', { name: 'Open inventory' }).click();
+  await page.getByRole('button', { name: 'Pack' }).click();
   await expect(page.getByRole('dialog', { name: 'Inventory' })).toContainText('Red Mercy');
   await page.getByRole('tab', { name: 'Equipment' }).click();
   await expect(page.getByLabel('Equipped items')).toContainText('WeaponEmpty');

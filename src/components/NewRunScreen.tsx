@@ -20,8 +20,9 @@ export function NewRunScreen({ onBack, onBegin }: NewRunScreenProps) {
   return (
     <main className="new-run-screen">
       <header className="screen-header">
-        <button className="icon-button" type="button" aria-label="Back to title" onClick={onBack}>
+        <button className="back-button" type="button" aria-label="Back to title" onClick={onBack}>
           <ArrowLeft size={22} weight="bold" aria-hidden="true" />
+          <span>Back</span>
         </button>
         <div>
           <p className="eyebrow">New Chronicle</p>

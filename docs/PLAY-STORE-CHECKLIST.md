@@ -5,7 +5,7 @@ This project is technically packaged for Google Play, but final publication requ
 ## Already prepared
 
 - Application ID `com.morrowmere.game`
-- Version `1.0.0`, version code `1`
+- Version `1.1.0`, version code `2`
 - Android App Bundle release build
 - Target API 36, meeting the requirement that applies to new mobile submissions from 31 August 2026
 - Minimum API 24
