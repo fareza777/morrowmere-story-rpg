@@ -1,90 +1,95 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { GameShell } from './components/GameShell';
 import { LaunchSplash } from './components/LaunchSplash';
 import { NewRunScreen } from './components/NewRunScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { TitleScreen } from './components/TitleScreen';
-import { playSfx, playTransitionSfx } from './game/audio';
-import { loadGame, saveGame } from './game/persistence';
-import { gameReducer, startNewRun, type GameCommand, type GameState } from './game/state';
-import type { HeroClass } from './game/types';
+import { playSfx } from './game/audio';
+import { CHRONICLE1_CONTENT } from './game/content/chronicle1';
+import type { ContentIndex } from './game/content/schema';
+import { createSaveRepository } from './game/persistence/repository';
+import type { UiPorts } from './ui/types';
+import { useGameSession } from './ui/useGameSession';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/game.css';
 
-type AppView = 'title' | 'onboarding' | 'new-run' | 'game';
+const partialContent = CHRONICLE1_CONTENT as Partial<ContentIndex>;
+const CONTENT: ContentIndex = Object.freeze({
+  events: partialContent.events ?? new Map(),
+  items: partialContent.items ?? new Map(),
+  enemies: partialContent.enemies ?? new Map(),
+  encounters: partialContent.encounters ?? new Map(),
+  companions: partialContent.companions ?? new Map(),
+  merchants: partialContent.merchants ?? new Map(),
+  artIds: partialContent.artIds ?? new Set(),
+  audioIds: partialContent.audioIds ?? new Set(),
+});
+
+const PORTS: UiPorts = {
+  feedback: { consume(): void {} },
+  cinematicAudio: {
+    async preload(): Promise<void> {},
+    async play(): Promise<void> {},
+    pause(): void {},
+    seek(): void {},
+    stop(): void {},
+    setVolumes(): void {},
+  },
+  now: () => Date.now(),
+};
 
 export default function App() {
-  const [view, setView] = useState<AppView>('title');
-  const [game, setGame] = useState<GameState | null>(null);
-  const gameRef = useRef<GameState | null>(null);
-  const [hasSave, setHasSave] = useState(() => loadGame(1).ok);
+  const repository = useMemo(
+    () => createSaveRepository(window.localStorage, () => new Date().toISOString(), CONTENT),
+    [],
+  );
+  const session = useGameSession(repository, CONTENT, PORTS);
 
   useLayoutEffect(() => {
-    window.scrollTo(0, 0);
-  }, [view]);
-
-  useEffect(() => {
-    if (!game) return;
-    const result = saveGame(1, game);
-    if (result.ok) setHasSave(true);
-  }, [game]);
-
-  const dispatch = useCallback((command: GameCommand) => {
-    const current = gameRef.current;
-    if (!current) return;
-    const next = gameReducer(current, command);
-    gameRef.current = next;
-    playTransitionSfx(current, next, command);
-    setGame(next);
-  }, []);
-
-  const begin = (heroClass: HeroClass, name: string) => {
-    const seed = Math.abs((Date.now() ^ 0x4d4f5252) | 0) || 1943;
-    const next = startNewRun({ heroClass, seed, name: name.trim() || 'The Oathless' });
-    gameRef.current = next;
-    setGame(next);
-    setView('game');
-  };
-
-  const continueRun = () => {
-    const loaded = loadGame(1);
-    if (loaded.ok) {
-      gameRef.current = loaded.state;
-      setGame(loaded.state);
-      setView('game');
-    }
-  };
-
-  const retryRun = () => {
-    if (!game) return;
-    playSfx('ui');
-    begin(game.hero.class, game.hero.name);
-  };
-
-  const returnToTitle = () => {
-    playSfx('ui');
-    gameRef.current = null;
-    setGame(null);
-    setView('title');
-  };
+    document.documentElement.scrollTop = 0;
+  }, [session.view]);
 
   return (
     <>
-    <LaunchSplash />
-    <ErrorBoundary onReset={() => { gameRef.current = null; setGame(null); setView('title'); }}>
-      {view === 'title' && (
-        <TitleScreen
-          canContinue={hasSave}
-          onContinue={continueRun}
-          onNew={() => { playSfx('ui'); setView('onboarding'); }}
-        />
-      )}
-      {view === 'onboarding' && <OnboardingScreen onBack={() => setView('title')} onComplete={() => setView('new-run')} />}
-      {view === 'new-run' && <NewRunScreen onBack={() => setView('title')} onBegin={begin} />}
-      {view === 'game' && game && <GameShell state={game} dispatch={dispatch} onRetry={retryRun} onExit={returnToTitle} />}
-    </ErrorBoundary>
+      <LaunchSplash />
+      <ErrorBoundary onReset={session.returnToTitle}>
+        {session.view === 'title' && (
+          <TitleScreen
+            slots={session.slots}
+            onContinue={(slot) => { playSfx('ui'); session.continueSlot(slot); }}
+            onRecover={(slot) => { playSfx('ui'); session.continueSlot(slot); }}
+            onNew={(slot) => { playSfx('ui'); session.beginSlot(slot); }}
+          />
+        )}
+        {session.view === 'preferences' && (
+          <OnboardingScreen
+            onBack={session.returnToTitle}
+            onComplete={session.showNewRun}
+          />
+        )}
+        {session.view === 'new-run' && (
+          <NewRunScreen
+            onBack={session.returnToTitle}
+            onBegin={session.startCampaign}
+          />
+        )}
+        {session.view === 'game' && session.game && (
+          <main className="new-run-screen">
+            <section className="end-panel" aria-labelledby="campaign-ready-title">
+              <p className="eyebrow">Chronicle I — The Black Banner</p>
+              <h1 id="campaign-ready-title">{session.game.campaign.heroName}'s road begins at camp.</h1>
+              <p>Your campaign is saved. Choose a route when the Chronicle camp screen opens.</p>
+              {session.notice && <p role="status">{session.notice}</p>}
+              <div className="end-actions">
+                <button className="button button-secondary" type="button" onClick={session.saveAndExit}>
+                  Save &amp; Exit
+                </button>
+              </div>
+            </section>
+          </main>
+        )}
+      </ErrorBoundary>
     </>
   );
 }
