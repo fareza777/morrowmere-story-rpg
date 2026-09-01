@@ -60,15 +60,17 @@ function authoredQueuePick(
   content: ContentIndex,
   priorDiagnostics: readonly string[] = [],
 ): AuthoredQueuePick {
-  let remaining = queue;
   const diagnostics = [...priorDiagnostics];
-  while (remaining.length > 0) {
-    const entry = remaining[0]!;
+  if (diagnostics.length > 0) return { queue, diagnostics };
+  const retained: AuthoredSceneQueueEntry[] = [];
+  for (let index = 0; index < queue.length; index += 1) {
+    const entry = queue[index]!;
     const event = content.events.get(entry.sceneId);
     if (event?.chapterId === context.position.chapterId
       && event.slot !== undefined
       && event.slot > context.position.slot) {
-      return { queue: remaining, diagnostics };
+      retained.push(entry);
+      continue;
     }
     const directorWithoutTargetReservation = {
       ...state,
@@ -77,16 +79,16 @@ function authoredQueuePick(
     const eligible = event?.chapterId === context.position.chapterId
       && eligibleScenes(directorWithoutTargetReservation, context, content).some((candidate) => candidate.id === event.id);
     if (event && eligible) {
-      return { event, queue: remaining.slice(1), diagnostics };
+      return { event, queue: [...retained, ...queue.slice(index + 1)], diagnostics };
     }
-    remaining = remaining.slice(1);
     if (entry.requirementMode === 'required') {
       diagnostics.push(
         `Required authored scene ${entry.sceneId} from ${entry.sourceSceneId} is invalid or ineligible${entry.reason ? ` (${entry.reason})` : ''}; continuing at the next valid route anchor.`,
       );
+      return { queue: [...retained, ...queue.slice(index + 1)], diagnostics };
     }
   }
-  return { queue: remaining, diagnostics };
+  return { queue: retained, diagnostics };
 }
 
 function pickCandidate(

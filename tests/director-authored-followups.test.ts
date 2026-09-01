@@ -155,6 +155,66 @@ describe('authored scene queue', () => {
     }));
   });
 
+  it('keeps optional authored entries queued while an invalid required target recovers through a callback', () => {
+    const missing = asEvent('missing-before-optional');
+    const optional = scene({ id: asEvent('waiting-optional'), type: 'journey', choices: [] });
+    const callback = scene({ id: asEvent('required-callback'), type: 'journey', choices: [] });
+    const anchor = scene({ id: asEvent('callback-fallback-anchor'), type: 'main', anchorOrder: 2, choices: [] });
+    const source = scene({
+      id: asEvent('invalid-then-optional-source'), type: 'journey', followUps: [optional.id],
+      choices: [directChoice(missing)],
+    });
+    const index = content([source, optional, callback, anchor]);
+    const resolved = resolveSource(atSource(index, source.id), index).state;
+    const withCallback: GameStateV2 = {
+      ...resolved,
+      expedition: {
+        ...resolved.expedition!,
+        director: {
+          ...resolved.expedition!.director,
+          pendingCallbacks: [{
+            targetEventId: callback.id,
+            deadline: { chapterId: 'ch01', slot: 2 },
+            status: 'pending',
+            required: true,
+          }],
+        },
+      },
+    };
+
+    const selected = reduceGame(withCallback, { type: 'select-next-scene', updatedAt: at(3) }, index);
+
+    expect(selected.diagnostic).toBeUndefined();
+    expect(currentSceneId(selected.state)).toBe(callback.id);
+    expect(queue(selected.state).map((entry) => entry.sceneId)).toEqual([optional.id]);
+    expect(selected.state.expedition?.director.pendingCallbacks[0]?.status).toBe('fulfilled');
+  });
+
+  it('selects the first due required entry past a future required queue head', () => {
+    const slotFive = scene({ id: asEvent('required-at-slot-five'), slot: 5, type: 'journey', choices: [] });
+    const slotFour = scene({ id: asEvent('required-at-slot-four'), slot: 4, type: 'journey', choices: [] });
+    const index = content([slotFive, slotFour]);
+    const created = createCampaign({ heroClass: 'warrior', seed: 17, updatedAt: at(0) }, index);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
+    const queued: GameStateV2 = {
+      ...started,
+      expedition: {
+        ...started.expedition!,
+        position: { chapterId: 'ch01', slot: 4 },
+        authoredSceneQueue: [
+          { sceneId: slotFive.id, sourceSceneId: asEvent('earlier-source'), requirementMode: 'required' },
+          { sceneId: slotFour.id, sourceSceneId: asEvent('later-source'), requirementMode: 'required' },
+        ],
+      },
+    };
+
+    const selected = reduceGame(queued, { type: 'select-next-scene', updatedAt: at(2) }, index);
+
+    expect(selected.diagnostic).toBeUndefined();
+    expect(currentSceneId(selected.state)).toBe(slotFour.id);
+    expect(queue(selected.state).map((entry) => entry.sceneId)).toEqual([slotFive.id]);
+  });
+
   it('preserves a queued aftermath through combat victory and reward claim', () => {
     const source = scene({
       id: asEvent('combat-source'), type: 'combat', encounterId: asEncounter('queue-fight'),
