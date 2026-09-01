@@ -127,7 +127,7 @@ function content(): ContentIndex {
 function atScene(eventId: EventId, index: ContentIndex): GameStateV2 {
   const created = createCampaign({ heroClass: 'warrior', seed: 1, updatedAt: at(0) }, index);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
-  return { ...started, expedition: { ...started.expedition!, currentSceneId: eventId, sceneResolution: null } };
+  return { ...started, expedition: { ...started.expedition!, currentSceneId: eventId, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 } } };
 }
 
 describe('narrative choice resolution', () => {

@@ -1,7 +1,7 @@
 import type { ContentIndex } from '../content/schema';
 import type { GameStateV2, ProfileState } from '../state/types';
 import { migrateSave } from './migrate';
-import { decodeProfile, decodeSaveState, encodeSaveState, isContentBackedProfile } from './codec';
+import { decodeProfile, decodeSaveState, decodeSaveStateWithDiagnostics, encodeSaveState, isContentBackedProfile } from './codec';
 import { createProfileEnvelope, createSaveEnvelope, isProfileEnvelope, isProfileState, isSaveEnvelope, type SaveEnvelope, type SaveSlot } from './schema';
 
 export type SaveResult = { readonly ok: true } | { readonly ok: false; readonly error: string };
@@ -73,15 +73,31 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       catch (error) { return { ok: false, reason: 'corrupt', error: message(error, 'Unable to read the Chronicle.') }; }
       const recoveryKeys: string[] = [];
       const activeEnvelope = parseEnvelope(activeRaw, slot);
-      const active = activeEnvelope ? decodeSaveState(activeEnvelope.state, content) : null;
+      const activeDecoded = activeEnvelope ? decodeSaveStateWithDiagnostics(activeEnvelope.state, content) : null;
+      const active = activeDecoded?.state ?? null;
       if (activeRaw !== null && !active) { const key = archive(slot, 'active', activeRaw); if (key) recoveryKeys.push(key); }
       const backupEnvelope = parseEnvelope(backupRaw, slot);
-      const backup = backupEnvelope ? decodeSaveState(backupEnvelope.state, content) : null;
+      const backupDecoded = backupEnvelope ? decodeSaveStateWithDiagnostics(backupEnvelope.state, content) : null;
+      const backup = backupDecoded?.state ?? null;
       if (backupRaw !== null && !backup) { const key = archive(slot, 'backup', backupRaw); if (key) recoveryKeys.push(key); }
-      if (active && activeEnvelope) return { ok: true, state: active, source: 'active', summary: summary(activeEnvelope) };
+      if (active && activeEnvelope) {
+        const recovered = activeEnvelope.schemaVersion === 2 || (activeDecoded?.diagnostics.length ?? 0) > 0;
+        if (recovered) this.saveSlot(slot, active);
+        return {
+          ok: true,
+          state: active,
+          source: activeEnvelope.schemaVersion === 2 ? 'migrated' : 'active',
+          summary: summary(activeEnvelope),
+          ...(recovered ? { notice: activeDecoded?.diagnostics.join(' ') || 'Your save was upgraded to the current format.' } : {}),
+        };
+      }
       if (backup && backupEnvelope) {
-        try { storage.setItem(saveActiveKey(slot), backupRaw!); } catch { /* Recovery remains usable even if promotion cannot persist. */ }
-        return { ok: true, state: backup, source: 'backup', summary: summary(backupEnvelope) };
+        const recovered = backupEnvelope.schemaVersion === 2 || (backupDecoded?.diagnostics.length ?? 0) > 0;
+        try {
+          if (recovered) this.saveSlot(slot, backup);
+          else storage.setItem(saveActiveKey(slot), backupRaw!);
+        } catch { /* Recovery remains usable even if promotion cannot persist. */ }
+        return { ok: true, state: backup, source: 'backup', summary: summary(backupEnvelope), ...(recovered ? { notice: backupDecoded?.diagnostics.join(' ') || 'Your backup was upgraded to the current format.' } : {}) };
       }
       if (activeRaw !== null || backupRaw !== null) return { ok: false, reason: 'corrupt', recoveryKeys };
       let legacyRaw: string | null;
@@ -103,14 +119,15 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
     },
     importSlot(slot, raw) {
       const incoming = parseEnvelope(raw);
-      const state = incoming ? decodeSaveState(incoming.state, content) : null;
+      const decoded = incoming ? decodeSaveStateWithDiagnostics(incoming.state, content) : null;
+      const state = decoded?.state ?? null;
       if (!incoming || !state) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
       const encoded = encodeSaveState(state, content);
       if (!encoded) { const key = archive(slot, 'import', raw); return { ok: false, reason: 'corrupt', recoveryKeys: key ? [key] : [] }; }
       const target = createSaveEnvelope(slot, encoded, clock());
       const written = saveEnvelope(slot, target);
       if (!written.ok) return { ok: false, reason: 'corrupt', error: written.error };
-      return { ok: true, state, source: 'active', summary: summary(target) };
+      return { ok: true, state, source: incoming?.schemaVersion === 2 ? 'migrated' : 'active', summary: summary(target), ...(decoded && decoded.diagnostics.length > 0 ? { notice: decoded.diagnostics.join(' ') } : {}) };
     },
     saveProfile(profile) {
       if (!isProfileState(profile) || !isContentBackedProfile(profile, content)) return { ok: false, error: 'Invalid profile.' };

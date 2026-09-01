@@ -8,6 +8,10 @@ import type { GameStateV2 } from '../src/game/state/types';
 
 const itemId = (id: string) => id as ItemId;
 const sceneId = (id: string) => id as EventId;
+const resolvedScene = (eventId: EventId) => ({
+  eventId, choiceId: null, resultKind: 'direct' as const, chance: null, roll: null,
+  outcome: 'The scene is complete.', effectSummary: [], nextSceneId: null, continueLabel: null,
+});
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -228,7 +232,7 @@ describe('campaign checkpoints', () => {
       expedition: {
         ...granted.value.expedition!,
         position: { chapterId: 'ch01' as const, slot: 3 }, currentSceneId: finale.id,
-        sceneResolution: { eventId: finale.id, choiceId: null },
+        sceneResolution: resolvedScene(finale.id), sceneVisitCounts: { [finale.id]: 1 },
         director: { ...started.expedition!.director, usedSceneIds: [finale.id], seenEventIds: [finale.id] },
       },
     };
@@ -357,7 +361,7 @@ describe('campaign checkpoints', () => {
       ...started,
       expedition: {
         ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
-        sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null }, unbankedGold: 20,
+        sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 }, unbankedGold: 20,
       },
     };
     const opened = reduceGame(atMerchant, { type: 'open-merchant', updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
@@ -401,14 +405,14 @@ describe('campaign checkpoints', () => {
   it('shares merchant stock across authored scenes in the same restock namespace', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
-    const firstScene = { ...started, expedition: { ...started.expedition!, currentSceneId: sceneId('merchant-scene'), sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null }, unbankedGold: 20 } };
+    const firstScene = { ...started, expedition: { ...started.expedition!, currentSceneId: sceneId('merchant-scene'), sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 }, unbankedGold: 20 } };
     const openedFirst = reduceGame(firstScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
     const firstKey = openedFirst.flow.merchant!.restockKey;
     const bought = reduceGame(openedFirst, { type: 'trade', intent: { type: 'buy', stockEntryId: openedFirst.expedition!.merchantVisits[0]!.stock[0]!.id }, updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
     const closed = reduceGame(bought, { type: 'close-merchant', updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent).state;
-    const sharedScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-shared'), sceneResolution: { eventId: sceneId('merchant-scene-shared'), choiceId: null } } };
+    const sharedScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-shared'), sceneResolution: resolvedScene(sceneId('merchant-scene-shared')), sceneVisitCounts: { ...closed.expedition!.sceneVisitCounts, 'merchant-scene-shared': 1 } } };
     const reopenedShared = reduceGame(sharedScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
-    const distinctScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-distinct'), sceneResolution: { eventId: sceneId('merchant-scene-distinct'), choiceId: null } } };
+    const distinctScene = { ...closed, expedition: { ...closed.expedition!, currentSceneId: sceneId('merchant-scene-distinct'), sceneResolution: resolvedScene(sceneId('merchant-scene-distinct')), sceneVisitCounts: { ...closed.expedition!.sceneVisitCounts, 'merchant-scene-distinct': 1 } } };
     const openedDistinct = reduceGame(distinctScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:06:00.000Z' }, orchestrationContent).state;
 
     expect(reopenedShared.flow.merchant!.restockKey).toBe(firstKey);
@@ -482,7 +486,7 @@ describe('campaign checkpoints', () => {
       },
       expedition: {
         ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
-        sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null },
+        sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 },
         // One item is truly unsecured; the second marker deliberately models stale persisted data.
         unbankedLoot: [itemId('potion-red'), itemId('potion-red')],
       },
@@ -521,7 +525,7 @@ describe('campaign checkpoints', () => {
       },
       expedition: {
         ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
-        sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null },
+        sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 },
         unbankedLoot: [itemId('potion-red')],
       },
     };

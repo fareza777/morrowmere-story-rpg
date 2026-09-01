@@ -90,6 +90,8 @@ export interface ExpeditionState {
   readonly currentSceneId: EventId | null;
   readonly sceneResolution: SceneResolution | null;
   readonly authoredSceneQueue: readonly AuthoredSceneQueueEntry[];
+  readonly sceneVisitCounts: Readonly<Record<string, number>>;
+  readonly checkedAttempts: readonly CheckedAttempt[];
   readonly heroVitals: HeroVitals;
   readonly currentCombat: { readonly encounterId: EncounterId; readonly combat: CombatState | null } | null;
   readonly pendingReward: PendingBattleReward | null;
@@ -104,17 +106,40 @@ export interface HeroVitals {
   readonly resource: number;
 }
 
-export interface SceneResolution {
+interface SceneResolutionBase {
   readonly eventId: EventId;
   readonly choiceId: ChoiceId | null;
-  /** Optional until the v2 save migration upgrades legacy compact resolutions. */
-  readonly resultKind?: 'direct' | 'critical-success' | 'success' | 'failure' | 'critical-failure';
-  readonly chance?: number | null;
-  readonly roll?: number | null;
-  readonly outcome?: string;
-  readonly effectSummary?: readonly string[];
-  readonly nextSceneId?: EventId | null;
-  readonly continueLabel?: string | null;
+  readonly outcome: string;
+  readonly effectSummary: readonly string[];
+  readonly nextSceneId: EventId | null;
+  readonly continueLabel: string | null;
+}
+
+export interface DirectSceneResolution extends SceneResolutionBase {
+  readonly resultKind: 'direct';
+  readonly chance: null;
+  readonly roll: null;
+}
+
+export type CheckedResultKind = 'critical-success' | 'success' | 'failure' | 'critical-failure';
+
+export interface CheckedSceneResolution extends SceneResolutionBase {
+  readonly choiceId: ChoiceId;
+  readonly resultKind: CheckedResultKind;
+  readonly chance: number;
+  readonly roll: number;
+}
+
+export type SceneResolution = DirectSceneResolution | CheckedSceneResolution;
+
+/** Append-only deterministic check receipt for one selected scene visit. */
+export interface CheckedAttempt {
+  readonly eventId: EventId;
+  readonly choiceId: ChoiceId;
+  readonly visitOrdinal: number;
+  readonly chance: number;
+  readonly roll: number;
+  readonly resultKind: CheckedResultKind;
 }
 
 export interface PendingBattleReward {
@@ -142,8 +167,8 @@ export interface FlowState {
   readonly merchant: { readonly merchantId: MerchantId; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null;
 }
 
-export interface GameStateV2 {
-  readonly schemaVersion: 2;
+export interface GameStateV3 {
+  readonly schemaVersion: 3;
   readonly profile: ProfileState;
   readonly campaign: CampaignState;
   readonly expedition: ExpeditionState | null;
@@ -152,6 +177,9 @@ export interface GameStateV2 {
   readonly flow: FlowState;
   readonly updatedAt: string;
 }
+
+/** Compatibility name retained while callers migrate to the v3 runtime contract. */
+export type GameStateV2 = GameStateV3;
 
 /** Envelope keeps a stable delivery ID without colliding with `choice_resolved.eventId`. */
 export interface SequencedDomainEvent {

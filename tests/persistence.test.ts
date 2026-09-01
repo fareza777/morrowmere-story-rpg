@@ -6,6 +6,9 @@ import {
   type SaveSlot,
 } from '../src/game/persistence';
 import { startNewRun } from '../src/game/state';
+import { createCampaign } from '../src/game/state/create';
+import { encodeSaveState } from '../src/game/persistence/codec';
+import { makeContentIndex } from './fixtures/game';
 
 describe('local persistence', () => {
   beforeEach(() => localStorage.clear());
@@ -36,5 +39,13 @@ describe('local persistence', () => {
 
   it('distinguishes an empty slot from a corrupt slot', () => {
     expect(loadGame(3)).toEqual({ ok: false, reason: 'empty' });
+  });
+
+  it('encodes current campaign saves as schema v3', () => {
+    const content = makeContentIndex();
+    const state = createCampaign({ heroClass: 'warden', seed: 12, updatedAt: '2026-09-01T00:00:00.000Z' }, content);
+
+    expect(encodeSaveState(state, content)?.schemaVersion).toBe(3);
+    expect(state.schemaVersion).toBe(3);
   });
 });

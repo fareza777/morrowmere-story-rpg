@@ -62,6 +62,7 @@ function atSource(index: ContentIndex, sourceId: EventId): GameStateV2 {
       position: { chapterId: 'ch01', slot: 2 },
       currentSceneId: sourceId,
       sceneResolution: null,
+      sceneVisitCounts: { [sourceId]: 1 },
       director: {
         ...started.expedition!.director,
         usedSceneIds: [sourceId],

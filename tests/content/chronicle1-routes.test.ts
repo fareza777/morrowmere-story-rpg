@@ -61,6 +61,8 @@ function initialEffectState(seed: number): EffectState {
       currentSceneId: null,
       sceneResolution: null,
       authoredSceneQueue: [],
+      sceneVisitCounts: {},
+      checkedAttempts: [],
       heroVitals: { health: 44, resource: 8 },
       currentCombat: null,
       pendingReward: null,

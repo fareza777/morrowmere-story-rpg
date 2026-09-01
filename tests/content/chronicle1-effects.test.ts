@@ -40,6 +40,8 @@ function effectState(content: ContentIndex) {
     currentSceneId: null,
     sceneResolution: null,
     authoredSceneQueue: [],
+    sceneVisitCounts: {},
+    checkedAttempts: [],
     heroVitals: { health: 40, resource: 12 },
     currentCombat: null,
     pendingReward: null,

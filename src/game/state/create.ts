@@ -67,7 +67,7 @@ export function createCampaign(options: CreateCampaignOptions, content: ContentI
   } as const;
   const payload = campaignPayload(campaign);
   return {
-    schemaVersion: 2, profile: createProfile(), campaign, expedition: null, adPacing: initialAdPacingState(),
+    schemaVersion: 3, profile: createProfile(), campaign, expedition: null, adPacing: initialAdPacingState(),
     checkpoints: { chapter: { campaign: campaignPayload(campaign), enteredAt: options.updatedAt }, camp: { campaign: payload, campSceneId: null, savedAt: options.updatedAt } },
     flow: { screen: 'camp', overlay: null, merchant: null }, updatedAt: options.updatedAt,
   };

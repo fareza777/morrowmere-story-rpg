@@ -5,6 +5,10 @@ import { createCampaign } from '../src/game/state/create';
 import { reduceGame } from '../src/game/state/reducer';
 
 const asEventId = (id: string) => id as EventId;
+const resolvedScene = (eventId: EventId) => ({
+  eventId, choiceId: null, resultKind: 'direct' as const, chance: null, roll: null,
+  outcome: 'The chapter road is complete.', effectSummary: [], nextSceneId: null, continueLabel: null,
+});
 
 function anchor(chapterId: ChapterId, id: string, slot: number): ChronicleEvent {
   return {
@@ -43,7 +47,8 @@ function stateAfterFinalAnchor(chapterId: ChapterId, finale: ChronicleEvent, fix
       ...started.expedition!,
       position: { chapterId, slot: (finale.slot ?? 1) + 1 },
       currentSceneId: finale.id,
-      sceneResolution: { eventId: finale.id, choiceId: null },
+      sceneResolution: resolvedScene(finale.id),
+      sceneVisitCounts: { ...started.expedition!.sceneVisitCounts, [finale.id]: 1 },
       unbankedGold: 9,
       director: {
         ...started.expedition!.director,

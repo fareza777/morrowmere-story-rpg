@@ -334,8 +334,13 @@ export function makeUiGame(options: UiGameOptions = {}): GameStateV2 {
         position: { chapterId: 'ch01' as const, slot: 1 },
         currentSceneId,
         authoredSceneQueue: [],
+        sceneVisitCounts: currentSceneId ? { [currentSceneId]: 1 } : {},
+        checkedAttempts: [],
         sceneResolution: screen === 'story'
-          ? { eventId: STORY_EVENT.id, choiceId: null }
+          ? {
+              eventId: STORY_EVENT.id, choiceId: null, resultKind: 'direct' as const, chance: null, roll: null,
+              outcome: 'The story fixture is ready.', effectSummary: [], nextSceneId: null, continueLabel: null,
+            }
           : null,
         heroVitals: { health: stats.maxHealth, resource: stats.maxFocus },
         currentCombat: screen === 'combat'

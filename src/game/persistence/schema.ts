@@ -39,12 +39,23 @@ export interface MerchantVisitDto { readonly merchantId: string; readonly restoc
 export interface PendingBattleRewardDto { readonly rewardId: string; readonly rewardOfferId?: string; readonly encounterId: string; readonly itemChoices: readonly string[]; readonly baseGold: number; readonly grantedXp: number; readonly adEligible: boolean; readonly rewardedGoldSettlement?: 'available' | 'claimed' | 'ineligible'; }
 export interface CompactSceneResolutionDto { readonly eventId: string; readonly choiceId: string | null; }
 export interface RichSceneResolutionDto extends CompactSceneResolutionDto { readonly resultKind: 'direct' | 'critical-success' | 'success' | 'failure' | 'critical-failure'; readonly chance: number | null; readonly roll: number | null; readonly outcome: string; readonly effectSummary: readonly string[]; readonly nextSceneId: string | null; readonly continueLabel: string | null; }
-export type SceneResolutionDto = CompactSceneResolutionDto | RichSceneResolutionDto;
+export type LegacySceneResolutionDto = CompactSceneResolutionDto | RichSceneResolutionDto;
+interface SceneResolutionBaseDto extends CompactSceneResolutionDto { readonly outcome: string; readonly effectSummary: readonly string[]; readonly nextSceneId: string | null; readonly continueLabel: string | null; }
+export interface DirectSceneResolutionDto extends SceneResolutionBaseDto { readonly resultKind: 'direct'; readonly chance: null; readonly roll: null; }
+export interface CheckedSceneResolutionDto extends SceneResolutionBaseDto { readonly choiceId: string; readonly resultKind: 'critical-success' | 'success' | 'failure' | 'critical-failure'; readonly chance: number; readonly roll: number; }
+export type SceneResolutionDto = DirectSceneResolutionDto | CheckedSceneResolutionDto;
+export interface CheckedAttemptDto { readonly eventId: string; readonly choiceId: string; readonly visitOrdinal: number; readonly chance: number; readonly roll: number; readonly resultKind: CheckedSceneResolutionDto['resultKind']; }
 export interface AuthoredSceneQueueEntryDto { readonly sceneId: string; readonly sourceSceneId: string; readonly requirementMode: 'required' | 'optional'; readonly reason?: string; }
-export interface ExpeditionDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly sceneResolution: SceneResolutionDto | null; readonly authoredSceneQueue: readonly AuthoredSceneQueueEntryDto[]; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
-export interface SaveStateDto { readonly schemaVersion: 2; readonly profile: ProfileDto; readonly campaign: CampaignDto; readonly expedition: ExpeditionDto | null; readonly adPacing?: AdPacingState; readonly checkpoints: { readonly chapter: { readonly campaign: CampaignCheckpointDto; readonly enteredAt: string }; readonly camp: { readonly campaign: CampaignCheckpointDto; readonly campSceneId: string | null; readonly savedAt: string } | null }; readonly flow: { readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending'; readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null; readonly merchant: { readonly merchantId: string; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null }; readonly updatedAt: string; }
+interface ExpeditionBaseDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly authoredSceneQueue: readonly AuthoredSceneQueueEntryDto[]; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
+export interface ExpeditionV2Dto extends Omit<ExpeditionBaseDto, 'authoredSceneQueue'> { readonly sceneResolution: LegacySceneResolutionDto | null; readonly authoredSceneQueue?: readonly AuthoredSceneQueueEntryDto[]; }
+export interface ExpeditionDto extends ExpeditionBaseDto { readonly sceneResolution: SceneResolutionDto | null; readonly sceneVisitCounts: Readonly<Record<string, number>>; readonly checkedAttempts: readonly CheckedAttemptDto[]; }
+interface SaveStateBaseDto { readonly profile: ProfileDto; readonly campaign: CampaignDto; readonly adPacing?: AdPacingState; readonly checkpoints: { readonly chapter: { readonly campaign: CampaignCheckpointDto; readonly enteredAt: string }; readonly camp: { readonly campaign: CampaignCheckpointDto; readonly campSceneId: string | null; readonly savedAt: string } | null }; readonly flow: { readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending'; readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null; readonly merchant: { readonly merchantId: string; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null }; readonly updatedAt: string; }
+export interface SaveStateV2Dto extends SaveStateBaseDto { readonly schemaVersion: 2; readonly expedition: ExpeditionV2Dto | null; }
+export interface SaveStateDto extends SaveStateBaseDto { readonly schemaVersion: 3; readonly expedition: ExpeditionDto | null; }
 
-export interface SaveEnvelope { readonly schemaVersion: 2; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
+export interface SaveEnvelopeV2 { readonly schemaVersion: 2; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateV2Dto; readonly checksum: string; }
+export interface SaveEnvelopeV3 { readonly schemaVersion: 3; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
+export type SaveEnvelope = SaveEnvelopeV2 | SaveEnvelopeV3;
 export interface ProfileEnvelope { readonly schemaVersion: 2; readonly savedAt: string; readonly profile: ProfileDto; readonly checksum: string; }
 
 const chapterIds = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'] as const;
@@ -169,7 +180,7 @@ function validMerchantVisit(value: unknown): boolean {
     && value.stock.every((entry) => exact(entry, ['id', 'itemId']) && nonEmptyString(entry.id) && nonEmptyString(entry.itemId))
     && new Set(value.stock.map((entry) => entry.id)).size === value.stock.length;
 }
-export function isSceneResolutionDto(value: unknown): value is SceneResolutionDto {
+export function isLegacySceneResolutionDto(value: unknown): value is LegacySceneResolutionDto {
   const compact = exact(value, ['eventId', 'choiceId']) && nonEmptyString(value.eventId) && idOrNull(value.choiceId);
   const rich = exact(value, ['eventId', 'choiceId', 'resultKind', 'chance', 'roll', 'outcome', 'effectSummary', 'nextSceneId', 'continueLabel'])
     && nonEmptyString(value.eventId)
@@ -184,28 +195,66 @@ export function isSceneResolutionDto(value: unknown): value is SceneResolutionDt
     && (value.continueLabel === null || nonEmptyString(value.continueLabel));
   return compact || rich;
 }
-function validExpedition(value: unknown): boolean {
-  if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'authoredSceneQueue', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits'])) return false;
-  const sceneResolution = value.sceneResolution === null || isSceneResolutionDto(value.sceneResolution);
-  const authoredSceneQueue = Array.isArray(value.authoredSceneQueue) && value.authoredSceneQueue.every((entry) => (
+export function isSceneResolutionDto(value: unknown): value is SceneResolutionDto {
+  if (!exact(value, ['eventId', 'choiceId', 'resultKind', 'chance', 'roll', 'outcome', 'effectSummary', 'nextSceneId', 'continueLabel'])
+    || !nonEmptyString(value.eventId) || !idOrNull(value.choiceId) || !nonEmptyString(value.outcome)
+    || !stringArray(value.effectSummary) || !idOrNull(value.nextSceneId) || (value.continueLabel !== null && !nonEmptyString(value.continueLabel))) return false;
+  if (value.resultKind === 'direct') return value.chance === null && value.roll === null;
+  return nonEmptyString(value.choiceId)
+    && typeof value.resultKind === 'string'
+    && ['critical-success', 'success', 'failure', 'critical-failure'].includes(value.resultKind)
+    && number(value.chance, 0, true) && value.chance <= 100
+    && number(value.roll, 1, true) && value.roll <= 100;
+}
+const expeditionBaseKeys = ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'authoredSceneQueue', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits'] as const;
+function validExpeditionBase(value: Record<string, unknown>, sceneResolution: boolean, allowMissingQueue = false): boolean {
+  const authoredSceneQueue = (allowMissingQueue && value.authoredSceneQueue === undefined) || (Array.isArray(value.authoredSceneQueue) && value.authoredSceneQueue.every((entry) => (
     (exact(entry, ['sceneId', 'sourceSceneId', 'requirementMode'])
       || (exact(entry, ['sceneId', 'sourceSceneId', 'requirementMode', 'reason']) && nonEmptyString(entry.reason)))
     && nonEmptyString(entry.sceneId)
     && nonEmptyString(entry.sourceSceneId)
     && (entry.requirementMode === 'required' || entry.requirementMode === 'optional')
-  ));
+  )));
   const heroVitals = exact(value.heroVitals, ['health', 'resource']) && number(value.heroVitals.health, 0) && number(value.heroVitals.resource, 0);
   const rewardKeys = ['rewardId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible'] as const;
   const currentRewardKeys = ['rewardId', 'rewardOfferId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible', 'rewardedGoldSettlement'] as const;
   const pendingReward = value.pendingReward === null || (((exact(value.pendingReward, rewardKeys)) || (exact(value.pendingReward, currentRewardKeys) && nonEmptyString(value.pendingReward.rewardOfferId) && typeof value.pendingReward.rewardedGoldSettlement === 'string' && ['available', 'claimed', 'ineligible'].includes(value.pendingReward.rewardedGoldSettlement))) && nonEmptyString(value.pendingReward.rewardId) && nonEmptyString(value.pendingReward.encounterId) && uniqueStrings(value.pendingReward.itemChoices) && number(value.pendingReward.baseGold, 0, true) && number(value.pendingReward.grantedXp, 0, true) && typeof value.pendingReward.adEligible === 'boolean');
   return typeof value.routeProfile === 'string' && routeProfiles.has(value.routeProfile) && number(value.routeSeed, 0, true) && validDirector(value.director) && validPosition(value.position) && idOrNull(value.currentSceneId) && sceneResolution && authoredSceneQueue && heroVitals && (value.currentCombat === null || (exact(value.currentCombat, ['encounterId', 'combat']) && nonEmptyString(value.currentCombat.encounterId) && (value.currentCombat.combat === null || validCombat(value.currentCombat.combat)))) && pendingReward && number(value.unbankedGold, 0, true) && stringArray(value.unbankedLoot) && stringArray(value.temporaryBoons) && Array.isArray(value.merchantVisits) && value.merchantVisits.every(validMerchantVisit);
 }
+function validExpeditionV2(value: unknown): value is ExpeditionV2Dto {
+  const legacyKeys = expeditionBaseKeys.filter((key) => key !== 'authoredSceneQueue');
+  return (exact(value, expeditionBaseKeys) || exact(value, legacyKeys))
+    && validExpeditionBase(value, value.sceneResolution === null || isLegacySceneResolutionDto(value.sceneResolution), true);
+}
+function validCheckedAttempt(value: unknown): value is CheckedAttemptDto {
+  return exact(value, ['eventId', 'choiceId', 'visitOrdinal', 'chance', 'roll', 'resultKind'])
+    && nonEmptyString(value.eventId) && nonEmptyString(value.choiceId) && number(value.visitOrdinal, 1, true)
+    && number(value.chance, 0, true) && value.chance <= 100 && number(value.roll, 1, true) && value.roll <= 100
+    && typeof value.resultKind === 'string' && ['critical-success', 'success', 'failure', 'critical-failure'].includes(value.resultKind);
+}
+function validExpedition(value: unknown): value is ExpeditionDto {
+  const keys = [...expeditionBaseKeys, 'sceneVisitCounts', 'checkedAttempts'];
+  if (!exact(value, keys) || !validExpeditionBase(value, value.sceneResolution === null || isSceneResolutionDto(value.sceneResolution))) return false;
+  if (!numericRecord(value.sceneVisitCounts, 1, true) || !Array.isArray(value.checkedAttempts) || !value.checkedAttempts.every(validCheckedAttempt)) return false;
+  const attempts = value.checkedAttempts as readonly CheckedAttemptDto[];
+  const resolution = value.sceneResolution === null ? null : value.sceneResolution as SceneResolutionDto;
+  const identities = attempts.map((attempt) => `${attempt.eventId}\u0000${attempt.visitOrdinal}`);
+  if (new Set(identities).size !== identities.length || attempts.some((attempt) => (value.sceneVisitCounts as Record<string, number>)[attempt.eventId] < attempt.visitOrdinal)) return false;
+  if (value.currentSceneId !== null && (value.sceneVisitCounts as Record<string, number>)[value.currentSceneId as string] === undefined) return false;
+  if (resolution !== null && resolution.resultKind !== 'direct') {
+    const ordinal = (value.sceneVisitCounts as Record<string, number>)[resolution.eventId];
+    if (!attempts.some((attempt) => attempt.eventId === resolution.eventId && attempt.choiceId === resolution.choiceId && attempt.visitOrdinal === ordinal && attempt.chance === resolution.chance && attempt.roll === resolution.roll && attempt.resultKind === resolution.resultKind)) return false;
+  }
+  return true;
+}
 function validCheckpoints(value: unknown): boolean { return exact(value, ['chapter', 'camp']) && exact(value.chapter, ['campaign', 'enteredAt']) && validCampaignCheckpoint(value.chapter.campaign) && typeof value.chapter.enteredAt === 'string' && (value.camp === null || (exact(value.camp, ['campaign', 'campSceneId', 'savedAt']) && validCampaignCheckpoint(value.camp.campaign) && idOrNull(value.camp.campSceneId) && typeof value.camp.savedAt === 'string')); }
 function validFlow(value: unknown): boolean { return exact(value, ['screen', 'overlay', 'merchant']) && typeof value.screen === 'string' && flowScreens.has(value.screen) && (value.overlay === null || (typeof value.overlay === 'string' && overlays.has(value.overlay))) && (value.merchant === null || (exact(value.merchant, ['merchantId', 'restockKey', 'returnScreen']) && nonEmptyString(value.merchant.merchantId) && nonEmptyString(value.merchant.restockKey) && (value.merchant.returnScreen === 'camp' || value.merchant.returnScreen === 'story'))); }
 
 function validAdPacing(value: unknown): boolean { return exact(value, ['lastInterstitialAt', 'expeditionBreaksSinceInterstitial', 'rewardedShownAtCurrentBreak', 'claimedRewardOfferIds', 'rewardedClaimsThisExpedition']) && (value.lastInterstitialAt === null || (typeof value.lastInterstitialAt === 'string' && Number.isFinite(Date.parse(value.lastInterstitialAt)))) && number(value.expeditionBreaksSinceInterstitial, 0, true) && typeof value.rewardedShownAtCurrentBreak === 'boolean' && uniqueStrings(value.claimedRewardOfferIds) && number(value.rewardedClaimsThisExpedition, 0, true) && value.rewardedClaimsThisExpedition <= 3; }
-export function isSaveStateDto(value: unknown): value is SaveStateDto { const rootShape = exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt']) || (exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'adPacing', 'checkpoints', 'flow', 'updatedAt']) && validAdPacing(value.adPacing)); return isJsonCompatible(value) && rootShape && value.schemaVersion === 2 && isProfileDto(value.profile) && validCampaign(value.campaign) && (value.expedition === null || validExpedition(value.expedition)) && validCheckpoints(value.checkpoints) && validFlow(value.flow) && typeof value.updatedAt === 'string'; }
-export function createSaveEnvelope(slot: SaveSlot, state: SaveStateDto, savedAt: string): SaveEnvelope { const unsigned = { schemaVersion: 2 as const, slot, savedAt, state }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
+function validSaveRoot(value: unknown): value is Record<string, unknown> { return isJsonCompatible(value) && (exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt']) || (exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'adPacing', 'checkpoints', 'flow', 'updatedAt']) && validAdPacing(value.adPacing))) && isProfileDto(value.profile) && validCampaign(value.campaign) && validCheckpoints(value.checkpoints) && validFlow(value.flow) && typeof value.updatedAt === 'string'; }
+export function isSaveStateV2Dto(value: unknown): value is SaveStateV2Dto { return validSaveRoot(value) && value.schemaVersion === 2 && (value.expedition === null || validExpeditionV2(value.expedition)); }
+export function isSaveStateDto(value: unknown): value is SaveStateDto { return validSaveRoot(value) && value.schemaVersion === 3 && (value.expedition === null || validExpedition(value.expedition)); }
+export function createSaveEnvelope(slot: SaveSlot, state: SaveStateDto, savedAt: string): SaveEnvelopeV3 { const unsigned = { schemaVersion: 3 as const, slot, savedAt, state }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
 export function createProfileEnvelope(profile: ProfileState, savedAt: string): ProfileEnvelope { const unsigned = { schemaVersion: 2 as const, savedAt, profile }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
-export function isSaveEnvelope(value: unknown): value is SaveEnvelope { if (!exact(value, ['schemaVersion', 'slot', 'savedAt', 'state', 'checksum']) || value.schemaVersion !== 2 || !slots.has(value.slot as number) || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || !isSaveStateDto(value.state)) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }
+export function isSaveEnvelope(value: unknown): value is SaveEnvelope { if (!exact(value, ['schemaVersion', 'slot', 'savedAt', 'state', 'checksum']) || (value.schemaVersion !== 2 && value.schemaVersion !== 3) || !slots.has(value.slot as number) || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || (value.schemaVersion === 2 ? !isSaveStateV2Dto(value.state) : !isSaveStateDto(value.state))) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }
 export function isProfileEnvelope(value: unknown): value is ProfileEnvelope { if (!exact(value, ['schemaVersion', 'savedAt', 'profile', 'checksum']) || value.schemaVersion !== 2 || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || !isProfileDto(value.profile)) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }

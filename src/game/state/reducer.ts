@@ -21,6 +21,7 @@ import type {
   GameStateV2,
   GameTransition,
   HeroVitals,
+  SceneResolution,
   SequencedDomainEvent,
 } from './types';
 
@@ -453,7 +454,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const expedition = {
       routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector),
       position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, sceneResolution: null,
-      authoredSceneQueue: [],
+      authoredSceneQueue: [], sceneVisitCounts: {}, checkedAttempts: [],
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
       unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
     } as const;
@@ -506,7 +507,26 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const authoredSceneQueue = step.event.choices.length === 0
       ? enqueueAuthoredAftermaths(step.authoredSceneQueue, step.event.id, null, step.event.followUps ?? [])
       : step.authoredSceneQueue;
-    const expedition = { ...state.expedition, director: step.state, authoredSceneQueue, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } };
+    const visitOrdinal = (state.expedition.sceneVisitCounts[step.sceneId] ?? 0) + 1;
+    const expedition = {
+      ...state.expedition,
+      director: step.state,
+      authoredSceneQueue,
+      sceneVisitCounts: { ...state.expedition.sceneVisitCounts, [step.sceneId]: visitOrdinal },
+      currentSceneId: step.sceneId,
+      sceneResolution: step.event.choices.length === 0 ? {
+        eventId: step.sceneId,
+        choiceId: null,
+        resultKind: 'direct' as const,
+        chance: null,
+        roll: null,
+        outcome: step.event.narrative.at(-1) ?? step.event.title,
+        effectSummary: [],
+        nextSceneId: null,
+        continueLabel: null,
+      } : null,
+      position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 },
+    };
     return commit(state, { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(step.state) }, expedition, updatedAt: command.updatedAt }, [
       ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []),
       { type: 'notification', message: 'Scene ready.' },
@@ -523,6 +543,10 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       return diagnostic(state, 'choice_unavailable', 'Earlier decisions have closed that choice.');
     }
     const checked = isChronicleCheckedChoice(choice);
+    const visitOrdinal = state.expedition.sceneVisitCounts[scene.id] ?? 1;
+    if (checked && state.expedition.checkedAttempts.some((attempt) => attempt.eventId === scene.id && attempt.visitOrdinal === visitOrdinal)) {
+      return diagnostic(state, 'choice_resolved', 'That check has already been resolved for this scene visit.');
+    }
     const modifier = checked
       ? choice.check.modifiers?.reduce((total, entry) => total + entry.amount, 0) ?? 0
       : 0;
@@ -530,7 +554,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       ? calculateCheckChance(effectiveCheckStat(state, content, choice.check.stat), choice.check.difficulty, modifier)
       : null;
     const roll = checked
-      ? createCheckRoll(state.campaign.seed, scene.id, state.expedition.position.slot, choice.id)
+      ? createCheckRoll(state.campaign.seed, scene.id, visitOrdinal, choice.id)
       : null;
     const resultKind = checked && chance !== null && roll !== null
       ? classifyCheckResult(roll, chance)
@@ -560,19 +584,42 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         },
       };
     }
+    const sceneResolution: SceneResolution = checked && chance !== null && roll !== null && resultKind !== 'direct'
+      ? {
+          eventId: scene.id,
+          choiceId: choice.id,
+          resultKind,
+          chance,
+          roll,
+          outcome: branch!.outcome,
+          effectSummary: effectSummary(effects, content),
+          nextSceneId,
+          continueLabel,
+        }
+      : {
+          eventId: scene.id,
+          choiceId: choice.id,
+          resultKind: 'direct',
+          chance: null,
+          roll: null,
+          outcome: !isChronicleCheckedChoice(choice) ? choice.outcome : 'Prior choice preserved.',
+          effectSummary: effectSummary(effects, content),
+          nextSceneId,
+          continueLabel,
+        };
     let expedition = {
       ...applied.value.expedition!,
-      sceneResolution: {
-        eventId: scene.id,
-        choiceId: choice.id,
-        resultKind,
-        chance,
-        roll,
-        outcome: branch?.outcome ?? choice.outcome,
-        effectSummary: effectSummary(effects, content),
-        nextSceneId,
-        continueLabel,
-      },
+      sceneResolution,
+      checkedAttempts: checked && chance !== null && roll !== null && resultKind !== 'direct'
+        ? [...applied.value.expedition!.checkedAttempts, {
+            eventId: scene.id,
+            choiceId: choice.id,
+            visitOrdinal,
+            chance,
+            roll,
+            resultKind,
+          }]
+        : applied.value.expedition!.checkedAttempts,
       authoredSceneQueue: enqueueAuthoredAftermaths(
         applied.value.expedition!.authoredSceneQueue,
         scene.id,

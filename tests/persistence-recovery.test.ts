@@ -27,6 +27,8 @@ const state = () => createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99,
 const persistedExpeditionDefaults = {
   sceneResolution: null,
   authoredSceneQueue: [],
+  sceneVisitCounts: {},
+  checkedAttempts: [],
   heroVitals: { health: 20, resource: 10 },
   pendingReward: null,
 } as const;
@@ -83,7 +85,11 @@ function catalogState() {
         routeProfile: 'kings-road' as const, routeSeed: 7,
         director: { ...initialDirector(7), usedSceneIds: ['hub-event' as never], seenEventIds: ['fixture-event' as never], pendingCallbacks: [{ targetEventId: 'callback-event' as never, deadline: { chapterId: 'ch01' as const, slot: 2 }, status: 'pending' as const, required: true }] },
         position: { chapterId: 'ch01' as const, slot: 1 }, currentSceneId: 'hub-event' as never,
-        sceneResolution: { eventId: 'hub-event' as never, choiceId: null }, currentCombat: null,
+        sceneResolution: {
+          eventId: 'hub-event' as never, choiceId: null, resultKind: 'direct' as const, chance: null, roll: null,
+          outcome: 'The hub is ready.', effectSummary: [], nextSceneId: null, continueLabel: null,
+        },
+        sceneVisitCounts: { 'hub-event': 1 }, currentCombat: null,
         unbankedGold: 3, unbankedLoot: ['scroll-1' as never], temporaryBoons: [],
         merchantVisits: [{ merchantId: 'merchant-1' as never, restockKey: '7:merchant-1:merchant-restock', restockSeed: 7, generatedAtLevel: 1, stock: [{ id: 'merchant-1:7:merchant-1:merchant-restock:0:potion-1', itemId: 'potion-1' as never }] }],
       },
