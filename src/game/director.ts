@@ -4,7 +4,7 @@ import { createRng } from './rng';
 import type { EventChoice, FactionStanding, HeroClass, RegionId } from './types';
 export { chooseRouteOptions } from './director/pacing';
 export { beginDirectorRun, selectNextScene } from './director/select';
-export { choiceIsAvailable } from './director/eligibility';
+export { choiceIsAvailable, unavailableChoiceReason } from './director/eligibility';
 export type {
   AuthoredSceneQueueEntry,
   DirectorReason,

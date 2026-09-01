@@ -1,5 +1,6 @@
 import type { ChronicleEvent } from '../content/schema';
 import type { EventId, StoryPosition } from '../domain/ids';
+import type { InventoryState } from '../inventory';
 
 export type RouteProfileId = 'kings-road' | 'old-forest' | 'ruined-pass';
 export type DirectorReason = 'authored' | 'callback' | 'anchor' | 'threat' | 'paced';
@@ -50,6 +51,9 @@ export interface JourneyDirectorContext {
   readonly flags: readonly string[];
   readonly inventoryTags: readonly string[];
   readonly routeProfile: RouteProfileId;
+  readonly bankedGold?: number;
+  readonly unbankedGold?: number;
+  readonly inventory?: InventoryState;
 }
 
 export interface DirectorSelectedStep {

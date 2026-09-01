@@ -1,5 +1,5 @@
 import { buildCompanionCombatSnapshot, loyaltyTier } from '../game/companions';
-import { calculateCheckChance } from '../game/checks';
+import { activeCheckModifiers, calculateCheckChance } from '../game/checks';
 import type { CombatState, EnemyCombatant } from '../game/combat/types';
 import {
   chronicleChoiceEffects,
@@ -9,6 +9,7 @@ import {
   type ContentIndex,
 } from '../game/content/schema';
 import { CHRONICLE1_ROUTES } from '../game/content/chronicle1/routes';
+import { unavailableChoiceReason } from '../game/director/eligibility';
 import type { EnemyId, EventId, ItemId } from '../game/domain/ids';
 import { inventorySlotUsage, PACK_CAPACITY, type InventoryEntry } from '../game/inventory';
 import { quoteTrade, type MerchantContext, type MerchantVisit } from '../game/merchant';
@@ -268,32 +269,6 @@ function activeCompanionSummary(state: GameStateV2, content: ContentIndex): Comp
   };
 }
 
-function choiceRequirements(choice: ChronicleChoice): {
-  readonly requirements?: readonly { readonly flagId: string; readonly present?: boolean }[];
-  readonly exclusions?: readonly { readonly flagId: string; readonly present?: boolean }[];
-} {
-  return choice as ChronicleChoice & {
-    readonly requirements?: readonly { readonly flagId: string; readonly present?: boolean }[];
-    readonly exclusions?: readonly { readonly flagId: string; readonly present?: boolean }[];
-  };
-}
-
-function unavailableChoiceReason(choice: ChronicleChoice, state: GameStateV2): string | null {
-  const authored = choiceRequirements(choice);
-  const missing = authored.requirements?.some((requirement) =>
-    (requirement.present ?? true)
-      ? !state.campaign.flags.includes(requirement.flagId)
-      : state.campaign.flags.includes(requirement.flagId),
-  );
-  if (missing) return 'A required earlier decision is missing.';
-  const excluded = authored.exclusions?.some((requirement) =>
-    (requirement.present ?? true)
-      ? state.campaign.flags.includes(requirement.flagId)
-      : !state.campaign.flags.includes(requirement.flagId),
-  );
-  return excluded ? 'An earlier decision has closed this path.' : null;
-}
-
 const CHECK_TAGS: Readonly<Record<'strength' | 'cunning' | 'will', readonly string[]>> = {
   strength: ['axe', 'heavy', 'mace', 'pick', 'polearm'],
   cunning: ['locks', 'navigation', 'ranged', 'scout', 'stealth', 'tool'],
@@ -393,7 +368,13 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
     ? event.choices.find((choice) => choice.id === resolution.choiceId)
     : undefined;
   const choices: readonly StoryChoiceViewModel[] = event.choices.map((choice) => {
-    const unavailableReason = unavailableChoiceReason(choice, state);
+    const unavailableReason = unavailableChoiceReason(choice, {
+      flags: state.campaign.flags,
+      bankedGold: state.campaign.bankedGold,
+      unbankedGold: state.expedition?.unbankedGold ?? 0,
+      inventory: state.campaign.inventory,
+      resolutionPosition: state.expedition?.position,
+    });
     const check = isChronicleCheckedChoice(choice)
       ? {
           statLabel: CHECK_STAT_LABELS[choice.check.stat],
@@ -401,7 +382,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
           chance: calculateCheckChance(
             effectiveCheckStat(state, content, choice.check.stat),
             choice.check.difficulty,
-            choice.check.modifiers?.reduce((total, modifier) => total + modifier.amount, 0) ?? 0,
+            activeCheckModifiers(choice.check.modifiers, state.campaign.flags).reduce((total, modifier) => total + modifier.amount, 0),
           ),
         }
       : null;

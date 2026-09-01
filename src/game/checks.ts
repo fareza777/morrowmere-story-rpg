@@ -1,4 +1,5 @@
 import { createRng } from './rng';
+import type { ChronicleCheckModifier } from './content/schema';
 
 export type ChronicleCheckResult =
   | 'critical-success'
@@ -8,6 +9,18 @@ export type ChronicleCheckResult =
 
 const MINIMUM_CHANCE = 15;
 const MAXIMUM_CHANCE = 95;
+
+/** Returns only check modifiers whose authored flag gates match this expedition. */
+export function activeCheckModifiers(
+  modifiers: readonly ChronicleCheckModifier[] | undefined,
+  flags: readonly string[],
+): readonly ChronicleCheckModifier[] {
+  const present = new Set(flags);
+  return modifiers?.filter((modifier) =>
+    (modifier.requirements ?? []).every((requirement) => present.has(requirement.flagId) === requirement.present)
+      && (modifier.exclusions ?? []).every((requirement) => present.has(requirement.flagId) !== requirement.present),
+  ) ?? [];
+}
 
 /** Calculates the visible success percentage from fully derived game values. */
 export function calculateCheckChance(

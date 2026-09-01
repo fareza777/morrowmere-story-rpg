@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHRONICLE1_CONTENT } from '../src/game/content/chronicle1';
 import type { ChronicleEvent, ContentIndex } from '../src/game/content/schema';
 import type { EventId } from '../src/game/domain/ids';
-import { choiceIsAvailable, selectNextScene } from '../src/game/director';
+import { choiceIsAvailable, unavailableChoiceReason, selectNextScene } from '../src/game/director';
 import { createCampaign, initialDirector } from '../src/game/state/create';
 import { currentSceneId, reduceGame } from '../src/game/state/reducer';
 import type { GameStateV2 } from '../src/game/state/types';
@@ -67,6 +67,35 @@ function selectAndResolve(state: GameStateV2, minute: number): { readonly state:
 }
 
 describe('Chronicle travel flow across sparse route slots', () => {
+  it('gates choices on scoped gold and item quantities with concrete reasons', () => {
+    const choice = {
+      id: 'pay-and-prepare' as never,
+      label: 'Pay and prepare',
+      detail: 'Spend secured supplies.',
+      outcome: 'The convoy moves on.',
+      effects: [],
+      requirements: [
+        { type: 'gold', scope: 'banked', amount: 6 },
+        { type: 'item', itemId: 'consumable-caltrop-pouch', quantity: 1 },
+      ],
+    } as const;
+    const shortOnGold = {
+      flags: [], bankedGold: 5, unbankedGold: 0,
+      inventory: { pack: [], stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] } },
+      resolutionPosition: { chapterId: 'ch01' as const, slot: 2 },
+    };
+    const ready = {
+      ...shortOnGold,
+      bankedGold: 6,
+      inventory: { ...shortOnGold.inventory, pack: [{ id: 'caltrops', itemId: 'consumable-caltrop-pouch' as never, quantity: 1 }] },
+    };
+
+    expect(choiceIsAvailable(choice, shortOnGold)).toBe(false);
+    expect(unavailableChoiceReason(choice, shortOnGold)).toBe('You need at least 6 secured gold.');
+    expect(choiceIsAvailable(choice, ready)).toBe(true);
+    expect(unavailableChoiceReason(choice, ready)).toBeNull();
+  });
+
   it('uses the nearest future route-compatible scene when the current slot has no unique candidate', () => {
     const usedSceneIds = [
       'ch01-main-three-days-to-greywatch',

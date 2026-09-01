@@ -2,11 +2,11 @@ import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companion
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
 import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
-import { calculateCheckChance, classifyCheckResult, createCheckRoll } from '../checks';
+import { activeCheckModifiers, calculateCheckChance, classifyCheckResult, createCheckRoll } from '../checks';
 import type { ChapterId, EncounterId, EventId, ItemId } from '../domain/ids';
 import type { GameEffect } from '../domain/effects';
 import type { DomainEvent } from '../domain/result';
-import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
+import { beginDirectorRun, choiceIsAvailable, selectNextScene, unavailableChoiceReason } from '../director';
 import type { AuthoredSceneQueueEntry, DirectorState } from '../director/types';
 import { applyInventoryCommand, useItem, type InventoryState } from '../inventory';
 import { generateMerchantVisit, quoteTrade } from '../merchant';
@@ -535,7 +535,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       }, [{ type: 'notification', message: 'Scene complete.' }]);
     }
     if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
-    const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content, state.expedition.authoredSceneQueue);
+    const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile, bankedGold: state.campaign.bankedGold, unbankedGold: state.expedition.unbankedGold, inventory: state.campaign.inventory }, content, state.expedition.authoredSceneQueue);
     if (step.kind !== 'selected') {
       return step.terminal === 'completed'
         ? completeChapter(state, step.state, command.updatedAt)
@@ -593,8 +593,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (scene.dialogue?.length && state.expedition.dialogueBeatIndex < scene.dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before choosing a response.');
     const choice = scene.choices.find((candidate) => candidate.id === command.choiceId);
     if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
-    if (!choiceIsAvailable(choice, state.campaign.flags, state.expedition.position)) {
-      return diagnostic(state, 'choice_unavailable', 'Earlier decisions have closed that choice.');
+    const availability = { flags: state.campaign.flags, bankedGold: state.campaign.bankedGold, unbankedGold: state.expedition.unbankedGold, inventory: state.campaign.inventory, resolutionPosition: state.expedition.position };
+    if (!choiceIsAvailable(choice, availability)) {
+      return diagnostic(state, 'choice_unavailable', unavailableChoiceReason(choice, availability) ?? 'That choice is unavailable.');
     }
     const checked = isChronicleCheckedChoice(choice);
     const visitOrdinal = state.expedition.sceneVisitCounts[scene.id] ?? 1;
@@ -602,7 +603,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       return diagnostic(state, 'choice_resolved', 'That check has already been resolved for this scene visit.');
     }
     const modifier = checked
-      ? choice.check.modifiers?.reduce((total, entry) => total + entry.amount, 0) ?? 0
+      ? activeCheckModifiers(choice.check.modifiers, state.campaign.flags).reduce((total, entry) => total + entry.amount, 0)
       : 0;
     const chance = checked
       ? calculateCheckChance(effectiveCheckStat(state, content, choice.check.stat), choice.check.difficulty, modifier)

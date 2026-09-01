@@ -53,6 +53,8 @@ export type ChronicleStat = 'strength' | 'cunning' | 'will';
 export interface ChronicleCheckModifier {
   readonly label: string;
   readonly amount: number;
+  readonly requirements?: readonly ChronicleFlagRequirement[];
+  readonly exclusions?: readonly ChronicleFlagRequirement[];
 }
 
 /** One authored outcome of a checked choice. */
@@ -202,11 +204,16 @@ export type JourneySubtype =
   | 'dungeon'
   | 'moral-choice';
 
-export interface ChronicleRequirement {
+export interface ChronicleFlagRequirement {
   readonly type: 'flag';
   readonly flagId: string;
   readonly present: boolean;
 }
+
+export type ChronicleRequirement =
+  | ChronicleFlagRequirement
+  | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
+  | { readonly type: 'item'; readonly itemId: ItemId; readonly quantity: number };
 
 export type ChronicleRelationship =
   | { readonly kind: 'companion'; readonly companionId: CompanionId }
@@ -345,11 +352,23 @@ export type ChronicleEffectSource =
   | { readonly type: 'threat'; readonly amount: number }
   | { readonly type: 'tension'; readonly amount: number };
 
-export interface ChronicleRequirementSource {
+export interface ChronicleFlagRequirementSource {
   readonly type: 'flag';
   readonly flagId: string;
   /** Older authored chapter drafts default to requiring the flag to exist. */
   readonly present?: boolean;
+}
+
+export type ChronicleRequirementSource =
+  | ChronicleFlagRequirementSource
+  | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
+  | { readonly type: 'item'; readonly itemId: string; readonly quantity: number };
+
+export interface ChronicleCheckModifierSource {
+  readonly label: string;
+  readonly amount: number;
+  readonly requirements?: readonly ChronicleFlagRequirementSource[];
+  readonly exclusions?: readonly ChronicleFlagRequirementSource[];
 }
 
 export interface ChronicleChoiceBranchSource {
@@ -363,7 +382,7 @@ export interface ChronicleChoiceBranchSource {
 export interface ChronicleChoiceCheckSource {
   readonly stat: ChronicleStat;
   readonly difficulty: number;
-  readonly modifiers?: readonly ChronicleCheckModifier[];
+  readonly modifiers?: readonly ChronicleCheckModifierSource[];
   readonly success: ChronicleChoiceBranchSource;
   readonly failure: ChronicleChoiceBranchSource;
   readonly criticalSuccess?: ChronicleChoiceBranchSource;

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activeCheckModifiers,
   calculateCheckChance,
   classifyCheckResult,
   createCheckRoll,
   createCheckRollSeed,
 } from '../src/game/checks';
+import type { ChronicleCheckModifier } from '../src/game/content/schema';
 
 describe('deterministic narrative checks', () => {
   it.each([
@@ -21,6 +23,23 @@ describe('deterministic narrative checks', () => {
     expect(calculateCheckChance(4, 4, -15)).toBe(40);
     expect(calculateCheckChance(10, 1, 20)).toBe(95);
     expect(calculateCheckChance(0, 4, -20)).toBe(15);
+  });
+
+  it('only activates authored check modifiers whose flag gates are met', () => {
+    const modifiers: readonly ChronicleCheckModifier[] = [
+      { label: 'Always ready', amount: 5 },
+      { label: 'Repair rope secured', amount: 10, requirements: [{ type: 'flag', flagId: 'rope-secured', present: true }] },
+      { label: 'Ground preserved', amount: 10, exclusions: [{ type: 'flag', flagId: 'ground-lost', present: true }] },
+    ];
+
+    expect(activeCheckModifiers(modifiers, [])).toEqual([
+      { label: 'Always ready', amount: 5 },
+      { label: 'Ground preserved', amount: 10, exclusions: [{ type: 'flag', flagId: 'ground-lost', present: true }] },
+    ]);
+    expect(activeCheckModifiers(modifiers, ['rope-secured', 'ground-lost'])).toEqual([
+      { label: 'Always ready', amount: 5 },
+      { label: 'Repair rope secured', amount: 10, requirements: [{ type: 'flag', flagId: 'rope-secured', present: true }] },
+    ]);
   });
 
   it('replays one roll for the same seed, scene, visit, and choice', () => {

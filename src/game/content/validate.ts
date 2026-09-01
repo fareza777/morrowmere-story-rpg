@@ -3,6 +3,7 @@ import type {
   Chronicle1CompanionDefinition,
   Chronicle1Choice,
   Chronicle1Event,
+  ChronicleRequirement,
   Chronicle1MerchantDefinition,
   ChronicleDialogueBeat,
   ChronicleEffect,
@@ -44,6 +45,7 @@ export type ContentIssueCode =
   | 'invalid_encounter_reward'
   | 'invalid_boss_identity'
   | 'invalid_route'
+  | 'invalid_requirement'
   | 'invalid_id'
   | 'source_key_mismatch'
   | 'duplicate_illustration_id'
@@ -368,6 +370,19 @@ function validateSourceId(label: string, id: string, issues: ContentIssue[]): vo
   }
 }
 
+function validateSourceRequirement(requirement: ChronicleRequirement, label: string, issues: ContentIssue[]): void {
+  if (requirement.type === 'flag') {
+    validateSourceId(`${label} flag`, requirement.flagId, issues);
+    return;
+  }
+  if (requirement.type === 'gold') {
+    if (!Number.isFinite(requirement.amount) || requirement.amount <= 0) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} gold minimum.`));
+    return;
+  }
+  validateSourceId(`${label} item`, requirement.itemId, issues);
+  if (!Number.isSafeInteger(requirement.quantity) || requirement.quantity <= 0) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} item quantity.`));
+}
+
 /** Validates dictionary keys without forcing authored scene arrays into wrappers. */
 export function validateChronicleSourceKey(
   key: string,
@@ -553,14 +568,15 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
       ));
     }
 
-    for (const requirement of [...(event.requirements ?? []), ...(event.exclusions ?? [])]) {
-      validateSourceId('requirement flag', requirement.flagId, issues);
-    }
+    for (const requirement of [...(event.requirements ?? []), ...(event.exclusions ?? [])]) validateSourceRequirement(requirement, 'scene requirement', issues);
     const effectsByChoice = new Map<Chronicle1Choice, readonly ChronicleEffect[]>();
     for (const choice of event.choices) {
       validateSourceId('choice', choice.id, issues);
-      for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) {
-        validateSourceId('choice requirement flag', requirement.flagId, issues);
+      for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) validateSourceRequirement(requirement, 'choice requirement', issues);
+      if (isChronicleCheckedChoice(choice)) {
+        for (const modifier of choice.check.modifiers ?? []) {
+          for (const requirement of [...(modifier.requirements ?? []), ...(modifier.exclusions ?? [])]) validateSourceRequirement(requirement, 'check modifier requirement', issues);
+        }
       }
       const branches = checkedChoiceBranches(choice, event.id, issues);
       const effects = sourceChoiceEffects(choice, branches);
@@ -861,7 +877,7 @@ function laterFlagConsumption(event: Chronicle1Event, flagId: string, input: Chr
       ...(candidate.eligibility.excludedFlags ?? []).map((flag) => ({ flagId: flag })),
       ...candidate.choices.flatMap((choice) => [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]),
     ];
-    return requirements.some((requirement) => requirement.flagId === flagId);
+    return requirements.some((requirement) => requirement.type === 'flag' && requirement.flagId === flagId);
   }) ?? false;
 }
 
