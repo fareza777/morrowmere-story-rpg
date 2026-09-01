@@ -255,22 +255,63 @@ function isRecord(value: unknown): value is SourceRecord {
   return typeof value === 'object' && value !== null;
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isPositiveQuantity(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) > 0;
+}
+
 function isSourceEffect(value: unknown): value is ChronicleEffect {
   if (!isRecord(value) || typeof value.type !== 'string' || !SOURCE_EFFECT_TYPES.has(value.type)) return false;
-  if (value.type === 'item') return typeof value.itemId === 'string';
-  if (value.type === 'flag') return typeof value.flagId === 'string';
-  if (value.type === 'faction') return typeof value.factionId === 'string';
-  if (value.type === 'companion' || value.type === 'companion-loyalty' || value.type === 'companion-quest' || value.type === 'companion-injury') return typeof value.companionId === 'string';
-  if (value.type === 'combat') return typeof value.encounterId === 'string';
-  if (value.type === 'evidence') return typeof value.evidenceId === 'string';
-  if (value.type === 'callback') {
-    return isRecord(value.promise)
-      && typeof value.promise.targetEventId === 'string'
-      && isRecord(value.promise.deadline)
-      && typeof value.promise.deadline.chapterId === 'string'
-      && typeof value.promise.deadline.slot === 'number';
+  switch (value.type) {
+    case 'gold':
+      return (value.scope === 'banked' || value.scope === 'unbanked') && isFiniteNumber(value.amount);
+    case 'item':
+      return (value.operation === 'grant' || value.operation === 'remove')
+        && isNonEmptyString(value.itemId)
+        && isPositiveQuantity(value.quantity)
+        && (value.destination === undefined || value.destination === 'pack' || value.destination === 'unbanked-loot');
+    case 'xp':
+      return isFiniteNumber(value.amount)
+        && (value.source === undefined || value.source === 'story' || value.source === 'quest' || value.source === 'companion');
+    case 'flag':
+      return (value.operation === 'add' || value.operation === 'remove') && isNonEmptyString(value.flagId);
+    case 'evidence':
+      return (value.operation === 'add' || value.operation === 'remove') && isNonEmptyString(value.evidenceId);
+    case 'faction':
+      return isNonEmptyString(value.factionId) && isFiniteNumber(value.amount);
+    case 'companion':
+      return isNonEmptyString(value.companionId) && (value.operation === 'recruit' || value.operation === 'dismiss');
+    case 'companion-loyalty':
+      return isNonEmptyString(value.companionId) && isFiniteNumber(value.amount);
+    case 'companion-quest':
+      return isNonEmptyString(value.companionId) && Number.isInteger(value.stage) && value.stage >= 0 && value.stage <= 3;
+    case 'companion-injury':
+      return isNonEmptyString(value.companionId) && typeof value.injured === 'boolean';
+    case 'threat':
+    case 'tension':
+      return isFiniteNumber(value.amount);
+    case 'vitals':
+      return (value.health !== undefined || value.resource !== undefined)
+        && (value.health === undefined || isFiniteNumber(value.health))
+        && (value.resource === undefined || isFiniteNumber(value.resource));
+    case 'callback':
+      return isRecord(value.promise)
+        && isNonEmptyString(value.promise.targetEventId)
+        && isRecord(value.promise.deadline)
+        && isNonEmptyString(value.promise.deadline.chapterId)
+        && isPositiveQuantity(value.promise.deadline.slot);
+    case 'combat':
+      return isNonEmptyString(value.encounterId);
+    default:
+      return false;
   }
-  return true;
 }
 
 function checkedChoiceBranches(choice: Chronicle1Choice, sceneId: string, issues: ContentIssue[]): readonly SourceBranch[] | null {
@@ -730,6 +771,19 @@ function graphBranchTarget(branch: unknown): string | null {
   return sourceNextSceneId(branch);
 }
 
+function hasCompleteCheckedBranches(choice: Chronicle1Choice): boolean {
+  const record = choice as unknown as SourceRecord;
+  if (!isRecord(record.check)) return false;
+  return ['success', 'failure'].every((label) => {
+    const branch = record.check[label];
+    return isRecord(branch)
+      && typeof branch.outcome === 'string'
+      && branch.outcome.trim().length > 0
+      && Array.isArray(branch.effects)
+      && branch.effects.every(isSourceEffect);
+  });
+}
+
 function branchTargets(choice: Chronicle1Choice): readonly (string | null)[] {
   const record = choice as unknown as SourceRecord;
   if (!Object.prototype.hasOwnProperty.call(record, 'check')) return [sourceNextSceneId(record)];
@@ -829,7 +883,7 @@ function strictInteractionIssues(input: ChroniclePlayabilityInput): ContentIssue
       const flagConsumedLater = fact.effects
         .filter((effect) => effect.type === 'flag')
         .some((effect) => laterFlagConsumption(event, effect.flagId, input));
-      const tangible = fact.branches !== null && fact.branches.length >= 2
+      const tangible = hasCompleteCheckedBranches(fact.choice)
         || fact.targets.some((target) => target !== null)
         || fact.hasCombat
         || fact.effects.some((effect) => effect.type !== 'flag')

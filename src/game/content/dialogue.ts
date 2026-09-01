@@ -1,13 +1,16 @@
-const SENTENCE_STARTERS = new Set([
-  'a', 'an', 'he', 'here', 'i', 'it', 'she', 'that', 'the', 'then', 'there', 'they', 'this', 'we', 'you',
-]);
+const NON_NAME_OR_PLACE_TOKENS = new Set(['then', 'the', 'a', 'an', 'it', 'we', 'he', 'she', 'they', 'this', 'that', 'there', 'here', 'you', 'i']);
+const STREET_DESCRIPTORS = new Set(['high', 'low', 'main', 'old', 'new']);
 
 function abbreviationEndsSentence(source: string, offset: number, abbreviation: string): boolean {
   const next = source.slice(offset + abbreviation.length).replace(/^[\s"'”’\])}]+/u, '');
   if (!next) return true;
-  const word = next.match(/^\p{L}+/u)?.[0]?.toLocaleLowerCase();
-  if ((abbreviation.toLocaleLowerCase() === 'e.g.' || abbreviation.toLocaleLowerCase() === 'i.e.') && (word === 'a' || word === 'an')) return false;
-  return word !== undefined && SENTENCE_STARTERS.has(word);
+  const kind = abbreviation.toLocaleLowerCase();
+  if (kind === 'etc.' || kind === 'e.g.' || kind === 'i.e.') return !/^\p{Ll}/u.test(next);
+
+  const token = next.match(/^\p{Lu}[\p{L}'’-]*/u)?.[0];
+  if (!token || NON_NAME_OR_PLACE_TOKENS.has(token.toLocaleLowerCase())) return true;
+  const precedingWord = source.slice(0, offset).match(/\p{L}+\s*$/u)?.[0]?.trim().toLocaleLowerCase();
+  return kind === 'st.' && precedingWord !== undefined && STREET_DESCRIPTORS.has(precedingWord);
 }
 
 /** Counts display sentences while preserving in-sentence English abbreviations. */

@@ -128,16 +128,31 @@ describe('Chronicle I playability validation', () => {
       choices: [{
         id: 'fixture-malformed-check' as never, label: 'Read the omen', detail: 'A malformed checked choice.',
         check: {
-          success: { outcome: 'A false loop.', effects: [null, { type: 'unknown-effect' }], nextSceneId: 'fixture-malformed' },
+          success: { outcome: 'A false loop.', effects: [null, { type: 'unknown-effect' }, { type: 'gold' }], nextSceneId: 'fixture-malformed' },
           failure: null,
           criticalSuccess: { outcome: 'Another false loop.', effects: [], nextSceneId: 'fixture-malformed' },
         },
       }, scene('fixture-malformed', 1).choices[1]],
     } as unknown as Chronicle1Event;
+    const incompleteGoldLoop = {
+      ...scene('fixture-incomplete-gold', 2),
+      choices: [{
+        id: 'fixture-incomplete-gold-check' as never, label: 'Take the toll', detail: 'A checked choice with incomplete effects.',
+        check: {
+          success: { outcome: 'The toll repeats.', effects: [{ type: 'gold' }], nextSceneId: 'fixture-incomplete-gold' },
+          failure: { outcome: 'The toll repeats.', effects: [{ type: 'gold' }], nextSceneId: 'fixture-incomplete-gold' },
+        },
+      }],
+    } as unknown as Chronicle1Event;
 
     expect(() => validateChroniclePlayability(input([malformed]))).not.toThrow();
-    const codes = issueCodes([malformed]);
+    const issues = validateChroniclePlayability(input([malformed, incompleteGoldLoop]));
+    const codes = issues.map((issue) => issue.code);
     expect(codes).toContain('incomplete_checked_choice');
+    expect(issues).toContainEqual(expect.objectContaining({
+      code: 'incomplete_checked_choice',
+      message: expect.stringContaining('fixture-incomplete-gold'),
+    }));
     expect(codes).not.toContain('inescapable_required_cycle');
   });
 
@@ -197,5 +212,7 @@ describe('Chronicle I playability validation', () => {
     expect(countDialogueSentences('e.g. Then leave.')).toBe(2);
     expect(countDialogueSentences('i.e. Then leave.')).toBe(2);
     expect(countDialogueSentences('Pack rope, etc. before dusk.')).toBe(1);
+    expect(countDialogueSentences('Pack rope, etc. Soldiers wait.')).toBe(2);
+    expect(countDialogueSentences('High St. Guards wait.')).toBe(2);
   });
 });

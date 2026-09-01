@@ -44,3 +44,22 @@
 ### Commit
 
 `fix: harden chronicle validation`
+
+## Fix round 2
+
+### GREEN
+
+- Completed the source effect guard for every recognized effect type: finite numeric payloads, legal operations and enum values, positive item quantities, nonempty IDs, populated finite vitals, and complete callback windows.
+- Incomplete recognized effects now receive structural diagnostics, are excluded from effect/tangibility traversal, and make their required graph branches explicit exits. The focused fixture includes a self-looping `{ type: 'gold' }` branch.
+- Replaced sentence-starter matching with contextual abbreviation handling: discourse abbreviations continue only into lowercase text, while honorifics require a plausible name/place token and reject street-descriptor false positives.
+- Ran `npm run test:run -- tests/content/chronicle1-playability.test.ts`: 1 file passed, 9 tests passed.
+
+### Changed files
+
+- `src/game/content/dialogue.ts`
+- `src/game/content/validate.ts`
+- `tests/content/chronicle1-playability.test.ts`
+
+### Commit
+
+`fix: validate authored effect shapes`
