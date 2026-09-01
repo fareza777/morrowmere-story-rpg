@@ -18,7 +18,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-cut-milestone-setup',
-    slot: 9,
+    slot: 15,
     type: 'companion',
     family: 'mara-first-meeting',
     relationship: { kind: 'companion', companionId: 'mara' },
@@ -89,7 +89,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-cut-milestone-dialogue',
-    slot: 10,
+    slot: 16,
     type: 'companion',
     family: 'mara-first-meeting',
     relationship: { kind: 'companion', companionId: 'mara' },
@@ -224,7 +224,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-cut-milestone-aftermath',
-    slot: 10,
+    slot: 17,
     type: 'companion',
     family: 'mara-first-meeting-aftermath',
     relationship: { kind: 'companion', companionId: 'mara' },
@@ -271,7 +271,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-birch-marks-setup',
-    slot: 10,
+    slot: 18,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'birch-marks',
@@ -318,7 +318,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-birch-marks-choice',
-    slot: 10,
+    slot: 19,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'birch-marks',
@@ -463,7 +463,7 @@ export const CH01_LIVING_MARA = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-birch-marks-aftermath',
-    slot: 10,
+    slot: 20,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'birch-marks-aftermath',
@@ -488,11 +488,12 @@ export const CH01_LIVING_MARA = Object.freeze([
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-approach-hidden' },
           { type: 'flag', operation: 'add', flagId: 'warning-tree-entry-ready' },
+          { type: 'flag', operation: 'add', flagId: 'warning-tree-route-chosen' },
           { type: 'threat', amount: -1 },
         ],
         outcome: 'The wagons stop below the rise while you reach the yard unseen.',
-        nextSceneId: 'ch01-main-the-empty-tollhouse',
-        continueLabel: 'Enter the tollhouse yard',
+        nextSceneId: 'ch01-living-warning-tree',
+        continueLabel: 'Follow the birches past the old oak',
       },
       {
         id: 'ch01-choice-bring-the-wagons-to-the-barrier',
@@ -500,7 +501,6 @@ export const CH01_LIVING_MARA = Object.freeze([
         detail: 'Keep the convoy together while accepting that the orchard can see it.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-convoy-close' },
-          { type: 'flag', operation: 'add', flagId: 'warning-tree-entry-ready' },
           { type: 'tension', amount: -1 },
         ],
         outcome: 'The full convoy enters the yard together, ready to move but visible from the orchard.',

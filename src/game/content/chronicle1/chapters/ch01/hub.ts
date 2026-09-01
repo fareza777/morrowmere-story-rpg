@@ -2,7 +2,7 @@ import { defineScene } from '../../builders';
 
 export const CH01_HUB = Object.freeze([
   defineScene({
-    id: 'ch01-hub-first-night-camp', chapterId: 'ch01', region: 'gloamwood', slot: 5,
+    id: 'ch01-hub-first-night-camp', chapterId: 'ch01', region: 'gloamwood', slot: 7,
     type: 'hub', family: 'camp', weight: 100, pacing: 'recovery', tensionChange: -2,
     illustrationId: 'scene-ch01-hub-first-night-camp', title: 'First Night on Route Seven',
     narrative: [
@@ -16,7 +16,7 @@ export const CH01_HUB = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-hub-ilenes-field-apothecary', chapterId: 'ch01', region: 'gloamwood', slot: 22,
+    id: 'ch01-hub-ilenes-field-apothecary', chapterId: 'ch01', region: 'gloamwood', slot: 58,
     type: 'hub', family: 'field-healing', weight: 20, pacing: 'recovery', tensionChange: -1,
     merchantId: 'apothecary', merchantRestockKey: 'ch01-apothecary-field-stop',
     illustrationId: 'scene-ch01-hub-ilenes-field-apothecary', title: 'Ilene\'s Field Apothecary',
@@ -31,7 +31,7 @@ export const CH01_HUB = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-hub-orrens-charcoal-wagon', chapterId: 'ch01', region: 'gloamwood', slot: 31,
+    id: 'ch01-hub-orrens-charcoal-wagon', chapterId: 'ch01', region: 'gloamwood', slot: 73,
     type: 'hub', family: 'road-merchant', weight: 18, pacing: 'merchant', tensionChange: -1,
     merchantId: 'road-trader', merchantRestockKey: 'ch01-road-trader-charcoal-wagon',
     illustrationId: 'scene-ch01-hub-orrens-charcoal-wagon', title: 'Orren\'s Charcoal Wagon',

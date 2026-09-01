@@ -18,7 +18,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-snared-scout-setup',
-    slot: 12,
+    slot: 27,
     type: 'journey',
     journeySubtype: 'side-quest',
     family: 'snared-scout',
@@ -28,6 +28,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
     narrative: [
       'Fifty paces beyond the tollhouse, a Greywatch scout hangs by one ankle from a bent ash sapling. He is alive, gagged, and bleeding from a shallow knife cut while a second wire lies slack beneath the leaves.',
     ],
+    requirements: [{ type: 'flag', flagId: 'tollhouse-bypassed' }],
     dialogue: [
       {
         speakerName: 'Halen Reeve',
@@ -41,6 +42,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         label: 'Stop beyond the second wire',
         detail: "Keep the guards outside the trap's killing space before freeing Halen.",
         effects: [
+          { type: 'flag', operation: 'add', flagId: 'snared-scout-route-started' },
           { type: 'flag', operation: 'add', flagId: 'snare-second-wire-seen' },
           { type: 'threat', amount: -1 },
         ],
@@ -53,6 +55,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         label: 'Move the wagons past the exposed verge',
         detail: 'Shelter the convoy on the stone shoulder while you remain with the scout.',
         effects: [
+          { type: 'flag', operation: 'add', flagId: 'snared-scout-route-started' },
           { type: 'flag', operation: 'add', flagId: 'snare-wagons-sheltered' },
           { type: 'tension', amount: 1 },
         ],
@@ -65,13 +68,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-snared-scout-choice',
-    slot: 13,
+    slot: 28,
     type: 'journey',
     journeySubtype: 'side-quest',
     family: 'snared-scout',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-snared-scout-choice',
     title: 'The Bent Sapling',
+    requirements: [{ type: 'flag', flagId: 'snared-scout-route-started' }],
     narrative: [
       'The main rope can be cut quickly, but Halen will fall across the lower wire. The knife wound is controlled for now; the greater danger is the numb leg and whoever set the trap.',
     ],
@@ -210,13 +214,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-snared-scout-aftermath',
-    slot: 14,
+    slot: 29,
     type: 'journey',
     journeySubtype: 'side-quest',
     family: 'snared-scout-aftermath',
     pacing: 'recovery',
     illustrationId: 'scene-ch01-living-snared-scout-aftermath',
     title: "Halen's Choice of Shelter",
+    requirements: [{ type: 'flag', flagId: 'snared-scout-route-started' }],
     narrative: [
       'Halen can ride with the medicine or remain hidden beside a scout cache until his leg wakes. He refuses to return to the empty tollhouse.',
     ],
@@ -266,7 +271,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-bell-wire-setup',
-    slot: 12,
+    slot: 30,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'bell-wire',
@@ -276,6 +281,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
     narrative: [
       'Beneath the toll desk, a polished wire passes through a drilled floorboard. One end holds the missing register chain; the other runs into the wall toward a muffled bell under the orchard eaves.',
     ],
+    requirements: [{ type: 'flag', flagId: 'tollhouse-searched' }],
     dialogue: [
       {
         speakerName: 'Jory Fen',
@@ -289,6 +295,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         label: 'Clear the doorway',
         detail: "Move everyone beyond the wire's line before touching the trap.",
         effects: [
+          { type: 'flag', operation: 'add', flagId: 'bell-wire-route-started' },
           { type: 'flag', operation: 'add', flagId: 'bell-wire-doorway-cleared' },
           { type: 'tension', amount: 1 },
         ],
@@ -301,6 +308,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         label: 'Pin the wire',
         detail: 'Spend focus to hold the wire still while inspecting its route.',
         effects: [
+          { type: 'flag', operation: 'add', flagId: 'bell-wire-route-started' },
           { type: 'vitals', resource: -1 },
           { type: 'flag', operation: 'add', flagId: 'bell-wire-pinned' },
         ],
@@ -313,13 +321,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-bell-wire-choice',
-    slot: 13,
+    slot: 31,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'bell-wire',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-bell-wire-choice',
     title: 'The Muffled Bell',
+    requirements: [{ type: 'flag', flagId: 'bell-wire-route-started' }],
     narrative: [
       'The bell is wrapped in sacking so only the orchard can hear it. A second branch of wire drops toward the cellar latch, making a careless disarm capable of opening both threats at once.',
     ],
@@ -499,13 +508,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-bell-wire-aftermath',
-    slot: 14,
+    slot: 32,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'bell-wire-aftermath',
     pacing: 'recovery',
     illustrationId: 'scene-ch01-living-bell-wire-aftermath',
     title: 'What the Alarm Guarded',
+    requirements: [{ type: 'flag', flagId: 'bell-wire-route-started' }],
     narrative: [
       'With the wire harmless or its lookouts defeated, the desk can be moved. A square trapdoor lies beneath it, keyed to the cellar latch and marked by recent military boot scrapes.',
     ],
@@ -560,13 +570,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-below-desk-setup',
-    slot: 14,
+    slot: 33,
     type: 'journey',
     journeySubtype: 'dungeon',
     family: 'below-toll-desk',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-below-desk-setup',
     title: 'The Square Trapdoor',
+    requirements: [{ type: 'flag', flagId: 'bell-wire-route-started' }],
     narrative: [
       'The key opens the trapdoor, but the first stair has been sawn almost through. Below it, lamplight touches uniform crates, a stone strongbox, and the corner of a torn toll register.',
     ],
@@ -607,13 +618,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-below-desk-choice',
-    slot: 15,
+    slot: 34,
     type: 'journey',
     journeySubtype: 'dungeon',
     family: 'below-toll-desk',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-below-desk-choice',
     title: 'Register, Strongbox, Tunnel',
+    requirements: [{ type: 'flag', flagId: 'bell-wire-route-started' }],
     narrative: [
       'The torn register records three empty military carts passing north before dawn. The strongbox is wired to a stone weight, and fresh air reaches the cellar through a low tunnel toward the orchard.',
     ],
@@ -764,13 +776,14 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-below-desk-aftermath',
-    slot: 16,
+    slot: 35,
     type: 'journey',
     journeySubtype: 'dungeon',
     family: 'below-toll-desk-aftermath',
     pacing: 'recovery',
     illustrationId: 'scene-ch01-living-below-desk-aftermath',
     title: 'The Missing Badges',
+    requirements: [{ type: 'flag', flagId: 'bell-wire-route-started' }],
     narrative: [
       'The cellar crates once held Greywatch cloaks. Each badge has been cut away, but military boot polish, lamp oil, and the empty-cart register connect the room to trained people using stolen uniforms.',
     ],

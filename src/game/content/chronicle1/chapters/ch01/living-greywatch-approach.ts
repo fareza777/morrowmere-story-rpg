@@ -18,7 +18,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-millers-cart',
-    slot: 23.1,
+    slot: 60,
     type: 'journey',
     journeySubtype: 'side-quest',
     family: 'living-millers-cart',
@@ -28,8 +28,11 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
     narrative: [
       "Below the watermill, the children's father is pinned between an overturned flour cart and the mill race wall. Two raiders are cutting the cart horse loose while smoke thickens above the bridge. The wagon convoy cannot turn on the narrow bank, but its repair rope can reach the axle.",
     ],
-    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2 },
-    requirements: [{ type: 'flag', flagId: 'orchard-volley-survived' }],
+    eligibility: { routes: ALL_ROUTES, minLevel: 1, maxLevel: 2 },
+    requirements: [
+      { type: 'flag', flagId: 'orchard-volley-survived' },
+      { type: 'flag', flagId: 'millers-cart-route-ready' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'millers-cart-resolved' }],
     dialogue: [
       {
@@ -86,12 +89,13 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-millers-cart-rescue',
-    slot: 23.11,
+    slot: 61,
     type: 'combat',
     family: 'living-millers-cart-rescue',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-millers-cart-rescue',
     title: 'Axle in the Mill Race',
+    requirements: [{ type: 'flag', flagId: 'millers-cart-route-ready' }],
     narrative: [
       'As the convoy passes the mill race, the raiders kick the cart brake loose. Water takes the rear wheel, Olan slips lower against the wall, and one raider raises a horn toward the bridge. Anyone who stayed can still attempt force, a precise cut, or a fast fight. Anyone who ordered the convoy onward must now own that order.',
     ],
@@ -211,13 +215,14 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-millers-cart-aftermath',
-    slot: 23.12,
+    slot: 62,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-millers-cart-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-millers-cart-aftermath',
     title: 'Flour on the Bridge Wind',
+    requirements: [{ type: 'flag', flagId: 'millers-cart-route-ready' }],
     narrative: [
       'The convoy regroups beneath the mill. The bridge is close enough for sparks to land in the race, and every surviving person or cart will change what can be protected there.',
     ],
@@ -269,7 +274,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ash-on-officers-cuff',
-    slot: 32.1,
+    slot: 75,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-ash-evidence',
@@ -279,6 +284,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
     narrative: [
       "The dead toll collector's clean uniform is staged, but a thumb-wide smear of grey ash remains inside his left cuff. Beside it, the dry orc banner carries the same sweet lamp-oil smell as the burned tollhouse. Rain is already stippling the exposed sleeve.",
     ],
+    requirements: [{ type: 'flag', flagId: 'false-banner-road-resolved' }],
     exclusions: [{ type: 'flag', flagId: 'ash-cuff-resolved' }],
     dialogue: [
       {
@@ -289,6 +295,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
       {
         speakerName: 'Mara Vey',
         text: 'Then prove where it came from before the rain decides for us.',
+        requirements: [{ type: 'flag', flagId: 'mara-met' }],
         environmentIllustrationId: 'scene-ch01-living-ash-on-officers-cuff',
       },
     ],
@@ -322,13 +329,14 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ash-on-officers-cuff-test',
-    slot: 32.11,
+    slot: 76,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-ash-evidence-test',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-ash-on-officers-cuff-test',
     title: 'Three Ways to Test a Lie',
+    requirements: [{ type: 'flag', flagId: 'false-banner-road-resolved' }],
     narrative: [
       'The body, banner, arrow, and cart track tell one story only if their handling can be proved. The test must survive a skeptical gate captain, not merely satisfy the people standing in the ditch.',
     ],
@@ -451,13 +459,14 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ash-on-officers-cuff-aftermath',
-    slot: 32.12,
+    slot: 77,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-ash-evidence-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-ash-on-officers-cuff-aftermath',
     title: 'Evidence Wrapped Against Rain',
+    requirements: [{ type: 'flag', flagId: 'false-banner-road-resolved' }],
     narrative: [
       'Jory has room for one formal conclusion on the dispatch wrapper. Whatever he writes will decide whether Greywatch receives proof, suspicion, or a confident mistake.',
     ],
@@ -474,8 +483,8 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
           { type: 'faction', factionId: 'greywatch', amount: 1 },
         ],
         outcome: 'Jory lists body transport, ash source, witnesses, and custody marks without naming an unproved culprit.',
-        nextSceneId: 'ch01-living-riders-in-valley',
-        continueLabel: 'Take the evidence toward Greywatch',
+        nextSceneId: 'ch01-living-ward-beneath-shrine',
+        continueLabel: 'Follow the matching cart chain',
       },
       {
         id: 'ch01-choice-ash-file-limited-finding',
@@ -511,7 +520,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-riders-in-valley',
-    slot: 36.1,
+    slot: 85,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'living-valley-pursuit',
@@ -522,6 +531,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
     narrative: [
       "Six mounted figures enter the valley behind the convoy, using the same short horn signal heard at the tollhouse. Greywatch's lanterns are visible above, but the damaged wagons cannot outrun fresh cavalry on the open climb. A sheep track, a stone toll arch, and the official road offer three different risks.",
     ],
+    requirements: [{ type: 'flag', flagId: 'ash-cuff-resolved' }],
     exclusions: [{ type: 'flag', flagId: 'riders-valley-resolved' }],
     dialogue: [
       {
@@ -577,12 +587,13 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-riders-in-valley-crossing',
-    slot: 36.11,
+    slot: 86,
     type: 'combat',
     family: 'living-valley-pursuit-crossing',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-riders-in-valley-crossing',
     title: 'The Distance to Greywatch',
+    requirements: [{ type: 'flag', flagId: 'ash-cuff-resolved' }],
     narrative: [
       'The riders divide, two climbing for a view of the sheep track and four advancing on the road. Their captain wants Jory and the dispatch alive. The convoy needs one clean opening to reach the final hill.',
     ],
@@ -701,13 +712,14 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-riders-in-valley-aftermath',
-    slot: 36.12,
+    slot: 87,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'living-valley-pursuit-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-riders-in-valley-aftermath',
     title: 'Greywatch Above the Pines',
+    requirements: [{ type: 'flag', flagId: 'ash-cuff-resolved' }],
     narrative: [
       "The valley falls behind and Greywatch's wall finally remains in sight. The convoy's speed, wounds, and pursuers will determine what reaches the gate with it.",
     ],
@@ -750,12 +762,13 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
         effects: [
           { type: 'flag', operation: 'add', flagId: 'riders-valley-resolved' },
           { type: 'flag', operation: 'add', flagId: 'greywatch-arrival-pursued' },
+          { type: 'flag', operation: 'add', flagId: 'cart-maw-route-chosen' },
           { type: 'faction', factionId: 'greywatch', amount: 1 },
           { type: 'tension', amount: 1 },
         ],
         outcome: "The wounded riders withdraw, but Greywatch's sentries can see armed movement behind your wagons.",
-        nextSceneId: 'ch01-main-before-the-gates-close',
-        continueLabel: 'Call a pursuit warning to the gate',
+        nextSceneId: 'ch01-living-teeth-under-siege-cart',
+        continueLabel: 'Take the quarry cutting to Greywatch',
       },
     ],
   }),

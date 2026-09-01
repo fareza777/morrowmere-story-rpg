@@ -18,7 +18,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-sword-in-barrow-clay',
-    slot: 31.1,
+    slot: 70,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-barrow-sword',
@@ -29,7 +29,10 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
     narrative: [
       'A black-hilted sword stands point-down in a roadside burial mound, driven through a flat stone carved with a levy name. Rain beads on a clean edge while every other iron fitting nearby has rusted. A copper strip around the grip reads: "Grave-Tithe, drawn only to finish the named dead."',
     ],
-    requirements: [{ type: 'flag', flagId: 'bridge-crossed' }],
+    requirements: [
+      { type: 'flag', flagId: 'bridge-crossed' },
+      { type: 'flag', flagId: 'barrow-sword-route-chosen' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'barrow-sword-resolved' }],
     dialogue: [
       {
@@ -85,12 +88,13 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-sword-in-barrow-clay-binding',
-    slot: 31.11,
+    slot: 71,
     type: 'combat',
     family: 'living-barrow-sword-binding',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-sword-in-barrow-clay-binding',
     title: 'The Practical Price of Grave-Tithe',
+    requirements: [{ type: 'flag', flagId: 'barrow-sword-route-chosen' }],
     narrative: [
       'The copper strip explains the curse plainly. Whoever carries Grave-Tithe loses blood whenever they refuse a named challenge, and the blade cannot be sold or discarded until Halren Vale is dismissed by name. A dead levy hand shifts beneath the mound as the road falls quiet.',
     ],
@@ -207,13 +211,14 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-sword-in-barrow-clay-aftermath',
-    slot: 31.12,
+    slot: 72,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-barrow-sword-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-sword-in-barrow-clay-aftermath',
     title: 'A Blade With a Named Debt',
+    requirements: [{ type: 'flag', flagId: 'barrow-sword-route-chosen' }],
     narrative: [
       'Grave-Tithe is either wrapped in the wagon, bound to its carrier, or standing again above Halren Vale. The convoy must record the choice before it reaches the staged body ahead.',
     ],
@@ -278,7 +283,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ward-beneath-shrine',
-    slot: 32.2,
+    slot: 78,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-failing-shrine-ward',
@@ -300,6 +305,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
       {
         speakerName: 'Mara Vey',
         text: 'Repair the ring or clear the road. Do not stand over it arguing.',
+        requirements: [{ type: 'flag', flagId: 'mara-met' }],
         environmentIllustrationId: 'scene-ch01-living-ward-beneath-shrine',
       },
     ],
@@ -345,12 +351,13 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ward-beneath-shrine-choice',
-    slot: 32.21,
+    slot: 79,
     type: 'combat',
     family: 'living-failing-shrine-ward-choice',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-ward-beneath-shrine-choice',
     title: 'Four Nails and One Breath',
+    requirements: [{ type: 'flag', flagId: 'greywatch-evidence-reliable' }],
     narrative: [
       'The ward is an ordinary binding pattern powered by tension between its four iron nails. Repairing it preserves the prison. Breaking one safe segment can release the collared warg into the cleared gully. A careless break frees it toward the medicine team.',
     ],
@@ -446,13 +453,14 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-ward-beneath-shrine-aftermath',
-    slot: 32.22,
+    slot: 80,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-failing-shrine-ward-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-ward-beneath-shrine-aftermath',
     title: 'What the Ward Was Holding',
+    requirements: [{ type: 'flag', flagId: 'greywatch-evidence-reliable' }],
     narrative: [
       'The shrine is quiet. The officer-stamped collar proves someone transported the warg beside the same cart chain traced by the ash. One sound ward nail remains useful, but taking it weakens any repair left behind.',
     ],
@@ -519,7 +527,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-teeth-under-siege-cart',
-    slot: 40.1,
+    slot: 92,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'living-siege-cart-maw',
@@ -530,7 +538,10 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
     narrative: [
       "A ruined siege cart blocks the quarry cutting below Greywatch. Something broad and low has made a den under its iron belly, feeding on dead draft horses and collecting every chain it can drag beneath the frame. It shows a pale row of teeth when the medicine wagon's axle squeals, but it does not charge while food remains between you.",
     ],
-    requirements: [{ type: 'flag', flagId: 'riders-valley-resolved' }],
+    requirements: [
+      { type: 'flag', flagId: 'riders-valley-resolved' },
+      { type: 'flag', flagId: 'cart-maw-route-chosen' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'siege-cart-maw-resolved' }],
     dialogue: [
       {
@@ -541,6 +552,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
       {
         speakerName: 'Mara Vey',
         text: 'Then give it a different sound, a different meal, or a wall it cannot dig through.',
+        requirements: [{ type: 'flag', flagId: 'mara-met' }],
         environmentIllustrationId: 'scene-ch01-living-teeth-under-siege-cart',
       },
     ],
@@ -596,12 +608,13 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-teeth-under-siege-cart-crossing',
-    slot: 40.11,
+    slot: 93,
     type: 'combat',
     family: 'living-siege-cart-maw-crossing',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-teeth-under-siege-cart-crossing',
     title: 'The Chain Nest',
+    requirements: [{ type: 'flag', flagId: 'cart-maw-route-chosen' }],
     narrative: [
       "The Cart-Maw is an animal made dangerous by the siege wreck: hide thickened by old burns, teeth worn on harness buckles, and a nest that turns chains into armor. It can be led away, pinned beneath the counterweight, traded a harmless piece of iron, or fought.",
     ],
@@ -728,13 +741,14 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-teeth-under-siege-cart-aftermath',
-    slot: 40.12,
+    slot: 94,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-siege-cart-maw-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-teeth-under-siege-cart-aftermath',
     title: 'What the Siege Left Behind',
+    requirements: [{ type: 'flag', flagId: 'cart-maw-route-chosen' }],
     narrative: [
       "The road is open. Beneath the cart lies a Greywatch siege-chain maker's plate, a smooth shed tooth, and a sealed tonic box dragged from an older wreck. Taking a trophy, salvaging supplies, or leaving the den intact each tells a different story at the gate.",
     ],

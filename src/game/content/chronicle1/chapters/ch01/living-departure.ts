@@ -29,6 +29,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
       'At the first outer milestone, the rear wagon leans hard enough to spill rainwater from its canvas. The axle has not snapped, but its iron shoe is bent and every locked medicine case is pressing on the damaged side.',
       "Jory stops the drivers from moving it again. A wheelwright's shed stands behind the closed south gate, while the open road offers only timber wedges, lifting bars, and careful hands.",
     ],
+    requirements: [{ type: 'flag', flagId: 'medicine-wagons-inspected' }],
     dialogue: [
       {
         speakerName: 'Jory Fen',
@@ -94,6 +95,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
     narrative: [
       'The lifting bars bow beneath the rear frame. A repair made under load will be fast, but a mistake will drop the wagon onto the wheel and crack the lowest medicine case.',
     ],
+    requirements: [{ type: 'flag', flagId: 'medicine-wagons-inspected' }],
     dialogue: [
       {
         speakerName: 'Jory Fen',
@@ -230,6 +232,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
     narrative: [
       'The rear wagon completes a slow circle on the roadside without leaning. The repair is sound enough for the next grade, though no one mistakes road work for a new axle.',
     ],
+    requirements: [{ type: 'flag', flagId: 'medicine-wagons-inspected' }],
     dialogue: [
       {
         speakerName: 'Jory Fen',
@@ -267,7 +270,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-hooves-chalk-setup',
-    slot: 7,
+    slot: 9,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'hooves-in-chalk',
@@ -315,7 +318,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-hooves-chalk-choice',
-    slot: 8,
+    slot: 10,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'hooves-in-chalk',
@@ -495,7 +498,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-hooves-chalk-aftermath',
-    slot: 9,
+    slot: 11,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'hooves-in-chalk-aftermath',

@@ -2,7 +2,7 @@ import { defineScene } from '../../builders';
 
 export const CH01_JOURNEY = Object.freeze([
   defineScene({
-    id: 'ch01-journey-jorys-waxed-tube', chapterId: 'ch01', region: 'gloamwood', slot: 2,
+    id: 'ch01-journey-jorys-waxed-tube', chapterId: 'ch01', region: 'gloamwood', slot: 5,
     type: 'journey', journeySubtype: 'investigation', family: 'dispatch-provenance', weight: 16, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-jorys-waxed-tube', title: 'Jory\'s Waxed Tube',
     narrative: [
@@ -17,7 +17,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-wagonwrights-mile', chapterId: 'ch01', region: 'gloamwood', slot: 4,
+    id: 'ch01-journey-the-wagonwrights-mile', chapterId: 'ch01', region: 'gloamwood', slot: 6,
     type: 'journey', journeySubtype: 'travel', family: 'wagon-pressure', weight: 14, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-wagonwrights-mile', title: 'The Wagonwright\'s Mile',
     narrative: [
@@ -31,7 +31,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-rain-on-chalk-hill', chapterId: 'ch01', region: 'gloamwood', slot: 7,
+    id: 'ch01-journey-rain-on-chalk-hill', chapterId: 'ch01', region: 'gloamwood', slot: 12,
     type: 'journey', journeySubtype: 'travel', family: 'weather-pressure', weight: 13, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-rain-on-chalk-hill', title: 'Rain on Chalk Hill',
     narrative: [
@@ -45,7 +45,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-shepherds-missing-mule', chapterId: 'ch01', region: 'gloamwood', slot: 8,
+    id: 'ch01-journey-the-shepherds-missing-mule', chapterId: 'ch01', region: 'gloamwood', slot: 13,
     type: 'journey', journeySubtype: 'side-quest', family: 'roadside-help', weight: 10, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-shepherds-missing-mule', title: 'The Shepherd\'s Missing Mule',
     narrative: [
@@ -59,7 +59,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-toll-collectors-widow', chapterId: 'ch01', region: 'gloamwood', slot: 9,
+    id: 'ch01-journey-the-toll-collectors-widow', chapterId: 'ch01', region: 'gloamwood', slot: 14,
     type: 'journey', journeySubtype: 'moral-choice', family: 'civilian-cost', weight: 12, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-toll-collectors-widow', title: 'The Toll Collector\'s Widow',
     narrative: [
@@ -73,7 +73,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-abandoned-register', chapterId: 'ch01', region: 'gloamwood', slot: 12,
+    id: 'ch01-journey-the-abandoned-register', chapterId: 'ch01', region: 'gloamwood', slot: 36,
     type: 'journey', journeySubtype: 'investigation', family: 'checkpoint-evidence', weight: 18, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-abandoned-register', title: 'The Abandoned Register',
     narrative: [
@@ -87,7 +87,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-tollhouse-cellar', chapterId: 'ch01', region: 'gloamwood', slot: 13,
+    id: 'ch01-journey-the-tollhouse-cellar', chapterId: 'ch01', region: 'gloamwood', slot: 37,
     type: 'journey', journeySubtype: 'dungeon', family: 'sealed-cellar', weight: 8, pacing: 'danger', threatChange: 1,
     illustrationId: 'scene-ch01-journey-the-tollhouse-cellar', title: 'The Tollhouse Cellar',
     narrative: [
@@ -101,7 +101,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-tracks-beyond-the-orchard', chapterId: 'ch01', region: 'gloamwood', slot: 15,
+    id: 'ch01-journey-tracks-beyond-the-orchard', chapterId: 'ch01', region: 'gloamwood', slot: 46,
     type: 'journey', journeySubtype: 'travel', family: 'route-reading', weight: 15, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-tracks-beyond-the-orchard', title: 'Tracks Beyond the Orchard',
     narrative: [
@@ -115,7 +115,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-royal-shaft-mark', chapterId: 'ch01', region: 'gloamwood', slot: 19,
+    id: 'ch01-journey-the-royal-shaft-mark', chapterId: 'ch01', region: 'gloamwood', slot: 55,
     type: 'journey', journeySubtype: 'investigation', family: 'weapon-evidence', weight: 20, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-royal-shaft-mark', title: 'The Royal Shaft Mark',
     narrative: [
@@ -129,35 +129,35 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-field-surgery-road', chapterId: 'ch01', region: 'gloamwood', slot: 21,
+    id: 'ch01-journey-the-field-surgery-road', chapterId: 'ch01', region: 'gloamwood', slot: 57,
     type: 'journey', journeySubtype: 'travel', family: 'wounded-convoy', weight: 14, pacing: 'recovery',
     illustrationId: 'scene-ch01-journey-the-field-surgery-road', title: 'The Field Surgery Road',
     narrative: [
       'The surviving driver steers while Jory presses cloth against the toll officer\'s wound. A shaded farm lane offers a smoother ride, but it bends away from Greywatch for half a mile.',
       'The direct road saves time and shakes every injured passenger against the wagon boards.',
     ],
-    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
+    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
-      { id: 'ch01-choice-take-the-shaded-farm-lane', label: 'Take the shaded farm lane', detail: 'Lose distance to protect the wounded from the rough road and give Jory time to bind them.', effects: [{ type: 'vitals', health: 3 }, { type: 'flag', operation: 'add', flagId: 'wounded-stabilized-on-road' }], outcome: 'The wagon rolls evenly beneath the trees, and the toll officer\'s breathing steadies.' },
-      { id: 'ch01-choice-hold-the-direct-road', label: 'Hold the direct road', detail: 'Reach Greywatch sooner, but accept that the wounded will suffer on the broken stones.', effects: [{ type: 'threat', amount: -1 }, { type: 'flag', operation: 'add', flagId: 'direct-road-with-wounded' }], outcome: 'The convoy gains a mile while Jory braces the injured against each hard turn.' },
+      { id: 'ch01-choice-take-the-shaded-farm-lane', label: 'Take the shaded farm lane', detail: 'Lose distance to protect the wounded from the rough road and give Jory time to bind them.', effects: [{ type: 'vitals', health: 3 }, { type: 'flag', operation: 'add', flagId: 'wounded-stabilized-on-road' }], outcome: 'The wagon rolls evenly beneath the trees, and the toll officer\'s breathing steadies.', nextSceneId: 'ch01-journey-the-millers-children', continueLabel: 'Follow the lane toward the watermill' },
+      { id: 'ch01-choice-hold-the-direct-road', label: 'Hold the direct road', detail: 'Reach Greywatch sooner, but accept that the wounded will suffer on the broken stones.', effects: [{ type: 'threat', amount: -1 }, { type: 'flag', operation: 'add', flagId: 'direct-road-with-wounded' }], outcome: 'The convoy gains a mile while Jory braces the injured against each hard turn.', nextSceneId: 'ch01-journey-the-millers-children', continueLabel: 'Follow the smoke past the watermill' },
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-millers-children', chapterId: 'ch01', region: 'gloamwood', slot: 23,
+    id: 'ch01-journey-the-millers-children', chapterId: 'ch01', region: 'gloamwood', slot: 59,
     type: 'journey', journeySubtype: 'side-quest', family: 'civilian-rescue', weight: 11, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-millers-children', title: 'The Miller\'s Children',
     narrative: [
       'Two children wave from the upper floor of a watermill while smoke rises from the bridge ahead. Their father crossed the river that morning and has not returned.',
       'A narrow mill race reaches the far bank beneath the road. It may bypass the smoke, but the wagons cannot fit through it.',
     ],
-    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: [], callbackPromises: [],
+    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: [], callbackPromises: [],
     choices: [
-      { id: 'ch01-choice-bring-the-children-to-the-convoy', label: 'Bring the children to the convoy', detail: 'Add two civilians to an already crowded wagon, but keep them away from the burning bridge.', effects: [{ type: 'flag', operation: 'add', flagId: 'millers-children-escorted' }, { type: 'companion-loyalty', companionId: 'mara', amount: 3 }], outcome: 'The children climb beside the bandage crates and identify their father among the trapped villagers ahead.' },
-      { id: 'ch01-choice-scout-through-the-mill-race', label: 'Scout through the mill race', detail: 'Leave the children locked inside while you inspect the bridge from cover beneath the road.', effects: [{ type: 'flag', operation: 'add', flagId: 'bridge-scouted-from-mill' }, { type: 'threat', amount: -1 }], outcome: 'The mill race brings you within sight of the raiders, and the children bar the door until you return.' },
+      { id: 'ch01-choice-bring-the-children-to-the-convoy', label: 'Bring the children to the convoy', detail: 'Add two civilians to an already crowded wagon, but keep them away from the burning bridge.', effects: [{ type: 'flag', operation: 'add', flagId: 'millers-children-escorted' }, { type: 'flag', operation: 'add', flagId: 'millers-cart-route-ready' }, { type: 'companion-loyalty', companionId: 'mara', amount: 3 }], outcome: 'The children climb beside the bandage crates. At the mill race, they recognize their father trapped beside a captured flour cart.', nextSceneId: 'ch01-living-millers-cart', continueLabel: 'Reach the trapped miller' },
+      { id: 'ch01-choice-scout-through-the-mill-race', label: 'Scout through the mill race', detail: 'Leave the children locked inside while you inspect the bridge from cover beneath the road.', effects: [{ type: 'flag', operation: 'add', flagId: 'bridge-scouted-from-mill' }, { type: 'flag', operation: 'add', flagId: 'millers-cart-route-ready' }, { type: 'threat', amount: -1 }], outcome: 'The mill race brings you beneath the road, where raiders have pinned the children\'s father beside his captured flour cart.', nextSceneId: 'ch01-living-millers-cart', continueLabel: 'Study the raiders at the mill race' },
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-wagon-or-the-rope', chapterId: 'ch01', region: 'gloamwood', slot: 27,
+    id: 'ch01-journey-the-wagon-or-the-rope', chapterId: 'ch01', region: 'gloamwood', slot: 66,
     type: 'journey', journeySubtype: 'moral-choice', family: 'bridge-aftermath', weight: 15, pacing: 'danger',
     illustrationId: 'scene-ch01-journey-the-wagon-or-the-rope', title: 'The Wagon or the Rope',
     narrative: [
@@ -166,26 +166,26 @@ export const CH01_JOURNEY = Object.freeze([
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: [], callbackPromises: [],
     choices: [
-      { id: 'ch01-choice-cut-the-burning-rope', label: 'Cut the burning rope', detail: 'Save the horses and medicine immediately, but abandon the villagers\' tools with the wagon.', effects: [{ type: 'flag', operation: 'add', flagId: 'bridge-wagon-abandoned' }, { type: 'threat', amount: -1 }], outcome: 'The rope parts, the horses reach firm ground, and the loaded wagon sinks through the burning planks.' },
-      { id: 'ch01-choice-drag-the-wagon-clear', label: 'Drag the wagon clear', detail: 'Risk another attack and personal injury to preserve the tools needed by the displaced families.', effects: [{ type: 'vitals', health: -3 }, { type: 'flag', operation: 'add', flagId: 'villager-tools-saved' }, { type: 'companion-loyalty', companionId: 'mara', amount: 2 }], outcome: 'You and Mara haul until the wheels catch stone, saving the wagon seconds before the support collapses.' },
+      { id: 'ch01-choice-cut-the-burning-rope', label: 'Cut the burning rope', detail: 'Save the horses and medicine immediately, but abandon the villagers\' tools with the wagon.', effects: [{ type: 'flag', operation: 'add', flagId: 'bridge-wagon-abandoned' }, { type: 'threat', amount: -1 }], outcome: 'The rope parts, the horses reach firm ground, and the loaded wagon sinks through the burning planks.', nextSceneId: 'ch01-journey-the-ferrymans-rope', continueLabel: 'Follow the river road north' },
+      { id: 'ch01-choice-drag-the-wagon-clear', label: 'Drag the wagon clear', detail: 'Risk another attack and personal injury to preserve the tools needed by the displaced families.', effects: [{ type: 'vitals', health: -3 }, { type: 'flag', operation: 'add', flagId: 'villager-tools-saved' }, { type: 'companion-loyalty', companionId: 'mara', amount: 2 }], outcome: 'You and Mara haul until the wheels catch stone, saving the wagon seconds before the support collapses.', nextSceneId: 'ch01-journey-the-ferrymans-rope', continueLabel: 'Follow the river road north' },
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-ferrymans-rope', chapterId: 'ch01', region: 'gloamwood', slot: 28,
+    id: 'ch01-journey-the-ferrymans-rope', chapterId: 'ch01', region: 'gloamwood', slot: 67,
     type: 'journey', journeySubtype: 'side-quest', family: 'roadside-repair', weight: 10, pacing: 'recovery',
     illustrationId: 'scene-ch01-journey-the-ferrymans-rope', title: 'The Ferryman\'s Rope',
     narrative: [
       'An old ferryman has stranded six travelers after raiders cut his guide rope. He has a spare coil, but no one strong enough to swim it across the fast channel.',
       'The repaired ferry offers a quiet crossing for the wounded. The bridge road remains faster and easier for the wagons.',
     ],
-    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: false, followUps: [], callbackPromises: [],
+    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
-      { id: 'ch01-choice-carry-the-rope-across', label: 'Carry the rope across', detail: 'Enter the cold current and risk injury so the stranded travelers can leave the exposed bank.', effects: [{ type: 'vitals', health: -2 }, { type: 'flag', operation: 'add', flagId: 'ferry-rope-restored' }, { type: 'faction', factionId: 'greywatch', amount: 1 }], outcome: 'The ferryman hauls the line tight and sends the travelers across before taking your wounded aboard.' },
-      { id: 'ch01-choice-lend-the-ferryman-a-horse', label: 'Lend the ferryman a horse', detail: 'Avoid the river, but slow the convoy while the ferryman pulls a new line from the bank.', effects: [{ type: 'tension', amount: 1 }, { type: 'flag', operation: 'add', flagId: 'ferry-horse-lent' }], outcome: 'The horse drags the rope around a riverside post, and the convoy waits until every traveler is ashore.' },
+      { id: 'ch01-choice-carry-the-rope-across', label: 'Carry the rope across', detail: 'Enter the cold current and risk injury so the stranded travelers can leave the exposed bank.', effects: [{ type: 'vitals', health: -2 }, { type: 'flag', operation: 'add', flagId: 'ferry-rope-restored' }, { type: 'faction', factionId: 'greywatch', amount: 1 }], outcome: 'The ferryman hauls the line tight and sends the travelers across before taking your wounded aboard.', nextSceneId: 'ch01-journey-smoke-behind-us', continueLabel: 'Watch the southern ridge' },
+      { id: 'ch01-choice-lend-the-ferryman-a-horse', label: 'Lend the ferryman a horse', detail: 'Avoid the river, but slow the convoy while the ferryman pulls a new line from the bank.', effects: [{ type: 'tension', amount: 1 }, { type: 'flag', operation: 'add', flagId: 'ferry-horse-lent' }], outcome: 'The horse drags the rope around a riverside post, and the convoy waits until every traveler is ashore.', nextSceneId: 'ch01-journey-smoke-behind-us', continueLabel: 'Watch the southern ridge' },
     ],
   }),
   defineScene({
-    id: 'ch01-journey-smoke-behind-us', chapterId: 'ch01', region: 'gloamwood', slot: 30,
+    id: 'ch01-journey-smoke-behind-us', chapterId: 'ch01', region: 'gloamwood', slot: 69,
     type: 'journey', journeySubtype: 'travel', family: 'pursuit-pressure', weight: 16, pacing: 'danger', threatChange: 1,
     illustrationId: 'scene-ch01-journey-smoke-behind-us', title: 'Smoke Behind Us',
     narrative: [
@@ -194,12 +194,12 @@ export const CH01_JOURNEY = Object.freeze([
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
-      { id: 'ch01-choice-take-the-concealed-farm-track', label: 'Take the concealed farm track', detail: 'Break sight of the riders, but risk bogging the medicine wagons on an unmapped lane.', effects: [{ type: 'flag', operation: 'add', flagId: 'pursuit-line-broken' }, { type: 'threat', amount: -2 }], outcome: 'Hedgerows hide the wagons until the farm track rejoins Route Seven beyond the ridge.' },
-      { id: 'ch01-choice-climb-in-full-view', label: 'Climb in full view', detail: 'Keep to reliable stone and gain distance, while allowing the riders to watch every turn.', effects: [{ type: 'flag', operation: 'add', flagId: 'greywatch-climb-direct' }, { type: 'tension', amount: -1 }], outcome: 'The horses take the grade without slipping, and the riders remain a dark line behind you.' },
+      { id: 'ch01-choice-take-the-concealed-farm-track', label: 'Take the concealed farm track', detail: 'Break sight of the riders, but risk bogging the medicine wagons on an unmapped lane.', effects: [{ type: 'flag', operation: 'add', flagId: 'pursuit-line-broken' }, { type: 'flag', operation: 'add', flagId: 'barrow-sword-route-chosen' }, { type: 'threat', amount: -2 }], outcome: 'Hedgerows hide the wagons until the farm track rejoins Route Seven beside an old burial mound.', nextSceneId: 'ch01-living-sword-in-barrow-clay', continueLabel: 'Inspect the sword above the road' },
+      { id: 'ch01-choice-climb-in-full-view', label: 'Climb in full view', detail: 'Keep to reliable stone and gain distance, while allowing the riders to watch every turn.', effects: [{ type: 'flag', operation: 'add', flagId: 'greywatch-climb-direct' }, { type: 'tension', amount: -1 }], outcome: 'The horses take the grade without slipping. Ahead, a staged body and a dry war banner lie too neatly beside the road.', nextSceneId: 'ch01-main-a-banner-placed-too-neatly', continueLabel: 'Examine the staged body' },
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-officers-clean-boots', chapterId: 'ch01', region: 'gloamwood', slot: 34,
+    id: 'ch01-journey-the-officers-clean-boots', chapterId: 'ch01', region: 'gloamwood', slot: 82,
     type: 'journey', journeySubtype: 'investigation', family: 'false-evidence', weight: 19, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-officers-clean-boots', title: 'The Officer\'s Clean Boots',
     narrative: [
@@ -213,7 +213,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-wounded-woodcutter', chapterId: 'ch01', region: 'gloamwood', slot: 35,
+    id: 'ch01-journey-the-wounded-woodcutter', chapterId: 'ch01', region: 'gloamwood', slot: 83,
     type: 'journey', journeySubtype: 'side-quest', family: 'witness-rescue', weight: 12, pacing: 'recovery',
     illustrationId: 'scene-ch01-journey-the-wounded-woodcutter', title: 'The Wounded Woodcutter',
     narrative: [
@@ -227,7 +227,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-greywatch-lanterns', chapterId: 'ch01', region: 'gloamwood', slot: 37,
+    id: 'ch01-journey-greywatch-lanterns', chapterId: 'ch01', region: 'gloamwood', slot: 88,
     type: 'journey', journeySubtype: 'travel', family: 'greywatch-approach', weight: 15, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-greywatch-lanterns', title: 'Greywatch Lanterns',
     narrative: [
@@ -241,7 +241,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-closed-north-track', chapterId: 'ch01', region: 'gloamwood', slot: 38,
+    id: 'ch01-journey-the-closed-north-track', chapterId: 'ch01', region: 'gloamwood', slot: 89,
     type: 'journey', journeySubtype: 'travel', family: 'road-closure', weight: 13, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-the-closed-north-track', title: 'The Closed North Track',
     narrative: [
@@ -255,7 +255,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-the-last-uphill-mile', chapterId: 'ch01', region: 'gloamwood', slot: 39,
+    id: 'ch01-journey-the-last-uphill-mile', chapterId: 'ch01', region: 'gloamwood', slot: 90,
     type: 'journey', journeySubtype: 'travel', family: 'final-approach', weight: 16, pacing: 'danger',
     illustrationId: 'scene-ch01-journey-the-last-uphill-mile', title: 'The Last Uphill Mile',
     narrative: [
@@ -269,7 +269,7 @@ export const CH01_JOURNEY = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-journey-witness-or-medicine', chapterId: 'ch01', region: 'gloamwood', slot: 40,
+    id: 'ch01-journey-witness-or-medicine', chapterId: 'ch01', region: 'gloamwood', slot: 91,
     type: 'journey', journeySubtype: 'moral-choice', family: 'evidence-custody', weight: 20, pacing: 'danger',
     illustrationId: 'scene-ch01-journey-witness-or-medicine', title: 'Witness or Medicine',
     narrative: [

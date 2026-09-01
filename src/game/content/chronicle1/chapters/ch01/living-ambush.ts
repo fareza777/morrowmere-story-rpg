@@ -18,7 +18,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-smoke-verge-setup',
-    slot: 15,
+    slot: 40,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'smoke-beyond-verge',
@@ -107,7 +107,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-smoke-verge-choice',
-    slot: 16,
+    slot: 41,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'smoke-beyond-verge',
@@ -243,7 +243,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-smoke-verge-aftermath',
-    slot: 16,
+    slot: 42,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'smoke-beyond-verge-aftermath',
@@ -286,12 +286,13 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
         requirements: [{ type: 'flag', flagId: 'verge-travelers-warned' }],
         effects: [
           { type: 'flag', operation: 'add', flagId: 'verge-travelers-safe' },
+          { type: 'flag', operation: 'add', flagId: 'kneeling-armor-route-chosen' },
           { type: 'faction', factionId: 'greywatch', amount: 1 },
           { type: 'xp', amount: 8, source: 'quest' },
         ],
         outcome: "Ressa's cart disappears behind the bank before the convoy enters the orchard.",
-        nextSceneId: 'ch01-main-the-first-arrow',
-        continueLabel: 'Enter the orchard road',
+        nextSceneId: 'ch01-living-armor-that-knelt',
+        continueLabel: 'Take the south lane around the orchard',
       },
       {
         id: 'ch01-choice-keep-the-travelers-inside-the-wagons',
@@ -311,7 +312,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-split-fletched-arrow-setup',
-    slot: 18,
+    slot: 48,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'split-fletched-arrow',
@@ -405,7 +406,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-split-fletched-arrow-battle',
-    slot: 18,
+    slot: 49,
     type: 'journey',
     journeySubtype: 'travel',
     family: 'split-fletched-arrow-battle-setup',
@@ -588,7 +589,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-split-fletched-arrow-aftermath',
-    slot: 19,
+    slot: 50,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'split-fletched-arrow-aftermath',
@@ -625,13 +626,14 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
         effects: [
           { type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' },
           { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' },
+          { type: 'flag', operation: 'add', flagId: 'war-camp-route-chosen' },
           { type: 'flag', operation: 'add', flagId: 'royal-arrow-intact' },
           { type: 'flag', operation: 'add', flagId: 'orchard-volley-survived' },
           { type: 'xp', amount: 8, source: 'story' },
         ],
         outcome: 'Jory splints the full shaft between two boards, keeping feather, glue, and workshop notch together.',
-        nextSceneId: 'ch01-journey-the-field-surgery-road',
-        continueLabel: 'Carry the wounded toward the bridge',
+        nextSceneId: 'ch01-living-war-camps-last-fire',
+        continueLabel: 'Follow the complete arrow beyond the orchard',
       },
       {
         id: 'ch01-choice-take-the-marked-arrowhead',

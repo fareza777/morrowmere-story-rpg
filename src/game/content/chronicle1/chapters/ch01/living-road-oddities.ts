@@ -18,7 +18,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-warning-tree',
-    slot: 10.1,
+    slot: 22,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-warning-tree',
@@ -29,8 +29,11 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     narrative: [
       'A young goblin hangs by a broad leather harness from an old oak beside the road. The body is still, the knot is military, and three food slates are nailed at eye level beneath his feet. No blood marks the bark. Small footprints approach the tree, but only deep round punctures lead away.',
     ],
-    eligibility: { routes: ['old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 },
-    requirements: [{ type: 'flag', flagId: 'warning-tree-entry-ready' }],
+    eligibility: { routes: ALL_ROUTES, minLevel: 1, maxLevel: 2 },
+    requirements: [
+      { type: 'flag', flagId: 'warning-tree-entry-ready' },
+      { type: 'flag', flagId: 'warning-tree-route-chosen' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'warning-tree-resolved' }],
     dialogue: [
       {
@@ -41,6 +44,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
       {
         speakerName: 'Mara Vey',
         text: 'Or left him where another courier would have to look up.',
+        requirements: [{ type: 'flag', flagId: 'mara-met' }],
         environmentIllustrationId: 'scene-ch01-living-warning-tree',
       },
     ],
@@ -86,7 +90,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-warning-tree-choice',
-    slot: 10.11,
+    slot: 23,
     type: 'combat',
     family: 'living-warning-tree-choice',
     pacing: 'danger',
@@ -95,6 +99,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     narrative: [
       'The round marks are from iron climbing spikes strapped to human boots. Two masked road zealots return along the upper branches, moving above the ordinary trail. The goblin was a courier, and the slates were bait for anyone who knew his route.',
     ],
+    requirements: [{ type: 'flag', flagId: 'warning-tree-route-chosen' }],
     choices: [
       {
         id: 'ch01-choice-warning-tree-trace-the-spikes',
@@ -194,7 +199,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-warning-tree-aftermath',
-    slot: 10.12,
+    slot: 24,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-warning-tree-aftermath',
@@ -204,6 +209,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     narrative: [
       "The leather harness carries a bronze tally stamped with three family marks and the same food totals as the slates. It can guide supplies, prove the killing's purpose, or be buried with the courier so no patrol can follow it.",
     ],
+    requirements: [{ type: 'flag', flagId: 'warning-tree-route-chosen' }],
     choices: [
       {
         id: 'ch01-choice-warning-tree-preserve-the-tally',
@@ -253,7 +259,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-armor-that-knelt',
-    slot: 16.1,
+    slot: 43,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-kneeling-armor',
@@ -264,8 +270,11 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     narrative: [
       'In a rain-cut hollow, a sealed suit of old levy plate kneels with both hands around a rusted sword. Mud has not entered its joints. When the nearest medicine wagon rolls forward, the helmet turns and the sword point scratches one word into the clay: "Name."',
     ],
-    eligibility: { routes: ['ruined-pass'], minLevel: 1, maxLevel: 2 },
-    requirements: [{ type: 'flag', flagId: 'kneeling-armor-entry-ready' }],
+    eligibility: { routes: ALL_ROUTES, minLevel: 1, maxLevel: 2 },
+    requirements: [
+      { type: 'flag', flagId: 'kneeling-armor-entry-ready' },
+      { type: 'flag', flagId: 'kneeling-armor-route-chosen' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'kneeling-armor-resolved' }],
     dialogue: [
       {
@@ -321,12 +330,13 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-armor-that-knelt-test',
-    slot: 16.11,
+    slot: 44,
     type: 'combat',
     family: 'living-kneeling-armor-test',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-armor-that-knelt-test',
     title: 'The Occupant Behind the Visor',
+    requirements: [{ type: 'flag', flagId: 'kneeling-armor-route-chosen' }],
     narrative: [
       'The visor opens one finger-width. Inside is a dead levy soldier bound upright by old harness straps, jaw working around a corroded command token. The armor is not empty and not a wandering spirit. A corpse is still obeying its last posted order.',
     ],
@@ -438,13 +448,14 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-armor-that-knelt-aftermath',
-    slot: 16.12,
+    slot: 45,
     type: 'journey',
     journeySubtype: 'investigation',
     family: 'living-kneeling-armor-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-armor-that-knelt-aftermath',
     title: 'A Soldier Finally Unharnessed',
+    requirements: [{ type: 'flag', flagId: 'kneeling-armor-route-chosen' }],
     narrative: [
       "The old levy corpse lies flat at last. Its command token names the barrow road and bears a quartermaster's office number still used inside Greywatch. The useful pieces are a locking key, two sound plates, and the testimony of the token itself.",
     ],
@@ -498,7 +509,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-war-camps-last-fire',
-    slot: 19.1,
+    slot: 52,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-abandoned-war-camp',
@@ -509,8 +520,11 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     narrative: [
       "The convoy skirts the abandoned edge of a goblin war camp. Most tents are gone, but one cook fire still burns beneath a rain hood. A wounded goblin quartermaster lies beside sacks marked with human family names, and a dead human officer's coded movement strip is pinned under his hand.",
     ],
-    eligibility: { routes: ['old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 },
-    requirements: [{ type: 'flag', flagId: 'split-fletched-arrow-secured' }],
+    eligibility: { routes: ALL_ROUTES, minLevel: 1, maxLevel: 2 },
+    requirements: [
+      { type: 'flag', flagId: 'split-fletched-arrow-secured' },
+      { type: 'flag', flagId: 'war-camp-route-chosen' },
+    ],
     exclusions: [{ type: 'flag', flagId: 'war-camp-resolved' }],
     dialogue: [
       {
@@ -567,12 +581,13 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-war-camps-last-fire-choice',
-    slot: 19.11,
+    slot: 53,
     type: 'combat',
     family: 'living-abandoned-war-camp-choice',
     pacing: 'danger',
     illustrationId: 'scene-ch01-living-war-camps-last-fire-choice',
     title: 'Goods Bought Twice',
+    requirements: [{ type: 'flag', flagId: 'war-camp-route-chosen' }],
     narrative: [
       'Vekk says a human officer sold the goods to his camp, then returned with riders who slaughtered the buyers and planted goblin shields along Route Seven. Two hungry gloam wargs now creep between the empty tents, drawn by blood and the last fire.',
     ],
@@ -666,13 +681,14 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
   defineScene({
     ...COMMON,
     id: 'ch01-living-war-camps-last-fire-aftermath',
-    slot: 19.12,
+    slot: 54,
     type: 'journey',
     journeySubtype: 'moral-choice',
     family: 'living-abandoned-war-camp-aftermath',
     pacing: 'quiet',
     illustrationId: 'scene-ch01-living-war-camps-last-fire-aftermath',
     title: "The Quartermaster's Accounting",
+    requirements: [{ type: 'flag', flagId: 'war-camp-route-chosen' }],
     narrative: [
       'The wargs are gone or dead. Vekk can travel hidden beneath wagon canvas, while the labeled goods can go to their families, to Greywatch stores, or back onto the courier road he served.',
     ],
@@ -689,8 +705,8 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
           { type: 'gold', scope: 'unbanked', amount: -4 },
         ],
         outcome: 'Jory adds every sack to a witnessed return list and refuses to count it as convoy salvage.',
-        nextSceneId: 'ch01-living-millers-cart',
-        continueLabel: 'Take the family road toward the mill',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
+        continueLabel: 'Carry the wounded toward the bridge',
       },
       {
         id: 'ch01-choice-war-camp-hide-vekk-and-order',
@@ -704,8 +720,8 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
           { type: 'xp', amount: 10, source: 'quest' },
         ],
         outcome: 'Vekk rides under empty bandage canvas while Jory seals the order separately from the public dispatch.',
-        nextSceneId: 'ch01-living-millers-cart',
-        continueLabel: 'Take the family road toward the mill',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
+        continueLabel: 'Carry the wounded toward the bridge',
       },
       {
         id: 'ch01-choice-war-camp-turn-all-over',
@@ -718,8 +734,8 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
           { type: 'tension', amount: 1 },
         ],
         outcome: "Jory writes a custody declaration that protects the goods from being claimed as ordinary loot but leaves Vekk's fate to the gate.",
-        nextSceneId: 'ch01-living-millers-cart',
-        continueLabel: 'Take the family road toward the mill',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
+        continueLabel: 'Carry the wounded toward the bridge',
       },
     ],
   }),

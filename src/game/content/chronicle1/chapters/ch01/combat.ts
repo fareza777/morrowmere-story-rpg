@@ -2,7 +2,7 @@ import { defineScene } from '../../builders';
 
 export const CH01_COMBAT = Object.freeze([
   defineScene({
-    id: 'ch01-combat-ditch-road-cutters', chapterId: 'ch01', region: 'gloamwood', slot: 10,
+    id: 'ch01-combat-ditch-road-cutters', chapterId: 'ch01', region: 'gloamwood', slot: 25,
     type: 'combat', family: 'roadside-ambush', weight: 14, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-ditch-road-cutters', illustrationId: 'scene-ch01-combat-ditch-road-cutters', title: 'Blades in the Drainage Ditch',
     narrative: [
@@ -21,7 +21,7 @@ export const CH01_COMBAT = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-combat-tollhouse-lookouts', chapterId: 'ch01', region: 'gloamwood', slot: 16,
+    id: 'ch01-combat-tollhouse-lookouts', chapterId: 'ch01', region: 'gloamwood', slot: 39,
     type: 'combat', family: 'checkpoint-occupation', weight: 13, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-tollhouse-lookouts', illustrationId: 'scene-ch01-combat-tollhouse-lookouts', title: 'Lookouts Behind the Tollhouse',
     narrative: [
@@ -40,7 +40,7 @@ export const CH01_COMBAT = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-combat-the-orchard-volley', chapterId: 'ch01', region: 'gloamwood', slot: 18,
+    id: 'ch01-combat-the-orchard-volley', chapterId: 'ch01', region: 'gloamwood', slot: 51,
     type: 'combat', family: 'archer-crossfire', weight: 100, pacing: 'danger', threatChange: 3,
     encounterId: 'enc-ch01-orchard-volley', illustrationId: 'scene-ch01-combat-the-orchard-volley', title: 'The Orchard Volley',
     narrative: [
@@ -64,7 +64,7 @@ export const CH01_COMBAT = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-combat-smoke-on-the-bridge', chapterId: 'ch01', region: 'gloamwood', slot: 25,
+    id: 'ch01-combat-smoke-on-the-bridge', chapterId: 'ch01', region: 'gloamwood', slot: 64,
     type: 'combat', family: 'bridge-defense', weight: 100, pacing: 'danger', threatChange: 3,
     encounterId: 'enc-ch01-smoke-on-the-bridge', illustrationId: 'scene-ch01-combat-smoke-on-the-bridge', title: 'Steel in the Bridge Smoke',
     narrative: [
@@ -78,7 +78,7 @@ export const CH01_COMBAT = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-combat-reedbank-pursuers', chapterId: 'ch01', region: 'gloamwood', slot: 29,
+    id: 'ch01-combat-reedbank-pursuers', chapterId: 'ch01', region: 'gloamwood', slot: 68,
     type: 'combat', family: 'mounted-pursuit', weight: 13, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-reedbank-pursuers', illustrationId: 'scene-ch01-combat-reedbank-pursuers', title: 'Pursuers at the Reedbank',
     narrative: [
@@ -92,7 +92,7 @@ export const CH01_COMBAT = Object.freeze([
     ],
   }),
   defineScene({
-    id: 'ch01-combat-recover-the-false-banner', chapterId: 'ch01', region: 'gloamwood', slot: 36,
+    id: 'ch01-combat-recover-the-false-banner', chapterId: 'ch01', region: 'gloamwood', slot: 84,
     type: 'combat', family: 'evidence-recovery', weight: 18, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-recover-the-false-banner', illustrationId: 'scene-ch01-combat-recover-the-false-banner', title: 'Hands on the False Banner',
     narrative: [
