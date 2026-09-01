@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CinematicSequence } from '../src/ui/types';
 import { OPENING_SEQUENCE } from '../src/ui/openingSequence';
 import * as audioCatalog from '../src/game/audio/catalog';
@@ -43,6 +43,10 @@ class ControllableAudio {
   }
 }
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('opening file-backed audio', () => {
   it('plays the dedicated opening score from its bundled path without looping', async () => {
     const created: ControllableAudio[] = [];
@@ -71,6 +75,83 @@ describe('opening file-backed audio', () => {
     service.configure({ musicEnabled: true, voiceEnabled: false });
 
     await expect(createCinematicAudioPort(service).play(OPENING_SEQUENCE, 0)).rejects.toThrow('autoplay blocked');
+  });
+
+  it('advances opening voice and SFX only when the cinematic timeline advances', async () => {
+    vi.useFakeTimers();
+    const created: ControllableAudio[] = [];
+    const service = createAudioService({
+      createAudio(src) {
+        const audio = new ControllableAudio(src);
+        created.push(audio);
+        return audio;
+      },
+      localSpeech: null,
+    });
+    service.configure({ musicEnabled: true, voiceEnabled: true, sfxEnabled: true });
+    const port = createCinematicAudioPort(service) as ReturnType<typeof createCinematicAudioPort> & {
+      sync(positionMs: number): void;
+    };
+
+    await port.play(OPENING_SEQUENCE, 0);
+    vi.advanceTimersByTime(36_500);
+
+    expect(created.some((audio) => audio.src.endsWith('/voice-opening-07.mp3') && audio.playCount > 0)).toBe(false);
+    expect(created.some((audio) => audio.src.endsWith('/sfx-narrative-warning.mp3') && audio.playCount > 0)).toBe(false);
+    expect(port.sync).toBeTypeOf('function');
+
+    port.sync?.(36_500);
+    expect(created.some((audio) => audio.src.endsWith('/voice-opening-07.mp3') && audio.playCount > 0)).toBe(true);
+    expect(created.some((audio) => audio.src.endsWith('/sfx-narrative-warning.mp3') && audio.playCount > 0)).toBe(true);
+    expect(created.some((audio) => audio.src.endsWith('/sfx-arrow-hit.mp3') && audio.playCount > 0)).toBe(false);
+  });
+
+  it('reconciles delayed audio startup to the latest cinematic frame', async () => {
+    let releaseScore: (() => void) | undefined;
+    const scoreStarted = new Promise<void>((resolve) => { releaseScore = resolve; });
+    const created: ControllableAudio[] = [];
+    const service = createAudioService({
+      createAudio(src) {
+        const audio = new ControllableAudio(
+          src,
+          src.endsWith('/music-opening-score.mp3') ? () => scoreStarted : () => Promise.resolve(),
+        );
+        created.push(audio);
+        return audio;
+      },
+      localSpeech: null,
+    });
+    service.configure({ musicEnabled: true, voiceEnabled: true });
+    const port = createCinematicAudioPort(service) as ReturnType<typeof createCinematicAudioPort> & {
+      sync(positionMs: number): void;
+    };
+
+    const playback = port.play(OPENING_SEQUENCE, 0);
+    await Promise.resolve();
+    expect(port.sync).toBeTypeOf('function');
+    port.sync?.(7_500);
+    releaseScore?.();
+    await playback;
+
+    expect(created.find((audio) => audio.src.endsWith('/music-opening-score.mp3'))?.currentTime).toBe(7.5);
+    expect(created.find((audio) => audio.src.endsWith('/voice-opening-02.mp3'))?.currentTimeAtPlay).toBe(3.5);
+  });
+
+  it('keeps cinematic SFX below narration at a shared shot boundary', async () => {
+    const created: ControllableAudio[] = [];
+    const service = createAudioService({
+      createAudio(src) {
+        const audio = new ControllableAudio(src);
+        created.push(audio);
+        return audio;
+      },
+      localSpeech: null,
+    });
+    service.configure({ musicEnabled: true, voiceEnabled: true, sfxEnabled: true, sfxVolume: 0.8 });
+
+    await createCinematicAudioPort(service).play(OPENING_SEQUENCE, 32_500);
+
+    expect(created.find((audio) => audio.src.endsWith('/sfx-arrow-hit.mp3'))?.volume).toBeCloseTo(0.44, 5);
   });
 
   it('honors non-looping metadata when the opening score is played directly from the catalog', async () => {
@@ -117,6 +198,37 @@ describe('opening file-backed audio', () => {
 
     voice?.emit('ended');
     expect(music?.volume).toBe(0.8);
+  });
+
+  it('keeps the opening score continuously ducked between shot-level voice clips', async () => {
+    const created: ControllableAudio[] = [];
+    const service = createAudioService({
+      createAudio(src) {
+        const audio = new ControllableAudio(src);
+        created.push(audio);
+        return audio;
+      },
+      localSpeech: null,
+    });
+    service.configure({ musicEnabled: true, musicVolume: 0.8, voiceEnabled: true, voiceVolume: 0.9 });
+    const port = createCinematicAudioPort(service);
+
+    await port.play(OPENING_SEQUENCE, 0);
+
+    const score = created.find((audio) => audio.src.endsWith('/music-opening-score.mp3'));
+    const firstVoice = created.find((audio) => audio.src.endsWith('/voice-opening-01.mp3'));
+    expect(score?.volume).toBeCloseTo(0.8 * (10 ** (-10 / 20)), 5);
+
+    firstVoice?.emit('ended');
+    expect(score?.volume).toBeCloseTo(0.8 * (10 ** (-10 / 20)), 5);
+
+    port.sync(4_000);
+    created.find((audio) => audio.src.endsWith('/voice-opening-02.mp3'))?.emit('ended');
+    expect(score?.volume).toBeCloseTo(0.8 * (10 ** (-10 / 20)), 5);
+
+    port.stop();
+    await service.playMusic('music-title');
+    expect(created.find((audio) => audio.src.endsWith('/music-title.mp3'))?.volume).toBe(0.8);
   });
 
   it('falls back to local speech, restores ducking, and reports a rejected voice clip when requested', async () => {

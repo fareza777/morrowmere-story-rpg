@@ -23,12 +23,18 @@ const SETTINGS: UiSettings = {
 };
 
 const APPROVED_NARRATION = [
-  'The job should have taken three days. Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost. In Morrowmere, that counts as honest work.',
-  'The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade. Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.',
+  'The job should have taken three days.',
+  'Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost.',
+  'In Morrowmere, that counts as honest work.',
+  'The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade.',
+  'Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.',
   'Until this morning.',
-  'The first arrow kills the driver. The second carries the mark of the royal armory. When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.',
+  'The first arrow kills the driver.',
+  'The second carries the mark of the royal armory.',
+  'When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.',
   'Someone is preparing a war.',
-  'You have no title, no army, and no lord to protect you. You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.',
+  'You have no title, no army, and no lord to protect you.',
+  'You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.',
   'By nightfall, half the border will want what you carry.',
   'This is where your chronicle begins.',
 ] as const;
@@ -81,8 +87,8 @@ afterEach(() => {
 });
 
 describe('approved Chronicle I opening sequence', () => {
-  it('maps all fourteen canonical production shots without changing IDs, paths, or timing', () => {
-    expect(OPENING_SEQUENCE.durationMs).toBe(105_000);
+  it('maps all fourteen production shots onto the reviewed shot-level timeline', () => {
+    expect(OPENING_SEQUENCE.durationMs).toBe(83_000);
     expect(OPENING_SEQUENCE.musicId).toBe('music-opening-score');
     expect(OPENING_SEQUENCE.shots).toHaveLength(14);
     expect(OPENING_SEQUENCE.shots.map((shot) => shot.id)).toEqual([
@@ -102,10 +108,10 @@ describe('approved Chronicle I opening sequence', () => {
       'opening-14-title-reveal',
     ]);
     expect(OPENING_SEQUENCE.shots.map(({ startMs, endMs }) => [startMs, endMs])).toEqual([
-      [0, 7_000], [7_000, 15_000], [15_000, 21_000], [21_000, 28_000],
-      [28_000, 36_000], [36_000, 42_000], [42_000, 50_000], [50_000, 57_000],
-      [57_000, 64_000], [64_000, 71_000], [71_000, 79_000], [79_000, 86_000],
-      [86_000, 96_000], [96_000, 105_000],
+      [0, 4_000], [4_000, 13_000], [13_000, 16_000], [16_000, 25_500],
+      [25_500, 32_500], [32_500, 36_500], [36_500, 40_000], [40_000, 44_500],
+      [44_500, 53_500], [53_500, 57_500], [57_500, 62_500], [62_500, 70_000],
+      [70_000, 75_000], [75_000, 83_000],
     ]);
     expect(OPENING_SEQUENCE.shots[0]?.imageId).toBe(
       '/assets/chronicle1/opening/opening-01-fractured-kingdom/base.webp',
@@ -204,6 +210,33 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.play).not.toHaveBeenCalled();
   });
 
+  it('crossfades adjacent story images instead of cutting between shots', async () => {
+    const clock = installManualAnimationFrame();
+    const audio = makeAudio();
+    render(
+      <OpeningCinematic
+        sequence={OPENING_SEQUENCE}
+        settings={SETTINGS}
+        audio={audio}
+        onComplete={() => undefined}
+      />,
+    );
+    await act(async () => undefined);
+
+    const visual = screen.getByTestId('opening-visual');
+    clock.frame(4_000);
+    const transitionImages = visual.querySelectorAll('img');
+    expect(transitionImages).toHaveLength(2);
+    expect(transitionImages[0]).toHaveClass('opening-image-outgoing');
+    expect(transitionImages[0]).toHaveAttribute('aria-hidden', 'true');
+    expect(transitionImages[1]).toHaveClass('opening-image-current');
+    expect(transitionImages[1]).toHaveAttribute('alt', OPENING_SEQUENCE.shots[1]?.alt);
+
+    clock.frame(4_701);
+    expect(visual.querySelectorAll('img')).toHaveLength(1);
+    expect(visual.querySelector('img')).toHaveClass('opening-image-current');
+  });
+
   it('keeps overlay controls hidden until a tap and auto-hides them after inactivity', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     installManualAnimationFrame();
@@ -266,6 +299,25 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.seek).toHaveBeenLastCalledWith(7_500);
     expect(audio.play).toHaveBeenLastCalledWith(OPENING_SEQUENCE, 7_500);
     expect(visual).not.toHaveClass('is-timeline-paused');
+  });
+
+  it('uses the visual frame position as the audio cue timeline', async () => {
+    const clock = installManualAnimationFrame();
+    const audio = { ...makeAudio(), sync: vi.fn() };
+    render(
+      <OpeningCinematic
+        sequence={OPENING_SEQUENCE}
+        settings={SETTINGS}
+        audio={audio}
+        onComplete={() => undefined}
+      />,
+    );
+    await waitFor(() => expect(audio.play).toHaveBeenCalledWith(OPENING_SEQUENCE, 0));
+
+    clock.frame(36_000);
+
+    expect(screen.getByText('Until this morning.')).toBeVisible();
+    expect(audio.sync).toHaveBeenLastCalledWith(36_000);
   });
 
   it('offers audio retry only after a real playback failure while captions continue', async () => {
@@ -353,7 +405,7 @@ describe('approved Chronicle I opening sequence', () => {
     await act(async () => undefined);
     expect(audio.play).toHaveBeenCalledOnce();
 
-    clock.frame(105_000);
+    clock.frame(83_000);
     act(() => vi.advanceTimersByTime(1_250));
     expect(onComplete).toHaveBeenCalledOnce();
   });
@@ -376,7 +428,7 @@ describe('approved Chronicle I opening sequence', () => {
     const { rerender } = render(renderOpening(() => onComplete()));
     await act(async () => undefined);
 
-    clock.frame(105_000);
+    clock.frame(83_000);
     expect(screen.getByText('MORROWMERE')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Return to Chronicle' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Replay opening' })).not.toBeInTheDocument();

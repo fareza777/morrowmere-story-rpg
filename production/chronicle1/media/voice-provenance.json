@@ -12,9 +12,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-01.mp3",
-      "durationMs": 11872,
-      "bytes": 95661,
-      "sha256": "72f1545332ae924530a8607d7c55609234414e78910187ea8681803950ff4d66"
+      "durationMs": 2181,
+      "bytes": 18093,
+      "sha256": "16eb98e752a8f152135c276cdc290cc54dae4be34f213d796d9bb8465dc8d416"
     },
     {
       "id": "provenance-voice-opening-02",
@@ -27,9 +27,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-02.mp3",
-      "durationMs": 14339,
-      "bytes": 115437,
-      "sha256": "56634a2163242a395f2ec3e40ea067a4e17eb015738ca93be943afb046406a38"
+      "durationMs": 7744,
+      "bytes": 62637,
+      "sha256": "71a4fe56eb2eca4877e9f5e68fe0fc9c378dabee43d1474c1f78ad14ae5ba889"
     },
     {
       "id": "provenance-voice-opening-03",
@@ -42,9 +42,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-03.mp3",
-      "durationMs": 1653,
-      "bytes": 13869,
-      "sha256": "41066b06279bc9d4751ffd482566d58de10056dd51cc4c3b3eba6041d4604bf4"
+      "durationMs": 1947,
+      "bytes": 16365,
+      "sha256": "e35b4d439c2aecd8ce5479a5cb41bab51a135275fdf634819427f3f866aab3b8"
     },
     {
       "id": "provenance-voice-opening-04",
@@ -57,9 +57,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-04.mp3",
-      "durationMs": 13203,
-      "bytes": 106413,
-      "sha256": "66b0ed33dadfdfeb046f725d7f8689f4d59bdab361090c05345f490a0555d634"
+      "durationMs": 8190,
+      "bytes": 66285,
+      "sha256": "e6a4e73d378f13eb5f3d66eafb4c803bd5da3fc9745503680776a2b15d7f2f02"
     },
     {
       "id": "provenance-voice-opening-05",
@@ -72,9 +72,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-05.mp3",
-      "durationMs": 2379,
-      "bytes": 19821,
-      "sha256": "ec02ec5574b002803583ccb8493cbec6f3d2b41510a1f520f15362dad52d12f0"
+      "durationMs": 6149,
+      "bytes": 49965,
+      "sha256": "357214a0aa3d613a32f544719989b655a849edaefdfbf8c34cea5febb8bd2ea9"
     },
     {
       "id": "provenance-voice-opening-06",
@@ -87,9 +87,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-06.mp3",
-      "durationMs": 10070,
-      "bytes": 81261,
-      "sha256": "94bc711aaf1eeca47d83e206b60a5dde2e90690027ed605dc01629be702365fe"
+      "durationMs": 1653,
+      "bytes": 13869,
+      "sha256": "9bdb1c3cb1dda918d4a9346d0f1b84478d6d0dc2534aff24a8d1619c9f9bdb1d"
     },
     {
       "id": "provenance-voice-opening-07",
@@ -102,9 +102,9 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-07.mp3",
-      "durationMs": 3445,
-      "bytes": 28269,
-      "sha256": "12b8ab92d110a3242743addada37edf700c57ff76d6169a34dcc9a675b8f70f3"
+      "durationMs": 2245,
+      "bytes": 18669,
+      "sha256": "81843d187c2f953306b2876faa0a252f451f22e07180e98f84aadfc13851f38f"
     },
     {
       "id": "provenance-voice-opening-08",
@@ -117,9 +117,99 @@
       "runtimeLicense": "MIT",
       "commercialDistribution": true,
       "src": "/audio/chronicle1/voice/en/voice-opening-08.mp3",
+      "durationMs": 3293,
+      "bytes": 27117,
+      "sha256": "c365b127569a445645a725995ffa3c694de7ba43725b3da6ebf62f39480f77d5"
+    },
+    {
+      "id": "provenance-voice-opening-09",
+      "assetId": "voice-opening-09",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-09.mp3",
+      "durationMs": 7665,
+      "bytes": 62061,
+      "sha256": "0fbe56e09850dc7ca1c9d4d8f956f9a34a2c3e26af307798f644b0b2becd5fdf"
+    },
+    {
+      "id": "provenance-voice-opening-10",
+      "assetId": "voice-opening-10",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-10.mp3",
+      "durationMs": 2379,
+      "bytes": 19821,
+      "sha256": "84b9ee6bd4dfbfd18984cb902554507c8cf3f8c4c4afa9d70ac7b95859021a7d"
+    },
+    {
+      "id": "provenance-voice-opening-11",
+      "assetId": "voice-opening-11",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-11.mp3",
+      "durationMs": 3794,
+      "bytes": 31149,
+      "sha256": "5ca595f8aa75dadcc1b3f14630ad929f4c8be52ecd384c9b7185f831a38e668c"
+    },
+    {
+      "id": "provenance-voice-opening-12",
+      "assetId": "voice-opening-12",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-12.mp3",
+      "durationMs": 6277,
+      "bytes": 50925,
+      "sha256": "5580cbafe0911394775f4d3445bf6f9a97a21b1822e2c9677f306622b4d2426d"
+    },
+    {
+      "id": "provenance-voice-opening-13",
+      "assetId": "voice-opening-13",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-13.mp3",
+      "durationMs": 3445,
+      "bytes": 28269,
+      "sha256": "2ca94d3f18c20dfd175646b98c8c753415e973784caf395262551515b945069f"
+    },
+    {
+      "id": "provenance-voice-opening-14",
+      "assetId": "voice-opening-14",
+      "speaker": "Eldrin",
+      "voice": "bm_george",
+      "engine": "kokoro-onnx-0.6.1",
+      "model": "Kokoro-82M-v1.0",
+      "modelLicense": "Apache-2.0",
+      "runtimeLicense": "MIT",
+      "commercialDistribution": true,
+      "src": "/audio/chronicle1/voice/en/voice-opening-14.mp3",
       "durationMs": 2709,
       "bytes": 22317,
-      "sha256": "1c6145d4bc41dfcd31189c33882258977a912618e98482dcb5f2fabd761bf36a"
+      "sha256": "138762abc2fa7c3fb89561aa5388468c0aea3bd5d7152a13b8c124f140f2a911"
     },
     {
       "id": "provenance-voice-ch01-main-a-banner-placed-too-neatly",

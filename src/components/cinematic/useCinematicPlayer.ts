@@ -23,6 +23,10 @@ interface VolumeSettings {
   readonly sfxVolume: number;
 }
 
+type TimelineAwareAudioPort = CinematicAudioPort & {
+  readonly sync?: (positionMs: number) => void;
+};
+
 function clampPosition(positionMs: number, durationMs: number): number {
   return Math.min(durationMs, Math.max(0, positionMs));
 }
@@ -147,6 +151,7 @@ export function useCinematicPlayer(
       if (!active || statusRef.current !== 'playing') return;
       const next = clampPosition(timestamp - startedAtRef.current, sequence.durationMs);
       positionRef.current = next;
+      (audio as TimelineAwareAudioPort).sync?.(next);
       setPositionMs(next);
       if (next >= sequence.durationMs) {
         frameRef.current = null;

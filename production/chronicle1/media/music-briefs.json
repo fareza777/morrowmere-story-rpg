@@ -21,9 +21,9 @@
     {
       "id": "music-opening-score",
       "root": 43,
-      "mood": "roadside resolve growing into conspiracy and pursuit",
-      "intensity": 0.58,
-      "accent": "low strings, wooden flute, frame drums, restrained bell",
+      "mood": "quiet road duty rising into urgent pursuit and resolve",
+      "intensity": 0.68,
+      "accent": "medieval strings and flute crossfading into full orchestral percussion",
       "motif": [
         0,
         2,
@@ -34,7 +34,7 @@
         -2,
         0
       ],
-      "durationMs": 105000,
+      "durationMs": 83000,
       "loop": false,
       "dynamicOpening": true
     },

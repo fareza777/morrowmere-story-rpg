@@ -296,28 +296,11 @@ export function selectCampView(state: GameStateV2, content: ContentIndex): CampV
   };
 }
 
-function weightLabel(weight: number, noun: string): string {
-  if (weight <= 0) return `No ${noun}`;
-  if (weight === 1) return `Limited ${noun}`;
-  if (weight === 2) return `Regular ${noun}`;
-  return `Frequent ${noun}`;
-}
-
 function routeOption(route: (typeof CHRONICLE1_ROUTES)[number]): RouteOptionViewModel {
-  const riskLabel = route.danger === 1
-    ? 'Lower danger'
-    : route.danger === 2
-      ? 'Ambush risk · Moderate danger'
-      : 'High danger';
   return {
     id: route.id,
     label: route.label,
     description: route.description,
-    riskLabel,
-    recoveryLabel: weightLabel(route.recoveryWeight, 'recovery'),
-    tradeLabel: weightLabel(route.merchantWeight, 'trade'),
-    companionLabel: weightLabel(route.companionWeight, 'companion events'),
-    relicLabel: weightLabel(route.relicWeight, 'relic finds'),
   };
 }
 

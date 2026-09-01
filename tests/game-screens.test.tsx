@@ -61,10 +61,10 @@ describe('camp, route, and story screens', () => {
     expect(screen.queryByRole('button', { name: 'Save & Exit' })).not.toBeInTheDocument();
   });
 
-  it('shows understandable risk before choosing one of three routes', async () => {
+  it('presents three atmospheric roads without forecasting outcomes', async () => {
     const user = userEvent.setup();
     const onChooseRoute = vi.fn();
-    render(
+    const { container } = render(
       <RouteScreen
         view={selectRouteView(makeUiGame({ screen: 'camp' }), UI_CONTENT)}
         onChooseRoute={onChooseRoute}
@@ -73,9 +73,16 @@ describe('camp, route, and story screens', () => {
     );
 
     expect(screen.getByRole('img', { name: /lone traveller/i })).toHaveAttribute('src', '/assets/chronicle1/hubs/three-roads-crossroads.webp');
-    expect(screen.getByRole('button', { name: /King's Road/i })).toHaveTextContent('Lower danger');
-    expect(screen.getByRole('button', { name: /Old Forest/i })).toHaveTextContent('Ambush risk');
-    expect(screen.getByRole('button', { name: /Ruined Pass/i })).toHaveTextContent('High danger');
+    expect(screen.getByText('Three old roads lead onward, each remembered differently in the villages of Morrowmere.')).toBeVisible();
+    const routeButtons = screen.getAllByRole('button').filter((button) => button.classList.contains('route-card'));
+    expect(routeButtons).toHaveLength(3);
+    expect(routeButtons[0]).toHaveTextContent('Built for royal couriers');
+    expect(routeButtons[1]).toHaveTextContent('moss-dark paths');
+    expect(routeButtons[2]).toHaveTextContent('shattered watchtowers');
+    expect(container).not.toHaveTextContent(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|suppl(?:y|ies)|people)\b/i);
+    for (const button of routeButtons) {
+      expect(button).not.toHaveAccessibleName(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|suppl(?:y|ies)|people)\b/i);
+    }
     await user.click(screen.getByRole('button', { name: /Ruined Pass/i }));
     expect(onChooseRoute).toHaveBeenCalledWith('ruined-pass');
   });

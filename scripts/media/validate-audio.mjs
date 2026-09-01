@@ -145,8 +145,18 @@ async function main() {
 
     const record = provenanceById.get(asset.provenanceId);
     assert(record?.assetId === asset.id, `${asset.id} has missing or mismatched provenance.`);
-    assert(record.generator === 'morrowmere-procedural-audio-v1', `${asset.id} must identify the project generator.`);
-    assert(record.commercialDistribution === true && record.externalSource === null, `${asset.id} is not cleared for original commercial distribution.`);
+    const isOriginal = record.generator === 'morrowmere-procedural-audio-v1' && record.externalSource === null;
+    const isClearedRemaster = record.generator === 'morrowmere-cc0-remaster-v1'
+      && Array.isArray(record.externalSource)
+      && record.externalSource.length > 0
+      && record.externalSource.every((source) => (
+        source.license === 'CC0-1.0'
+        && source.licenseUrl === 'https://creativecommons.org/publicdomain/zero/1.0/'
+        && /^https:\/\/opengameart\.org\/content\/[a-z0-9-]+$/.test(source.sourceUrl)
+        && /^https:\/\/opengameart\.org\/sites\/default\/files\/.+/.test(source.downloadUrl)
+      ));
+    assert(isOriginal || isClearedRemaster, `${asset.id} does not have cleared original or CC0 provenance.`);
+    assert(record.commercialDistribution === true, `${asset.id} is not cleared for commercial distribution.`);
     assert(HASH_PATTERN.test(record.sourceMasterSha256), `${asset.id} source-master hash is invalid.`);
     assert(record.outputSha256 === asset.sha256, `${asset.id} provenance output hash differs.`);
 
@@ -174,10 +184,14 @@ async function main() {
   }
 
   const groupCounts = Object.fromEntries(['opening', 'main', 'companion'].map((group) => [group, voiceScript.cues.filter((cue) => cue.group === group).length]));
-  assert(JSON.stringify(groupCounts) === JSON.stringify({ opening: 8, main: 16, companion: 8 }), 'Voice script must contain 8 opening, 16 main, and 8 companion cues.');
+  assert(JSON.stringify(groupCounts) === JSON.stringify({ opening: 14, main: 16, companion: 8 }), 'Voice script must contain 14 opening, 16 main, and 8 companion cues.');
   const openingVoice = voiceScript.cues.filter((cue) => cue.group === 'opening');
   assert(openingVoice[0].startMs === 0 && openingVoice.at(-1).endMs === openingTimeline.durationMs, 'Opening voice timing must fill the cinematic without overrunning it.');
   assert(openingVoice.slice(1).every((cue, index) => cue.startMs === openingVoice[index].endMs), 'Opening voice timing must be ordered and contiguous.');
+  assert(openingVoice.every((cue, index) => (
+    cue.startMs === openingTimeline.shots[index]?.startMs
+    && cue.endMs === openingTimeline.shots[index]?.endMs
+  )), 'Every opening voice cue must align to exactly one visual shot.');
   assert(voiceScript.cues.filter((cue) => cue.group === 'main').every((cue) => cue.sceneId.includes('-main-')), 'Main voice cues must reference main scenes.');
   assert(voiceScript.cues.filter((cue) => cue.group === 'companion').every((cue) => cue.sceneId.includes('-companion-')), 'Companion voice cues must reference companion scenes.');
   const companionSpeakers = Object.fromEntries(['Mara', 'Rukhar', 'Caldus', 'Lyra', 'Talla'].map((speaker) => [speaker, voiceScript.cues.filter((cue) => cue.group === 'companion' && cue.speaker === speaker).length]));
@@ -200,11 +214,11 @@ async function main() {
   }
 
   const actualFiles = await listMp3(AUDIO_ROOT);
-  assert(actualFiles.length === 129, `Expected exactly 129 shipped MP3 files; found ${actualFiles.length}.`);
+  assert(actualFiles.length === 135, `Expected exactly 135 shipped MP3 files; found ${actualFiles.length}.`);
   assert(actualFiles.every((path) => expectedFiles.has(path)), 'The shipped audio directory contains an orphan MP3.');
   assert(totalBytes < 55 * 1024 * 1024, `Audio pack is ${totalBytes} bytes; budget is 55 MiB.`);
 
-  process.stdout.write(`Audio validation passed: 13 music, 84 SFX, 32 voice clips, 129 decoded MP3 files, ${totalBytes} bytes.\n`);
+  process.stdout.write(`Audio validation passed: 13 music, 84 SFX, 38 voice clips, 135 decoded MP3 files, ${totalBytes} bytes.\n`);
 }
 
 main().catch((error) => {

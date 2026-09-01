@@ -1,7 +1,7 @@
 {
   "name": "morrowmere",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "content:export": "node scripts/content/export-chronicle1-manifest.mjs",
     "audio:generate": "node scripts/media/generate-offline-audio.mjs",
     "audio:validate": "node scripts/media/validate-audio.mjs && vitest run --pool=threads tests/media/audio.test.ts",
+    "art:validate": "node scripts/media/validate-scene-art.mjs",
     "voice:generate": "node scripts/media/generate-elevenlabs-voice.mjs --execute",
     "test:e2e": "playwright test",
     "android:sync": "npm run build:android && cap sync android",

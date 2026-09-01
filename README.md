@@ -67,7 +67,7 @@ Device-test artifacts are copied to `release/`. A Play Store upload still requir
 - Product name: `MORROWMERE`
 - Subtitle: `A Sword & Sorcery Chronicle`
 - Android application ID: `com.morrowmere.game`
-- Version: `1.2.2` (`versionCode 6`)
+- Version: `1.3.0` (`versionCode 7`)
 - Minimum Android: API 24
 - Target Android: API 36
 

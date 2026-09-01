@@ -5,6 +5,7 @@ import { useCinematicPlayer } from './useCinematicPlayer';
 
 const FINAL_TITLE_HOLD_MS = 1_250;
 const CONTROLS_IDLE_MS = 3_000;
+const SHOT_CROSSFADE_MS = 700;
 
 export interface OpeningCinematicProps {
   readonly sequence: CinematicSequence;
@@ -54,6 +55,7 @@ export function OpeningCinematic({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const shot = sequence.shots[player.shotIndex] ?? sequence.shots[0];
+  const previousShot = player.shotIndex > 0 ? sequence.shots[player.shotIndex - 1] : undefined;
 
   useEffect(() => {
     setCaptionsVisible(settings.captions);
@@ -85,6 +87,11 @@ export function OpeningCinematic({
   const complete = player.status === 'complete';
   const preloading = player.status === 'preloading';
   const durationSeconds = Math.max(1, (shot.endMs - shot.startMs) / 1000);
+  const showOutgoingShot = Boolean(
+    !settings.reducedMotion
+    && previousShot
+    && player.positionMs - shot.startMs < SHOT_CROSSFADE_MS,
+  );
 
   const skip = () => {
     player.stop();
@@ -110,7 +117,22 @@ export function OpeningCinematic({
         data-testid="opening-visual"
         style={{ '--shot-duration': `${durationSeconds}s` } as CSSProperties}
       >
-        <img key={`${player.runId}:${shot.id}`} src={shot.imageId} alt={shot.alt} onError={player.fail} />
+        {showOutgoingShot && previousShot && (
+          <img
+            key={`${player.runId}:${previousShot.id}:outgoing`}
+            className={`opening-image-outgoing outgoing-motion-${previousShot.motion}`}
+            src={previousShot.imageId}
+            alt=""
+            aria-hidden="true"
+          />
+        )}
+        <img
+          key={`${player.runId}:${shot.id}:current`}
+          className="opening-image-current"
+          src={shot.imageId}
+          alt={shot.alt}
+          onError={player.fail}
+        />
         {player.shotIndex === sequence.shots.length - 1 && (
           <div className="opening-title-card">
             <strong>MORROWMERE</strong>

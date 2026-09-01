@@ -66,7 +66,7 @@ describe('Chronicle I offline audio pack', () => {
       asset.loopStartMs !== null && asset.loopEndMs !== null && asset.loopEndMs > asset.loopStartMs + 30_000
     ))).toBe(true);
     expect(MUSIC_ASSETS.filter((asset) => !asset.loop).map((asset) => [asset.id, asset.durationMs])).toEqual([
-      ['music-opening-score', 105_000],
+      ['music-opening-score', 83_000],
     ]);
     expect(SFX_ASSETS.every((asset) => asset.durationMs >= 40 && asset.durationMs <= 20_000)).toBe(true);
     expect([...MUSIC_ASSETS, ...SFX_ASSETS].every((asset) => asset.provenance.commercialDistribution)).toBe(true);
@@ -165,13 +165,15 @@ describe('Chronicle I offline audio pack', () => {
     expect(audio.some((element) => element.src === '/audio/chronicle1/music/music-title.mp3' && element.playCount > 0)).toBe(true);
     expect(audio.some((element) => element.src === OPENING_VOICE_CUES[0]?.audioSrc && element.playCount > 0)).toBe(true);
     expect(spoken).toEqual(['Keep the road open.']);
-    vi.advanceTimersByTime(1_000);
+    const sync = (port as typeof port & { readonly sync?: (positionMs: number) => void }).sync;
+    expect(sync).toBeTypeOf('function');
+    sync?.(1_000);
     expect(audio.some((element) => element.src.endsWith('/sfx-arrow-hit.mp3') && element.playCount > 0)).toBe(true);
     port.stop();
   });
 
-  it('locks a caption-identical 8 + 16 + 8 voice script without shipping credentials', () => {
-    expect(VOICE_SCRIPT.filter((cue) => cue.group === 'opening')).toHaveLength(8);
+  it('locks a shot-aligned 14 + 16 + 8 voice script without shipping credentials', () => {
+    expect(VOICE_SCRIPT.filter((cue) => cue.group === 'opening')).toHaveLength(14);
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'main')).toHaveLength(16);
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'companion')).toHaveLength(8);
     expect(VOICE_SCRIPT.filter((cue) => cue.group === 'main').every((cue) => cue.sceneId?.includes('-main-'))).toBe(true);
@@ -186,11 +188,11 @@ describe('Chronicle I offline audio pack', () => {
       && cue.audioSrc?.startsWith('/audio/chronicle1/voice/en/')
       && cue.audioSrc.endsWith('.mp3')
     ))).toBe(true);
-    expect(OPENING_VOICE_CUES).toHaveLength(8);
+    expect(OPENING_VOICE_CUES).toHaveLength(14);
     expect(OPENING_VOICE_CUES.map((cue) => cue.spokenText)).toEqual(OPENING_NARRATION);
-    expect(OPENING_VOICE_CUES[0]?.startMs).toBe(0);
-    expect(OPENING_VOICE_CUES.at(-1)?.endMs).toBe(OPENING_SEQUENCE.durationMs);
-    expect(OPENING_VOICE_CUES.slice(1).every((cue, index) => cue.startMs === OPENING_VOICE_CUES[index]?.endMs)).toBe(true);
+    expect(OPENING_VOICE_CUES.map((cue) => [cue.startMs, cue.endMs])).toEqual(
+      OPENING_SEQUENCE.shots.map((shot) => [shot.startMs, shot.endMs]),
+    );
     expect(JSON.stringify({ script: VOICE_SCRIPT, profiles: VOICE_PROFILES })).not.toMatch(CREDENTIAL_PATTERN);
   });
 });

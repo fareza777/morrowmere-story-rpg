@@ -15,13 +15,30 @@
     {
       "id": "provenance-music-opening-score",
       "assetId": "music-opening-score",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "e5168d61f25d4b02e3f36c385639e8cc6efe0b9d21acbd40382a22bc9a8ceeac",
-      "outputSha256": "f3b27648f4693ca6db19383e453366b2ae28d346c21556e877d6d589859a98a6",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "f7dfe551c30fb62403b1c13e51cf8a8877f275579a75c239ff9fa463c4a111c3",
+      "outputSha256": "d223952a63fc6325330589940990a1e00b1771b099ef9ea871c2ffff089bd782",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "Medieval: Exploration",
+          "author": "RandomMind",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/medieval-exploration",
+          "downloadUrl": "https://opengameart.org/sites/default/files/Exploration_0.mp3"
+        },
+        {
+          "title": "A Legend Will Rise (Orchestral)",
+          "author": "CodeManu",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/a-legend-will-rise-orchestral",
+          "downloadUrl": "https://opengameart.org/sites/default/files/A%20Legend%20Will%20Rise.mp3"
+        }
+      ]
     },
     {
       "id": "provenance-music-camp",
@@ -147,57 +164,102 @@
     {
       "id": "provenance-sfx-sword-light-1",
       "assetId": "sfx-sword-light-1",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "df0e72340182b2a1b89cb19059cf26b031567b9f8145a932c60f1dfd57953e15",
-      "outputSha256": "98ef9c5ccf8db5365ed5f07d16f7bcc77e54a8af2f957184b0b045c8d309f219",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "4a3e80705619cbd7500682ab51004011ddf67e14ccf1818ceb9e5b539fe42b75",
+      "outputSha256": "5796e2d371cc2a01e307ec356af7351ebd4c2f6e53ce341b921345fd02d77a8c",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-sword-light-2",
       "assetId": "sfx-sword-light-2",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "5c8093e655e8f0a8521a15cd13ccb1e164ae99627542a17fcf7f12a0b4baeac9",
-      "outputSha256": "f67daaca6d5a51b1cea090c393ba1d9bb30c5dba20694295013b333ade3008c8",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "e74221f6cec0acaa7c19095618c683c3cdc1741f02193b61cb28a2ec56cbfce2",
+      "outputSha256": "a2d59b1eb437eac513b67f44e7bcc546300acc224934c50f0632904b04d35b1f",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-sword-light-3",
       "assetId": "sfx-sword-light-3",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "efe1bfbdcf418fc49e7f47d66b981c889359621ce446738e9ae180845a82bd0b",
-      "outputSha256": "775c431752d2619e1767b4836f9e85a56816ec251d5be9e0d7f8ffd95672af00",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "ce09eb2987531d1323415065d7811a9cf0ea8639766d9fa77655d602e7e14989",
+      "outputSha256": "27c2dce16d7861b2fad72c9534ab5e3ef78ed40e79a3d082e48cf2aedc6426af",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-sword-heavy-1",
       "assetId": "sfx-sword-heavy-1",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "7ed5f3b08f1c4294ce1b5ef5990e128e075e90efcb09c1156588520cb804b847",
-      "outputSha256": "7abc93612c16f5055ece784c4ddbd4abfe854845f46bde946f9288581f298464",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "11d11e060c3172cf0573620e9c6f57855eca017c7ab4a995a1aa276f176eb4b7",
+      "outputSha256": "a474a8d56c4776dd744208db62dbd46ff7b0dbca49c27d122cbdfa4a7c419922",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-sword-heavy-2",
       "assetId": "sfx-sword-heavy-2",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "027a9dc74fa468992a3c9472f8e27515d4bb09ce714455bafc8b716ffe32a2b1",
-      "outputSha256": "d60660ed50188c2183bf86f16ec466cdeb77fe087c5b3f291b9de37bec1de320",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "530bf3daac9e21ba7f8414291820bc8c26f3522ecbda8f00e6454b1cef74cd07",
+      "outputSha256": "53823f715332c1681568d242e854bb5c5d19e99a65f90648922fdc335cce39bb",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-axe-hit-1",
@@ -246,112 +308,202 @@
     {
       "id": "provenance-sfx-bow-release",
       "assetId": "sfx-bow-release",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "bcce6ee93664c9208945208b7c8bc0f6490f7e0f53e02d0412a087e5e636ac29",
-      "outputSha256": "7e19d12d1b28d70c08689eeb7e4a06509bb78150c0a34cdf955ce5c9fad21b81",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "0dc8cf132cf583563936ac3a4d776e196210d5f6703b4ebdd7c68e8f35b9f3e3",
+      "outputSha256": "1a26e9ce319b3c8f203d3ca77e0f61a954c29c4d46c81b3e85c15a7347959b7b",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "Battle Sound Effects",
+          "author": "artisticdude",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/battle-sound-effects",
+          "downloadUrl": "https://opengameart.org/sites/default/files/battle_sound_effects_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-arrow-hit",
       "assetId": "sfx-arrow-hit",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "783b56ea7036947f7ecdaa7c9afd84c2904695b644a7439b994af26e15c8728e",
-      "outputSha256": "3f1483f692bb054074ff4b1c762e85a2a083fe587766d6d8bcdb7e5d1da30c95",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "0dc8cf132cf583563936ac3a4d776e196210d5f6703b4ebdd7c68e8f35b9f3e3",
+      "outputSha256": "764ef2577fbef4afa78714d9bb5be0f929077d9c1bfd23f5de2b4fbe94bed1d3",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "Battle Sound Effects",
+          "author": "artisticdude",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/battle-sound-effects",
+          "downloadUrl": "https://opengameart.org/sites/default/files/battle_sound_effects_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-arrow-miss",
       "assetId": "sfx-arrow-miss",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "8bf214a85c4715bd264a2aac786f173c276874bfdfbb30ada0a3f2596c657286",
-      "outputSha256": "42b61ac20ec88ec1e1489cacd9f154b5529fa2c2d5e0977576888ee70dc13d62",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "690725fd44a99a4abd32d59c0efe8e28486afb564d3f5710cca75a2c786cf0f1",
+      "outputSha256": "3787e3d9251c5319e37ae10c4d86378760bd9202affc41354800ff5d5a0cff52",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "Battle Sound Effects",
+          "author": "artisticdude",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/battle-sound-effects",
+          "downloadUrl": "https://opengameart.org/sites/default/files/battle_sound_effects_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-shield-block-1",
       "assetId": "sfx-shield-block-1",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "cbcb8970fffe82f6d4940d0f8f7aed2cb4665ef88e73c7fc9afa4f8590a86c7b",
-      "outputSha256": "fdfdc484bacd84dac56269cefbad7b162a25fcd227ffba102edf9d722bdd316c",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "5c5e78e466ba78fe2414f2b7a2a6eb674822ccfc8a8bc9fda32be22f5dde5e69",
+      "outputSha256": "85fa4ec43a8862f992c0afca01272c9bb3a58598382a107e1f2415319575d130",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-shield-block-2",
       "assetId": "sfx-shield-block-2",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "13a64ac41837ccdc1ff8272f790d9d490856af25b9f3547c6081ac98d555a865",
-      "outputSha256": "b5b9e59381df7dfe79d7feb05be81adebc6bebed4a9d34a1fc0f93df2080f254",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "e09f222b70d53f2967514d076e2ae50c21526ac640fe4919965f964af043da1a",
+      "outputSha256": "c898b6eb2c7cadd6a76f69a18f500c58925ff38e2291809fd05ccd365ec63a34",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-shield-block-3",
       "assetId": "sfx-shield-block-3",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "771ad9d5e56e05978b4de0153e3773dc540e4f700fd0d09f4ca15e93189432df",
-      "outputSha256": "3add0a097a22a692f6f3b2f1958bcacde04d02cdb96be96cf720802f4d800519",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "6c588bc79b7e4fe202e3b65fa849954d684d2d2342f6ad04813540854c421663",
+      "outputSha256": "8877eeada20d08512988f2a0a947069bb16cc5179dad7c602a6efcabe5123ce8",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-parry-1",
       "assetId": "sfx-parry-1",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "e6b7b89a01374a5a6f356214aec89de6778cef8d936506c842355cdd980f04fb",
-      "outputSha256": "3886c2d2519c586c9ae5bb8839f91b6d75299e37216e4ad94c328aacaf28de5d",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "4c2c962f8703882b8a6f863c1f5a35c6ae518d0281755fac9a13e63a73b86fa5",
+      "outputSha256": "653bbb341753be598db690cd1e48fc11509a76f6480e28a405d76304e233c63f",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-parry-2",
       "assetId": "sfx-parry-2",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "7ec772ac7c7d25587388e26d07f66e7f6d037f464c95e0b30bf684bc1d3c7ed4",
-      "outputSha256": "6a5a3c998cf8e3e47c54090094de348aed47b614bd90d4ce8d248b70bf09d542",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "09e36369f2556e6a234ce78ec797447518ef7671f8224fc64747a7fa66ea229a",
+      "outputSha256": "ea45d1cd0fac38b5d895e8e5bf7e2011ada0ae7d54c86c8418d8192b22c45da8",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-armor-hit-1",
       "assetId": "sfx-armor-hit-1",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "334b025f57597e1f65d2b6ddd4b0efa7f043a28181580d9d798dcbcf64ec75ab",
-      "outputSha256": "e3bb1f5aa11c5286c386194f21361bfa78a8470002731c77bfc0c300866fefe6",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "4c7643dbcd813eb614a56451652987d37ba587fac3309303aa0ab9a27d3a7e71",
+      "outputSha256": "fb1e03ad7eb3a3aa6e0ad3787babd4ef3542c9c1b6212e402b5fc1ddc21d8390",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-armor-hit-2",
       "assetId": "sfx-armor-hit-2",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "3d2e2337370302c48919b2c60745b94b16c509877bb47631aabae4ad43f3e9d2",
-      "outputSha256": "98be008939342447e6f95c67a8fd47f68c7f7570077c0d0ce8dafd4e88130480",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "6763e519e7b31250a78f514d2b8b4f4e73a3bb105c980844ea687d698364b80c",
+      "outputSha256": "1d9cacbec799cd30d9a2e4eb4a4dc9cb0369934938d17770bb5ff44cc7714ddc",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_clash_-_starninjas_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-guard-set",
@@ -950,24 +1102,42 @@
     {
       "id": "provenance-sfx-combat-miss",
       "assetId": "sfx-combat-miss",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "41203e4026b89b30764d828c4bb15e25b0a6a91210efe953a7cb686826702723",
-      "outputSha256": "06184b082cd8f61bfcda1befd3b9975a0637cd82e11a0c62a90c956f60d9ccc5",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "7767c7b6ba063d8d5de6e05ba29c037af5c4a19d02b00b6b5ff398f72732e1c9",
+      "outputSha256": "5744088af15b44f43b951085a894f6818e8c80acc632d9bc31360ebf8ffbf8a9",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "Battle Sound Effects",
+          "author": "artisticdude",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/battle-sound-effects",
+          "downloadUrl": "https://opengameart.org/sites/default/files/battle_sound_effects_0.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-combat-critical",
       "assetId": "sfx-combat-critical",
-      "generator": "morrowmere-procedural-audio-v1",
+      "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "aff13baeca3363c94459b5a976d32a393f425ac17679f0fb5b4ced8095a01afd",
-      "outputSha256": "71e0739cd8b2132703fc3758a8f079bf43a6b6c1ef5b7bd40ba05ec789b09f32",
-      "licenseBasis": "Project-owned original procedural synthesis; commercial Google Play distribution permitted.",
+      "sourceMasterSha256": "5b6eaaac9c552ce364cfdea3c12cef846c89796fc9bb880181615f43ee4e4779",
+      "outputSha256": "1b6088cc6f5f4c76e52a6f2608e7f21b66a4e47a9c0a5ad0f2c1e2bfab4de96d",
+      "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
-      "externalSource": null
+      "externalSource": [
+        {
+          "title": "20 Sword Sound Effects (Attacks and Clashes)",
+          "author": "StarNinjas",
+          "license": "CC0-1.0",
+          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+          "sourceUrl": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes",
+          "downloadUrl": "https://opengameart.org/sites/default/files/sword_-_starninjas_1.zip"
+        }
+      ]
     },
     {
       "id": "provenance-sfx-combat-flee",

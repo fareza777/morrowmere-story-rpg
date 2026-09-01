@@ -95,13 +95,26 @@ describe('Chronicle I UI selectors', () => {
     expect(view.activeCompanion?.name).toBe('Mara Venn');
   });
 
-  it('uses the immutable Chronicle route catalog for understandable risk labels', () => {
+  it('keeps route choices atmospheric without forecasting outcomes', () => {
     const view = selectRouteView(makeUiGame({ screen: 'camp' }), UI_CONTENT);
 
-    expect(view.routes.map((route) => [route.label, route.riskLabel])).toEqual([
-      ["The King's Road", 'Lower danger'],
-      ['The Old Forest', 'Ambush risk · Moderate danger'],
-      ['The Ruined Pass', 'High danger'],
+    expect(view.routes).toEqual([
+      {
+        id: 'kings-road',
+        label: "The King's Road",
+        description: 'Built for royal couriers, its broad stones cross wind-bent fields between weathered mileposts and fallen statues.',
+      },
+      {
+        id: 'old-forest',
+        label: 'The Old Forest',
+        description: 'Older than the kingdom, its moss-dark paths wind beneath ancient oaks, a place spoken of softly after dusk.',
+      },
+      {
+        id: 'ruined-pass',
+        label: 'The Ruined Pass',
+        description: 'Once the northern road, it climbs between shattered watchtowers and bare crags under a sky that always feels like winter.',
+      },
     ]);
+    expect(JSON.stringify(view.routes)).not.toMatch(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|suppl(?:y|ies)|people)\b/i);
   });
 });

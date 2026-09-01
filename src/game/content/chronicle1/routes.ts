@@ -12,7 +12,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'kings-road',
     label: "The King's Road",
-    description: 'Lower risk, frequent merchants, and reliable recovery.',
+    description: 'Built for royal couriers, its broad stones cross wind-bent fields between weathered mileposts and fallen statues.',
     danger: 1,
     recoveryWeight: 3,
     merchantWeight: 3,
@@ -22,7 +22,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'old-forest',
     label: 'The Old Forest',
-    description: 'Balanced danger with companion and exploration opportunities.',
+    description: 'Older than the kingdom, its moss-dark paths wind beneath ancient oaks, a place spoken of softly after dusk.',
     danger: 2,
     recoveryWeight: 2,
     merchantWeight: 1,
@@ -32,7 +32,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'ruined-pass',
     label: 'The Ruined Pass',
-    description: 'High-risk relic hunting with scarce recovery and trade.',
+    description: 'Once the northern road, it climbs between shattered watchtowers and bare crags under a sky that always feels like winter.',
     danger: 3,
     recoveryWeight: 1,
     merchantWeight: 0,

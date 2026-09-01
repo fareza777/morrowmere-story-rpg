@@ -128,11 +128,6 @@ export interface RouteOptionViewModel {
   readonly id: RouteProfileId;
   readonly label: string;
   readonly description: string;
-  readonly riskLabel: string;
-  readonly recoveryLabel: string;
-  readonly tradeLabel: string;
-  readonly companionLabel: string;
-  readonly relicLabel: string;
 }
 
 export interface RouteViewModel {

@@ -47,6 +47,7 @@ export interface NarrationOptions {
   readonly audioSrc?: string | null;
   readonly offsetMs?: number;
   readonly reportFailure?: boolean;
+  readonly holdMusicDucking?: boolean;
 }
 
 export interface MusicPlaybackOptions {
@@ -151,7 +152,11 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     readonly loopEndMs: number;
   } | null = null;
   let ambience: { readonly id: string; readonly element: AudioElementLike } | null = null;
-  let narration: { readonly element: AudioElementLike; detach(): void } | null = null;
+  let narration: {
+    readonly element: AudioElementLike;
+    readonly holdMusicDucking: boolean;
+    detach(): void;
+  } | null = null;
   let musicDucked = false;
   let resumeMusic = false;
   let resumeAmbience = false;
@@ -179,8 +184,10 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     narration = null;
     active.detach();
     if (pause) safePause(element);
-    musicDucked = false;
-    applyMusicVolume();
+    if (!active.holdMusicDucking) {
+      musicDucked = false;
+      applyMusicVolume();
+    }
   };
 
   const stopNarrationFile = (): void => {
@@ -218,6 +225,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     }
     if (!settings.voiceEnabled || settings.voiceVolume === 0) {
       stopNarrationFile();
+      musicDucked = false;
+      applyMusicVolume();
       try { localSpeech?.cancel(); } catch { /* Local narration is optional. */ }
     }
   };
@@ -369,6 +378,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     };
     const active = {
       element: clip,
+      holdMusicDucking: options.holdMusicDucking ?? false,
       detach(): void {
         try { clip.removeEventListener?.('ended', ended); } catch { /* Optional audio. */ }
         try { clip.removeEventListener?.('error', failed); } catch { /* Optional audio. */ }
@@ -398,6 +408,8 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
 
   const cancelNarration = (): void => {
     stopNarrationFile();
+    musicDucked = false;
+    applyMusicVolume();
     try { localSpeech?.cancel(); } catch { /* Optional narration. */ }
   };
 
@@ -485,43 +497,73 @@ export function createFeedbackAudioPort(service: AudioService): { consume(cues: 
   };
 }
 
-export function createCinematicAudioPort(service: AudioService): CinematicAudioPort {
-  let timers: ReturnType<typeof setTimeout>[] = [];
+export interface TimelineCinematicAudioPort extends CinematicAudioPort {
+  sync(positionMs: number): void;
+}
 
-  const clearTimers = (): void => {
-    timers.forEach((timer) => clearTimeout(timer));
-    timers = [];
+interface ActiveCinematicTimeline {
+  readonly sequence: CinematicSequence;
+  readonly generation: number;
+  positionMs: number;
+  ready: boolean;
+  voiceCueId: string | null;
+}
+
+const CINEMATIC_SFX_GAIN = 0.55;
+const CINEMATIC_CUE_GRACE_MS = 500;
+
+export function createCinematicAudioPort(service: AudioService): TimelineCinematicAudioPort {
+  let generation = 0;
+  let timeline: ActiveCinematicTimeline | null = null;
+
+  const invalidateTimeline = (): void => {
+    generation += 1;
+    timeline = null;
     service.cancelNarration();
   };
 
-  const runOpeningVoice = (fromMs: number): Promise<void> => {
-    let immediate = Promise.resolve();
-    for (const cue of OPENING_VOICE_CUES) {
-      const startMs = cue.startMs ?? 0;
-      const endMs = cue.endMs ?? startMs;
-      if (endMs <= fromMs) continue;
-      const delay = Math.max(0, startMs - fromMs);
-      const speak = (reportFailure: boolean) => service.narrateCaption(cue.spokenText, {
-        speaker: cue.speaker,
-        audioSrc: cue.audioSrc,
-        offsetMs: Math.max(0, fromMs - startMs),
-        reportFailure,
-      });
-      if (delay === 0) immediate = speak(true);
-      else timers.push(setTimeout(() => { void speak(false); }, delay));
+  const voiceAt = (active: CinematicSequence, positionMs: number) => (
+    active.id === 'chronicle-1-opening'
+      ? OPENING_VOICE_CUES.find((cue) => {
+        const startMs = cue.startMs ?? 0;
+        const endMs = cue.endMs ?? startMs;
+        return startMs <= positionMs && positionMs < endMs;
+      })
+      : undefined
+  );
+
+  const syncVoice = (active: ActiveCinematicTimeline, reportFailure: boolean): Promise<void> => {
+    const cue = voiceAt(active.sequence, active.positionMs);
+    if (!cue) {
+      if (active.voiceCueId !== null) service.cancelNarration();
+      active.voiceCueId = null;
+      return Promise.resolve();
     }
-    return immediate;
+    if (active.voiceCueId === cue.id) return Promise.resolve();
+    active.voiceCueId = cue.id;
+    const startMs = cue.startMs ?? 0;
+    return service.narrateCaption(cue.spokenText, {
+      speaker: cue.speaker,
+      audioSrc: cue.audioSrc,
+      offsetMs: Math.max(0, active.positionMs - startMs),
+      reportFailure,
+      holdMusicDucking: true,
+    });
   };
 
-  const runShotCues = (active: CinematicSequence, fromMs: number): void => {
+  const runFreshShotCues = (
+    active: CinematicSequence,
+    previousMs: number,
+    positionMs: number,
+    includePrevious: boolean,
+  ): void => {
+    if (positionMs < previousMs) return;
     for (const shot of active.shots) {
-      if (shot.startMs < fromMs) continue;
+      const crossedStart = shot.startMs <= positionMs
+        && (shot.startMs > previousMs || (includePrevious && shot.startMs === previousMs));
+      if (!crossedStart || positionMs - shot.startMs > CINEMATIC_CUE_GRACE_MS) continue;
       const ids = [...new Set([...shot.sfxCueIds, ...(OPENING_SHOT_SFX[shot.id] ?? [])])];
-      if (ids.length === 0) continue;
-      const delay = Math.max(0, shot.startMs - fromMs);
-      const play = () => ids.forEach((id) => service.playSfx(id));
-      if (delay === 0) play();
-      else timers.push(setTimeout(play, delay));
+      ids.forEach((id) => service.playSfx(id, true, CINEMATIC_SFX_GAIN));
     }
   };
 
@@ -536,20 +578,51 @@ export function createCinematicAudioPort(service: AudioService): CinematicAudioP
       await service.preload([...(musicSrc ? [musicSrc] : []), ...sfx, ...voice]);
     },
     async play(active, fromMs): Promise<void> {
-      clearTimers();
+      invalidateTimeline();
+      const startPositionMs = Math.max(0, Math.min(active.durationMs, fromMs));
+      const current: ActiveCinematicTimeline = {
+        sequence: active,
+        generation,
+        positionMs: startPositionMs,
+        ready: false,
+        voiceCueId: null,
+      };
+      timeline = current;
       await service.playMusic(active.musicId, true, {
         loop: active.musicLoop ?? true,
-        positionMs: fromMs,
+        positionMs: startPositionMs,
         reportFailure: true,
         ...(active.musicSrc ? { src: active.musicSrc } : {}),
       });
-      const voice = active.id === 'chronicle-1-opening' ? runOpeningVoice(fromMs) : Promise.resolve();
-      runShotCues(active, fromMs);
+      if (timeline !== current || current.generation !== generation) return;
+      if (current.positionMs !== startPositionMs) service.seekMusic(current.positionMs);
+      current.ready = true;
+      const voice = syncVoice(current, true);
+      runFreshShotCues(active, startPositionMs, current.positionMs, true);
       await voice;
     },
-    pause(): void { clearTimers(); service.pauseAll(); },
-    seek(positionMs): void { clearTimers(); service.seekMusic(positionMs); },
-    stop(): void { clearTimers(); service.stopMusic(); },
+    sync(positionMs): void {
+      const current = timeline;
+      if (!current) return;
+      const nextPositionMs = Math.max(0, Math.min(current.sequence.durationMs, positionMs));
+      const previousMs = current.positionMs;
+      current.positionMs = nextPositionMs;
+      if (!current.ready) return;
+      if (nextPositionMs < previousMs) {
+        current.voiceCueId = null;
+        service.cancelNarration();
+        service.seekMusic(nextPositionMs);
+        void syncVoice(current, false);
+        runFreshShotCues(current.sequence, nextPositionMs, nextPositionMs, true);
+        return;
+      }
+      if (nextPositionMs - previousMs > CINEMATIC_CUE_GRACE_MS) service.seekMusic(nextPositionMs);
+      void syncVoice(current, false);
+      runFreshShotCues(current.sequence, previousMs, nextPositionMs, false);
+    },
+    pause(): void { invalidateTimeline(); service.pauseAll(); },
+    seek(positionMs): void { invalidateTimeline(); service.seekMusic(positionMs); },
+    stop(): void { invalidateTimeline(); service.stopMusic(); },
     setVolumes(levels): void {
       service.configure({
         musicVolume: levels.music, musicEnabled: levels.music > 0,

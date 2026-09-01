@@ -15,6 +15,15 @@ export const MUSIC_IDS = Object.freeze([
 export type MusicId = (typeof MUSIC_IDS)[number];
 export type SfxGroup = 'weapons' | 'defense' | 'magic' | 'status' | 'enemy' | 'ui' | 'narrative' | 'ambience';
 
+export interface AudioExternalSource {
+  readonly title: string;
+  readonly author: string;
+  readonly license: 'CC0-1.0';
+  readonly licenseUrl: string;
+  readonly sourceUrl: string;
+  readonly downloadUrl: string;
+}
+
 export interface AudioProvenance {
   readonly id: string;
   readonly assetId: string;
@@ -24,7 +33,7 @@ export interface AudioProvenance {
   readonly outputSha256: string;
   readonly licenseBasis: string;
   readonly commercialDistribution: boolean;
-  readonly externalSource: null;
+  readonly externalSource: readonly AudioExternalSource[] | null;
 }
 
 export interface MusicAsset {
@@ -158,9 +167,9 @@ export type AmbienceId = 'ambience-rain' | 'ambience-forest' | 'ambience-flood' 
 export const OPENING_SHOT_SFX: Readonly<Record<string, readonly string[]>> = Object.freeze({
   'opening-06-the-first-arrow': ['sfx-arrow-hit'],
   'opening-07-goblin-attack': ['sfx-narrative-warning'],
-  'opening-08-player-responds': ['sfx-sword-light-1'],
+  'opening-08-player-responds': ['sfx-narrative-reveal'],
   'opening-09-royal-armory-mark': ['sfx-narrative-reveal'],
-  'opening-10-false-orc-banner': ['sfx-narrative-reveal'],
+  'opening-10-false-orc-banner': ['sfx-sword-light-1'],
   'opening-11-wounded-witness': ['sfx-heal-cast'],
   'opening-12-enemy-riders': ['sfx-narrative-warning'],
   'opening-14-title-reveal': ['sfx-narrative-chapter-title'],

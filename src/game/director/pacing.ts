@@ -3,15 +3,15 @@ import type { DirectorState, JourneyDirectorContext, RouteOption, ScenePacing } 
 
 export const ROUTE_OPTIONS: readonly RouteOption[] = [
   {
-    id: 'kings-road', label: "The King's Road", description: 'Lower risk, frequent merchants, and reliable recovery.',
+    id: 'kings-road', label: "The King's Road", description: 'Built for royal couriers, its broad stones cross wind-bent fields between weathered mileposts and fallen statues.',
     risk: 1, recoveryBias: 3, merchantBias: 3,
   },
   {
-    id: 'old-forest', label: 'The Old Forest', description: 'Balanced danger with companion and exploration opportunities.',
+    id: 'old-forest', label: 'The Old Forest', description: 'Older than the kingdom, its moss-dark paths wind beneath ancient oaks, a place spoken of softly after dusk.',
     risk: 2, recoveryBias: 2, merchantBias: 1,
   },
   {
-    id: 'ruined-pass', label: 'The Ruined Pass', description: 'High-risk relic hunting with scarce recovery and trade.',
+    id: 'ruined-pass', label: 'The Ruined Pass', description: 'Once the northern road, it climbs between shattered watchtowers and bare crags under a sky that always feels like winter.',
     risk: 3, recoveryBias: 1, merchantBias: 0,
   },
 ] as const;

@@ -43,21 +43,63 @@
   display: block;
   object-fit: cover;
   object-position: center;
-  animation-duration: var(--shot-duration, 7s);
-  animation-timing-function: linear;
+}
+
+.opening-image-current {
+  z-index: 0;
+  animation-duration: 700ms, var(--shot-duration, 7s);
+  animation-timing-function: ease-out, linear;
   animation-fill-mode: both;
 }
 
-.opening-visual.motion-pan-left img { animation-name: opening-pan-left; }
-.opening-visual.motion-pan-right img { animation-name: opening-pan-right; }
-.opening-visual.motion-push-in img,
-.opening-visual.motion-focus-shift img { animation-name: opening-push-in; }
-.opening-visual.motion-pull-back img { animation-name: opening-pull-back; }
-.opening-visual.motion-still img { animation-name: opening-crossfade; }
+.opening-visual.motion-pan-left .opening-image-current {
+  animation-name: opening-shot-fade-in, opening-pan-left;
+}
+
+.opening-visual.motion-pan-right .opening-image-current {
+  animation-name: opening-shot-fade-in, opening-pan-right;
+}
+
+.opening-visual.motion-push-in .opening-image-current,
+.opening-visual.motion-focus-shift .opening-image-current {
+  animation-name: opening-shot-fade-in, opening-push-in;
+}
+
+.opening-visual.motion-pull-back .opening-image-current {
+  animation-name: opening-shot-fade-in, opening-pull-back;
+}
+
+.opening-visual.motion-still .opening-image-current {
+  animation-name: opening-shot-fade-in, opening-still-drift;
+}
+
+.opening-image-outgoing {
+  z-index: 0;
+  animation: opening-shot-fade-out 700ms ease-out both;
+}
+
+.opening-image-outgoing.outgoing-motion-pan-left {
+  transform: scale(1.07) translateX(-2%);
+}
+
+.opening-image-outgoing.outgoing-motion-pan-right {
+  transform: scale(1.06) translateX(2%);
+}
+
+.opening-image-outgoing.outgoing-motion-push-in,
+.opening-image-outgoing.outgoing-motion-focus-shift {
+  transform: scale(1.09);
+}
+
+.opening-image-outgoing.outgoing-motion-pull-back,
+.opening-image-outgoing.outgoing-motion-still {
+  transform: scale(1);
+}
+
 .opening-visual.is-timeline-paused img { animation-play-state: paused; }
 
-.opening-visual.is-reduced-motion img {
-  animation-name: opening-crossfade;
+.opening-visual.is-reduced-motion .opening-image-current {
+  animation-name: opening-shot-fade-in;
   animation-duration: 240ms;
   transform: none;
 }
@@ -281,9 +323,19 @@
   to { transform: scale(1); }
 }
 
-@keyframes opening-crossfade {
-  from { opacity: 0.72; }
+@keyframes opening-shot-fade-in {
+  from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes opening-shot-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes opening-still-drift {
+  from { transform: scale(1.015); }
+  to { transform: scale(1); }
 }
 
 @media (max-height: 650px) {
@@ -315,8 +367,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .opening-visual img {
-    animation-name: opening-crossfade;
+  .opening-visual .opening-image-current {
+    animation-name: opening-shot-fade-in;
     animation-duration: 0.01ms;
     transform: none;
   }

@@ -19,11 +19,11 @@ const MUSIC = [
   {
     id: 'music-opening-score',
     root: 43,
-    mood: 'roadside resolve growing into conspiracy and pursuit',
-    intensity: 0.58,
-    accent: 'low strings, wooden flute, frame drums, restrained bell',
+    mood: 'quiet road duty rising into urgent pursuit and resolve',
+    intensity: 0.68,
+    accent: 'medieval strings and flute crossfading into full orchestral percussion',
     motif: [0, 2, 3, 7, 5, 3, -2, 0],
-    durationMs: 105_000,
+    durationMs: 83_000,
     loop: false,
     dynamicOpening: true,
   },
@@ -148,17 +148,28 @@ const SFX = [
 ];
 
 const OPENING_LINES = [
-  'The job should have taken three days. Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost. In Morrowmere, that counts as honest work.',
-  'The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade. Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.',
+  'The job should have taken three days.',
+  'Escort two wagons of medicine north to Greywatch, collect your pay, and leave before the border frost.',
+  'In Morrowmere, that counts as honest work.',
+  'The kingdom has lived eighteen years without a king. Its roads belong to toll collectors, deserters, and anything strong enough to hold a blade.',
+  'Goblin raids are common. Orc patrols stay west of Redwater. Everyone knows where the danger lies.',
   'Until this morning.',
-  'The first arrow kills the driver. The second carries the mark of the royal armory. When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.',
+  'The first arrow kills the driver.',
+  'The second carries the mark of the royal armory.',
+  'When the attackers retreat, they leave an orc banner beside a dead officer—as if they want the truth found too quickly.',
   'Someone is preparing a war.',
-  'You have no title, no army, and no lord to protect you. You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.',
+  'You have no title, no army, and no lord to protect you.',
+  'You have one wounded witness, one sealed order, and a road that now leads straight to Greywatch.',
   'By nightfall, half the border will want what you carry.',
   'This is where your chronicle begins.',
 ];
 
-const OPENING_TIMES = [[0, 21_000], [21_000, 36_000], [36_000, 42_000], [42_000, 64_000], [64_000, 71_000], [71_000, 86_000], [86_000, 96_000], [96_000, 105_000]];
+const OPENING_TIMES = [
+  [0, 4_000], [4_000, 13_000], [13_000, 16_000], [16_000, 25_500],
+  [25_500, 32_500], [32_500, 36_500], [36_500, 40_000], [40_000, 44_500],
+  [44_500, 53_500], [53_500, 57_500], [57_500, 62_500], [62_500, 70_000],
+  [70_000, 75_000], [75_000, 83_000],
+];
 
 function stableSeed(text) {
   const digest = createHash('sha256').update(text).digest();
@@ -218,11 +229,14 @@ function synthMusic(config, trackIndex) {
   for (let index = 0; index < total; index += 1) {
     const time = index / SAMPLE_RATE;
     const openingIntensity = !config.dynamicOpening ? config.intensity
-      : time < 36 ? 0.34
-        : time < 64 ? 0.74
-          : time < 86 ? 0.5
-            : time < 96 ? 0.82
-              : 0.64;
+      : time < 32.5 ? 0.28
+        : time < 36.5 ? 0.5
+          : time < 44.5 ? 0.82
+            : time < 53.5 ? 0.66
+              : time < 62.5 ? 0.48
+                : time < 70 ? 0.72
+                  : time < 75 ? 0.58
+                    : 0.68;
     const beat = time * beatsPerSecond;
     const wholeBeat = Math.floor(beat);
     const beatPhase = beat - wholeBeat;
@@ -252,7 +266,7 @@ function synthMusic(config, trackIndex) {
       ? (sine(78 - 25 * Math.min(1, drumPhase * 8), time) * 0.14 + drumNoise * 0.06) * drumEnvelope * drumAttack * openingIntensity
       : 0;
     const air = (sine(997 + trackIndex * 7, time, 0.2) + sine(1_433 + trackIndex * 11, time, -0.6)) * 0.003 * (0.5 + openingIntensity);
-    const titleTime = config.dynamicOpening ? time - 96 : -1;
+    const titleTime = config.dynamicOpening ? time - 75 : -1;
     const titleBell = titleTime >= 0
       ? (sine(110, titleTime) + sine(220, titleTime) * 0.5 + sine(330, titleTime) * 0.22) * Math.exp(-0.42 * titleTime) * 0.12
       : 0;

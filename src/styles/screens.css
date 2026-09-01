@@ -32,8 +32,6 @@
 .route-card { inline-size: 100%; min-inline-size: 0; padding: 0.9rem; display: grid; gap: 0.55rem; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--ink-1); box-shadow: 0 4px 14px rgb(70 44 23 / 0.08); text-align: start; }
 .route-card-heading { display: flex; justify-content: space-between; gap: 0.7rem; color: var(--accent-strong); font-family: Georgia, serif; font-size: 1.2rem; }
 .route-description { color: var(--paper-1); line-height: 1.5; overflow-wrap: anywhere; }
-.route-facts { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.route-facts > span { padding: 0.32rem 0.45rem; display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid var(--line); border-radius: 6px; background: var(--ink-0); color: var(--paper-2); font-size: 0.7rem; line-height: 1.25; }
 .tutorial-callout { margin: 0.8rem 1rem 0; padding: 0.8rem; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.65rem; border: 1px solid var(--line-strong); border-inline-start: 4px solid var(--witchlight); border-radius: var(--radius); background: #f0ead0; }
 .sheet-body > .tutorial-callout { margin: 0 0 1rem; }
 .tutorial-callout > svg { color: var(--witchlight); }
