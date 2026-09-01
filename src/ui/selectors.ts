@@ -370,9 +370,6 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
   const selectedChoice = resolved
     ? event.choices.find((choice) => choice.id === resolution.choiceId)
     : undefined;
-  const selectedCheckedChoice = selectedChoice && isChronicleCheckedChoice(selectedChoice)
-    ? selectedChoice
-    : null;
   const choices: readonly StoryChoiceViewModel[] = event.choices.map((choice) => {
     const unavailableReason = unavailableChoiceReason(choice, state);
     const check = isChronicleCheckedChoice(choice)
@@ -409,9 +406,15 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
     resolved,
     outcome: resolution?.outcome ?? (selectedChoice && !isChronicleCheckedChoice(selectedChoice) ? selectedChoice.outcome : null),
     resolution: resolved && resolution ? {
-      statusLabel: selectedCheckedChoice
-        ? `${CHECK_STAT_LABELS[selectedCheckedChoice.check.stat]} check ${resolution.resultKind === 'success' || resolution.resultKind === 'critical-success' ? 'succeeded' : 'failed'}`
-        : 'Choice resolved',
+      statusLabel: resolution.resultKind === 'critical-success'
+        ? 'Critical success'
+        : resolution.resultKind === 'success'
+          ? 'Check succeeded'
+          : resolution.resultKind === 'critical-failure'
+            ? 'Critical failure'
+            : resolution.resultKind === 'failure'
+              ? 'Check failed'
+              : 'Choice resolved',
       outcome: resolution.outcome,
       effectSummary: resolution.effectSummary,
       continueLabel: resolution.continueLabel,

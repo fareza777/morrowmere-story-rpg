@@ -150,9 +150,9 @@ function effectSummary(effects: readonly GameEffect[], content: ContentIndex): r
       const name = content.items.get(effect.itemId)?.name ?? effect.itemId;
       return [`${effect.operation === 'grant' ? '+' : '-'}${effect.quantity} ${name}`];
     }
-    if (effect.type === 'flag') return [`${effect.operation === 'add' ? '+' : '-'}${effect.flagId}`];
+    if (effect.type === 'flag') return [];
     if (effect.type === 'gold') return [`${effect.amount >= 0 ? '+' : ''}${effect.amount} Gold`];
-    if (effect.type === 'evidence') return [effect.operation === 'add' ? `Evidence gained: ${effect.evidenceId}` : `Evidence removed: ${effect.evidenceId}`];
+    if (effect.type === 'evidence') return [effect.operation === 'add' ? 'Evidence secured' : 'Evidence removed'];
     if (effect.type === 'faction') return [`${effect.factionId.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())} reputation ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
     if (effect.type === 'companion') {
       const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
@@ -164,7 +164,7 @@ function effectSummary(effects: readonly GameEffect[], content: ContentIndex): r
     }
     if (effect.type === 'companion-quest') {
       const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
-      return [`${name} quest stage ${effect.stage}`];
+      return [`${name} quest progress updated`];
     }
     if (effect.type === 'companion-injury') {
       const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
@@ -172,7 +172,7 @@ function effectSummary(effects: readonly GameEffect[], content: ContentIndex): r
     }
     if (effect.type === 'threat') return [`Threat ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
     if (effect.type === 'tension') return [`Tension ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
-    if (effect.type === 'callback') return ['Follow-up scheduled'];
+    if (effect.type === 'callback') return [];
     if (effect.type === 'vitals') return [
       ...(effect.health === undefined ? [] : [`${effect.health >= 0 ? '+' : ''}${effect.health} Health`]),
       ...(effect.resource === undefined ? [] : [`${effect.resource >= 0 ? '+' : ''}${effect.resource} Focus`]),
@@ -496,6 +496,17 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
   }
   if (command.type === 'select-next-scene') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
+    const pendingCombat = state.expedition.currentCombat;
+    if (pendingCombat?.combat === null) {
+      const combat = beginCombat(state, pendingCombat.encounterId, content);
+      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
+      return commit(state, {
+        ...state,
+        expedition: { ...state.expedition, currentCombat: { ...pendingCombat, combat } },
+        flow: { ...state.flow, screen: 'combat', merchant: null },
+        updatedAt: command.updatedAt,
+      }, [{ type: 'notification', message: 'Battle ready.' }]);
+    }
     const current = currentScene(state, content);
     if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
     const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content, state.expedition.authoredSceneQueue);
@@ -635,13 +646,6 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!expedition.currentCombat && scene.type === 'combat' && scene.encounterId) {
       expedition = { ...expedition, currentCombat: { encounterId: scene.encounterId, combat: null } };
     }
-    if (expedition.currentCombat && !expedition.currentCombat.combat) {
-      const temporary = { ...state, campaign: applied.value.campaign, expedition };
-      const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
-      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
-      expedition = { ...expedition, currentCombat: { ...expedition.currentCombat, combat } };
-      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
-    }
     return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
   }
   if (command.type === 'use-item') {
@@ -670,7 +674,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const heroVitals = { health: result.combat.player.health, resource: result.combat.player.focus };
     const unbankedLoot = usedItemId ? removeOneUnbanked(state.expedition.unbankedLoot, usedItemId) : state.expedition.unbankedLoot;
     if (result.combat.outcome === 'active') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat } }, updatedAt: command.updatedAt }, result.events);
-    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: null, pendingReward: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: null, pendingReward: null, currentSceneId: null, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
     if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
     const priorVictories = state.campaign.encounterFamilyVictories[encounter.family] ?? 0;
     const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
@@ -702,7 +706,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       inventory = added.value;
       unbankedLoot = [...unbankedLoot, command.itemId];
     }
-    return commit(state, { ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
+    return commit(state, { ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null, currentSceneId: null, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
   }
   if (command.type === 'open-merchant') {
     if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward) return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');

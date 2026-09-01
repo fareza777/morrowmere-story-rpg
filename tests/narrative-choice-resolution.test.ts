@@ -142,7 +142,7 @@ describe('narrative choice resolution', () => {
     expect(first.diagnostic).toBeUndefined();
     expect(first.state.expedition?.sceneResolution).toMatchObject({
       eventId: asEvent('checked-success'), choiceId: asChoice('resolve-success'), resultKind: 'success', chance: 95, roll: 77,
-      outcome: 'The wagon holds and the hidden cache is yours.', effectSummary: ['+wagon-secured', '+60 XP', '+1 Packed Tonic', '+1 Loose Token'],
+      outcome: 'The wagon holds and the hidden cache is yours.', effectSummary: ['+60 XP', '+1 Packed Tonic', '+1 Loose Token'],
       nextSceneId: asEvent('success-aftermath'), continueLabel: 'Take the high road',
     });
     expect(first.state.expedition?.sceneResolution).toEqual(replay.state.expedition?.sceneResolution);
@@ -157,7 +157,7 @@ describe('narrative choice resolution', () => {
     expect(duplicate.state.campaign.hero.xp).toBe(60);
   });
 
-  it('applies the failure branch and starts only its authored combat encounter', () => {
+  it('acknowledges a combat branch before handoff and clears its setup after battle exit', () => {
     const index = content();
     const result = reduceGame(
       atScene(asEvent('checked-failure'), index),
@@ -168,12 +168,50 @@ describe('narrative choice resolution', () => {
     expect(result.diagnostic).toBeUndefined();
     expect(result.state.expedition?.sceneResolution).toMatchObject({
       resultKind: 'failure', chance: 15, roll: 48, outcome: 'Raiders rise from the waterline.',
-      effectSummary: ['+bog-ambush', 'Combat begins'], continueLabel: 'Draw your sword',
+      effectSummary: ['Combat begins'], continueLabel: 'Draw your sword',
     });
     expect(result.state.campaign.flags).toContain('bog-ambush');
     expect(result.state.campaign.flags).not.toContain('unexpected-bog-success');
-    expect(result.state.flow.screen).toBe('combat');
-    expect(result.state.expedition?.currentCombat?.encounterId).toBe(asEncounter('bog-raiders'));
+    expect(result.state.flow.screen).toBe('story');
+    expect(result.state.expedition?.currentCombat).toEqual({ encounterId: asEncounter('bog-raiders'), combat: null });
+
+    const encoded = encodeSaveState(result.state, index);
+    const decoded = encoded ? decodeSaveState(encoded, index) : null;
+    expect(decoded?.flow.screen).toBe('story');
+    expect(decoded?.expedition?.currentCombat).toEqual({ encounterId: asEncounter('bog-raiders'), combat: null });
+
+    const handedOff = reduceGame(result.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    expect(handedOff.state.flow.screen).toBe('combat');
+    expect(handedOff.state.expedition?.currentCombat?.combat?.outcome).toBe('active');
+
+    const activeCombat = handedOff.state.expedition!.currentCombat!.combat!;
+    const fleeing = {
+      ...handedOff.state,
+      expedition: {
+        ...handedOff.state.expedition!,
+        currentCombat: { ...handedOff.state.expedition!.currentCombat!, combat: { ...activeCombat, player: { ...activeCombat.player, cunning: 99 } } },
+      },
+    };
+    const fled = reduceGame(fleeing, { type: 'combat-turn', commandId: 'flee-from-setup', action: { type: 'flee' }, updatedAt: at(4) }, index);
+    expect(fled.state.flow.screen).toBe('story');
+    expect(fled.state.expedition?.currentCombat).toBeNull();
+    expect(fled.state.expedition?.currentSceneId).toBeNull();
+    expect(fled.state.expedition?.sceneResolution).toBeNull();
+
+    const rewarded = {
+      ...handedOff.state,
+      expedition: {
+        ...handedOff.state.expedition!,
+        currentCombat: { ...handedOff.state.expedition!.currentCombat!, combat: { ...activeCombat, outcome: 'victory' as const } },
+        pendingReward: { rewardId: 'bog-raider-reward', rewardOfferId: 'reward:1:bog-raider-reward', encounterId: asEncounter('bog-raiders'), itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: false, rewardedGoldSettlement: 'ineligible' as const },
+      },
+      flow: { ...handedOff.state.flow, screen: 'reward' as const },
+    };
+    const claimed = reduceGame(rewarded, { type: 'claim-rewards', rewardId: 'bog-raider-reward', itemId: null, updatedAt: at(5) }, index);
+    expect(claimed.state.flow.screen).toBe('story');
+    expect(claimed.state.expedition?.currentCombat).toBeNull();
+    expect(claimed.state.expedition?.currentSceneId).toBeNull();
+    expect(claimed.state.expedition?.sceneResolution).toBeNull();
   });
 
   it('records direct choices as non-random resolutions', () => {
@@ -187,7 +225,7 @@ describe('narrative choice resolution', () => {
     expect(result.diagnostic).toBeUndefined();
     expect(result.state.expedition?.sceneResolution).toMatchObject({
       resultKind: 'direct', chance: null, roll: null, outcome: 'The road bends toward Greywatch.',
-      effectSummary: ['+direct-kept'], nextSceneId: null, continueLabel: null,
+      effectSummary: [], nextSceneId: null, continueLabel: null,
     });
   });
 
@@ -235,8 +273,8 @@ describe('narrative choice resolution', () => {
 
     expect(result.diagnostic).toBeUndefined();
     expect(result.state.expedition?.sceneResolution?.effectSummary).toEqual([
-      '+5 Gold', '-1 Health', '+1 Focus', 'Evidence gained: field-evidence', 'Greywatch reputation +2',
-      'Mara loyalty +35', 'Mara quest stage 3', 'Mara injured', 'Mara joined', 'Threat +1', 'Tension -1', 'Follow-up scheduled',
+      '+5 Gold', '-1 Health', '+1 Focus', 'Evidence secured', 'Greywatch reputation +2',
+      'Mara loyalty +35', 'Mara quest progress updated', 'Mara injured', 'Mara joined', 'Threat +1', 'Tension -1',
     ]);
   });
 });
