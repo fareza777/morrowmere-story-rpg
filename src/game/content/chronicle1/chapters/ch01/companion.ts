@@ -17,7 +17,7 @@ export const CH01_COMPANION = Object.freeze([
       'A border scout waits beside a cut milestone, counting wagon ruts with a length of knotted cord. She names herself Mara Vey and says three armed groups used this road during the night.',
       'Mara offers a safer turn through the birches if the caravan can spare time. The direct road is faster, but whoever passed before you will know it was followed.',
     ],
-    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2 },
+    eligibility: { routes: ['kings-road', 'old-forest'], minLevel: 1, maxLevel: 2, excludedFlags: ['mara-met'] },
     requirements: [],
     exclusions: [],
     cooldownRuns: 3,

@@ -29,12 +29,15 @@ interface EncounterSpec {
   readonly counterplay: string;
   readonly kind?: 'regular' | 'lieutenant' | 'boss';
   readonly bossEnemyId?: string;
+  readonly reward?: { readonly xp: number; readonly gold: number; readonly itemChoices: readonly string[] };
 }
 
 const ENCOUNTER_SPECS: readonly EncounterSpec[] = [
   { id: 'enc-ch01-ditch-road-cutters', enemyIds: ['goblin-cutpurse-01', 'goblin-cutpurse-01', 'black-banner-01'], threatBudget: 9, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Hold the wagon gap to contain both knives, or cross the open ditch to remove the heavier reaver first.' },
   { id: 'enc-ch01-tollhouse-lookouts', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile'], counterplay: 'Break the lone shield before chasing the rooftop skirmisher, or guard until the skirmisher descends.' },
   { id: 'enc-ch01-orchard-volley', enemyIds: ['goblin-torchling-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['ranged', 'mobile'], counterplay: 'Use wagon cover against the cinder shot, then close on the reaver before the pair can trade positions.' },
+  { id: 'enc-ch01-verge-signalers', enemyIds: ['black-banner-01', 'goblin-torchling-01'], threatBudget: 6, compatibilityTags: ['ranged', 'mobile', 'false-flag', 'fire'], counterplay: 'Use the hedge against the cinder throw, then prevent the reaver from reaching the signal pot.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-smoke-bomb'] } },
+  { id: 'enc-ch01-tollhouse-cellar', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile', 'false-flag'], counterplay: 'Hold the stair so the cutpurse cannot reach Jory, then break the deserter’s guard in the low tunnel.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-lamp-oil'] } },
   { id: 'enc-ch01-smoke-on-the-bridge', enemyIds: ['boss-rattlehook-bridge-chief', 'goblin-cutpurse-01'], threatBudget: 10, compatibilityTags: ['elite', 'mobile'], counterplay: 'Read Rattlehook’s rail taps, protect the escape rope, and remove his lone knife fighter before the second phase.', kind: 'boss', bossEnemyId: 'boss-rattlehook-bridge-chief' },
   { id: 'enc-ch01-reedbank-pursuers', enemyIds: ['black-banner-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Force the riders into the narrow road and focus one pursuer; spreading damage lets both keep circling.' },
   { id: 'enc-ch01-recover-the-false-banner', enemyIds: ['black-banner-01', 'goblin-cutpurse-02'], threatBudget: 6, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Guard the evidence carrier through the hooked-pole swing, then mark the cutpurse before it changes targets.' },
@@ -112,7 +115,11 @@ function buildEncounter(spec: EncounterSpec, sequence: number): Chronicle1Encoun
     openingDamageCap: chapter.maxOpeningDamage,
     compatibilityTags: spec.compatibilityTags,
     counterplay: spec.counterplay,
-    reward: {
+    reward: spec.reward ? {
+      xp: spec.reward.xp,
+      gold: spec.reward.gold,
+      itemChoices: spec.reward.itemChoices as readonly ItemId[],
+    } : {
       xp: 18 + Number(chapterId.slice(2)) * 16 + (kind === 'boss' ? 24 : kind === 'lieutenant' ? 12 : 0),
       gold: 8 + Number(chapterId.slice(2)) * 7 + (kind === 'boss' ? 10 : 0) + (sequence % 3),
       itemChoices: [],
