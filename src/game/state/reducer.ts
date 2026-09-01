@@ -151,6 +151,27 @@ function effectSummary(effects: readonly GameEffect[], content: ContentIndex): r
     }
     if (effect.type === 'flag') return [`${effect.operation === 'add' ? '+' : '-'}${effect.flagId}`];
     if (effect.type === 'gold') return [`${effect.amount >= 0 ? '+' : ''}${effect.amount} Gold`];
+    if (effect.type === 'evidence') return [effect.operation === 'add' ? `Evidence gained: ${effect.evidenceId}` : `Evidence removed: ${effect.evidenceId}`];
+    if (effect.type === 'faction') return [`${effect.factionId.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())} reputation ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
+    if (effect.type === 'companion') {
+      const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
+      return [effect.operation === 'recruit' ? `${name} joined` : `${name} left`];
+    }
+    if (effect.type === 'companion-loyalty') {
+      const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
+      return [`${name} loyalty ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
+    }
+    if (effect.type === 'companion-quest') {
+      const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
+      return [`${name} quest stage ${effect.stage}`];
+    }
+    if (effect.type === 'companion-injury') {
+      const name = content.companions.get(effect.companionId)?.name ?? effect.companionId;
+      return [effect.injured ? `${name} injured` : `${name} recovered`];
+    }
+    if (effect.type === 'threat') return [`Threat ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
+    if (effect.type === 'tension') return [`Tension ${effect.amount >= 0 ? '+' : ''}${effect.amount}`];
+    if (effect.type === 'callback') return ['Follow-up scheduled'];
     if (effect.type === 'vitals') return [
       ...(effect.health === undefined ? [] : [`${effect.health >= 0 ? '+' : ''}${effect.health} Health`]),
       ...(effect.resource === undefined ? [] : [`${effect.resource >= 0 ? '+' : ''}${effect.resource} Focus`]),
@@ -241,6 +262,13 @@ function removeQuantityByItem(inventory: InventoryState, itemId: ItemId, quantit
 
 function packQuantity(inventory: InventoryState, itemId: ItemId): number {
   return inventory.pack.reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
+}
+
+function inventoryQuantity(inventory: InventoryState, itemId: ItemId): number {
+  const packed = [...inventory.pack, ...inventory.stash].reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
+  const equipped = [inventory.equipment.weapon, inventory.equipment.armor, ...inventory.equipment.charms]
+    .filter((equippedId) => equippedId === itemId).length;
+  return packed + equipped + Number(inventory.questItems.includes(itemId));
 }
 
 /** Makes the marker ledger match the checkpoint-derived unsecured quantity without trusting stale markers. */
@@ -415,7 +443,19 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const scene = currentScene(state, content);
     if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
     const gold = state.expedition.unbankedGold;
-    const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
+    const securedInventory = state.checkpoints.camp?.campaign.inventory ?? state.campaign.inventory;
+    let inventory = state.campaign.inventory;
+    const lootCounts = new Map<ItemId, number>();
+    for (const itemId of state.expedition.unbankedLoot) lootCounts.set(itemId, (lootCounts.get(itemId) ?? 0) + 1);
+    for (const [itemId, quantity] of lootCounts) {
+      const alreadyUnsecured = Math.max(0, inventoryQuantity(inventory, itemId) - inventoryQuantity(securedInventory, itemId));
+      const missing = Math.max(0, quantity - alreadyUnsecured);
+      if (missing === 0) continue;
+      const added = applyInventoryCommand(inventory, { type: 'add', itemId, quantity: missing }, content.items);
+      if (!added.ok) return diagnostic(state, added.error.code, added.error.message);
+      inventory = added.value;
+    }
+    const campaign = { ...state.campaign, inventory, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
     const provisional: GameStateV2 = {
       ...state,
       campaign,

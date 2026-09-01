@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ChronicleEvent, ContentIndex, EncounterDefinition, ItemDefinition } from '../src/game/content/schema';
-import type { ChoiceId, EncounterId, EnemyId, EventId, ItemId } from '../src/game/domain/ids';
+import type { ChoiceId, CompanionId, EncounterId, EnemyId, EventId, ItemId } from '../src/game/domain/ids';
+import { decodeSaveState, encodeSaveState } from '../src/game/persistence/codec';
 import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state';
 
 const asChoice = (value: string) => value as ChoiceId;
+const asCompanion = (value: string) => value as CompanionId;
 const asEncounter = (value: string) => value as EncounterId;
 const asEnemy = (value: string) => value as EnemyId;
 const asEvent = (value: string) => value as EventId;
@@ -68,6 +70,26 @@ function content(): ContentIndex {
       outcome: 'The road bends toward Greywatch.', effects: [{ type: 'flag', operation: 'add', flagId: 'direct-kept' as never }],
     }],
   });
+  const summary = scene({
+    id: asEvent('summary-choice'),
+    choices: [{
+      id: asChoice('summarize'), label: 'Prepare the caravan', detail: 'Record every consequence before setting out.',
+      outcome: 'Every ledger is updated before departure.',
+      effects: [
+        { type: 'gold', scope: 'unbanked', amount: 5 },
+        { type: 'vitals', health: -1, resource: 1 },
+        { type: 'evidence', operation: 'add', evidenceId: 'field-evidence' },
+        { type: 'faction', factionId: 'greywatch' as never, amount: 2 },
+        { type: 'companion-loyalty', companionId: asCompanion('mara'), amount: 35 },
+        { type: 'companion-quest', companionId: asCompanion('mara'), stage: 3 },
+        { type: 'companion-injury', companionId: asCompanion('mara'), injured: true },
+        { type: 'companion', companionId: asCompanion('mara'), operation: 'recruit' },
+        { type: 'threat', amount: 1 },
+        { type: 'tension', amount: -1 },
+        { type: 'callback', promise: { targetEventId: asEvent('success-aftermath'), deadline: { chapterId: 'ch01', slot: 2 } } },
+      ],
+    }] as never,
+  });
   const aftermath = scene({ id: asEvent('success-aftermath'), choices: [] });
   const enemy = {
     id: asEnemy('bog-raider'), archetypeId: 'bog-raider', name: 'Bog Raider', rank: 1, level: 1, species: 'human' as const,
@@ -78,13 +100,16 @@ function content(): ContentIndex {
     id: asEncounter('bog-raiders'), family: 'bog-raiders', kind: 'regular', enemyIds: [enemy.id], reward: { xp: 0, gold: 0, itemChoices: [] },
   };
   return {
-    events: new Map([success, failure, direct, aftermath].map((entry) => [entry.id, entry])),
+    events: new Map([success, failure, direct, summary, aftermath].map((entry) => [entry.id, entry])),
     items: new Map([
       [asItem('packed-tonic'), item(asItem('packed-tonic'), 'Packed Tonic')],
       [asItem('loose-token'), item(asItem('loose-token'), 'Loose Token')],
     ]),
-    enemies: new Map([[enemy.id, enemy]]), encounters: new Map([[encounter.id, encounter]]), companions: new Map(), merchants: new Map(),
-    artIds: new Set([success, failure, direct, aftermath].map((entry) => entry.illustrationId)), audioIds: new Set(),
+    enemies: new Map([[enemy.id, enemy]]), encounters: new Map([[encounter.id, encounter]]), companions: new Map([[asCompanion('mara'), {
+      id: asCompanion('mara'), name: 'Mara', recruitment: { requiredDecisionIds: [] }, personalQuestIds: [],
+      combat: { attack: 1, guard: 1, will: 1, actionId: 'covering-shot' },
+    }]]), merchants: new Map(),
+    artIds: new Set([success, failure, direct, summary, aftermath].map((entry) => entry.illustrationId)), audioIds: new Set(),
   };
 }
 
@@ -131,7 +156,8 @@ describe('narrative choice resolution', () => {
 
     expect(result.diagnostic).toBeUndefined();
     expect(result.state.expedition?.sceneResolution).toMatchObject({
-      resultKind: 'failure', chance: 15, roll: 48, outcome: 'Raiders rise from the waterline.', continueLabel: 'Draw your sword',
+      resultKind: 'failure', chance: 15, roll: 48, outcome: 'Raiders rise from the waterline.',
+      effectSummary: ['+bog-ambush', 'Combat begins'], continueLabel: 'Draw your sword',
     });
     expect(result.state.campaign.flags).toContain('bog-ambush');
     expect(result.state.campaign.flags).not.toContain('unexpected-bog-success');
@@ -152,5 +178,35 @@ describe('narrative choice resolution', () => {
       resultKind: 'direct', chance: null, roll: null, outcome: 'The road bends toward Greywatch.',
       effectSummary: ['+direct-kept'], nextSceneId: null, continueLabel: null,
     });
+  });
+
+  it('round-trips a rich checked resolution through save encoding', () => {
+    const index = content();
+    const resolved = reduceGame(
+      atScene(asEvent('checked-success'), index),
+      { type: 'resolve-choice', eventId: asEvent('checked-success'), choiceId: asChoice('resolve-success'), updatedAt: at(2) },
+      index,
+    ).state;
+
+    const encoded = encodeSaveState(resolved, index);
+    const decoded = encoded ? decodeSaveState(encoded, index) : null;
+
+    expect(encoded).not.toBeNull();
+    expect(decoded?.expedition?.sceneResolution).toEqual(resolved.expedition?.sceneResolution);
+  });
+
+  it('summarizes every noncombat atomic effect in concise English', () => {
+    const index = content();
+    const result = reduceGame(
+      atScene(asEvent('summary-choice'), index),
+      { type: 'resolve-choice', eventId: asEvent('summary-choice'), choiceId: asChoice('summarize'), updatedAt: at(2) },
+      index,
+    );
+
+    expect(result.diagnostic).toBeUndefined();
+    expect(result.state.expedition?.sceneResolution?.effectSummary).toEqual([
+      '+5 Gold', '-1 Health', '+1 Focus', 'Evidence gained: field-evidence', 'Greywatch reputation +2',
+      'Mara loyalty +35', 'Mara quest stage 3', 'Mara injured', 'Mara joined', 'Threat +1', 'Tension -1', 'Follow-up scheduled',
+    ]);
   });
 });

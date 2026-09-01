@@ -179,6 +179,27 @@ describe('campaign checkpoints', () => {
     expect(duplicate.diagnostic?.code).toBe('safe_hub_required');
   });
 
+  it('banks missing unbanked loot into retained inventory without duplicating a carried copy', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
+    const routed = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;
+    const atCamp = arriveAtCamp(routed, '2026-08-31T00:00:45.000Z');
+    const banked = reduceGame({
+      ...atCamp,
+      campaign: {
+        ...atCamp.campaign,
+        inventory: { ...atCamp.campaign.inventory, pack: [{ id: 'pack-item-warrior-blade-1', itemId: itemId('warrior-blade'), quantity: 1 }] },
+      },
+      expedition: { ...atCamp.expedition!, unbankedLoot: [itemId('warrior-blade'), itemId('warrior-blade')] },
+    }, { type: 'bank-camp', updatedAt: '2026-08-31T00:01:00.000Z' }, content);
+
+    expect(banked.diagnostic).toBeUndefined();
+    expect(banked.state.campaign.inventory.pack).toEqual([
+      { id: 'pack-item-warrior-blade-1', itemId: itemId('warrior-blade'), quantity: 1 },
+      { id: 'pack-item-warrior-blade-2', itemId: itemId('warrior-blade'), quantity: 1 },
+    ]);
+    expect(banked.state.checkpoints.camp?.campaign.inventory).toEqual(banked.state.campaign.inventory);
+  });
+
   it('restores exact chapter payload without rewinding attempt, nonce, or profile', () => {
     const initial = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const altered = {

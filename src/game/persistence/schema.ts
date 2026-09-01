@@ -37,7 +37,10 @@ export interface CombatIntentDto { readonly enemyId: string; readonly intent: 's
 export interface CombatDto { readonly turn: number; readonly rngState: number; readonly player: { readonly health: number; readonly focus: number; readonly guarding: boolean; readonly statuses: readonly CombatStatusDto[]; readonly modifiers: PlayerModifierDto; }; readonly enemies: readonly EnemyCombatDto[]; readonly primaryEnemyId: string; readonly enemyIntent: CombatIntentDto['intent']; readonly enemyIntents: readonly CombatIntentDto[]; readonly outcome: 'active' | 'victory' | 'defeat' | 'fled'; readonly missedAttacks: number; readonly companionId: string | null; readonly companionCooldown: number; readonly companionDamageDealt: number; }
 export interface MerchantVisitDto { readonly merchantId: string; readonly restockKey: string; readonly generatedAtLevel: number; readonly stock: readonly { readonly id: string; readonly itemId: string }[]; }
 export interface PendingBattleRewardDto { readonly rewardId: string; readonly rewardOfferId?: string; readonly encounterId: string; readonly itemChoices: readonly string[]; readonly baseGold: number; readonly grantedXp: number; readonly adEligible: boolean; readonly rewardedGoldSettlement?: 'available' | 'claimed' | 'ineligible'; }
-export interface ExpeditionDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly sceneResolution: { readonly eventId: string; readonly choiceId: string | null } | null; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
+export interface CompactSceneResolutionDto { readonly eventId: string; readonly choiceId: string | null; }
+export interface RichSceneResolutionDto extends CompactSceneResolutionDto { readonly resultKind: 'direct' | 'critical-success' | 'success' | 'failure' | 'critical-failure'; readonly chance: number | null; readonly roll: number | null; readonly outcome: string; readonly effectSummary: readonly string[]; readonly nextSceneId: string | null; readonly continueLabel: string | null; }
+export type SceneResolutionDto = CompactSceneResolutionDto | RichSceneResolutionDto;
+export interface ExpeditionDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly sceneResolution: SceneResolutionDto | null; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
 export interface SaveStateDto { readonly schemaVersion: 2; readonly profile: ProfileDto; readonly campaign: CampaignDto; readonly expedition: ExpeditionDto | null; readonly adPacing?: AdPacingState; readonly checkpoints: { readonly chapter: { readonly campaign: CampaignCheckpointDto; readonly enteredAt: string }; readonly camp: { readonly campaign: CampaignCheckpointDto; readonly campSceneId: string | null; readonly savedAt: string } | null }; readonly flow: { readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending'; readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null; readonly merchant: { readonly merchantId: string; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null }; readonly updatedAt: string; }
 
 export interface SaveEnvelope { readonly schemaVersion: 2; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
@@ -165,9 +168,24 @@ function validMerchantVisit(value: unknown): boolean {
     && value.stock.every((entry) => exact(entry, ['id', 'itemId']) && nonEmptyString(entry.id) && nonEmptyString(entry.itemId))
     && new Set(value.stock.map((entry) => entry.id)).size === value.stock.length;
 }
+export function isSceneResolutionDto(value: unknown): value is SceneResolutionDto {
+  const compact = exact(value, ['eventId', 'choiceId']) && nonEmptyString(value.eventId) && idOrNull(value.choiceId);
+  const rich = exact(value, ['eventId', 'choiceId', 'resultKind', 'chance', 'roll', 'outcome', 'effectSummary', 'nextSceneId', 'continueLabel'])
+    && nonEmptyString(value.eventId)
+    && idOrNull(value.choiceId)
+    && typeof value.resultKind === 'string'
+    && ['direct', 'critical-success', 'success', 'failure', 'critical-failure'].includes(value.resultKind)
+    && (value.chance === null || number(value.chance, 0, true))
+    && (value.roll === null || number(value.roll, 1, true))
+    && nonEmptyString(value.outcome)
+    && stringArray(value.effectSummary)
+    && idOrNull(value.nextSceneId)
+    && (value.continueLabel === null || nonEmptyString(value.continueLabel));
+  return compact || rich;
+}
 function validExpedition(value: unknown): boolean {
   if (!exact(value, ['routeProfile', 'routeSeed', 'director', 'position', 'currentSceneId', 'sceneResolution', 'heroVitals', 'currentCombat', 'pendingReward', 'unbankedGold', 'unbankedLoot', 'temporaryBoons', 'merchantVisits'])) return false;
-  const sceneResolution = value.sceneResolution === null || (exact(value.sceneResolution, ['eventId', 'choiceId']) && nonEmptyString(value.sceneResolution.eventId) && idOrNull(value.sceneResolution.choiceId));
+  const sceneResolution = value.sceneResolution === null || isSceneResolutionDto(value.sceneResolution);
   const heroVitals = exact(value.heroVitals, ['health', 'resource']) && number(value.heroVitals.health, 0) && number(value.heroVitals.resource, 0);
   const rewardKeys = ['rewardId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible'] as const;
   const currentRewardKeys = ['rewardId', 'rewardOfferId', 'encounterId', 'itemChoices', 'baseGold', 'grantedXp', 'adEligible', 'rewardedGoldSettlement'] as const;
