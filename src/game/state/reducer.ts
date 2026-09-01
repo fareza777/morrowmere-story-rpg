@@ -434,6 +434,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       expedition = { ...expedition, currentCombat: null, pendingReward: null };
       return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, events);
     }
+    if (!expedition.currentCombat && scene.type === 'combat' && scene.encounterId) {
+      expedition = { ...expedition, currentCombat: { encounterId: scene.encounterId, combat: null } };
+    }
     if (expedition.currentCombat && !expedition.currentCombat.combat) {
       const temporary = { ...state, campaign: applied.value.campaign, expedition };
       const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
