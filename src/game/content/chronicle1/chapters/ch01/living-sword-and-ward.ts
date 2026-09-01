@@ -240,13 +240,14 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
       {
         id: 'ch01-choice-barrow-accept-the-blood-price',
         label: 'Carry Grave-Tithe under its blood price',
-        detail: "Keep the cursed weapon until a Greywatch smith can complete Halren's dismissal.",
+        detail: "Lose 2 Health to the binding's first demand, then keep the cursed weapon until a Greywatch smith can complete Halren's dismissal.",
         requirements: [{ type: 'flag', flagId: 'grave-tithe-taken-cursed' }],
         effects: [
           { type: 'flag', operation: 'add', flagId: 'barrow-sword-resolved' },
           { type: 'flag', operation: 'add', flagId: 'grave-tithe-bound' },
+          { type: 'vitals', health: -2 },
         ],
-        outcome: "The strip tightens once around the grip. Until a Greywatch smith completes Halren's dismissal, declining any explicitly named combat challenge costs 2 Health; accepting it suppresses that cost.",
+        outcome: "The strip tightens and takes its first blood from your palm. The weapon stays wrapped until a Greywatch smith can complete Halren's dismissal.",
         nextSceneId: 'ch01-main-a-banner-placed-too-neatly',
         continueLabel: 'Continue to the staged body',
       },
@@ -255,6 +256,7 @@ export const CH01_LIVING_SWORD_AND_WARD = Object.freeze([
         label: "Claim Grave-Tithe after Halren's trial",
         detail: 'Carry the blade won in trial while preserving its intact binding for the Greywatch smith.',
         requirements: [{ type: 'flag', flagId: 'grave-tithe-fight-committed' }],
+        exclusions: [{ type: 'flag', flagId: 'grave-tithe-taken-cursed' }],
         effects: [
           { type: 'flag', operation: 'add', flagId: 'barrow-sword-resolved' },
           { type: 'flag', operation: 'add', flagId: 'grave-tithe-bound' },

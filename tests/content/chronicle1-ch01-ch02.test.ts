@@ -136,3 +136,30 @@ it('contains the locked early companion quest scenes', () => {
   expect(ids.has('ch02-companion-lyra-reads-the-seal')).toBe(true);
   expect(ids.has('ch02-companion-talla-keeps-the-bargain')).toBe(true);
 });
+
+it('keeps living-road rewards aligned with the choice that produced them', () => {
+  const choice = (choiceId: string) => CH01_SCENES
+    .flatMap((scene) => scene.choices)
+    .find((entry) => entry.id === choiceId)!;
+
+  const bypassArmor = choice('ch01-choice-armor-pass-without-opening');
+  expect(bypassArmor.nextSceneId).toBe('ch01-main-the-first-arrow');
+  expect(chronicle1ChoiceEffects(bypassArmor)).toContainEqual({
+    type: 'flag',
+    operation: 'add',
+    flagId: 'kneeling-armor-resolved',
+  });
+
+  const acceptBloodPrice = choice('ch01-choice-barrow-accept-the-blood-price');
+  expect(chronicle1ChoiceEffects(acceptBloodPrice)).toContainEqual({ type: 'vitals', health: -2 });
+
+  const claimAfterTrial = choice('ch01-choice-barrow-claim-after-trial');
+  expect(claimAfterTrial.exclusions).toContainEqual({ type: 'flag', flagId: 'grave-tithe-taken-cursed' });
+
+  const hiddenPace = choice('ch01-choice-riders-keep-the-hidden-pace');
+  expect(chronicle1ChoiceEffects(hiddenPace)).not.toContainEqual(expect.objectContaining({
+    type: 'item',
+    itemId: 'consumable-caltrop-pouch',
+    operation: 'grant',
+  }));
+});

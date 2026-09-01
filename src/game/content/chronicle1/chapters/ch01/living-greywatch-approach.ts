@@ -732,7 +732,6 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
         effects: [
           { type: 'flag', operation: 'add', flagId: 'riders-valley-resolved' },
           { type: 'flag', operation: 'add', flagId: 'greywatch-arrival-quiet' },
-          { type: 'item', operation: 'grant', itemId: 'consumable-caltrop-pouch', quantity: 1, destination: 'pack' },
           { type: 'xp', amount: 8, source: 'quest' },
         ],
         outcome: 'The convoy reaches the final hill unseen, with enough room to arrange witnesses before hailing the gate.',
