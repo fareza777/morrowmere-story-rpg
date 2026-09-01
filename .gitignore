@@ -9,6 +9,8 @@ assets-v2/
 .vscode/
 *.log
 *.tsbuildinfo
+__pycache__/
+*.pyc
 .media-work/
 .env*.local
 *.jks

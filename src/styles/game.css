@@ -62,10 +62,14 @@
 .onboarding-actions { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 0.65rem; }
 .onboarding-skip { margin: 0.65rem auto 0; border: 0; padding: 0.55rem 1rem; display: block; background: transparent; color: var(--paper-2); font-size: 0.86rem; text-decoration: underline; text-underline-offset: 0.2em; }
 
-.new-run-screen { min-block-size: 100dvh; max-inline-size: 720px; margin-inline: auto; padding: calc(1rem + var(--safe-top)) 1rem calc(1.5rem + var(--safe-bottom)); background: var(--ink-0); }
+.new-run-screen { min-block-size: 100dvh; max-inline-size: 720px; margin-inline: auto; padding: calc(1rem + var(--safe-top)) 1rem calc(1.5rem + var(--safe-bottom)); background: linear-gradient(180deg, #fffdf7 0%, var(--ink-0) 52%); }
 .screen-header { display: grid; grid-template-columns: auto 1fr; gap: 0.9rem; align-items: start; margin-block-end: 1.25rem; }
 .screen-header h1 { margin-block-end: 0; text-wrap: balance; }
 .back-button { min-block-size: 46px; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 0.55rem 0.7rem; display: inline-flex; align-items: center; gap: 0.35rem; background: var(--ink-1); color: var(--paper-0); font-weight: 800; }
+.new-run-hero { inline-size: 100%; aspect-ratio: 3 / 2; margin: 0 0 1rem; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 14px; background: #f3e6ca; box-shadow: 0 8px 20px rgb(70 44 23 / 0.12); }
+.new-run-hero img { inline-size: 100%; block-size: 100%; display: block; object-fit: cover; object-position: center 62%; filter: none; transform: none; }
+.new-run-hero-fallback { inline-size: 100%; block-size: 100%; display: grid; place-items: center; background: #f3e6ca; color: var(--accent-strong); }
+.new-run-hero-fallback span { inline-size: 72px; block-size: 72px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-family: Georgia, "Times New Roman", serif; font-size: 2.2rem; font-weight: 800; }
 .class-list { display: grid; gap: 0.7rem; margin-block-end: 1.15rem; }
 .class-option { min-block-size: 108px; inline-size: 100%; display: grid; grid-template-columns: auto 1fr; gap: 0.85rem; align-items: start; padding: 0.9rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--ink-1); text-align: start; }
 .class-option[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 4px 0 var(--accent); background: #f4e3c6; }
@@ -105,7 +109,7 @@
 .hud-nav button span { font-size: 0.7rem; font-weight: 800; line-height: 1; }
 .hud-nav button:hover { border-color: var(--accent); background: var(--ink-2); }
 
-.scene-art { position: relative; block-size: clamp(150px, 24dvh, 225px); margin: 0.8rem 1rem 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--ink-2); box-shadow: 0 8px 20px rgb(70 44 23 / 0.12); }
+.scene-art { position: relative; inline-size: 100%; aspect-ratio: 3 / 2; margin: 0.8rem 0 0; overflow: hidden; border-block: 1px solid var(--line-strong); border-inline: 0; border-radius: 0; background: var(--ink-2); box-shadow: 0 8px 20px rgb(70 44 23 / 0.12); }
 .scene-art img { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center; display: block; filter: none; transform: none; }
 .scene-art.has-enemy img { object-position: center 15%; }
 .game-main { min-block-size: calc(100dvh - 112px); }
@@ -113,6 +117,7 @@
 .story-panel > header { position: relative; }
 .story-panel > header > p, .enemy-heading p { margin-block-end: 0.42rem; color: var(--accent-strong); font-size: 0.76rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
 .story-panel h1 { max-inline-size: 18ch; margin-block-end: 0.9rem; font-size: clamp(1.85rem, 8vw, 3.2rem); text-wrap: balance; }
+.story-voice-button { min-block-size: 2.45rem; margin-block: -0.15rem 0.9rem; padding: 0.45rem 0.75rem; border: 1px solid color-mix(in srgb, var(--accent-strong) 36%, transparent); border-radius: 999px; background: var(--ink-0); color: var(--accent-strong); font: inherit; font-size: 0.82rem; font-weight: 800; }
 .story-prose { margin-block-end: 1rem; padding: 1rem; overflow: visible; border: 1px solid var(--line-strong); border-radius: var(--radius); background: rgb(255 250 240 / 0.97); font-size: clamp(1.0625rem, calc(1.125rem * var(--text-scale, 1)), 1.5rem); }
 .story-prose p { max-inline-size: 43ch; margin-block-end: 1.15rem; color: var(--paper-1); font-size: inherit; line-height: 1.68; overflow-wrap: anywhere; text-wrap: pretty; }
 .story-prose p:last-child { margin-block-end: 0; }
@@ -198,7 +203,6 @@
   .hud-location strong { font-size: 0.84rem; }
   .hud-vitals { gap: 0.45rem; }
   .hud-nav button span { font-size: 0.66rem; }
-  .scene-art { margin-inline: 0.75rem; }
   .story-panel, .combat-panel, .reward-panel, .end-panel { padding-inline: 0.8rem; }
   .enemy-heading { display: grid; gap: 0; }
   .enemy-heading > span { padding-block-end: 0.55rem; }
@@ -223,7 +227,7 @@
   .class-option { grid-template-columns: 1fr; }
   .top-hud { grid-template-columns: minmax(0, 1fr) auto minmax(310px, 0.8fr); grid-template-areas: "location vitals nav"; align-items: center; min-block-size: calc(72px + var(--safe-top)); }
   .hud-nav button { flex-direction: row; gap: 0.35rem; }
-  .scene-art { block-size: clamp(230px, 34dvh, 360px); }
+  .scene-art { inline-size: min(100%, 720px); margin-inline: auto; border: 1px solid var(--line-strong); border-radius: 14px; }
   .story-panel, .combat-panel, .reward-panel, .end-panel { padding-inline: 2rem; }
   .combat-actions { grid-template-columns: repeat(4, 1fr); }
   .combat-actions .flee-action { grid-column: 1 / -1; }

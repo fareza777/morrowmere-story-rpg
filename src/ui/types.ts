@@ -53,6 +53,8 @@ export interface CinematicSequence {
   readonly id: 'chronicle-1-opening';
   readonly durationMs: number;
   readonly musicId: string;
+  readonly musicSrc?: string;
+  readonly musicLoop?: boolean;
   readonly voiceId: string;
   readonly shots: readonly CinematicShot[];
 }

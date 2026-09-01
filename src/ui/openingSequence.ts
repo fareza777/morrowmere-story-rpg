@@ -1,4 +1,5 @@
 import openingTimeline from '../../production/chronicle1/media/opening-timeline.json';
+import { OPENING_MUSIC_ID, OPENING_MUSIC_SRC } from '../game/audio/catalog';
 import type { CinematicSequence, CinematicShot } from './types';
 
 export const OPENING_NARRATION = Object.freeze([
@@ -128,7 +129,9 @@ if (openingTimeline.id !== 'chronicle-1-opening' || shots.length !== SHOT_DIRECT
 export const OPENING_SEQUENCE: CinematicSequence = Object.freeze({
   id: 'chronicle-1-opening',
   durationMs: openingTimeline.durationMs,
-  musicId: 'music-title',
+  musicId: OPENING_MUSIC_ID,
+  musicSrc: OPENING_MUSIC_SRC,
+  musicLoop: false,
   voiceId: 'voice-opening-eldrin-en',
   shots: Object.freeze(shots),
 });

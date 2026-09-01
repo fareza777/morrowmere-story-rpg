@@ -4,6 +4,7 @@ import type { CombatAction } from '../game/combat/types';
 import type { ChoiceId, CompanionId, EventId, ItemId } from '../game/domain/ids';
 import type { InventoryCommand } from '../game/inventory';
 import type { GameCommand } from '../game/state/types';
+import { voiceCueForScene } from '../game/audio/catalog';
 import { resolveBackAction } from '../native/back-policy';
 import { selectCampView, selectCombatView, selectCurrentScene, selectInventoryView, selectJournalView, selectMerchantView, selectRouteView } from '../ui/selectors';
 import { feedbackForTransition } from '../ui/feedback';
@@ -47,6 +48,7 @@ interface GameShellProps extends BaseGameShellProps {
   readonly interactionLocked?: boolean;
   readonly privacyOptionsRequired?: boolean;
   readonly onPrivacyOptions?: () => Promise<void>;
+  readonly storyAudio?: { narrateScene(sceneId: string): Promise<boolean>; cancelNarration(): void };
   readonly now?: () => string;
 }
 
@@ -88,7 +90,7 @@ function rewardItem(itemId: ItemId, content: BaseGameShellProps['content']): Ite
   };
 }
 
-export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, rewardBonusStatus, onRequestRewardedGold, onDismissRewardedGold, registerBackHandler, onAdOverlayChange, interactionLocked = false, privacyOptionsRequired = false, onPrivacyOptions, now = () => new Date().toISOString() }: GameShellProps) {
+export function GameShell({ state, content, transitionEvents, dispatch, onSaveAndExit, onMainMenu, onReplayOpening, settings, onSettingsChange, rewardBonusStatus, onRequestRewardedGold, onDismissRewardedGold, registerBackHandler, onAdOverlayChange, interactionLocked = false, privacyOptionsRequired = false, onPrivacyOptions, storyAudio, now = () => new Date().toISOString() }: GameShellProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [choosingRoute, setChoosingRoute] = useState(false);
   const [exitConfirmation, setExitConfirmation] = useState(false);
@@ -107,6 +109,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
     && (state.expedition.sceneResolution.choiceId !== null || rawScene.choices.length === 0),
   );
   const displayedScene = scene && coreSceneResolved && !scene.resolved ? { ...scene, resolved: true } : scene;
+  const voicedScene = displayedScene ? voiceCueForScene(displayedScene.id) : undefined;
   const issue = (command: UndatedGameCommand) => dispatch({ ...command, updatedAt: now() } as GameCommand);
 
   const handleBack = useCallback(() => {
@@ -141,6 +144,12 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   }, [tutorialsSeen, tutorialsSkipped]);
 
   useLayoutEffect(() => { window.scrollTo(0, 0); }, [state.flow.screen, scene?.id, choosingRoute]);
+
+  useEffect(() => {
+    if (!storyAudio || !voicedScene || state.flow.screen !== 'story' || settings.voiceReplay !== 'automatic' || settings.voiceVolume <= 0) return undefined;
+    void storyAudio.narrateScene(voicedScene.sceneId!);
+    return () => storyAudio.cancelNarration();
+  }, [settings.voiceReplay, settings.voiceVolume, state.flow.screen, storyAudio, voicedScene?.id, voicedScene?.sceneId]);
 
   const currentTutorial: TutorialKind | null = tutorialsSkipped ? null
     : state.flow.screen === 'story' && displayedScene && !displayedScene.resolved && displayedScene.choices.length > 0 && !tutorialsSeen.has('choice') ? 'choice'
@@ -188,7 +197,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   } else if (state.flow.screen === 'camp') {
     body = <CampScreen view={camp} onChooseRoute={() => setChoosingRoute(true)} onOpenInventory={() => setOverlay('inventory')} onOpenJournal={() => setOverlay('journal')} onOpenCompanions={() => setOverlay('companions')} onSaveAndExit={() => setExitConfirmation(true)} />;
   } else if (state.flow.screen === 'story' && displayedScene) {
-    body = <><SceneArt illustrationId={displayedScene.illustrationId} alt={displayedScene.illustrationAlt} />{currentTutorial === 'choice' && <TutorialCallout kind="choice" onDismiss={() => dismissTutorial('choice')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><StoryPanel view={displayedScene} onChoose={(choiceId) => issue({ type: 'resolve-choice', eventId: displayedScene.id as EventId, choiceId: choiceId as ChoiceId })} onContinue={() => issue({ type: 'select-next-scene' })} extraActions={hubActions} /></main></>;
+    body = <><SceneArt illustrationId={displayedScene.illustrationId} alt={displayedScene.illustrationAlt} />{currentTutorial === 'choice' && <TutorialCallout kind="choice" onDismiss={() => dismissTutorial('choice')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><StoryPanel view={displayedScene} onChoose={(choiceId) => issue({ type: 'resolve-choice', eventId: displayedScene.id as EventId, choiceId: choiceId as ChoiceId })} onContinue={() => issue({ type: 'select-next-scene' })} onNarrate={storyAudio && voicedScene && settings.voiceVolume > 0 ? () => { void storyAudio.narrateScene(voicedScene.sceneId!); } : undefined} extraActions={hubActions} /></main></>;
   } else if (state.flow.screen === 'story') {
     body = <main className="loading-screen" aria-live="polite"><p>Preparing the next road…</p></main>;
   } else if (state.flow.screen === 'combat' && combat) {

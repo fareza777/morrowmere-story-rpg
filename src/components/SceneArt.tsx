@@ -48,7 +48,7 @@ export function SceneArt({ illustrationId, alt, kind = 'scene' }: SceneArtProps)
   return (
     <figure className="scene-art" data-illustration-id={illustrationId}>
       {attempt < sources.length
-        ? <img src={sources[attempt]} alt={alt} onError={() => setAttempt((current) => current + 1)} />
+        ? <img src={sources[attempt]} alt={alt} width={1536} height={1024} onError={() => setAttempt((current) => current + 1)} />
         : <div className="scene-art-fallback" role="img" aria-label={alt}><span aria-hidden="true">M</span></div>}
     </figure>
   );

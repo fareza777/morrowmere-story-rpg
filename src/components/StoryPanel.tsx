@@ -7,15 +7,17 @@ interface StoryPanelProps {
   readonly view: StoryViewModel;
   readonly onChoose: (choiceId: string) => void;
   readonly onContinue: () => void;
+  readonly onNarrate?: () => void;
   readonly extraActions?: ReactNode;
 }
 
-export function StoryPanel({ view, onChoose, onContinue, extraActions }: StoryPanelProps) {
+export function StoryPanel({ view, onChoose, onContinue, onNarrate, extraActions }: StoryPanelProps) {
   return (
     <article className="story-panel">
       <header>
         <p>On the road</p>
         <h1>{view.title}</h1>
+        {onNarrate && <button className="story-voice-button" type="button" onClick={onNarrate}>Play narration</button>}
       </header>
       <div className="story-prose">{view.paragraphs.map((paragraph, index) => <p key={`${view.id}-paragraph-${index}`}>{paragraph}</p>)}</div>
       {view.resolved ? (

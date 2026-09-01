@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -8,6 +8,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const WORK = resolve(ROOT, '.media-work/chronicle1/audio');
 const MUSIC_OUTPUT = resolve(ROOT, 'public/audio/chronicle1/music');
 const SFX_OUTPUT = resolve(ROOT, 'public/audio/chronicle1/sfx');
+const VOICE_OUTPUT = resolve(ROOT, 'public/audio/chronicle1/voice/en');
 const PRODUCTION = resolve(ROOT, 'production/chronicle1/media');
 const SAMPLE_RATE = 22_050;
 const CREATED_AT = '2026-09-01';
@@ -15,6 +16,17 @@ const LICENSE_BASIS = 'Project-owned original procedural synthesis; commercial G
 
 const MUSIC = [
   { id: 'music-title', root: 45, mood: 'resolute mystery', intensity: 0.55, accent: 'cello, wooden flute, frame drum', motif: [0, 2, 3, 7, 5, 3, 2, -2] },
+  {
+    id: 'music-opening-score',
+    root: 43,
+    mood: 'roadside resolve growing into conspiracy and pursuit',
+    intensity: 0.58,
+    accent: 'low strings, wooden flute, frame drums, restrained bell',
+    motif: [0, 2, 3, 7, 5, 3, -2, 0],
+    durationMs: 105_000,
+    loop: false,
+    dynamicOpening: true,
+  },
   { id: 'music-camp', root: 48, mood: 'shelter and reflection', intensity: 0.25, accent: 'wooden flute, soft dulcimer, low strings', motif: [0, 3, 5, 3, 2, 0, -2, 0] },
   { id: 'music-merchant', root: 50, mood: 'wary warmth', intensity: 0.32, accent: 'hammered dulcimer, hand drum, plucked strings', motif: [0, 2, 5, 7, 5, 2, 3, 0] },
   { id: 'music-kings-road', root: 47, mood: 'forward travel', intensity: 0.42, accent: 'frame drum, cello ostinato, wooden flute', motif: [0, 0, 3, 5, 7, 5, 3, 2] },
@@ -195,7 +207,7 @@ function normalize(samples, target = 0.88) {
 }
 
 function synthMusic(config, trackIndex) {
-  const duration = 80;
+  const duration = (config.durationMs ?? 80_000) / 1_000;
   const total = SAMPLE_RATE * duration;
   const samples = new Float32Array(total);
   const scale = [0, 2, 3, 5, 7, 8, 10, 12];
@@ -205,6 +217,12 @@ function synthMusic(config, trackIndex) {
 
   for (let index = 0; index < total; index += 1) {
     const time = index / SAMPLE_RATE;
+    const openingIntensity = !config.dynamicOpening ? config.intensity
+      : time < 36 ? 0.34
+        : time < 64 ? 0.74
+          : time < 86 ? 0.5
+            : time < 96 ? 0.82
+              : 0.64;
     const beat = time * beatsPerSecond;
     const wholeBeat = Math.floor(beat);
     const beatPhase = beat - wholeBeat;
@@ -230,11 +248,18 @@ function synthMusic(config, trackIndex) {
     const drumEnvelope = Math.exp(-18 * drumPhase);
     const drumAttack = Math.min(1, drumPhase * 40);
     const drumNoise = (sine(833 + trackIndex * 13, time, 0.7) + sine(1_387 + trackIndex * 17, time, -0.4)) * 0.5;
-    const drum = config.intensity > 0.36
-      ? (sine(78 - 25 * Math.min(1, drumPhase * 8), time) * 0.14 + drumNoise * 0.06) * drumEnvelope * drumAttack * config.intensity
+    const drum = openingIntensity > 0.36
+      ? (sine(78 - 25 * Math.min(1, drumPhase * 8), time) * 0.14 + drumNoise * 0.06) * drumEnvelope * drumAttack * openingIntensity
       : 0;
-    const air = (sine(997 + trackIndex * 7, time, 0.2) + sine(1_433 + trackIndex * 11, time, -0.6)) * 0.003 * (0.5 + config.intensity);
-    samples[index] = Math.tanh((pad + bass + melody + dulcimer + drum + air) * (0.7 + config.intensity * 0.38));
+    const air = (sine(997 + trackIndex * 7, time, 0.2) + sine(1_433 + trackIndex * 11, time, -0.6)) * 0.003 * (0.5 + openingIntensity);
+    const titleTime = config.dynamicOpening ? time - 96 : -1;
+    const titleBell = titleTime >= 0
+      ? (sine(110, titleTime) + sine(220, titleTime) * 0.5 + sine(330, titleTime) * 0.22) * Math.exp(-0.42 * titleTime) * 0.12
+      : 0;
+    const edgeFade = config.dynamicOpening
+      ? Math.min(1, time / 1.2) * Math.min(1, (duration - time) / 2.2)
+      : 1;
+    samples[index] = Math.tanh((pad + bass + melody + dulcimer + drum + air + titleBell) * (0.7 + openingIntensity * 0.38)) * edgeFade;
   }
   return normalize(samples, 0.86);
 }
@@ -361,8 +386,8 @@ function wavBuffer(samples) {
 function sha256(bytes) { return createHash('sha256').update(bytes).digest('hex'); }
 
 function encode(wavPath, outputPath, kind) {
-  const bitrate = kind === 'music' ? '48k' : '64k';
-  const target = kind === 'music' ? '-18' : kind === 'ambience' ? '-22' : '-16';
+  const bitrate = kind === 'opening' ? '96k' : kind === 'music' ? '48k' : '64k';
+  const target = kind === 'opening' ? '-17' : kind === 'music' ? '-18' : kind === 'ambience' ? '-22' : '-16';
   const result = spawnSync('ffmpeg', [
     '-y', '-hide_banner', '-loglevel', 'error', '-i', wavPath,
     '-af', `loudnorm=I=${target}:TP=-1.5:LRA=9`, '-ac', '1', '-ar', String(SAMPLE_RATE),
@@ -409,7 +434,7 @@ for (const [index, definition] of MUSIC.entries()) {
   const outputPath = resolve(MUSIC_OUTPUT, `${definition.id}.mp3`);
   const master = wavBuffer(synthMusic(definition, index));
   writeFileSync(wavPath, master);
-  encode(wavPath, outputPath, 'music');
+  encode(wavPath, outputPath, definition.dynamicOpening ? 'opening' : 'music');
   const output = readFileSync(outputPath);
   const measured = probeLoudness(outputPath);
   const provenanceId = `provenance-${definition.id}`;
@@ -428,8 +453,9 @@ for (const [index, definition] of MUSIC.entries()) {
     ...definition,
     src: `/audio/chronicle1/music/${definition.id}.mp3`,
     durationMs: probeDuration(outputPath),
-    loopStartMs: 0,
-    loopEndMs: 80_000,
+    loop: definition.loop ?? true,
+    loopStartMs: definition.loop === false ? null : 0,
+    loopEndMs: definition.loop === false ? null : (definition.durationMs ?? 80_000),
     ...measured,
     bytes: output.byteLength,
     sha256: sha256(output),
@@ -474,6 +500,12 @@ for (const [index, definition] of SFX.entries()) {
 }
 
 const contentContract = JSON.parse(readFileSync(resolve(ROOT, 'content/manifests/chronicle1-media-contract.json'), 'utf8'));
+const bundledVoice = (id) => {
+  const audioSrc = `/audio/chronicle1/voice/en/${id}.mp3`;
+  return existsSync(resolve(VOICE_OUTPUT, `${id}.mp3`))
+    ? { audioSrc, delivery: 'bundled-kokoro-onnx' }
+    : { audioSrc: null, delivery: 'local-web-speech-fallback' };
+};
 const openingScript = OPENING_LINES.map((text, index) => ({
   id: `voice-opening-${String(index + 1).padStart(2, '0')}`,
   group: 'opening',
@@ -482,8 +514,7 @@ const openingScript = OPENING_LINES.map((text, index) => ({
   endMs: OPENING_TIMES[index][1],
   spokenText: text,
   captionText: text,
-  audioSrc: null,
-  delivery: 'local-web-speech-fallback',
+  ...bundledVoice(`voice-opening-${String(index + 1).padStart(2, '0')}`),
 }));
 const storyScript = contentContract.voiceCues.map((cue) => ({
   id: cue.id,
@@ -492,8 +523,7 @@ const storyScript = contentContract.voiceCues.map((cue) => ({
   speaker: cue.speaker,
   spokenText: cue.text,
   captionText: cue.text,
-  audioSrc: null,
-  delivery: 'local-web-speech-fallback',
+  ...bundledVoice(cue.id),
 }));
 const voiceProfiles = [
   ['Eldrin', 'en-GB', 0.86, 0.78], ['Mara', 'en-GB', 0.98, 0.92], ['Rukhar', 'en-GB', 0.86, 0.7],

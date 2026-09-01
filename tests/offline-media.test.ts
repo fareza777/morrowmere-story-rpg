@@ -52,7 +52,7 @@ describe('offline Chronicle I media', () => {
     expect(contract.itemIcons).toHaveLength(100);
     expect(contract.enemyPortraits).toHaveLength(80);
     expect(opening.shots).toHaveLength(14);
-    expect(audio.music).toHaveLength(12);
+    expect(audio.music).toHaveLength(13);
     expect(audio.sfx).toHaveLength(84);
     expect(new Set(localPaths).size).toBe(localPaths.length);
     for (const path of localPaths) expectShippedLocalPath(path);

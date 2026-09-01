@@ -1,6 +1,9 @@
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { CinematicAudioPort, CinematicSequence, UiSettings } from '../../ui/types';
 import { OPENING_NARRATION } from '../../ui/openingSequence';
 import { useCinematicPlayer } from './useCinematicPlayer';
+
+const FINAL_TITLE_HOLD_MS = 1_250;
 
 export interface OpeningCinematicProps {
   readonly sequence: CinematicSequence;
@@ -40,100 +43,113 @@ export function OpeningCinematic({
   settings,
   audio,
   onComplete,
-  completionLabel = 'Continue to class selection',
+  completionLabel = 'Finish opening',
 }: OpeningCinematicProps) {
   const player = useCinematicPlayer(sequence, settings, audio);
+  const [captionsVisible, setCaptionsVisible] = useState(settings.captions);
+  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const shot = sequence.shots[player.shotIndex] ?? sequence.shots[0];
 
+  useEffect(() => {
+    setCaptionsVisible(settings.captions);
+  }, [settings.captions]);
+
+  const completeOnce = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onCompleteRef.current();
+  }, []);
+
+  useEffect(() => {
+    if (player.status !== 'complete' || completedRef.current) return undefined;
+    const timer = window.setTimeout(completeOnce, FINAL_TITLE_HOLD_MS);
+    return () => window.clearTimeout(timer);
+  }, [completeOnce, player.status]);
+
   if (player.status === 'fallback' || !shot) {
-    return <StaticOpening onComplete={onComplete} completionLabel={completionLabel} />;
+    return <StaticOpening onComplete={completeOnce} completionLabel={completionLabel} />;
   }
 
-  const complete = player.status === 'complete';
   const paused = player.status === 'paused';
-  const progress = Math.min(100, Math.max(0, (player.positionMs / sequence.durationMs) * 100));
+  const complete = player.status === 'complete';
+  const preloading = player.status === 'preloading';
   const durationSeconds = Math.max(1, (shot.endMs - shot.startMs) / 1000);
 
   const skip = () => {
     player.stop();
-    onComplete();
+    completeOnce();
   };
 
   return (
-    <main className="opening-cinematic" role="region" aria-label="Opening story">
+    <main
+      className="opening-cinematic"
+      role="region"
+      aria-label="Opening story"
+      aria-busy={preloading || undefined}
+    >
       <section
         className={`opening-visual motion-${shot.motion}${settings.reducedMotion ? ' is-reduced-motion' : ''}${player.status === 'playing' ? '' : ' is-timeline-paused'}`}
         data-testid="opening-visual"
-        style={{ '--shot-duration': `${durationSeconds}s` } as React.CSSProperties}
+        style={{ '--shot-duration': `${durationSeconds}s` } as CSSProperties}
       >
         <img key={`${player.runId}:${shot.id}`} src={shot.imageId} alt={shot.alt} onError={player.fail} />
         {player.shotIndex === sequence.shots.length - 1 && (
-          <div className="opening-title-card" aria-hidden="true">
+          <div className="opening-title-card">
             <strong>MORROWMERE</strong>
             <span>Chronicle I — The Black Banner</span>
           </div>
         )}
-      </section>
-
-      <section className="opening-story-panel">
-        <header className="opening-story-meta">
-          <div>
-            <p className="eyebrow">Opening story</p>
-            <span>Scene {player.shotIndex + 1} of {sequence.shots.length}</span>
-          </div>
-          <span>{complete ? 'Story complete' : paused ? 'Paused' : player.status === 'preloading' ? 'Preparing audio' : 'Playing'}</span>
-        </header>
-
-        <div className="opening-progress" aria-label={`Opening progress ${Math.round(progress)} percent`}>
-          <span style={{ inlineSize: `${progress}%` }} />
-        </div>
-
-        <p
-          className={settings.captions ? 'opening-caption' : 'opening-caption sr-only'}
-          aria-live="polite"
-        >
-          {shot.caption}
-        </p>
-
-        {player.audioUnavailable && (
-          <p className="opening-audio-notice" role="status">
-            Audio is unavailable. Captions will continue.
+        <div className="opening-narration">
+          <p
+            className={captionsVisible ? 'opening-caption' : 'opening-caption sr-only'}
+            aria-live="polite"
+          >
+            {shot.caption}
           </p>
-        )}
 
-        {complete ? (
-          <div className="opening-controls opening-controls-complete">
-            <button className="button button-secondary" type="button" onClick={player.replay}>
-              Replay opening
-            </button>
-            <button className="button button-primary" type="button" onClick={onComplete}>
-              {completionLabel}
-            </button>
-          </div>
-        ) : (
-          <div className="opening-controls">
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={player.status === 'preloading'}
-              onClick={paused ? player.resume : player.pause}
-            >
-              {paused ? 'Resume opening' : 'Pause opening'}
-            </button>
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={player.status === 'preloading'}
-              onClick={player.replay}
-            >
-              Replay opening
-            </button>
-            <button className="opening-skip" type="button" onClick={skip}>
-              Skip opening
-            </button>
-          </div>
-        )}
+          {player.audioUnavailable && (
+            <div className="opening-audio-failure">
+              <p className="opening-audio-notice" role="status">
+                Audio is unavailable. Captions will continue.
+              </p>
+              <button
+                className="opening-audio-retry"
+                type="button"
+                disabled={paused}
+                onClick={player.retryAudio}
+              >
+                Retry audio
+              </button>
+            </div>
+          )}
+        </div>
       </section>
+
+      {!complete && (
+        <div className="opening-cinematic-controls">
+          <button
+            className="opening-control"
+            type="button"
+            disabled={preloading}
+            onClick={paused ? player.resume : player.pause}
+          >
+            {paused ? 'Resume opening' : 'Pause opening'}
+          </button>
+          <button
+            className="opening-control"
+            type="button"
+            aria-pressed={captionsVisible}
+            onClick={() => setCaptionsVisible((visible) => !visible)}
+          >
+            {captionsVisible ? 'Hide captions' : 'Show captions'}
+          </button>
+          <button className="opening-skip" type="button" onClick={skip}>
+            Skip opening
+          </button>
+        </div>
+      )}
     </main>
   );
 }

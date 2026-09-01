@@ -59,6 +59,16 @@ describe('camp, route, and story screens', () => {
     expect(screen.getByRole('button', { name: /Follow the blood trail/i })).toHaveTextContent('Risk an ambush');
   });
 
+  it('offers a clear replay control for an authored voice cue', async () => {
+    const user = userEvent.setup();
+    const onNarrate = vi.fn();
+    const view = selectCurrentScene(makeUiGame(), UI_CONTENT)!;
+    render(<StoryPanel view={view} onChoose={vi.fn()} onContinue={vi.fn()} onNarrate={onNarrate} />);
+
+    await user.click(screen.getByRole('button', { name: 'Play narration' }));
+    expect(onNarrate).toHaveBeenCalledOnce();
+  });
+
   it('lets the player dismiss or skip contextual tutorials', async () => {
     const user = userEvent.setup();
     const onDismiss = vi.fn();

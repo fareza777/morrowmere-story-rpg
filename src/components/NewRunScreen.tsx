@@ -16,6 +16,7 @@ const CLASSES = [
 export function NewRunScreen({ onBack, onBegin }: NewRunScreenProps) {
   const [selected, setSelected] = useState<HeroClass>('warrior');
   const [name, setName] = useState('The Oathless');
+  const [artFailed, setArtFailed] = useState(false);
 
   return (
     <main className="new-run-screen">
@@ -29,6 +30,20 @@ export function NewRunScreen({ onBack, onBegin }: NewRunScreenProps) {
           <h1>Choose your path</h1>
         </div>
       </header>
+
+      <figure className="new-run-hero">
+        {artFailed
+          ? <div className="new-run-hero-fallback" role="img" aria-label="A sunlit road leading into Morrowmere."><span aria-hidden="true">M</span></div>
+          : (
+            <img
+              src="/assets/chronicle1/onboarding/class-selection-road.webp"
+              alt="A sunlit road leading into Morrowmere."
+              width={1024}
+              height={1536}
+              onError={() => setArtFailed(true)}
+            />
+          )}
+      </figure>
 
       <div className="class-list" aria-label="Choose a class">
         {CLASSES.map((heroClass) => {

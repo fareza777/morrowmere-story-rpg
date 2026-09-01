@@ -23,7 +23,8 @@
 .loadout-list article header { display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem; }
 .loadout-list article header > span { min-inline-size: 0; display: grid; gap: 0.15rem; }
 .loadout-list article > small { display: block; margin-block-start: 0.35rem; color: var(--paper-2); }
-.merchant-screen .scene-art { margin-inline: 0; }
+.merchant-screen { padding-inline: max(1rem, var(--safe-left)) max(1rem, var(--safe-right)); }
+.merchant-screen .scene-art { inline-size: 100%; max-inline-size: 720px; margin-inline: auto; border: 1px solid var(--line-strong); border-radius: 14px; }
 .merchant-dialogue { color: var(--paper-1); line-height: 1.55; }
 .merchant-gold { padding: 0.65rem; display: flex; align-items: center; gap: 0.4rem; border: 1px solid var(--line); border-radius: 8px; background: #f5e6c9; color: var(--accent-strong); font-size: 0.84rem; font-weight: 850; overflow-wrap: anywhere; }
 .merchant-note { color: var(--paper-2); font-size: 0.8rem; line-height: 1.45; }
@@ -74,4 +75,4 @@
 .defeat-panel .end-actions svg { flex: 0 0 auto; }
 .defeat-panel { min-block-size: 100dvh; }
 @media (max-width: 340px) { .sheet-body { padding-inline: 0.75rem; } .inventory-tabs button { font-size: 0.7rem; } .equipment-slots article { align-items: start; flex-wrap: wrap; } .equipment-slots article > button { inline-size: 100%; } .reward-summary { grid-template-columns: 1fr; } }
-@media (min-width: 700px) { .loadout-stats { grid-template-columns: repeat(5, 1fr); } .merchant-list, .companion-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 700px) { .merchant-screen { padding-inline: 2rem; } .loadout-stats { grid-template-columns: repeat(5, 1fr); } .merchant-list, .companion-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -19,6 +19,26 @@
       ]
     },
     {
+      "id": "music-opening-score",
+      "root": 43,
+      "mood": "roadside resolve growing into conspiracy and pursuit",
+      "intensity": 0.58,
+      "accent": "low strings, wooden flute, frame drums, restrained bell",
+      "motif": [
+        0,
+        2,
+        3,
+        7,
+        5,
+        3,
+        -2,
+        0
+      ],
+      "durationMs": 105000,
+      "loop": false,
+      "dynamicOpening": true
+    },
+    {
       "id": "music-camp",
       "root": 48,
       "mood": "shelter and reflection",

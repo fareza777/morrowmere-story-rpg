@@ -3,8 +3,11 @@ import provenanceJson from '../../../production/chronicle1/media/audio-provenanc
 import voiceProfilesJson from '../../../production/chronicle1/media/voice-profiles.json';
 import voiceScriptJson from '../../../production/chronicle1/media/voice-script.json';
 
+export const OPENING_MUSIC_ID = 'music-opening-score' as const;
+export const OPENING_MUSIC_SRC = '/audio/chronicle1/music/music-opening-score.mp3' as const;
+
 export const MUSIC_IDS = Object.freeze([
-  'music-title', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
+  'music-title', OPENING_MUSIC_ID, 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
   'music-redwater', 'music-embervault', 'music-greywatch-siege', 'music-crownless-keep',
   'music-false-coronation', 'music-ending-road',
 ] as const);
@@ -28,8 +31,9 @@ export interface MusicAsset {
   readonly id: MusicId;
   readonly src: string;
   readonly durationMs: number;
-  readonly loopStartMs: number;
-  readonly loopEndMs: number;
+  readonly loop: boolean;
+  readonly loopStartMs: number | null;
+  readonly loopEndMs: number | null;
   readonly mood: string;
   readonly intensity: number;
   readonly accent: string;
@@ -69,7 +73,7 @@ export interface VoiceScriptCue {
   readonly spokenText: string;
   readonly captionText: string;
   readonly audioSrc: string | null;
-  readonly delivery: 'local-web-speech-fallback' | 'file';
+  readonly delivery: 'local-web-speech-fallback' | 'file' | 'bundled-kokoro-onnx';
 }
 
 export interface VoiceProfile {
@@ -125,6 +129,9 @@ export const VOICE_PROFILES: readonly VoiceProfile[] = Object.freeze(
 const musicById = new Map(MUSIC_ASSETS.map((asset) => [asset.id, asset] as const));
 const sfxById = new Map(SFX_ASSETS.map((asset) => [asset.id, asset] as const));
 const voiceProfileBySpeaker = new Map(VOICE_PROFILES.map((profile) => [profile.speaker, profile] as const));
+const voiceCueBySceneId = new Map(
+  VOICE_SCRIPT.flatMap((cue) => cue.sceneId ? [[cue.sceneId, cue] as const] : []),
+);
 
 export const SFX_CUE_VARIANTS = Object.freeze({
   ui: ['sfx-ui-tap'], confirm: ['sfx-ui-confirm'], back: ['sfx-ui-back'], page: ['sfx-ui-page'], inventory: ['sfx-ui-inventory'],
@@ -162,6 +169,7 @@ export const OPENING_SHOT_SFX: Readonly<Record<string, readonly string[]>> = Obj
 export function musicAsset(id: string): MusicAsset | undefined { return musicById.get(id as MusicId); }
 export function sfxAsset(id: string): SfxAsset | undefined { return sfxById.get(id); }
 export function voiceProfile(speaker: VoiceSpeaker): VoiceProfile | undefined { return voiceProfileBySpeaker.get(speaker); }
+export function voiceCueForScene(sceneId: string): VoiceScriptCue | undefined { return voiceCueBySceneId.get(sceneId); }
 
 function isSemanticSfxCue(cue: string): cue is SemanticSfxCue {
   return Object.prototype.hasOwnProperty.call(SFX_CUE_VARIANTS, cue);

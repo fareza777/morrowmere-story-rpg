@@ -6,6 +6,7 @@ import {
   musicAsset,
   resolveSfxCue,
   sfxAsset,
+  voiceCueForScene,
   voiceProfile,
   type AmbienceId,
   type MusicId,
@@ -19,9 +20,11 @@ export interface AudioElementLike {
   loop: boolean;
   preload: string;
   volume: number;
+  addEventListener?(type: 'ended' | 'error', listener: () => void): void;
   load?(): void;
   pause(): void;
   play(): Promise<void> | void;
+  removeEventListener?(type: 'ended' | 'error', listener: () => void): void;
 }
 
 export interface LocalSpeechPort {
@@ -42,6 +45,15 @@ export interface AudioPreferences {
 export interface NarrationOptions {
   readonly speaker?: VoiceSpeaker;
   readonly audioSrc?: string | null;
+  readonly offsetMs?: number;
+  readonly reportFailure?: boolean;
+}
+
+export interface MusicPlaybackOptions {
+  readonly loop?: boolean;
+  readonly positionMs?: number;
+  readonly reportFailure?: boolean;
+  readonly src?: string;
 }
 
 export interface AudioServiceDependencies {
@@ -54,12 +66,13 @@ export interface AudioService {
   preferences(): AudioPreferences;
   preload(srcs: readonly string[]): Promise<void>;
   playSfx(cue: SfxCue, enabled?: boolean, volumeScale?: number): void;
-  playMusic(id: MusicId | string, enabled?: boolean): Promise<void>;
+  playMusic(id: MusicId | string, enabled?: boolean, options?: MusicPlaybackOptions): Promise<void>;
   stopMusic(): void;
   seekMusic(positionMs: number): void;
   playAmbience(id: AmbienceId, enabled?: boolean): Promise<void>;
   stopAmbience(): void;
-  narrateCaption(text: string, options?: NarrationOptions): void;
+  narrateCaption(text: string, options?: NarrationOptions): Promise<void>;
+  narrateScene(sceneId: string): Promise<boolean>;
   cancelNarration(): void;
   pauseAll(): void;
   resumeAll(): void;
@@ -75,6 +88,8 @@ const DEFAULT_PREFERENCES: AudioPreferences = Object.freeze({
   musicVolume: 0.7,
   voiceVolume: 0.9,
 });
+
+const VOICE_DUCK_GAIN = 10 ** (-10 / 20);
 
 function clampVolume(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
@@ -109,11 +124,15 @@ function safePause(element: AudioElementLike | null): void {
 
 function safePlay(element: AudioElementLike | null, onFailure?: () => void): void {
   if (!element) { onFailure?.(); return; }
+  void attemptPlay(element).catch(() => onFailure?.());
+}
+
+function attemptPlay(element: AudioElementLike): Promise<void> {
   try {
     const result = element.play();
-    if (result && typeof result.catch === 'function') void result.catch(() => onFailure?.());
-  } catch {
-    onFailure?.();
+    return result ? Promise.resolve(result) : Promise.resolve();
+  } catch (error) {
+    return Promise.reject(error);
   }
 }
 
@@ -123,9 +142,17 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
   const rotations = new Map<string, number>();
   const sfxPools = new Map<string, { readonly elements: AudioElementLike[]; cursor: number }>();
   let settings = { ...DEFAULT_PREFERENCES };
-  let music: { readonly id: string; readonly element: AudioElementLike } | null = null;
+  let music: {
+    readonly id: string;
+    readonly src: string;
+    readonly element: AudioElementLike;
+    readonly loop: boolean;
+    readonly loopStartMs: number;
+    readonly loopEndMs: number;
+  } | null = null;
   let ambience: { readonly id: string; readonly element: AudioElementLike } | null = null;
-  let narration: AudioElementLike | null = null;
+  let narration: { readonly element: AudioElementLike; detach(): void } | null = null;
+  let musicDucked = false;
   let resumeMusic = false;
   let resumeAmbience = false;
 
@@ -139,6 +166,38 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     }
   };
 
+  const applyMusicVolume = (): void => {
+    if (!music) return;
+    try {
+      music.element.volume = clampVolume(settings.musicVolume * (musicDucked ? VOICE_DUCK_GAIN : 1));
+    } catch { /* Optional audio must fail open. */ }
+  };
+
+  const releaseNarration = (element: AudioElementLike, pause: boolean): void => {
+    if (narration?.element !== element) return;
+    const active = narration;
+    narration = null;
+    active.detach();
+    if (pause) safePause(element);
+    musicDucked = false;
+    applyMusicVolume();
+  };
+
+  const stopNarrationFile = (): void => {
+    if (!narration) return;
+    releaseNarration(narration.element, true);
+  };
+
+  const seekActiveMusic = (positionMs: number): void => {
+    if (!music) return;
+    const position = Math.max(0, positionMs);
+    const loopDuration = music.loopEndMs - music.loopStartMs;
+    const targetMs = music.loop && loopDuration > 0
+      ? music.loopStartMs + position % loopDuration
+      : position;
+    try { music.element.currentTime = targetMs / 1_000; } catch { /* Optional audio. */ }
+  };
+
   const configure = (changed: Partial<AudioPreferences>): void => {
     settings = {
       ...settings,
@@ -147,7 +206,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       musicVolume: clampVolume(changed.musicVolume ?? settings.musicVolume),
       voiceVolume: clampVolume(changed.voiceVolume ?? settings.voiceVolume),
     };
-    try { if (music) music.element.volume = settings.musicVolume; } catch { /* Optional audio must fail open. */ }
+    applyMusicVolume();
     try { if (ambience) ambience.element.volume = settings.musicVolume * 0.55; } catch { /* Optional audio must fail open. */ }
     if (!settings.musicEnabled || settings.musicVolume === 0) {
       resumeMusic = false;
@@ -158,8 +217,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       safePause(ambience?.element ?? null);
     }
     if (!settings.voiceEnabled || settings.voiceVolume === 0) {
-      safePause(narration);
-      narration = null;
+      stopNarrationFile();
       try { localSpeech?.cancel(); } catch { /* Local narration is optional. */ }
     }
   };
@@ -190,22 +248,49 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     safePlay(element);
   };
 
-  const playMusic = async (id: MusicId | string, enabled = true): Promise<void> => {
+  const playMusic = async (
+    id: MusicId | string,
+    enabled = true,
+    options: MusicPlaybackOptions = {},
+  ): Promise<void> => {
     if (!enabled || !settings.musicEnabled || settings.musicVolume === 0) { safePause(music?.element ?? null); return; }
     const asset = musicAsset(id);
-    if (!asset) return;
-    if (music?.id !== asset.id) {
-      safePause(music?.element ?? null);
-      const element = make(asset.src);
-      if (!element) return;
-      try {
-        element.loop = true;
-        element.currentTime = asset.loopStartMs / 1_000;
-      } catch { return; }
-      music = { id: asset.id, element };
+    const src = options.src ?? asset?.src;
+    if (!src) {
+      if (options.reportFailure) throw new Error(`Unknown music asset ${id}.`);
+      return;
     }
-    try { music.element.volume = settings.musicVolume; } catch { return; }
-    safePlay(music.element);
+    const loop = options.loop ?? asset?.loop ?? true;
+    if (music?.id !== id || music.src !== src || music.loop !== loop) {
+      safePause(music?.element ?? null);
+      const element = make(src);
+      if (!element) {
+        if (options.reportFailure) throw new Error(`Unable to create audio for ${id}.`);
+        return;
+      }
+      try {
+        element.loop = loop;
+        element.currentTime = loop ? (asset?.loopStartMs ?? 0) / 1_000 : 0;
+      } catch (error) {
+        if (options.reportFailure) throw error;
+        return;
+      }
+      music = {
+        id,
+        src,
+        element,
+        loop,
+        loopStartMs: asset?.loopStartMs ?? 0,
+        loopEndMs: asset?.loopEndMs ?? 0,
+      };
+    }
+    if (options.positionMs !== undefined) seekActiveMusic(options.positionMs);
+    applyMusicVolume();
+    try {
+      await attemptPlay(music.element);
+    } catch (error) {
+      if (options.reportFailure) throw error;
+    }
   };
 
   const stopMusic = (): void => {
@@ -217,11 +302,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
   };
 
   const seekMusic = (positionMs: number): void => {
-    if (!music) return;
-    const asset = musicAsset(music.id);
-    if (!asset) return;
-    const loopDuration = Math.max(1, asset.loopEndMs - asset.loopStartMs);
-    try { music.element.currentTime = (asset.loopStartMs + Math.max(0, positionMs) % loopDuration) / 1_000; } catch { /* Optional audio. */ }
+    seekActiveMusic(positionMs);
   };
 
   const playAmbience = async (id: AmbienceId, enabled = true): Promise<void> => {
@@ -253,33 +334,70 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     } catch { /* Captions remain authoritative if local speech fails. */ }
   };
 
-  const narrateCaption = (text: string, options: NarrationOptions = {}): void => {
+  const narrateCaption = async (text: string, options: NarrationOptions = {}): Promise<void> => {
     if (!text.trim() || !settings.voiceEnabled || settings.voiceVolume === 0) return;
     const speaker = options.speaker ?? 'Eldrin';
-    safePause(narration);
-    narration = null;
+    stopNarrationFile();
     if (!options.audioSrc) { speakLocally(text, speaker); return; }
     try { localSpeech?.cancel(); } catch { /* Captions remain authoritative. */ }
     const clip = make(options.audioSrc);
-    if (!clip) { speakLocally(text, speaker); return; }
+    if (!clip) {
+      speakLocally(text, speaker);
+      if (options.reportFailure) throw new Error(`Unable to create narration audio ${options.audioSrc}.`);
+      return;
+    }
     try {
       clip.loop = false;
       clip.volume = settings.voiceVolume;
-    } catch {
+      clip.currentTime = Math.max(0, options.offsetMs ?? 0) / 1_000;
+    } catch (error) {
       speakLocally(text, speaker);
+      if (options.reportFailure) throw error;
       return;
     }
-    narration = clip;
-    safePlay(clip, () => {
-      if (narration !== clip || !settings.voiceEnabled || settings.voiceVolume === 0) return;
-      narration = null;
+    let usedFallback = false;
+    const fallback = (): void => {
+      if (usedFallback || !settings.voiceEnabled || settings.voiceVolume === 0) return;
+      usedFallback = true;
       speakLocally(text, speaker);
-    });
+    };
+    const ended = (): void => { releaseNarration(clip, false); };
+    const failed = (): void => {
+      const wasActive = narration?.element === clip;
+      releaseNarration(clip, false);
+      if (wasActive) fallback();
+    };
+    const active = {
+      element: clip,
+      detach(): void {
+        try { clip.removeEventListener?.('ended', ended); } catch { /* Optional audio. */ }
+        try { clip.removeEventListener?.('error', failed); } catch { /* Optional audio. */ }
+      },
+    };
+    narration = active;
+    try { clip.addEventListener?.('ended', ended); } catch { /* Optional audio. */ }
+    try { clip.addEventListener?.('error', failed); } catch { /* Optional audio. */ }
+    musicDucked = true;
+    applyMusicVolume();
+    try {
+      await attemptPlay(clip);
+    } catch (error) {
+      const wasActive = narration?.element === clip;
+      releaseNarration(clip, false);
+      if (wasActive) fallback();
+      if (options.reportFailure) throw error;
+    }
+  };
+
+  const narrateScene = async (sceneId: string): Promise<boolean> => {
+    const cue = voiceCueForScene(sceneId);
+    if (!cue) return false;
+    await narrateCaption(cue.spokenText, { speaker: cue.speaker, audioSrc: cue.audioSrc });
+    return true;
   };
 
   const cancelNarration = (): void => {
-    safePause(narration);
-    narration = null;
+    stopNarrationFile();
     try { localSpeech?.cancel(); } catch { /* Optional narration. */ }
   };
 
@@ -315,6 +433,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     playAmbience,
     stopAmbience,
     narrateCaption,
+    narrateScene,
     cancelNarration,
     pauseAll,
     resumeAll,
@@ -375,16 +494,23 @@ export function createCinematicAudioPort(service: AudioService): CinematicAudioP
     service.cancelNarration();
   };
 
-  const runOpeningVoice = (fromMs: number): void => {
+  const runOpeningVoice = (fromMs: number): Promise<void> => {
+    let immediate = Promise.resolve();
     for (const cue of OPENING_VOICE_CUES) {
       const startMs = cue.startMs ?? 0;
       const endMs = cue.endMs ?? startMs;
       if (endMs <= fromMs) continue;
       const delay = Math.max(0, startMs - fromMs);
-      const speak = () => service.narrateCaption(cue.spokenText, { speaker: cue.speaker, audioSrc: cue.audioSrc });
-      if (delay === 0) speak();
-      else timers.push(setTimeout(speak, delay));
+      const speak = (reportFailure: boolean) => service.narrateCaption(cue.spokenText, {
+        speaker: cue.speaker,
+        audioSrc: cue.audioSrc,
+        offsetMs: Math.max(0, fromMs - startMs),
+        reportFailure,
+      });
+      if (delay === 0) immediate = speak(true);
+      else timers.push(setTimeout(() => { void speak(false); }, delay));
     }
+    return immediate;
   };
 
   const runShotCues = (active: CinematicSequence, fromMs: number): void => {
@@ -406,14 +532,20 @@ export function createCinematicAudioPort(service: AudioService): CinematicAudioP
         .map((id) => sfxAsset(id)?.src)
         .filter((src): src is string => Boolean(src));
       const voice = OPENING_VOICE_CUES.map((cue) => cue.audioSrc).filter((src): src is string => Boolean(src));
-      await service.preload([...(music ? [music.src] : []), ...sfx, ...voice]);
+      const musicSrc = active.musicSrc ?? music?.src;
+      await service.preload([...(musicSrc ? [musicSrc] : []), ...sfx, ...voice]);
     },
     async play(active, fromMs): Promise<void> {
       clearTimers();
-      await service.playMusic(active.musicId);
-      service.seekMusic(fromMs);
-      if (active.id === 'chronicle-1-opening') runOpeningVoice(fromMs);
+      await service.playMusic(active.musicId, true, {
+        loop: active.musicLoop ?? true,
+        positionMs: fromMs,
+        reportFailure: true,
+        ...(active.musicSrc ? { src: active.musicSrc } : {}),
+      });
+      const voice = active.id === 'chronicle-1-opening' ? runOpeningVoice(fromMs) : Promise.resolve();
       runShotCues(active, fromMs);
+      await voice;
     },
     pause(): void { clearTimers(); service.pauseAll(); },
     seek(positionMs): void { clearTimers(); service.seekMusic(positionMs); },

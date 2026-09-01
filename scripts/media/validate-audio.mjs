@@ -13,7 +13,7 @@ const VOICE_PROFILES_PATH = resolve(ROOT, 'production/chronicle1/media/voice-pro
 const OPENING_TIMELINE_PATH = resolve(ROOT, 'production/chronicle1/media/opening-timeline.json');
 
 const MUSIC_IDS = [
-  'music-title', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
+  'music-title', 'music-opening-score', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
   'music-redwater', 'music-embervault', 'music-greywatch-siege', 'music-crownless-keep',
   'music-false-coronation', 'music-ending-road',
 ];
@@ -33,7 +33,7 @@ async function readJson(path) {
 }
 
 function assetPath(src) {
-  assert(/^\/audio\/chronicle1\/(music|sfx)\/[a-z0-9-]+\.mp3$/.test(src), `Unsafe or non-canonical audio path: ${src}`);
+  assert(/^\/audio\/chronicle1\/(?:music|sfx|voice\/en)\/[a-z0-9-]+\.mp3$/.test(src), `Unsafe or non-canonical audio path: ${src}`);
   const path = resolve(ROOT, `public${src}`);
   assert(path.startsWith(`${AUDIO_ROOT}${sep}`), `Audio path escapes the shipped root: ${src}`);
   return path;
@@ -116,7 +116,7 @@ async function main() {
   assert(manifest.sampleRate === 22050 && manifest.channels === 1, 'Android pack must be 22.05 kHz mono.');
   assert(manifest.measurement?.loudness.includes('Post-encode EBU R128') && manifest.measurement?.peak.includes('Post-encode EBU R128'), 'Audio measurement method must be explicit.');
   assert(JSON.stringify(manifest.music.map((asset) => asset.id)) === JSON.stringify(MUSIC_IDS), 'Music IDs/order differ from the locked contract.');
-  assert(manifest.music.length === 12, 'Expected exactly 12 music tracks.');
+  assert(manifest.music.length === 13, 'Expected exactly 13 music tracks.');
   assert(manifest.sfx.length === 84, 'Expected exactly 84 SFX.');
 
   for (const [group, expected] of Object.entries(SFX_GROUPS)) {
@@ -124,12 +124,12 @@ async function main() {
   }
 
   const assets = [...manifest.music, ...manifest.sfx];
-  assert(new Set(assets.map((asset) => asset.id)).size === 96, 'Audio asset IDs must be unique.');
-  assert(new Set(assets.map((asset) => asset.src)).size === 96, 'Audio source paths must be unique.');
-  assert(new Set(assets.map((asset) => asset.sha256)).size === 96, 'Output hashes must be unique.');
-  assert(provenance.assets.length === 96, 'Every audio asset needs one provenance record.');
+  assert(new Set(assets.map((asset) => asset.id)).size === 97, 'Audio asset IDs must be unique.');
+  assert(new Set(assets.map((asset) => asset.src)).size === 97, 'Audio source paths must be unique.');
+  assert(new Set(assets.map((asset) => asset.sha256)).size === 97, 'Output hashes must be unique.');
+  assert(provenance.assets.length === 97, 'Every generated music/SFX asset needs one provenance record.');
   const provenanceById = new Map(provenance.assets.map((entry) => [entry.id, entry]));
-  assert(provenanceById.size === 96, 'Provenance IDs must be unique.');
+  assert(provenanceById.size === 97, 'Provenance IDs must be unique.');
   const expectedFiles = new Set();
   let totalBytes = 0;
 
@@ -158,20 +158,20 @@ async function main() {
     assert(Math.abs(loudness.peak - asset.truePeakDbtp) <= 0.11, `${asset.id} measured peak differs from its manifest.`);
     if (asset.id.startsWith('music-')) {
       assert(asset.durationMs >= 75_000 && asset.durationMs <= 240_000, `${asset.id} music duration is outside the contract.`);
-      assert(asset.loopStartMs >= 0 && asset.loopEndMs > asset.loopStartMs + 30_000 && Math.abs(asset.loopEndMs - asset.durationMs) <= 120, `${asset.id} loop window is invalid.`);
-      assert(Math.abs(loudness.integrated - (-18)) <= 1, `${asset.id} measures ${loudness.integrated} LUFS; expected -18 +/-1.`);
+      if (asset.loop === false) {
+        assert(asset.id === 'music-opening-score' && asset.loopStartMs === null && asset.loopEndMs === null, `${asset.id} is the only approved non-looping score.`);
+      } else {
+        assert(asset.loopStartMs >= 0 && asset.loopEndMs > asset.loopStartMs + 30_000 && Math.abs(asset.loopEndMs - asset.durationMs) <= 120, `${asset.id} loop window is invalid.`);
+      }
+      const targetLoudness = asset.id === 'music-opening-score' ? -17 : -18;
+      assert(Math.abs(loudness.integrated - targetLoudness) <= 1, `${asset.id} measures ${loudness.integrated} LUFS; expected ${targetLoudness} +/-1.`);
       assert(loudness.peak <= -1, `${asset.id} true/sample peak ${loudness.peak} dBFS exceeds -1 dBFS.`);
     } else {
       assert(asset.durationMs >= 40 && asset.durationMs <= 20_000, `${asset.id} SFX duration is outside the contract.`);
     }
-    if (asset.id.startsWith('music-') || asset.loop === true) validateLoopBoundary(path, asset.durationMs, asset.id);
+    if (asset.loop === true) validateLoopBoundary(path, asset.durationMs, asset.id);
     decode(path, asset.id);
   }
-
-  const actualFiles = await listMp3(AUDIO_ROOT);
-  assert(actualFiles.length === 96, `Expected exactly 96 shipped MP3 files; found ${actualFiles.length}.`);
-  assert(actualFiles.every((path) => expectedFiles.has(path)), 'The shipped audio directory contains an orphan MP3.');
-  assert(totalBytes < 55 * 1024 * 1024, `Audio pack is ${totalBytes} bytes; budget is 55 MiB.`);
 
   const groupCounts = Object.fromEntries(['opening', 'main', 'companion'].map((group) => [group, voiceScript.cues.filter((cue) => cue.group === group).length]));
   assert(JSON.stringify(groupCounts) === JSON.stringify({ opening: 8, main: 16, companion: 8 }), 'Voice script must contain 8 opening, 16 main, and 8 companion cues.');
@@ -183,10 +183,28 @@ async function main() {
   const companionSpeakers = Object.fromEntries(['Mara', 'Rukhar', 'Caldus', 'Lyra', 'Talla'].map((speaker) => [speaker, voiceScript.cues.filter((cue) => cue.group === 'companion' && cue.speaker === speaker).length]));
   assert(JSON.stringify(companionSpeakers) === JSON.stringify({ Mara: 1, Rukhar: 2, Caldus: 2, Lyra: 2, Talla: 1 }), 'Companion voice allocation differs from the approved script.');
   assert(voiceScript.cues.every((cue) => cue.spokenText === cue.captionText), 'Every voice line must exactly match its caption.');
-  assert(voiceScript.cues.every((cue) => cue.audioSrc === null && cue.delivery === 'local-web-speech-fallback'), 'Unapproved paid voice files must not be represented as shipped clips.');
+  assert(voiceScript.cues.every((cue) => cue.audioSrc && cue.delivery === 'bundled-kokoro-onnx'), 'Every approved story cue must use its bundled offline voice clip.');
   assert(voiceProfiles.profiles.length === 7 && voiceProfiles.profiles.every((profile) => profile.provider.voiceId === null), 'Provider voices must remain unselected until an authorized audition.');
 
-  process.stdout.write(`Audio validation passed: 12 music, 84 SFX, 96 decoded MP3 files, ${totalBytes} bytes.\n`);
+  for (const cue of voiceScript.cues) {
+    const path = assetPath(cue.audioSrc);
+    expectedFiles.add(path);
+    const details = await stat(path);
+    assert(details.size > 4_000, `${cue.id} voice clip is unexpectedly small.`);
+    const media = probe(path, cue.id);
+    assert(media.codec === 'mp3' && media.sampleRate === 24_000 && media.channels === 1, `${cue.id} is not 24 kHz mono MP3.`);
+    assert(media.durationMs >= 500 && media.durationMs <= 20_000, `${cue.id} voice duration is outside the contract.`);
+    if (cue.group === 'opening') assert(media.durationMs < cue.endMs - cue.startMs, `${cue.id} overruns its cinematic slot.`);
+    decode(path, cue.id);
+    totalBytes += details.size;
+  }
+
+  const actualFiles = await listMp3(AUDIO_ROOT);
+  assert(actualFiles.length === 129, `Expected exactly 129 shipped MP3 files; found ${actualFiles.length}.`);
+  assert(actualFiles.every((path) => expectedFiles.has(path)), 'The shipped audio directory contains an orphan MP3.');
+  assert(totalBytes < 55 * 1024 * 1024, `Audio pack is ${totalBytes} bytes; budget is 55 MiB.`);
+
+  process.stdout.write(`Audio validation passed: 13 music, 84 SFX, 32 voice clips, 129 decoded MP3 files, ${totalBytes} bytes.\n`);
 }
 
 main().catch((error) => {

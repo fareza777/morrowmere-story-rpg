@@ -11,6 +11,7 @@ export interface CinematicPlayer {
   readonly audioUnavailable: boolean;
   pause(): void;
   resume(): void;
+  retryAudio(): void;
   replay(): void;
   stop(): void;
   fail(): void;
@@ -168,6 +169,14 @@ export function useCinematicPlayer(
     startAudio(position, epoch);
   }, [audio, startAudio, updateStatus]);
 
+  const retryAudio = useCallback(() => {
+    if (!audioUnavailable || statusRef.current !== 'playing') return;
+    const epoch = ++epochRef.current;
+    const position = positionRef.current;
+    audio.seek(position);
+    startAudio(position, epoch);
+  }, [audio, audioUnavailable, startAudio]);
+
   const replay = useCallback(() => {
     const epoch = ++epochRef.current;
     cancelFrame();
@@ -201,6 +210,7 @@ export function useCinematicPlayer(
     audioUnavailable,
     pause,
     resume,
+    retryAudio,
     replay,
     stop,
     fail,

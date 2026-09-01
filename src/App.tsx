@@ -417,12 +417,28 @@ export default function App({ dependencies }: AppProps = {}) {
       <ErrorBoundary onReset={() => { setReplayingOpening(false); session.returnToTitle(); }}>
         <>
           {!replayingOpening && session.view === 'title' && <TitleScreen slots={session.slots} onContinue={(slot) => { playSfx('ui'); session.continueSlot(slot); }} onRecover={(slot) => { playSfx('ui'); session.continueSlot(slot); }} onNew={(slot) => { playSfx('ui'); session.beginSlot(slot); }} onOverlayChange={setAdOverlayOpen} />}
-          {!replayingOpening && session.view === 'preferences' && <OnboardingScreen initialSettings={settings} onBack={session.returnToTitle} onComplete={(nextSettings) => { setSettings(nextSettings); session.showOpening(); }} />}
+          {!replayingOpening && session.view === 'preferences' && <OnboardingScreen initialSettings={settings} onBack={session.returnToTitle} onComplete={(nextSettings) => {
+            setSettings(nextSettings);
+            configureGameAudio({
+              sound: nextSettings.sfxVolume > 0,
+              music: nextSettings.musicVolume > 0,
+              narration: nextSettings.voiceVolume > 0,
+              sfxVolume: nextSettings.sfxVolume,
+              musicVolume: nextSettings.musicVolume,
+              voiceVolume: nextSettings.voiceVolume,
+            });
+            void gameAudio.playMusic(OPENING_SEQUENCE.musicId, nextSettings.musicVolume > 0, {
+              loop: OPENING_SEQUENCE.musicLoop,
+              positionMs: 0,
+              src: OPENING_SEQUENCE.musicSrc,
+            });
+            session.showOpening();
+          }} />}
           {!replayingOpening && session.view === 'opening' && <OpeningCinematic sequence={OPENING_SEQUENCE} settings={settings} audio={ports.cinematicAudio} onComplete={session.showNewRun} />}
           {!replayingOpening && session.view === 'new-run' && <NewRunScreen onBack={session.showOpening} onBegin={session.startCampaign} />}
           {session.view === 'game' && session.game && <div hidden={replayingOpening}>
             {session.notice && <p className="session-notice" role="status">{session.notice}</p>}
-            <GameShell state={session.game} content={CONTENT} transitionEvents={session.transitionEvents} dispatch={session.dispatch} onSaveAndExit={session.saveAndExit} onMainMenu={session.returnToTitle} onReplayOpening={() => setReplayingOpening(true)} settings={settings} onSettingsChange={changeSettings} rewardBonusStatus={rewardBonusStatus} onRequestRewardedGold={(offerId) => { void requestRewardedGold(offerId); }} onDismissRewardedGold={(offerId) => setRewardAttempt({ offerId, status: 'dismissed' })} registerBackHandler={registerBackHandler} onAdOverlayChange={setAdOverlayOpen} interactionLocked={fullScreenAdPending} privacyOptionsRequired={consent.privacyOptionsRequired} onPrivacyOptions={showPrivacyOptions} now={() => new Date(ports.now()).toISOString()} />
+            <GameShell state={session.game} content={CONTENT} transitionEvents={session.transitionEvents} dispatch={session.dispatch} onSaveAndExit={session.saveAndExit} onMainMenu={session.returnToTitle} onReplayOpening={() => setReplayingOpening(true)} settings={settings} onSettingsChange={changeSettings} rewardBonusStatus={rewardBonusStatus} onRequestRewardedGold={(offerId) => { void requestRewardedGold(offerId); }} onDismissRewardedGold={(offerId) => setRewardAttempt({ offerId, status: 'dismissed' })} registerBackHandler={registerBackHandler} onAdOverlayChange={setAdOverlayOpen} interactionLocked={fullScreenAdPending} privacyOptionsRequired={consent.privacyOptionsRequired} onPrivacyOptions={showPrivacyOptions} storyAudio={gameAudio} now={() => new Date(ports.now()).toISOString()} />
           </div>}
           {replayingOpening && <OpeningCinematic sequence={OPENING_SEQUENCE} settings={settings} audio={ports.cinematicAudio} completionLabel="Return to Chronicle" onComplete={() => setReplayingOpening(false)} />}
         </>

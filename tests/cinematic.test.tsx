@@ -75,6 +75,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -82,7 +83,7 @@ afterEach(() => {
 describe('approved Chronicle I opening sequence', () => {
   it('maps all fourteen canonical production shots without changing IDs, paths, or timing', () => {
     expect(OPENING_SEQUENCE.durationMs).toBe(105_000);
-    expect(OPENING_SEQUENCE.musicId).toBe('music-title');
+    expect(OPENING_SEQUENCE.musicId).toBe('music-opening-score');
     expect(OPENING_SEQUENCE.shots).toHaveLength(14);
     expect(OPENING_SEQUENCE.shots.map((shot) => shot.id)).toEqual([
       'opening-01-fractured-kingdom',
@@ -116,7 +117,7 @@ describe('approved Chronicle I opening sequence', () => {
     expect(OPENING_NARRATION).toEqual(APPROVED_NARRATION);
   });
 
-  it('keeps captions visible when voice is disabled and applies independent audio levels', async () => {
+  it('keeps narration over the film frame without story chrome when voice is disabled', async () => {
     installManualAnimationFrame();
     const audio = makeAudio();
     render(
@@ -125,11 +126,19 @@ describe('approved Chronicle I opening sequence', () => {
         settings={{ ...SETTINGS, voiceVolume: 0 }}
         audio={audio}
         onComplete={() => undefined}
-      />,
+      />
     );
 
-    expect(screen.getByRole('region', { name: 'Opening story' })).toBeVisible();
-    expect(screen.getByText('The job should have taken three days.')).toBeVisible();
+    const opening = screen.getByRole('region', { name: 'Opening story' });
+    const visual = screen.getByTestId('opening-visual');
+    const narration = screen.getByText('The job should have taken three days.');
+    expect(opening).toBeVisible();
+    expect(visual).toContainElement(narration);
+    expect(screen.queryByText(/Scene 1 of/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Opening progress/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Playing')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Replay opening/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Continue to class selection/i })).not.toBeInTheDocument();
     await waitFor(() => expect(audio.play).toHaveBeenCalledWith(OPENING_SEQUENCE, 0));
     expect(audio.setVolumes).toHaveBeenCalledWith({ music: 0.7, voice: 0, sfx: 0.8 });
   });
@@ -173,7 +182,7 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.stop).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps replay disabled until the opening bundle is ready', async () => {
+  it('keeps pause disabled until the opening bundle is ready without showing replay', async () => {
     installManualAnimationFrame();
     let finishPreload: (() => void) | undefined;
     const audio = makeAudio();
@@ -187,9 +196,11 @@ describe('approved Chronicle I opening sequence', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Replay opening' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Pause opening' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Skip opening' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Replay opening' })).not.toBeInTheDocument();
     await act(async () => finishPreload?.());
-    expect(screen.getByRole('button', { name: 'Replay opening' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Pause opening' })).toBeEnabled();
   });
 
   it('pauses at the current position and seeks before synchronized resume', async () => {
@@ -204,7 +215,7 @@ describe('approved Chronicle I opening sequence', () => {
         onComplete={() => undefined}
       />,
     );
-    await screen.findByText('Playing');
+    await waitFor(() => expect(audio.play).toHaveBeenCalledWith(OPENING_SEQUENCE, 0));
     const visual = screen.getByTestId('opening-visual');
     expect(visual).not.toHaveClass('is-timeline-paused');
 
@@ -222,25 +233,34 @@ describe('approved Chronicle I opening sequence', () => {
     expect(visual).not.toHaveClass('is-timeline-paused');
   });
 
-  it('continues the illustrated timeline with captions when audio playback is unavailable', async () => {
+  it('offers audio retry only after a real playback failure while captions continue', async () => {
     const clock = installManualAnimationFrame();
+    const user = userEvent.setup();
+    const audio = makeAudio();
+    audio.play.mockRejectedValueOnce(new Error('decoder unavailable')).mockResolvedValue(undefined);
     render(
       <OpeningCinematic
         sequence={OPENING_SEQUENCE}
         settings={SETTINGS}
-        audio={makeAudio({ rejectPlay: true })}
+        audio={audio}
         onComplete={() => undefined}
       />,
     );
 
+    expect(screen.queryByRole('button', { name: 'Retry audio' })).not.toBeInTheDocument();
     expect(await screen.findByText('Audio is unavailable. Captions will continue.')).toBeVisible();
+    const retry = screen.getByRole('button', { name: 'Retry audio' });
     await waitFor(() => expect(clock.pendingCount()).toBeGreaterThan(0));
     clock.frame(7_500);
     expect(screen.getByText(/Escort two wagons of medicine north/)).toBeVisible();
     expect(screen.queryByText(/illustrated opening could not be loaded/i)).not.toBeInTheDocument();
+    await user.click(retry);
+    expect(audio.seek).toHaveBeenLastCalledWith(7_500);
+    expect(audio.play).toHaveBeenLastCalledWith(OPENING_SEQUENCE, 7_500);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Retry audio' })).not.toBeInTheDocument());
   });
 
-  it('remounts the current visual when replay starts from the beginning', async () => {
+  it('lets the viewer hide and restore on-screen captions', async () => {
     installManualAnimationFrame();
     const user = userEvent.setup();
     render(
@@ -251,11 +271,13 @@ describe('approved Chronicle I opening sequence', () => {
         onComplete={() => undefined}
       />,
     );
-    await screen.findByText('Playing');
-    const firstVisual = screen.getByRole('img');
+    const caption = screen.getByText('The job should have taken three days.');
+    expect(caption).not.toHaveClass('sr-only');
 
-    await user.click(screen.getByRole('button', { name: 'Replay opening' }));
-    expect(screen.getByRole('img')).not.toBe(firstVisual);
+    await user.click(screen.getByRole('button', { name: 'Hide captions' }));
+    expect(caption).toHaveClass('sr-only');
+    await user.click(screen.getByRole('button', { name: 'Show captions' }));
+    expect(caption).not.toHaveClass('sr-only');
   });
 
   it('stops media and exits exactly once when skipped', async () => {
@@ -277,26 +299,37 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.stop).toHaveBeenCalledOnce();
   });
 
-  it('offers a replay after natural completion and restarts from the first shot', async () => {
+  it('holds the final title for 1.25 seconds, then auto-returns exactly once', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const clock = installManualAnimationFrame();
-    const user = userEvent.setup();
     const audio = makeAudio();
-    render(
+    const onComplete = vi.fn();
+    const renderOpening = (finish: () => void) => (
       <OpeningCinematic
         sequence={OPENING_SEQUENCE}
         settings={SETTINGS}
         audio={audio}
-        completionLabel="Return to Journal"
-        onComplete={() => undefined}
-      />,
+        completionLabel="Return to Chronicle"
+        onComplete={finish}
+      />
     );
-    await screen.findByText('Playing');
+    const { rerender } = render(renderOpening(() => onComplete()));
+    await act(async () => undefined);
 
     clock.frame(105_000);
-    expect(screen.getByRole('button', { name: 'Return to Journal' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Replay opening' }));
-    expect(screen.getByText('The job should have taken three days.')).toBeVisible();
-    expect(audio.seek).toHaveBeenLastCalledWith(0);
+    expect(screen.getByText('MORROWMERE')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Return to Chronicle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Replay opening' })).not.toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(600));
+    rerender(renderOpening(() => onComplete()));
+    act(() => vi.advanceTimersByTime(649));
+    expect(onComplete).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1));
+    expect(onComplete).toHaveBeenCalledOnce();
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 
   it('uses still or crossfade presentation when reduced motion is enabled', async () => {
@@ -327,7 +360,7 @@ describe('approved Chronicle I opening sequence', () => {
     await screen.findByText('The illustrated opening could not be loaded. No story information has been lost.');
     const fallback = screen.getByRole('region', { name: 'Opening story' });
     for (const paragraph of APPROVED_NARRATION) expect(fallback).toHaveTextContent(paragraph);
-    expect(screen.getByRole('button', { name: 'Continue to class selection' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Finish opening' })).toBeVisible();
 
     installManualAnimationFrame();
     rerender(

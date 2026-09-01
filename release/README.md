@@ -1,9 +1,9 @@
 # Android build artifacts
 
-The final local build produces these version 1.2.0 handoff files in this directory:
+The final local build produces these version 1.2.1 handoff files in this directory:
 
-- `MORROWMERE-v1.2.0-debug.apk`: debug-signed APK for direct device testing
-- `MORROWMERE-v1.2.0-test-unsigned.aab`: unsigned QA bundle; not a Play submission artifact
+- `MORROWMERE-v1.2.1-debug.apk`: debug-signed APK for direct device testing
+- `MORROWMERE-v1.2.1-test-unsigned.aab`: unsigned QA bundle; not a Play submission artifact
 
 These QA artifacts use Google's official sample ad identifiers. Live AdMob identifiers and upload signing are deliberately required outside Git, and the Play task fails closed when either is missing.
 
@@ -11,5 +11,5 @@ The Android package keeps Chronicle media local, excludes stale PWA caches, and 
 
 Final synchronized artifact checksums:
 
-- `MORROWMERE-v1.2.0-debug.apk` — 88,506,069 bytes — SHA-256 `83542A4698E71730ED5B5EA754D0E15E5F2A9D7C9E5F272EE9821840613CB796`
-- `MORROWMERE-v1.2.0-test-unsigned.aab` — 77,140,131 bytes — SHA-256 `42D71B0073FB23E618BAE391203EC78673BBEDD0D8DFA5B9EFEB9EAF0A6A588B`
+- `MORROWMERE-v1.2.1-debug.apk` — 91,447,153 bytes — SHA-256 `E0E9D254109D4617F0214B69355494B3C347778A3AE35BEFBBB6B55DEBADCB4C`
+- `MORROWMERE-v1.2.1-test-unsigned.aab` — 80,448,642 bytes — SHA-256 `AE54E1A0AAE68746E51F3291380DC110E569395B3B6BC821E41D59961CD043E4`

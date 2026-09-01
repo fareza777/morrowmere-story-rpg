@@ -42,15 +42,15 @@ class FakeAudio {
 }
 
 const EXPECTED_MUSIC_IDS = [
-  'music-title', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
+  'music-title', 'music-opening-score', 'music-camp', 'music-merchant', 'music-kings-road', 'music-greywatch', 'music-old-forest',
   'music-redwater', 'music-embervault', 'music-greywatch-siege', 'music-crownless-keep',
   'music-false-coronation', 'music-ending-road',
 ] as const;
 
 describe('Chronicle I offline audio pack', () => {
-  it('ships the exact original music and SFX ledger with unique verified files', () => {
+  it('ships the exact music and SFX ledger with unique verified files', () => {
     expect(MUSIC_IDS).toEqual(EXPECTED_MUSIC_IDS);
-    expect(MUSIC_ASSETS).toHaveLength(12);
+    expect(MUSIC_ASSETS).toHaveLength(13);
     expect(SFX_ASSETS).toHaveLength(84);
     expect(Object.fromEntries(
       ['weapons', 'defense', 'magic', 'status', 'enemy', 'ui', 'narrative', 'ambience']
@@ -58,11 +58,16 @@ describe('Chronicle I offline audio pack', () => {
     )).toEqual({ weapons: 12, defense: 8, magic: 12, status: 8, enemy: 12, ui: 14, narrative: 12, ambience: 6 });
     expect(SFX_CUE_VARIANTS.attack).toHaveLength(3);
     expect(SFX_CUE_VARIANTS.block).toHaveLength(3);
-    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.id)).size).toBe(96);
-    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.src)).size).toBe(96);
-    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.sha256)).size).toBe(96);
+    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.id)).size).toBe(97);
+    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.src)).size).toBe(97);
+    expect(new Set([...MUSIC_ASSETS, ...SFX_ASSETS].map((asset) => asset.sha256)).size).toBe(97);
     expect(MUSIC_ASSETS.every((asset) => asset.durationMs >= 75_000 && asset.durationMs <= 240_000)).toBe(true);
-    expect(MUSIC_ASSETS.every((asset) => asset.loopEndMs > asset.loopStartMs + 30_000)).toBe(true);
+    expect(MUSIC_ASSETS.filter((asset) => asset.loop).every((asset) => (
+      asset.loopStartMs !== null && asset.loopEndMs !== null && asset.loopEndMs > asset.loopStartMs + 30_000
+    ))).toBe(true);
+    expect(MUSIC_ASSETS.filter((asset) => !asset.loop).map((asset) => [asset.id, asset.durationMs])).toEqual([
+      ['music-opening-score', 105_000],
+    ]);
     expect(SFX_ASSETS.every((asset) => asset.durationMs >= 40 && asset.durationMs <= 20_000)).toBe(true);
     expect([...MUSIC_ASSETS, ...SFX_ASSETS].every((asset) => asset.provenance.commercialDistribution)).toBe(true);
 
@@ -121,7 +126,7 @@ describe('Chronicle I offline audio pack', () => {
     await expect(unavailable.playMusic('music-title')).resolves.toBeUndefined();
   });
 
-  it('uses exact caption text for local speech and keeps the cinematic port non-fatal', async () => {
+  it('uses local speech only as fallback and plays bundled opening narration through the cinematic port', async () => {
     vi.useFakeTimers();
     const spoken: string[] = [];
     const audio: FakeAudio[] = [];
@@ -158,7 +163,8 @@ describe('Chronicle I offline audio pack', () => {
     await expect(port.preload(sequence)).resolves.toBeUndefined();
     await expect(port.play(sequence, 0)).resolves.toBeUndefined();
     expect(audio.some((element) => element.src === '/audio/chronicle1/music/music-title.mp3' && element.playCount > 0)).toBe(true);
-    expect(spoken.at(-1)).toBe(OPENING_VOICE_CUES[0]?.spokenText);
+    expect(audio.some((element) => element.src === OPENING_VOICE_CUES[0]?.audioSrc && element.playCount > 0)).toBe(true);
+    expect(spoken).toEqual(['Keep the road open.']);
     vi.advanceTimersByTime(1_000);
     expect(audio.some((element) => element.src.endsWith('/sfx-arrow-hit.mp3') && element.playCount > 0)).toBe(true);
     port.stop();
@@ -175,6 +181,11 @@ describe('Chronicle I offline audio pack', () => {
       VOICE_SCRIPT.filter((cue) => cue.group === 'companion' && cue.speaker === speaker).length,
     ]))).toEqual({ Mara: 1, Rukhar: 2, Caldus: 2, Lyra: 2, Talla: 1 });
     expect(VOICE_SCRIPT.every((cue) => cue.captionText === cue.spokenText)).toBe(true);
+    expect(VOICE_SCRIPT.every((cue) => (
+      cue.delivery === 'bundled-kokoro-onnx'
+      && cue.audioSrc?.startsWith('/audio/chronicle1/voice/en/')
+      && cue.audioSrc.endsWith('.mp3')
+    ))).toBe(true);
     expect(OPENING_VOICE_CUES).toHaveLength(8);
     expect(OPENING_VOICE_CUES.map((cue) => cue.spokenText)).toEqual(OPENING_NARRATION);
     expect(OPENING_VOICE_CUES[0]?.startMs).toBe(0);
