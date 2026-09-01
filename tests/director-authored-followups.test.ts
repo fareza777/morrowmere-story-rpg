@@ -226,24 +226,60 @@ describe('authored scene queue', () => {
     const index = content([source, aftermath, anchor], true);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    expect(resolved.state.flow.screen).toBe('combat');
+    expect(resolved.state.flow.screen).toBe('story');
     expect(queue(resolved.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
 
-    let won = resolved.state;
+    let won = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index).state;
+    expect(won.flow.screen).toBe('combat');
     for (let turn = 0; turn < 5 && won.flow.screen === 'combat'; turn += 1) {
-      won = reduceGame(won, { type: 'combat-turn', commandId: `queue-win:${turn}`, action: { type: 'attack' }, updatedAt: at(3 + turn) }, index).state;
+      won = reduceGame(won, { type: 'combat-turn', commandId: `queue-win:${turn}`, action: { type: 'attack' }, updatedAt: at(4 + turn) }, index).state;
       expect(queue(won).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
     }
     expect(won.flow.screen).toBe('reward');
     const rewardId = won.expedition?.pendingReward?.rewardId;
     if (!rewardId) throw new Error('Expected the combat reward fixture.');
 
-    const claimed = reduceGame(won, { type: 'claim-rewards', rewardId, itemId: null, updatedAt: at(8) }, index);
-    const next = reduceGame(claimed.state, { type: 'select-next-scene', updatedAt: at(9) }, index);
+    const claimed = reduceGame(won, { type: 'claim-rewards', rewardId, itemId: null, updatedAt: at(9) }, index);
+    const next = reduceGame(claimed.state, { type: 'select-next-scene', updatedAt: at(10) }, index);
 
     expect(claimed.diagnostic).toBeUndefined();
     expect(queue(claimed.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
     expect(currentSceneId(next.state)).toBe(aftermath.id);
+  });
+
+  it('retires an abandoned combat aftermath when the hero flees', () => {
+    const source = scene({
+      id: asEvent('flee-source'), type: 'combat', encounterId: asEncounter('queue-fight'),
+      choices: [directChoice(asEvent('victory-aftermath'))],
+    });
+    const aftermath = scene({ id: asEvent('victory-aftermath'), type: 'journey', choices: [] });
+    const anchor = scene({ id: asEvent('flee-anchor'), type: 'main', slot: 3, anchorOrder: 3, choices: [] });
+    const index = content([source, aftermath, anchor], true);
+
+    const resolved = resolveSource(atSource(index, source.id), index).state;
+    const handedOff = reduceGame(resolved, { type: 'select-next-scene', updatedAt: at(3) }, index).state;
+    const activeCombat = handedOff.expedition?.currentCombat?.combat;
+    if (!activeCombat) throw new Error('Expected the flee fixture to enter combat.');
+    const forcedEscape: GameStateV2 = {
+      ...handedOff,
+      expedition: {
+        ...handedOff.expedition!,
+        currentCombat: {
+          ...handedOff.expedition!.currentCombat!,
+          combat: { ...activeCombat, player: { ...activeCombat.player, cunning: 99 } },
+        },
+      },
+    };
+
+    const fled = reduceGame(forcedEscape, {
+      type: 'combat-turn', commandId: 'retire-fled-aftermath', action: { type: 'flee' }, updatedAt: at(4),
+    }, index);
+    const next = reduceGame(fled.state, { type: 'select-next-scene', updatedAt: at(5) }, index);
+
+    expect(fled.state.expedition?.currentCombat).toBeNull();
+    expect(queue(fled.state)).toEqual([]);
+    expect(currentSceneId(next.state)).toBe(anchor.id);
+    expect(currentSceneId(next.state)).not.toBe(aftermath.id);
   });
 
   it('does not emit a no-eligible diagnostic across a connected Chapter 1 route fixture', () => {
