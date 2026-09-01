@@ -421,6 +421,7 @@ Commit: `fix: remove route selection spoilers`
 - Add: `src/game/content/chronicle1/chapters/ch01/living-ambush.ts`
 - Add: `src/game/content/chronicle1/chapters/ch01/living-bridge.ts`
 - Add: `src/game/content/chronicle1/chapters/ch01/living-last-miles.ts`
+- Add: `src/game/content/chronicle1/chapters/ch01/living-sorcery.ts`
 - Modify: `src/game/content/chronicle1/chapters/ch01/index.ts`
 - Modify: selected anchors in `src/game/content/chronicle1/chapters/ch01/main.ts`
 - Modify: selected scenes in `src/game/content/chronicle1/chapters/ch01/companion.ts`
@@ -429,12 +430,12 @@ Commit: `fix: remove route selection spoilers`
 
 **Step 1 — Write failing content-count and graph tests**
 
-Require 36 new scenes organized as 12 three-scene packets. Require:
+Require 54 new scenes organized as 18 three-scene packets. Require:
 
-- at least 12 real checks: four Strength, four Cunning, four Will;
-- at least eight battle branches, four of them avoidable;
-- at least six noncombat XP rewards;
-- at least six item or material rewards;
+- at least 18 real checks: six Strength, six Cunning, six Will;
+- at least 12 battle branches, six of them avoidable;
+- at least nine noncombat XP rewards;
+- at least nine item or material rewards, including three encounter-specific rare items;
 - at least four Mara trust reactions;
 - at least six choice-specific follow-ups;
 - at least three rare packet entry conditions;
@@ -470,17 +471,30 @@ Create:
 11. Ash on the Officer's Cuff — test the staged evidence through three stats;
 12. Riders in the Valley — hide, bargain for time, or fight a pursuit encounter before Greywatch.
 
-**Step 5 — Connect existing anchors**
+**Step 5 — Author six rare sword-and-sorcery packets**
+
+Create:
+
+13. The Warning Tree — investigate an ominously hanged goblin, cut it down, or prepare for whoever left it;
+14. The Armor That Knelt — test, open, evade, or fight an occupied suit of battlefield armor;
+15. The War Camp's Last Fire — cross the abandoned edge of a goblin war camp and decide what to do with a wounded survivor and stolen goods;
+16. The Sword in Barrow Clay — leave, safely unbind, or take a valuable blade with a practical curse;
+17. The Ward Beneath the Shrine — repair or break a failing ward before the trapped creature escapes;
+18. Teeth Under the Siege Cart — distract, trap, bargain past, or fight a monster for encounter-specific loot.
+
+Keep each packet concrete and readable. The unusual element is visible and actionable, its art composition is unique, and every resolution has a specific aftermath instead of returning directly to random travel.
+
+**Step 6 — Connect existing anchors**
 
 Queue packets from the seven Chapter 1 anchors and return each packet to the correct next phase. Preserve existing journey scenes as optional procedural content, but add tangible effects or contextual CTAs where a selected scene was previously flag-only.
 
-**Step 6 — Run GREEN**
+**Step 7 — Run GREEN**
 
 Run: `npm run test:run -- tests/content/ch01-living-encounters.test.ts tests/ch01-playthroughs.test.ts tests/director-travel-flow.test.ts`
 
 Expected: all focused tests pass, including three seeded start-to-gate routes.
 
-**Step 7 — Commit**
+**Step 8 — Commit**
 
 Commit: `feat: bring the Greywatch Road to life`
 

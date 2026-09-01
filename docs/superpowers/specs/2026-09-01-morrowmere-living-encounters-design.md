@@ -162,6 +162,19 @@ Each family has a setup, at least two meaningful approaches, a resolution, and a
 
 Rare strange events remain understandable. Their immediate facts are clear even when their full cause is mysterious.
 
+### 5.1 Rare sword-and-sorcery encounters
+
+Chapter 1 also establishes a low-frequency pool of vivid encounters that makes Morrowmere feel stranger and more dangerous than an ordinary medieval road. These scenes use recognizable physical details and immediate stakes even when their full explanation remains hidden. The first pool includes:
+
+- a goblin hanging from an old warning tree, with evidence that the executioners may not have been human;
+- a sealed suit of battlefield armor that moves only when the medicine wagon draws close;
+- the abandoned edge of a goblin war camp, where wounded enemies, stolen family goods, and an officer's coded order create incompatible choices;
+- a sword driven into a roadside grave mound, valuable but bound to a practical curse;
+- a collapsed shrine whose protective ward is still fighting the creature trapped beneath it;
+- a monster feeding beside a ruined siege engine that can be distracted, trapped, bargained past, or fought for a unique reward.
+
+Each concept is an authored three-scene packet: discovery, playable confrontation, and consequence-specific aftermath. At least two approaches use a real stat check, battle remains possible where the fiction supports it, and a clever noncombat solution can earn different—not automatically better—loot. Illustrations must show the defining object or creature clearly and use a genuinely distinct composition. Violence may be ominous but is not graphically indulgent.
+
 ## 6. Real stat checks
 
 ### 6.1 Check model
