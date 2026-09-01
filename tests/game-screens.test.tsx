@@ -73,17 +73,40 @@ describe('camp, route, and story screens', () => {
     );
 
     expect(screen.getByRole('img', { name: /lone traveller/i })).toHaveAttribute('src', '/assets/chronicle1/hubs/three-roads-crossroads.webp');
+    expect(screen.getByRole('heading', { name: 'Choose Your Road' })).toBeVisible();
     expect(screen.getByText('Three old roads lead onward, each remembered differently in the villages of Morrowmere.')).toBeVisible();
     const routeButtons = screen.getAllByRole('button').filter((button) => button.classList.contains('route-card'));
     expect(routeButtons).toHaveLength(3);
-    expect(routeButtons[0]).toHaveTextContent('Built for royal couriers');
-    expect(routeButtons[1]).toHaveTextContent('moss-dark paths');
-    expect(routeButtons[2]).toHaveTextContent('shattered watchtowers');
+    const expectedRoutes = [
+      {
+        label: "The King's Road",
+        description: "Built for royal couriers, the broad stone road runs straight across wind-bent fields. Weathered mileposts and fallen statues mark the old kingdom's reach, while broken paving near the river flats slows a loaded wagon.",
+      },
+      {
+        label: 'The Old Forest',
+        description: 'Older than the kingdom, the forest closes over narrow paths between ancient oaks and moss-slick roots. Fallen trunks and soft ground make every cart choose its way, while dusk gathers early beneath the canopy.',
+      },
+      {
+        label: 'The Ruined Pass',
+        description: 'Once the northern road, the pass climbs through bare crags and shattered watchtowers. Loose stone, steep grades, and old switchbacks leave little room for wagons; snow lingers in the shade after the lowlands thaw.',
+      },
+    ] as const;
+    const namedButtons = expectedRoutes.map(({ label, description }) => {
+      const button = screen.getByRole('button', { name: label });
+      expect(button).toHaveAccessibleDescription(description);
+      return button;
+    });
+    expect(namedButtons).toEqual(routeButtons);
+    expect(routeButtons.every((button) => button.tagName === 'BUTTON')).toBe(true);
     expect(container).not.toHaveTextContent(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|suppl(?:y|ies)|people)\b/i);
     for (const button of routeButtons) {
       expect(button).not.toHaveAccessibleName(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|suppl(?:y|ies)|people)\b/i);
+      expect(button).not.toHaveTextContent(/\b(?:risk|danger|ambush|encounter|merchant|trade|recovery|companion|relic|reward|suppl(?:y|ies)|people)\b/i);
     }
-    await user.click(screen.getByRole('button', { name: /Ruined Pass/i }));
+    expect(container.querySelector('.route-traits')).toBeNull();
+    expect(container.querySelector('.route-trait')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'The Ruined Pass' }));
+    expect(onChooseRoute).toHaveBeenCalledOnce();
     expect(onChooseRoute).toHaveBeenCalledWith('ruined-pass');
   });
 

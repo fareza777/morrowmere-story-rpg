@@ -8,6 +8,7 @@ import {
   CHRONICLE1_SCENES,
   MAIN_ANCHOR_IDS,
 } from '../../src/game/content/chronicle1';
+import { CHRONICLE1_ROUTES, toRouteOption } from '../../src/game/content/chronicle1/routes';
 import { chronicle1ChoiceEffects, type Chronicle1Event } from '../../src/game/content/schema';
 import type { StoryPosition } from '../../src/game/domain/ids';
 import { scenePacing } from '../../src/game/director/pacing';
@@ -238,6 +239,36 @@ function simulateChronicle1(seed: number): RouteAudit {
 }
 
 describe('Chronicle I route audit', () => {
+  it('keeps the locked route copy separate from private director tuning', () => {
+    const expected = [
+      {
+        id: 'kings-road', label: "The King's Road",
+        description: "Built for royal couriers, the broad stone road runs straight across wind-bent fields. Weathered mileposts and fallen statues mark the old kingdom's reach, while broken paving near the river flats slows a loaded wagon.",
+        danger: 1, recoveryWeight: 3, merchantWeight: 3, companionWeight: 1, relicWeight: 0,
+      },
+      {
+        id: 'old-forest', label: 'The Old Forest',
+        description: 'Older than the kingdom, the forest closes over narrow paths between ancient oaks and moss-slick roots. Fallen trunks and soft ground make every cart choose its way, while dusk gathers early beneath the canopy.',
+        danger: 2, recoveryWeight: 2, merchantWeight: 1, companionWeight: 3, relicWeight: 1,
+      },
+      {
+        id: 'ruined-pass', label: 'The Ruined Pass',
+        description: 'Once the northern road, the pass climbs through bare crags and shattered watchtowers. Loose stone, steep grades, and old switchbacks leave little room for wagons; snow lingers in the shade after the lowlands thaw.',
+        danger: 3, recoveryWeight: 1, merchantWeight: 0, companionWeight: 1, relicWeight: 3,
+      },
+    ] as const;
+
+    expect(CHRONICLE1_ROUTES).toEqual(expected);
+    expect(CHRONICLE1_ROUTES.map(toRouteOption)).toEqual(expected.map((route) => ({
+      id: route.id,
+      label: route.label,
+      description: route.description,
+      risk: route.danger,
+      recoveryBias: route.recoveryWeight,
+      merchantBias: route.merchantWeight,
+    })));
+  });
+
   it('selects the first authored anchor from a fresh runtime expedition', () => {
     const created = createCampaign({
       heroClass: 'warrior',

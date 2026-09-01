@@ -12,7 +12,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'kings-road',
     label: "The King's Road",
-    description: 'Built for royal couriers, its broad stones cross wind-bent fields between weathered mileposts and fallen statues.',
+    description: "Built for royal couriers, the broad stone road runs straight across wind-bent fields. Weathered mileposts and fallen statues mark the old kingdom's reach, while broken paving near the river flats slows a loaded wagon.",
     danger: 1,
     recoveryWeight: 3,
     merchantWeight: 3,
@@ -22,7 +22,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'old-forest',
     label: 'The Old Forest',
-    description: 'Older than the kingdom, its moss-dark paths wind beneath ancient oaks, a place spoken of softly after dusk.',
+    description: 'Older than the kingdom, the forest closes over narrow paths between ancient oaks and moss-slick roots. Fallen trunks and soft ground make every cart choose its way, while dusk gathers early beneath the canopy.',
     danger: 2,
     recoveryWeight: 2,
     merchantWeight: 1,
@@ -32,7 +32,7 @@ export const CHRONICLE1_ROUTES = deepFreeze([
   {
     id: 'ruined-pass',
     label: 'The Ruined Pass',
-    description: 'Once the northern road, it climbs between shattered watchtowers and bare crags under a sky that always feels like winter.',
+    description: 'Once the northern road, the pass climbs through bare crags and shattered watchtowers. Loose stone, steep grades, and old switchbacks leave little room for wagons; snow lingers in the shade after the lowlands thaw.',
     danger: 3,
     recoveryWeight: 1,
     merchantWeight: 0,

@@ -13,9 +13,9 @@ export function RouteScreen({ view, onChooseRoute, onBack }: RouteScreenProps) {
       <p className="route-intro">Three old roads lead onward, each remembered differently in the villages of Morrowmere.</p>
       <div className="route-list">
         {view.routes.map((route) => (
-          <button key={route.id} className="route-card" type="button" onClick={() => onChooseRoute(route.id)}>
-            <span className="route-card-heading"><strong>{route.label}</strong><ArrowRight size={21} weight="bold" aria-hidden="true" /></span>
-            <span className="route-description">{route.description}</span>
+          <button key={route.id} className="route-card" type="button" aria-labelledby={`route-${route.id}-label`} aria-describedby={`route-${route.id}-description`} onClick={() => onChooseRoute(route.id)}>
+            <span className="route-card-heading"><strong id={`route-${route.id}-label`}>{route.label}</strong><ArrowRight size={21} weight="bold" aria-hidden="true" /></span>
+            <span id={`route-${route.id}-description`} className="route-description">{route.description}</span>
           </button>
         ))}
       </div>
