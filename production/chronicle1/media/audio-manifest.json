@@ -57,10 +57,10 @@
       "src": "/audio/chronicle1/music/music-opening-score.mp3",
       "loopStartMs": null,
       "loopEndMs": null,
-      "loudnessLufs": -18.2,
-      "truePeakDbtp": -2.0,
+      "loudnessLufs": -16.5,
+      "truePeakDbtp": -1.9,
       "bytes": 1329854,
-      "sha256": "666d4aae68cc3b3a08a033e49e9f94f3a37f120374855911899d48b9cc44533c",
+      "sha256": "09aa7a10ff62f16e320b801d44ab7ffff5467fa82fbae4a5b5d489c4f0f4db82",
       "provenanceId": "provenance-music-opening-score"
     },
     {
