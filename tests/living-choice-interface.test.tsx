@@ -214,19 +214,22 @@ describe('living choice interface', () => {
       '-some_flag',
       'Evidence gained: field-evidence',
       'Evidence removed: old-order',
-      'Mara quest stage 3',
+      'Mara Venn quest stage 3',
+      'Unknown Scout quest stage 4',
       'Follow-up scheduled',
+      '+1 hidden-cache-key',
+      'secret-aftermath enabled',
       '+5 Gold',
-      '+1 Packed Tonic',
+      '+1 Red Mercy',
     ]), CHECKED_CONTENT)!;
     render(<StoryPanel view={view} onChoose={vi.fn()} onContinue={vi.fn()} />);
 
     expect(screen.getByText('Evidence secured')).toBeInTheDocument();
     expect(screen.getByText('Evidence removed')).toBeInTheDocument();
-    expect(screen.getByText('Mara quest progress updated')).toBeInTheDocument();
+    expect(screen.getByText('Mara Venn quest progress updated')).toBeInTheDocument();
     expect(screen.getByText('+5 Gold')).toBeInTheDocument();
-    expect(screen.getByText('+1 Packed Tonic')).toBeInTheDocument();
-    expect(screen.queryByText(/wagon-secured|some_flag|field-evidence|old-order|quest stage|follow-up scheduled/i)).not.toBeInTheDocument();
+    expect(screen.getByText('+1 Red Mercy')).toBeInTheDocument();
+    expect(screen.queryByText(/wagon-secured|some_flag|field-evidence|old-order|quest stage|follow-up scheduled|hidden-cache-key|secret-aftermath|Unknown Scout/i)).not.toBeInTheDocument();
   });
 
   it('describes each choice detail and keeps 360px, 200% text-scale feedback readable', () => {

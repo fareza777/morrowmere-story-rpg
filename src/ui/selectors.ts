@@ -312,15 +312,24 @@ function checkDifficultyLabel(difficulty: number): string {
   return 'Daunting';
 }
 
-function safeEffectSummary(summary: string): string | null {
+function safeEffectSummary(summary: string, content: ContentIndex): string | null {
   const trimmed = summary.trim();
   if (/^Evidence gained:\s+\S/u.test(trimmed)) return 'Evidence secured';
   if (/^Evidence removed:\s+\S/u.test(trimmed)) return 'Evidence removed';
-  const questStage = /^(?<name>.+) quest stage \d+$/u.exec(trimmed);
-  if (questStage?.groups?.name) return `${questStage.groups.name} quest progress updated`;
-  if (trimmed === 'Follow-up scheduled') return null;
-  if (/^[+-][A-Za-z][A-Za-z0-9_-]*$/u.test(trimmed)) return null;
-  return trimmed;
+  if (trimmed === 'Evidence secured' || trimmed === 'Evidence removed' || trimmed === 'Combat begins') return trimmed;
+  if (/^[+-]\d+ (?:XP|Gold|Health|Focus|Threat|Tension)$/u.test(trimmed)) return trimmed;
+  if (/^(?:[A-Z][a-z]+)(?: [A-Z][a-z]+)* reputation [+-]\d+$/u.test(trimmed)) return trimmed;
+
+  const itemChange = /^[+-]\d+ (?<name>.+)$/u.exec(trimmed);
+  if (itemChange?.groups?.name && [...content.items.values()].some((item) => item.name === itemChange.groups.name)) return trimmed;
+
+  for (const companion of content.companions.values()) {
+    if ([`${companion.name} joined`, `${companion.name} left`, `${companion.name} injured`, `${companion.name} recovered`, `${companion.name} quest progress updated`].includes(trimmed)) return trimmed;
+    if (new RegExp(`^${companion.name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')} loyalty [+-]\\d+$`, 'u').test(trimmed)) return trimmed;
+    if (new RegExp(`^${companion.name.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')} quest stage \\d+$`, 'u').test(trimmed)) return `${companion.name} quest progress updated`;
+  }
+
+  return null;
 }
 
 function effectiveCheckStat(
@@ -428,7 +437,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
               : 'Choice resolved',
       outcome: resolution.outcome,
       effectSummary: resolution.effectSummary.flatMap((summary) => {
-        const safeSummary = safeEffectSummary(summary);
+        const safeSummary = safeEffectSummary(summary, content);
         return safeSummary ? [safeSummary] : [];
       }),
       continueLabel: resolution.continueLabel,
