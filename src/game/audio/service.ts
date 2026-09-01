@@ -1,7 +1,6 @@
 import type { DomainEvent } from '../domain/result';
 import type { CinematicAudioPort, CinematicSequence, FeedbackCue } from '../../ui/types';
 import {
-  OPENING_SHOT_SFX,
   OPENING_VOICE_CUES,
   musicAsset,
   resolveSfxCue,
@@ -509,7 +508,7 @@ export function playDomainEvents(service: AudioService, events: readonly DomainE
 export function createFeedbackAudioPort(service: AudioService): { consume(cues: readonly FeedbackCue[]): void } {
   return {
     consume(cues): void {
-      for (const cue of cues) if (cue.type === 'sfx') service.playSfx(cue.cueId, true, cue.volume);
+      for (const cue of cues) if (cue.type === 'sfx') service.playSfx(cue.cueId, true, cue.gain);
     },
   };
 }
@@ -579,7 +578,7 @@ export function createCinematicAudioPort(service: AudioService): TimelineCinemat
       const crossedStart = shot.startMs <= positionMs
         && (shot.startMs > previousMs || (includePrevious && shot.startMs === previousMs));
       if (!crossedStart || positionMs - shot.startMs > CINEMATIC_CUE_GRACE_MS) continue;
-      const ids = [...new Set([...shot.sfxCueIds, ...(OPENING_SHOT_SFX[shot.id] ?? [])])];
+      const ids = [...new Set(shot.sfxCueIds)];
       ids.forEach((id) => service.playSfx(id, true, CINEMATIC_SFX_GAIN));
     }
   };
@@ -587,7 +586,7 @@ export function createCinematicAudioPort(service: AudioService): TimelineCinemat
   return {
     async preload(active): Promise<void> {
       const music = musicAsset(active.musicId);
-      const sfx = [...new Set(active.shots.flatMap((shot) => [...shot.sfxCueIds, ...(OPENING_SHOT_SFX[shot.id] ?? [])]))]
+      const sfx = [...new Set(active.shots.flatMap((shot) => shot.sfxCueIds))]
         .map((id) => sfxAsset(id)?.src)
         .filter((src): src is string => Boolean(src));
       const voice = OPENING_VOICE_CUES.map((cue) => cue.audioSrc).filter((src): src is string => Boolean(src));

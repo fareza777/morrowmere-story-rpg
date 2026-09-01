@@ -77,7 +77,7 @@ describe('opening file-backed audio', () => {
     await expect(createCinematicAudioPort(service).play(OPENING_SEQUENCE, 0)).rejects.toThrow('autoplay blocked');
   });
 
-  it('advances opening voice and SFX only when the cinematic timeline advances', async () => {
+  it('advances opening voice without injecting hidden SFX over the narration', async () => {
     vi.useFakeTimers();
     const created: ControllableAudio[] = [];
     const service = createAudioService({
@@ -97,13 +97,13 @@ describe('opening file-backed audio', () => {
     vi.advanceTimersByTime(36_500);
 
     expect(created.some((audio) => audio.src.endsWith('/voice-opening-07.mp3') && audio.playCount > 0)).toBe(false);
-    expect(created.some((audio) => audio.src.endsWith('/sfx-narrative-warning.mp3') && audio.playCount > 0)).toBe(false);
+    expect(created.some((audio) => audio.src.includes('/sfx/') && audio.playCount > 0)).toBe(false);
     expect(port.sync).toBeTypeOf('function');
 
     port.sync?.(36_500);
     expect(created.some((audio) => audio.src.endsWith('/voice-opening-07.mp3') && audio.playCount > 0)).toBe(true);
-    expect(created.some((audio) => audio.src.endsWith('/sfx-narrative-warning.mp3') && audio.playCount > 0)).toBe(true);
-    expect(created.some((audio) => audio.src.endsWith('/sfx-arrow-hit.mp3') && audio.playCount > 0)).toBe(false);
+    port.sync?.(75_000);
+    expect(created.some((audio) => audio.src.includes('/sfx/') && audio.playCount > 0)).toBe(false);
   });
 
   it('reconciles delayed audio startup to the latest cinematic frame', async () => {
@@ -137,7 +137,7 @@ describe('opening file-backed audio', () => {
     expect(created.find((audio) => audio.src.endsWith('/voice-opening-02.mp3'))?.currentTimeAtPlay).toBe(3.5);
   });
 
-  it('keeps cinematic SFX below narration at a shared shot boundary', async () => {
+  it('keeps explicitly authored cinematic SFX below narration at a shared shot boundary', async () => {
     const created: ControllableAudio[] = [];
     const service = createAudioService({
       createAudio(src) {
@@ -149,7 +149,13 @@ describe('opening file-backed audio', () => {
     });
     service.configure({ musicEnabled: true, voiceEnabled: true, sfxEnabled: true, sfxVolume: 0.8 });
 
-    await createCinematicAudioPort(service).play(OPENING_SEQUENCE, 32_500);
+    const sequence: CinematicSequence = {
+      ...OPENING_SEQUENCE,
+      shots: OPENING_SEQUENCE.shots.map((shot, index) => index === 0
+        ? { ...shot, sfxCueIds: ['sfx-arrow-hit'] }
+        : shot),
+    };
+    await createCinematicAudioPort(service).play(sequence, 0);
 
     expect(created.find((audio) => audio.src.endsWith('/sfx-arrow-hit.mp3'))?.volume).toBeCloseTo(0.44, 5);
   });

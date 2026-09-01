@@ -31,8 +31,17 @@ describe('typed transition feedback', () => {
       event({ type: 'attack_resolved', attackerId: 'hero', targetId: 'enemy-1', outcome, damage: outcome === 'critical' ? 18 : outcome === 'hit' ? 7 : 0, powerVariation: 0 }),
     ], SETTINGS);
 
-    expect(cues).toContainEqual({ type: 'sfx', cueId, volume: 0.8 });
+    expect(cues).toContainEqual({ type: 'sfx', cueId, gain: 1 });
     expect(cues).toContainEqual({ type: 'haptic', pattern });
+  });
+
+  it('uses a neutral armor impact when an enemy hits the hero', () => {
+    const cues = feedbackForTransition([
+      event({ type: 'attack_resolved', attackerId: 'wolf', targetId: 'hero', outcome: 'hit', damage: 6, powerVariation: 0 }),
+    ], SETTINGS);
+
+    expect(cues).toContainEqual({ type: 'sfx', cueId: 'armor-hit', gain: 1 });
+    expect(cues).not.toContainEqual(expect.objectContaining({ type: 'sfx', cueId: 'enemy-hit' }));
   });
 
   it('uses heavy feedback when an enemy deals at least ten damage to the hero', () => {
@@ -51,14 +60,40 @@ describe('typed transition feedback', () => {
     [event({ type: 'combat_ended', encounterId: 'encounter-1' as never, outcome: 'defeat' }), 'defeat', 'You have fallen.'],
   ] as const)('maps %s to an audible cue and clear announcement', (domainEvent, cueId, announcement) => {
     const cues = feedbackForTransition([domainEvent], SETTINGS);
-    expect(cues).toContainEqual({ type: 'sfx', cueId, volume: 0.8 });
+    expect(cues).toContainEqual({ type: 'sfx', cueId, gain: 1 });
     expect(cues).toContainEqual({ type: 'announce', message: announcement });
+  });
+
+  it('emits one terminal defeat cue when the hero defeat and combat end arrive together', () => {
+    const cues = feedbackForTransition([
+      event({ type: 'combatant_defeated', combatantId: 'hero' }),
+      event({ type: 'combat_ended', encounterId: 'encounter-1' as never, outcome: 'defeat' }),
+    ], SETTINGS);
+
+    expect(cues.filter((cue) => cue.type === 'sfx' && cue.cueId === 'defeat')).toHaveLength(1);
+    expect(cues.filter((cue) => cue.type === 'announce' && cue.message === 'You have fallen.')).toHaveLength(1);
+    expect(cues).toContainEqual({ type: 'haptic', pattern: 'defeat' });
+  });
+
+  it.each([
+    ['enemy-goblin-cutthroat', 'sfx-goblin-death'],
+    ['enemy-orc-vanguard', 'sfx-orc-death'],
+    ['enemy-marsh-warg', 'sfx-beast-death'],
+    ['enemy-siege-cart-maw', 'sfx-beast-death'],
+    ['enemy-bone-sentinel', 'sfx-undead-death'],
+    ['enemy-border-deserter', 'sfx-human-death'],
+  ])('matches %s defeat feedback to its creature family', (combatantId, cueId) => {
+    const cues = feedbackForTransition([
+      event({ type: 'combatant_defeated', combatantId }),
+    ], SETTINGS);
+
+    expect(cues).toContainEqual({ type: 'sfx', cueId, gain: 1 });
   });
 
   it('maps the typed level-up event without parsing a notification message', () => {
     const levelUp = { type: 'level_up', level: 2 } as unknown as DomainEvent;
     expect(feedbackForTransition([levelUp], SETTINGS)).toEqual([
-      { type: 'sfx', cueId: 'level-up', volume: 0.8 },
+      { type: 'sfx', cueId: 'level-up', gain: 1 },
       { type: 'haptic', pattern: 'level-up' },
       { type: 'announce', message: 'Level 2 reached.' },
     ]);

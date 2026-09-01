@@ -91,6 +91,10 @@ async function playFeedbackPattern(
   try {
     if (pattern === 'level-up') {
       await driver.notification('success');
+    } else if (pattern === 'victory') {
+      await driver.notification('success');
+    } else if (pattern === 'defeat') {
+      await driver.notification('error');
     } else if (pattern === 'double') {
       await driver.impact('medium');
       await driver.impact('medium');

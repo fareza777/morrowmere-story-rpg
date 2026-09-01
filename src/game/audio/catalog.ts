@@ -148,7 +148,7 @@ export const SFX_CUE_VARIANTS = Object.freeze({
   attack: ['sfx-sword-light-1', 'sfx-sword-light-2', 'sfx-sword-light-3'],
   'heavy-attack': ['sfx-sword-heavy-1', 'sfx-sword-heavy-2'], axe: ['sfx-axe-hit-1', 'sfx-axe-hit-2'], mace: ['sfx-mace-hit-1', 'sfx-mace-hit-2'],
   bow: ['sfx-bow-release'], 'arrow-hit': ['sfx-arrow-hit'], miss: ['sfx-combat-miss', 'sfx-arrow-miss'], critical: ['sfx-combat-critical'],
-  block: ['sfx-shield-block-1', 'sfx-shield-block-2', 'sfx-shield-block-3'], parry: ['sfx-parry-1', 'sfx-parry-2'], guard: ['sfx-guard-set'],
+  block: ['sfx-shield-block-1', 'sfx-shield-block-2', 'sfx-shield-block-3'], parry: ['sfx-parry-1', 'sfx-parry-2'], 'armor-hit': ['sfx-armor-hit-1', 'sfx-armor-hit-2'], guard: ['sfx-guard-set'],
   magic: ['sfx-fire-cast', 'sfx-ice-cast', 'sfx-lightning-cast'], fire: ['sfx-fire-cast', 'sfx-fire-impact'], ice: ['sfx-ice-cast', 'sfx-ice-impact'],
   lightning: ['sfx-lightning-cast', 'sfx-lightning-impact'], ward: ['sfx-ward-cast', 'sfx-ward-impact'], heal: ['sfx-heal-cast', 'sfx-heal-impact'], curse: ['sfx-curse-cast', 'sfx-curse-impact'],
   equip: ['sfx-ui-equip'], unequip: ['sfx-ui-unequip'], consume: ['sfx-ui-consume'], loot: ['sfx-ui-loot'], coins: ['sfx-ui-coins'],
@@ -164,11 +164,6 @@ export const SFX_CUE_VARIANTS = Object.freeze({
 export type SemanticSfxCue = keyof typeof SFX_CUE_VARIANTS;
 export type SfxCue = SemanticSfxCue | string;
 export type AmbienceId = 'ambience-rain' | 'ambience-forest' | 'ambience-flood' | 'ambience-forge' | 'ambience-siege' | 'ambience-keep';
-
-export const OPENING_SHOT_SFX: Readonly<Record<string, readonly string[]>> = Object.freeze({
-  'opening-06-the-first-arrow': ['sfx-arrow-hit'],
-  'opening-14-title-reveal': ['sfx-narrative-chapter-title'],
-});
 
 export function musicAsset(id: string): MusicAsset | undefined { return musicById.get(id as MusicId); }
 export function sfxAsset(id: string): SfxAsset | undefined { return sfxById.get(id); }

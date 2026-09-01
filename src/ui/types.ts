@@ -30,10 +30,10 @@ export interface UiSettings {
 }
 
 export type FeedbackCue =
-  | { readonly type: 'sfx'; readonly cueId: string; readonly volume: number }
+  | { readonly type: 'sfx'; readonly cueId: string; readonly gain: number }
   | {
       readonly type: 'haptic';
-      readonly pattern: 'light' | 'medium' | 'minimal' | 'double' | 'strong' | 'heavy' | 'level-up';
+      readonly pattern: 'light' | 'medium' | 'minimal' | 'double' | 'strong' | 'heavy' | 'level-up' | 'victory' | 'defeat';
     }
   | { readonly type: 'announce'; readonly message: string };
 

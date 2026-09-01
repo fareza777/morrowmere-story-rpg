@@ -309,7 +309,7 @@ describe('V2 session controller', () => {
     expect(savesVisibleWhenConsumed).toBe(1);
     expect(consumed).toHaveLength(1);
     expect(consumed[0]).toEqual(expect.arrayContaining([
-      { type: 'sfx', cueId: 'confirm', volume: 0.8 },
+      { type: 'sfx', cueId: 'confirm', gain: 1 },
       { type: 'haptic', pattern: 'light' },
       { type: 'announce', message: 'Companion slot cleared.' },
     ]));

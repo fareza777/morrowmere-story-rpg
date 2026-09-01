@@ -20,18 +20,28 @@ function eventType(event: DomainEvent): string {
     : 'invalid-event';
 }
 
+function defeatedCreatureCue(combatantId: string): string {
+  const id = combatantId.toLowerCase();
+  if (id.includes('goblin') || id.includes('hobgoblin')) return 'sfx-goblin-death';
+  if (id.includes('orc') || id.includes('ogre') || id.includes('troll')) return 'sfx-orc-death';
+  if (/wolf|warg|boar|bear|hound|beast|spider|rat|maw/.test(id)) return 'sfx-beast-death';
+  if (/undead|skeleton|bone|wight|ghoul|lich|revenant/.test(id)) return 'sfx-undead-death';
+  return 'sfx-human-death';
+}
+
 export function feedbackForTransition(
   events: readonly DomainEvent[],
   settings: UiSettings,
   logDiagnostic: FeedbackDiagnosticLogger = defaultDiagnosticLogger,
 ): readonly FeedbackCue[] {
   const cues: FeedbackCue[] = [];
-  const volume = Math.max(0, Math.min(1, settings.sfxVolume));
-  const sfx = (cueId: string) => { if (volume > 0) cues.push({ type: 'sfx', cueId, volume }); };
+  const soundEnabled = Math.max(0, Math.min(1, settings.sfxVolume)) > 0;
+  const sfx = (cueId: string, gain = 1) => { if (soundEnabled) cues.push({ type: 'sfx', cueId, gain }); };
   const haptic = (pattern: Extract<FeedbackCue, { readonly type: 'haptic' }>['pattern']) => {
     if (settings.hapticsEnabled) cues.push({ type: 'haptic', pattern: settings.reducedHaptics ? 'minimal' : pattern });
   };
   const announce = (message: string) => { if (settings.screenReaderAnnouncements) cues.push({ type: 'announce', message }); };
+  const terminalCombat = events.find((event) => event.type === 'combat_ended');
 
   for (const event of events) {
     switch (event.type) {
@@ -40,7 +50,8 @@ export function feedbackForTransition(
           : event.outcome === 'miss' ? 'miss'
             : event.outcome === 'blocked' ? 'block'
               : event.outcome === 'parried' ? 'parry'
-                : 'attack';
+                : event.outcome === 'glancing' || event.targetId === 'hero' ? 'armor-hit'
+                  : 'attack';
         const pattern = event.targetId === 'hero' && event.damage >= 10 ? 'heavy'
           : event.outcome === 'critical' ? 'strong'
             : event.outcome === 'blocked' || event.outcome === 'parried' ? 'double'
@@ -59,8 +70,8 @@ export function feedbackForTransition(
       case 'combat_started':
         sfx('warning'); haptic('medium'); announce('Battle begins.'); break;
       case 'combat_ended':
-        if (event.outcome === 'victory') { sfx('victory'); haptic('strong'); announce('Victory.'); }
-        else if (event.outcome === 'defeat') { sfx('defeat'); haptic('heavy'); announce('You have fallen.'); }
+        if (event.outcome === 'victory') { sfx('victory'); haptic('victory'); announce('Victory.'); }
+        else if (event.outcome === 'defeat') { sfx('defeat'); haptic('defeat'); announce('You have fallen.'); }
         else { sfx('flee'); haptic('light'); announce('You escape the battle.'); }
         break;
       case 'choice_resolved':
@@ -76,7 +87,13 @@ export function feedbackForTransition(
       case 'combat_action_rejected':
         sfx('warning'); haptic('minimal'); announce('That combat action is not available.'); break;
       case 'combatant_defeated':
-        sfx(event.combatantId === 'hero' ? 'defeat' : 'enemy-death'); announce(event.combatantId === 'hero' ? 'You have fallen.' : 'Enemy defeated.'); break;
+        if (event.combatantId === 'hero') {
+          if (terminalCombat?.type === 'combat_ended' && terminalCombat.outcome === 'defeat') break;
+          sfx('defeat'); haptic('defeat'); announce('You have fallen.');
+        } else {
+          sfx(defeatedCreatureCue(event.combatantId)); announce('Enemy defeated.');
+        }
+        break;
       case 'companion_commanded':
         sfx('confirm'); haptic('medium'); announce('Companion action completed.'); break;
       case 'flee_resolved':
