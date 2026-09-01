@@ -1,39 +1,590 @@
 import { defineScene } from '../../builders';
-const routes = ['kings-road', 'old-forest', 'ruined-pass'];
-const base = (scene: any) => defineScene({ chapterId: 'ch01', region: 'gloamwood', weight: 100, eligibility: { routes, minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [], dialogue: [{ speakerName: 'Jory', text: scene.line, environmentIllustrationId: scene.illustrationId }], ...scene });
-const direct = (id: string, label: string, outcome: string, effects: any[], nextSceneId: string, continueLabel: string, extra = {}) => ({ id, label, detail: outcome, outcome, effects, nextSceneId, continueLabel, ...extra });
-const checked = (id: string, label: string, stat: 'strength' | 'cunning' | 'will', difficulty: number, modifier: string, nextSceneId: string, continueLabel: string, effects: any[], combatEncounterId?: string, extra = {}) => ({ id, label, detail: `Attempt a ${stat} check.`, ...extra, check: { stat, difficulty, modifiers: [{ label: modifier, amount: modifier.endsWith('+10') ? 10 : 5 }], success: { outcome: 'You deny the attackers their prepared advantage.', effects, nextSceneId, continueLabel }, failure: { outcome: 'The danger is contained, but it leaves a cost.', effects, nextSceneId, continueLabel }, criticalSuccess: { outcome: 'You retain proof while breaking the attack.', effects, nextSceneId, continueLabel }, criticalFailure: { outcome: 'The attackers use the mistake to close.', effects, nextSceneId, continueLabel, ...(combatEncounterId ? { combatEncounterId } : {}) } } });
+
+const ALL_ROUTES = ['kings-road', 'old-forest', 'ruined-pass'] as const;
+const COMMON = {
+  chapterId: 'ch01' as const,
+  region: 'gloamwood' as const,
+  weight: 100,
+  eligibility: { routes: ALL_ROUTES, minLevel: 1, maxLevel: 2 },
+  requirements: [],
+  exclusions: [],
+  cooldownRuns: 0,
+  oneShot: true,
+  followUps: [],
+  callbackPromises: [],
+};
 
 export const CH01_LIVING_AMBUSH = Object.freeze([
-  base({ id: 'ch01-living-smoke-verge-setup', slot: 15, type: 'journey', journeySubtype: 'travel', family: 'smoke-beyond-verge', pacing: 'danger', illustrationId: 'scene-ch01-living-smoke-verge-setup', title: 'A Thin Column North', line: 'There was no smoke when we left the kiln.', narrative: ['A narrow grey column rises beyond the verge while charcoal-burner Ressa Holt approaches with her family.'], choices: [
-    direct('ch01-choice-warn-the-charcoal-burners', 'Warn the travelers', 'Ressa turns the mule cart into the lee of the bank.', [{ type: 'flag', operation: 'add', flagId: 'verge-travelers-warned' }, { type: 'faction', factionId: 'greywatch', amount: 1 }], 'ch01-living-smoke-verge-choice', 'Reach the signal fire'),
-    direct('ch01-choice-scout-the-smoke-alone', 'Scout alone', 'You leave the convoy under Jory’s hand and reach the hedgerow alone.', [{ type: 'flag', operation: 'add', flagId: 'verge-scouted-alone' }, { type: 'threat', amount: -1 }, { type: 'vitals', resource: -1 }], 'ch01-living-smoke-verge-choice', 'Reach the signal fire'),
-    direct('ch01-choice-form-around-the-convoy', 'Protect the convoy', 'Drivers bring the wagon poles together as travelers shelter inside.', [{ type: 'flag', operation: 'add', flagId: 'verge-convoy-formed' }, { type: 'tension', amount: 1 }], 'ch01-living-smoke-verge-choice', 'Reach the signal fire'),
-  ] }),
-  base({ id: 'ch01-living-smoke-verge-choice', slot: 16, type: 'journey', journeySubtype: 'investigation', family: 'smoke-beyond-verge', pacing: 'danger', illustrationId: 'scene-ch01-living-smoke-verge-choice', title: 'The Signal Fire', line: 'Back to the wagons. This is patrol work.', narrative: ['Damp grass burns inside a pierced clay pot while a false patrol watcher and goblin guard the escape path.'], choices: [
-    checked('ch01-choice-smother-the-signal-between-puffs', 'Smother the signal between puffs', 'cunning', 7, 'Pierced pot shows the cadence +5', 'ch01-living-smoke-verge-aftermath', 'Regroup at the verge', [{ type: 'flag', operation: 'add', flagId: 'verge-signal-stopped' }, { type: 'flag', operation: 'add', flagId: 'opening-volley-delayed' }, { type: 'xp', amount: 10, source: 'story' }, { type: 'threat', amount: -1 }], 'enc-ch01-verge-signalers'),
-    checked('ch01-choice-order-the-watcher-to-stand-down', 'Order the watcher to stand down', 'will', 7, 'No patrol badge visible +5', 'ch01-living-smoke-verge-aftermath', 'Regroup at the verge', [{ type: 'flag', operation: 'add', flagId: 'verge-watcher-detained' }, { type: 'evidence', operation: 'add', evidenceId: 'false-patrol-signal' }, { type: 'xp', amount: 10, source: 'story' }], 'enc-ch01-verge-signalers'),
-    direct('ch01-choice-attack-the-signal-team', 'Attack before they run', 'You cross the hedge before the watcher can complete another hand sign.', [{ type: 'flag', operation: 'add', flagId: 'verge-signal-team-engaged' }, { type: 'combat', encounterId: 'enc-ch01-verge-signalers' }], 'ch01-living-smoke-verge-aftermath', 'Take the signal pot'),
-  ] }),
-  base({ id: 'ch01-living-smoke-verge-aftermath', slot: 16, type: 'journey', journeySubtype: 'travel', family: 'smoke-beyond-verge-aftermath', pacing: 'quiet', illustrationId: 'scene-ch01-living-smoke-verge-aftermath', title: 'The Orchard Has Been Warned', line: 'The dispatch names our route. The smoke names our cargo.', narrative: ['The road runs between low orchard walls. Someone prepared this ground for the medicine wagons.'], choices: [
-    direct('ch01-choice-send-the-travelers-south', 'Send the travelers south under cover', 'Ressa’s cart disappears behind the bank before the convoy enters the orchard.', [{ type: 'flag', operation: 'add', flagId: 'verge-travelers-safe' }, { type: 'faction', factionId: 'greywatch', amount: 1 }, { type: 'xp', amount: 8, source: 'quest' }], 'ch01-main-the-first-arrow', 'Enter the orchard road'),
-    direct('ch01-choice-keep-the-travelers-inside-the-wagons', 'Keep everyone together', 'The travelers crouch between medicine cases while guards take corners.', [{ type: 'flag', operation: 'add', flagId: 'verge-group-kept-together' }, { type: 'tension', amount: -1 }, { type: 'threat', amount: 1 }], 'ch01-main-the-first-arrow', 'Advance in formation'),
-  ] }),
-  base({ id: 'ch01-living-split-fletched-arrow-setup', slot: 18, type: 'journey', journeySubtype: 'investigation', family: 'split-fletched-arrow', pacing: 'danger', illustrationId: 'scene-ch01-living-split-fletched-arrow-setup', title: 'Black, White, and Fresh Glue', line: 'Royal shaft. New feathers. Someone wanted us to recognize the wrong owner.', narrative: ['The arrow pinning Jory’s dispatch has old military wood and new black-and-white feathers.'], choices: [
-    direct('ch01-choice-shield-jory-at-the-arrow', 'Shield Jory and the dispatch', 'You drag Jory behind the rear wheel and keep the tube in his hands.', [{ type: 'flag', operation: 'add', flagId: 'orchard-jory-shielded' }, { type: 'evidence', operation: 'add', evidenceId: 'route-seven-dispatch' }, { type: 'vitals', health: -2 }], 'ch01-living-split-fletched-arrow-battle', 'Meet the opening volley'),
-    direct('ch01-choice-take-the-high-orchard-bank', 'Take the high bank', 'You climb above the wagon line and mark the disciplined shooter.', [{ type: 'flag', operation: 'add', flagId: 'orchard-high-bank-held' }, { type: 'vitals', resource: -2 }], 'ch01-living-split-fletched-arrow-battle', 'Meet the opening volley'),
-    direct('ch01-choice-cut-the-damaged-wheel-loose', 'Cut the damaged wheel loose for cover', 'The wheel and sideboard drop into a low barricade.', [{ type: 'flag', operation: 'add', flagId: 'orchard-wheel-cover' }, { type: 'flag', operation: 'add', flagId: 'rear-wagon-disabled' }, { type: 'threat', amount: -1 }], 'ch01-living-split-fletched-arrow-battle', 'Meet the opening volley', { requirements: [{ type: 'flag', flagId: 'rear-wagon-braced-poorly' }], exclusions: [{ type: 'flag', flagId: 'replacement-fitting-installed' }] }),
-    direct('ch01-choice-seize-the-lead-reins-at-arrow', 'Seize the lead reins', 'You turn the horses into the wall before they overturn the medicine wagon.', [{ type: 'flag', operation: 'add', flagId: 'orchard-horses-controlled' }, { type: 'flag', operation: 'add', flagId: 'lead-wagon-controlled' }, { type: 'vitals', health: -2 }], 'ch01-living-split-fletched-arrow-battle', 'Meet the opening volley'),
-  ] }),
-  base({ id: 'ch01-living-split-fletched-arrow-battle', slot: 18, type: 'journey', journeySubtype: 'travel', family: 'split-fletched-arrow-battle-setup', pacing: 'danger', illustrationId: 'scene-ch01-living-split-fletched-arrow-battle', title: 'The Opening Volley', line: 'Two fingers. The smoke used the same count.', narrative: ['A goblin cinder thrower rises behind the orchard wall while a human reaver moves under the wagon line.'], choices: [
-    checked('ch01-choice-read-the-orchard-signal', 'Read the signal before it falls', 'cunning', 7, 'Halen gave the exact cadence +10', 'ch01-living-split-fletched-arrow-aftermath', 'See what survived', [{ type: 'flag', operation: 'add', flagId: 'orchard-volley-called' }, { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' }, { type: 'vitals', resource: 1 }], 'enc-ch01-orchard-volley', { requirements: [{ type: 'flag', flagId: 'orchard-signal-known' }] }),
-    checked('ch01-choice-hold-the-wagon-barricade', 'Hold the wheel barricade', 'strength', 7, 'Dropped sideboard +5', 'ch01-living-split-fletched-arrow-aftermath', 'See what survived', [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' }, { type: 'flag', operation: 'add', flagId: 'medicine-protected-at-orchard' }], 'enc-ch01-orchard-volley', { requirements: [{ type: 'flag', flagId: 'orchard-wheel-cover' }] }),
-    direct('ch01-choice-charge-from-the-high-bank', 'Charge the uphill shooter', 'You force the signal archer away from the prepared lane.', [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-charge' }, { type: 'vitals', health: -2 }, { type: 'combat', encounterId: 'enc-ch01-orchard-volley' }], 'ch01-living-split-fletched-arrow-aftermath', 'Break the orchard line', { requirements: [{ type: 'flag', flagId: 'orchard-high-bank-held' }] }),
-    direct('ch01-choice-form-around-jory-and-the-teams', 'Form around Jory and the teams', 'The guards close around the dispatch and horses as the reaver reaches the axle.', [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' }, { type: 'flag', operation: 'add', flagId: 'jory-and-teams-held' }, { type: 'combat', encounterId: 'enc-ch01-orchard-volley' }], 'ch01-living-split-fletched-arrow-aftermath', 'See what survived'),
-  ] }),
-  base({ id: 'ch01-living-split-fletched-arrow-aftermath', slot: 19, type: 'journey', journeySubtype: 'investigation', family: 'split-fletched-arrow-aftermath', pacing: 'recovery', illustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath', title: 'The Arrow After Battle', line: 'Royal metal, altered on the road. That is evidence of a supply chain, not proof of a uniform.', narrative: ['The orchard falls quiet. Beneath the fresh feathers, the arrowhead bears a royal workshop notch.'], choices: [
-    direct('ch01-choice-preserve-the-split-fletched-arrow', 'Preserve the complete arrow', 'Jory splints the shaft between two boards and keeps every material clue.', [{ type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' }, { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' }, { type: 'flag', operation: 'add', flagId: 'royal-arrow-intact' }, { type: 'xp', amount: 8, source: 'story' }], 'ch01-main-the-bridge-in-smoke', 'Carry the wounded toward the bridge'),
-    direct('ch01-choice-take-the-marked-arrowhead', 'Take the marked head', 'You remove the stamped head and bag the replaced feathers separately.', [{ type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' }, { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' }, { type: 'flag', operation: 'add', flagId: 'royal-arrow-head-only' }, { type: 'threat', amount: -1 }], 'ch01-main-the-bridge-in-smoke', 'Move before the raiders regroup'),
-    direct('ch01-choice-treat-the-orchard-wounded', 'Treat the wounded before moving', 'You spend the remaining light on pressure dressings while Jory secures the arrow.', [{ type: 'vitals', resource: -2 }, { type: 'flag', operation: 'add', flagId: 'orchard-wounded-stabilized' }, { type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' }, { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' }, { type: 'faction', factionId: 'greywatch', amount: 1 }, { type: 'tension', amount: 1 }], 'ch01-main-the-bridge-in-smoke', 'Take the bridge road'),
-  ] }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-smoke-verge-setup',
+    slot: 15,
+    type: 'journey',
+    journeySubtype: 'travel',
+    family: 'smoke-beyond-verge',
+    pacing: 'danger',
+    illustrationId: 'scene-ch01-living-smoke-verge-setup',
+    title: 'A Thin Column North',
+    narrative: [
+      'A thin grey column rises beyond the verge, too narrow for a field fire and too wet for a cook fire. A charcoal-burner family approaches from the north with a mule cart, unaware that the smoke is positioned to signal anyone watching the orchard road.',
+    ],
+    dialogue: [
+      {
+        speakerName: 'Ressa Holt',
+        text: 'There was no smoke when we left the kiln.',
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'Then somebody lit it after they saw us.',
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-warn-the-charcoal-burners',
+        label: 'Warn the travelers',
+        detail: 'Move Ressa and her family below the road line before approaching the smoke.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-travelers-warned' },
+          { type: 'faction', factionId: 'greywatch', amount: 1 },
+        ],
+        outcome: 'Ressa turns the mule cart into the lee of the bank and keeps her family below the road line.',
+        nextSceneId: 'ch01-living-smoke-verge-choice',
+        continueLabel: 'Reach the signal fire',
+      },
+      {
+        id: 'ch01-choice-scout-the-smoke-alone',
+        label: 'Scout alone',
+        detail: 'Leave the convoy with Jory and approach the hedgerow without a crowd.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-scouted-alone' },
+          { type: 'threat', amount: -1 },
+          { type: 'vitals', resource: -1 },
+        ],
+        outcome: "You leave the convoy under Jory's hand and reach the hedgerow without taking a crowd with you.",
+        nextSceneId: 'ch01-living-smoke-verge-choice',
+        continueLabel: 'Reach the signal fire',
+      },
+      {
+        id: 'ch01-choice-form-around-the-convoy',
+        label: 'Protect the convoy',
+        detail: 'Draw the wagon poles together and shelter the travelers inside the formation.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-convoy-formed' },
+          { type: 'tension', amount: 1 },
+        ],
+        outcome: 'Drivers bring the wagon poles together while the travelers shelter inside the rough square.',
+        nextSceneId: 'ch01-living-smoke-verge-choice',
+        continueLabel: 'Reach the signal fire',
+      },
+    ],
+  }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-smoke-verge-choice',
+    slot: 16,
+    type: 'journey',
+    journeySubtype: 'investigation',
+    family: 'smoke-beyond-verge',
+    pacing: 'danger',
+    illustrationId: 'scene-ch01-living-smoke-verge-choice',
+    title: 'The Signal Fire',
+    narrative: [
+      'Damp grass burns inside a pierced clay pot, sending controlled puffs north. A human in an unmarked patrol cloak watches from the hedge while a goblin with a cinder flask guards the escape path.',
+    ],
+    dialogue: [
+      {
+        speakerName: 'Human Watcher',
+        text: 'Back to the wagons. This is patrol work.',
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-choice',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-smother-the-signal-between-puffs',
+        label: 'Smother the signal between puffs',
+        detail: 'Use Cunning against difficulty 7 to close the pierced pot during its pause.',
+        check: {
+          stat: 'cunning',
+          difficulty: 7,
+          modifiers: [{ label: 'Pierced pot shows the cadence +5', amount: 5 }],
+          success: {
+            outcome: 'You close the vents in the pause and the next signal never rises.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-signal-stopped' },
+              { type: 'flag', operation: 'add', flagId: 'opening-volley-delayed' },
+              { type: 'xp', amount: 10, source: 'story' },
+              { type: 'threat', amount: -1 },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          failure: {
+            outcome: 'The watcher gets one final puff away before you overturn the pot.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-signal-partial' },
+              { type: 'threat', amount: 1 },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          criticalSuccess: {
+            outcome: "You copy the puff count, close the vents, and recover the patrol cloak's cut badge seam.",
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-signal-stopped' },
+              { type: 'flag', operation: 'add', flagId: 'opening-volley-delayed' },
+              { type: 'evidence', operation: 'add', evidenceId: 'false-patrol-signal' },
+              { type: 'xp', amount: 14, source: 'story' },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          criticalFailure: {
+            outcome: 'The pot cracks, filling the hedge with smoke as both guards attack.',
+            effects: [
+              { type: 'vitals', health: -2 },
+              { type: 'threat', amount: 2 },
+            ],
+            combatEncounterId: 'enc-ch01-verge-signalers',
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Break the signal team',
+          },
+        },
+      },
+      {
+        id: 'ch01-choice-order-the-watcher-to-stand-down',
+        label: 'Order the watcher to stand down',
+        detail: 'Use Will against difficulty 7 to challenge the false patrol claim.',
+        check: {
+          stat: 'will',
+          difficulty: 7,
+          modifiers: [{ label: 'No patrol badge visible +5', amount: 5 }],
+          success: {
+            outcome: 'The human hesitates long enough for the goblin to flee and for you to seize the signal pot.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-watcher-detained' },
+              { type: 'evidence', operation: 'add', evidenceId: 'false-patrol-signal' },
+              { type: 'xp', amount: 10, source: 'story' },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          failure: {
+            outcome: 'He answers with a hand sign and both guards withdraw toward the orchard.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-watchers-escaped' },
+              { type: 'threat', amount: 2 },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          criticalSuccess: {
+            outcome: 'He drops the cloak and admits the smoke marks a medicine convoy, not a patrol.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'verge-watcher-detained' },
+              { type: 'flag', operation: 'add', flagId: 'medicine-convoy-targeted' },
+              { type: 'evidence', operation: 'add', evidenceId: 'false-patrol-signal' },
+              { type: 'xp', amount: 14, source: 'story' },
+            ],
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+          criticalFailure: {
+            outcome: "Your command draws the goblin's cinder flask before the travelers are fully under cover.",
+            effects: [
+              { type: 'vitals', health: -3 },
+              { type: 'threat', amount: 2 },
+            ],
+            combatEncounterId: 'enc-ch01-verge-signalers',
+            nextSceneId: 'ch01-living-smoke-verge-aftermath',
+            continueLabel: 'Regroup at the verge',
+          },
+        },
+      },
+      {
+        id: 'ch01-choice-attack-the-signal-team',
+        label: 'Attack before they run',
+        detail: 'Cross the hedge before either watcher can complete another signal.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-signal-team-engaged' },
+          { type: 'combat', encounterId: 'enc-ch01-verge-signalers' },
+        ],
+        outcome: 'You cross the hedge before the watcher can complete another hand sign.',
+        nextSceneId: 'ch01-living-smoke-verge-aftermath',
+        continueLabel: 'Take the signal pot',
+      },
+    ],
+  }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-smoke-verge-aftermath',
+    slot: 16,
+    type: 'journey',
+    journeySubtype: 'travel',
+    family: 'smoke-beyond-verge-aftermath',
+    pacing: 'quiet',
+    illustrationId: 'scene-ch01-living-smoke-verge-aftermath',
+    title: 'The Orchard Has Been Warned',
+    narrative: [
+      'From the verge, the road runs between low orchard walls. Whether the final smoke rose or not, someone prepared this ground for the convoy and expected the medicine wagons by sight.',
+    ],
+    dialogue: [
+      {
+        speakerName: 'Ressa Holt',
+        text: 'We will take the south lane and tell Greywatch what we saw.',
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The dispatch names our route. The smoke names our cargo.',
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-aftermath',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-send-the-travelers-south',
+        label: 'Send the travelers south under cover',
+        detail: 'Move the charcoal burners away from the orchard before the convoy advances.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-travelers-safe' },
+          { type: 'faction', factionId: 'greywatch', amount: 1 },
+          { type: 'xp', amount: 8, source: 'quest' },
+        ],
+        outcome: "Ressa's cart disappears behind the bank before the convoy enters the orchard.",
+        nextSceneId: 'ch01-main-the-first-arrow',
+        continueLabel: 'Enter the orchard road',
+      },
+      {
+        id: 'ch01-choice-keep-the-travelers-inside-the-wagons',
+        label: 'Keep everyone together',
+        detail: 'Shelter the travelers among the medicine cases and advance as one formation.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'verge-group-kept-together' },
+          { type: 'tension', amount: -1 },
+          { type: 'threat', amount: 1 },
+        ],
+        outcome: 'The travelers crouch between medicine cases while every guard takes a wagon corner.',
+        nextSceneId: 'ch01-main-the-first-arrow',
+        continueLabel: 'Advance in formation',
+      },
+    ],
+  }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-split-fletched-arrow-setup',
+    slot: 18,
+    type: 'journey',
+    journeySubtype: 'investigation',
+    family: 'split-fletched-arrow',
+    pacing: 'danger',
+    illustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
+    title: 'Black, White, and Fresh Glue',
+    narrative: [
+      "The shaft pinning Jory's dispatch has black and white feathers split down the middle and glued onto an older military arrow. The orchard wall, high bank, and rear wagon each offer protection, but the horses are already pulling against their traces.",
+    ],
+    dialogue: [
+      {
+        speakerName: 'Jory Fen',
+        text: 'Royal shaft. New feathers. Someone wanted us to recognize the wrong owner.',
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-shield-jory-at-the-arrow',
+        label: 'Shield Jory and the dispatch',
+        detail: 'Protect Jory and keep the Route Seven dispatch in his hands.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'orchard-jory-shielded' },
+          { type: 'evidence', operation: 'add', evidenceId: 'route-seven-dispatch' },
+          { type: 'vitals', health: -2 },
+        ],
+        outcome: 'You drag Jory behind the rear wheel and keep the tube in his hands.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-battle',
+        continueLabel: 'Meet the opening volley',
+      },
+      {
+        id: 'ch01-choice-take-the-high-orchard-bank',
+        label: 'Take the high bank',
+        detail: 'Spend focus to climb above the wagons and identify the disciplined shooter.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'orchard-high-bank-held' },
+          { type: 'vitals', resource: -2 },
+        ],
+        outcome: 'You climb above the wagon line and mark the disciplined shooter between the trees.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-battle',
+        continueLabel: 'Meet the opening volley',
+      },
+      {
+        id: 'ch01-choice-cut-the-damaged-wheel-loose',
+        label: 'Cut the damaged wheel loose for cover',
+        detail: 'Turn the poorly braced rear wheel and sideboard into a low barricade.',
+        requirements: [{ type: 'flag', flagId: 'rear-wagon-braced-poorly' }],
+        exclusions: [{ type: 'flag', flagId: 'replacement-fitting-installed' }],
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'orchard-wheel-cover' },
+          { type: 'flag', operation: 'add', flagId: 'rear-wagon-disabled' },
+          { type: 'threat', amount: -1 },
+        ],
+        outcome: 'The loose wheel and sideboard drop into a low barricade while the rear wagon settles onto its axle.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-battle',
+        continueLabel: 'Meet the opening volley',
+      },
+      {
+        id: 'ch01-choice-seize-the-lead-reins-at-arrow',
+        label: 'Seize the lead reins',
+        detail: 'Control the frightened horses before they overturn the medicine wagon.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'orchard-horses-controlled' },
+          { type: 'flag', operation: 'add', flagId: 'lead-wagon-controlled' },
+          { type: 'vitals', health: -2 },
+        ],
+        outcome: 'You turn the horses into the wall before they can overturn the medicine wagon.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-battle',
+        continueLabel: 'Meet the opening volley',
+      },
+    ],
+  }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-split-fletched-arrow-battle',
+    slot: 18,
+    type: 'journey',
+    journeySubtype: 'travel',
+    family: 'split-fletched-arrow-battle-setup',
+    pacing: 'danger',
+    illustrationId: 'scene-ch01-living-split-fletched-arrow-battle',
+    title: 'The Opening Volley',
+    narrative: [
+      "A goblin cinder thrower rises behind the orchard wall while a human reaver moves under the wagon line. Farther uphill, the disciplined archer signals the volley with two fingers rather than a raider's shout.",
+    ],
+    dialogue: [
+      {
+        speakerName: 'Jory Fen',
+        text: 'Two fingers. The smoke used the same count.',
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-battle',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-read-the-orchard-signal',
+        label: 'Read the signal before it falls',
+        detail: 'Use Cunning against difficulty 7 and the cadence Halen gave you.',
+        requirements: [{ type: 'flag', flagId: 'orchard-signal-known' }],
+        check: {
+          stat: 'cunning',
+          difficulty: 7,
+          modifiers: [
+            {
+              label: 'Halen gave the exact cadence +10',
+              amount: 10,
+              requirements: [{ type: 'flag', flagId: 'orchard-signal-known' }],
+            },
+          ],
+          success: {
+            outcome: 'You call the volley early and every exposed guard drops behind cover.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'orchard-volley-called' },
+              { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' },
+              { type: 'vitals', resource: 1 },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          failure: {
+            outcome: 'Your warning comes with the bowstrings and one shaft cuts your side.',
+            effects: [
+              { type: 'vitals', health: -3 },
+              { type: 'flag', operation: 'add', flagId: 'orchard-volley-late' },
+              { type: 'threat', amount: 1 },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          criticalSuccess: {
+            outcome: "You call both the volley and the reaver's wagon-side rush before either begins.",
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'orchard-volley-called' },
+              { type: 'flag', operation: 'add', flagId: 'orchard-reaver-marked' },
+              { type: 'xp', amount: 8, source: 'story' },
+              { type: 'vitals', resource: 2 },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          criticalFailure: {
+            outcome: 'You mistake the false hand sign and step into the real firing lane.',
+            effects: [
+              { type: 'vitals', health: -6 },
+              { type: 'flag', operation: 'add', flagId: 'orchard-volley-late' },
+              { type: 'threat', amount: 2 },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+        },
+      },
+      {
+        id: 'ch01-choice-hold-the-wagon-barricade',
+        label: 'Hold the wheel barricade',
+        detail: 'Use Strength against difficulty 7 to brace the dropped sideboard through the volley.',
+        requirements: [{ type: 'flag', flagId: 'orchard-wheel-cover' }],
+        check: {
+          stat: 'strength',
+          difficulty: 7,
+          modifiers: [
+            {
+              label: 'Dropped sideboard +5',
+              amount: 5,
+              requirements: [{ type: 'flag', flagId: 'orchard-wheel-cover' }],
+            },
+          ],
+          success: {
+            outcome: 'You brace the sideboard through the volley and force the reaver into the open.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' },
+              { type: 'flag', operation: 'add', flagId: 'medicine-protected-at-orchard' },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          failure: {
+            outcome: 'The board holds, but its edge crushes your hand against the road.',
+            effects: [
+              { type: 'vitals', health: -4 },
+              { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          criticalSuccess: {
+            outcome: 'The barricade turns both arrows and the cinder flask away from the medicine.',
+            effects: [
+              { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' },
+              { type: 'flag', operation: 'add', flagId: 'medicine-protected-at-orchard' },
+              { type: 'xp', amount: 8, source: 'story' },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+          criticalFailure: {
+            outcome: 'The board rolls, leaving you exposed and the rear wagon unable to move.',
+            effects: [
+              { type: 'vitals', health: -6 },
+              { type: 'flag', operation: 'add', flagId: 'rear-wagon-disabled' },
+              { type: 'threat', amount: 2 },
+            ],
+            combatEncounterId: 'enc-ch01-orchard-volley',
+            nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+            continueLabel: 'See what survived',
+          },
+        },
+      },
+      {
+        id: 'ch01-choice-charge-from-the-high-bank',
+        label: 'Charge the uphill shooter',
+        detail: 'Use the high bank to cross above the first volley and break the signal lane.',
+        requirements: [{ type: 'flag', flagId: 'orchard-high-bank-held' }],
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-charge' },
+          { type: 'vitals', health: -2 },
+          { type: 'combat', encounterId: 'enc-ch01-orchard-volley' },
+        ],
+        outcome: 'You cross above the first volley and force the signal archer away from his prepared lane.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+        continueLabel: 'Break the orchard line',
+      },
+      {
+        id: 'ch01-choice-form-around-jory-and-the-teams',
+        label: 'Form around Jory and the teams',
+        detail: 'Protect the dispatch and horse teams while the reaver closes on the axle.',
+        effects: [
+          { type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' },
+          { type: 'flag', operation: 'add', flagId: 'jory-and-teams-held' },
+          { type: 'combat', encounterId: 'enc-ch01-orchard-volley' },
+        ],
+        outcome: 'The guards close around the dispatch and horse teams as the reaver reaches the axle.',
+        nextSceneId: 'ch01-living-split-fletched-arrow-aftermath',
+        continueLabel: 'See what survived',
+      },
+    ],
+  }),
+  defineScene({
+    ...COMMON,
+    id: 'ch01-living-split-fletched-arrow-aftermath',
+    slot: 19,
+    type: 'journey',
+    journeySubtype: 'investigation',
+    family: 'split-fletched-arrow-aftermath',
+    pacing: 'recovery',
+    illustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath',
+    title: 'The Arrow After Battle',
+    narrative: [
+      'The orchard falls quiet except for the horses and the wounded. Beneath the fresh black-and-white feathers, the arrowhead bears a royal workshop notch, while the binding glue is still tacky with pine resin from a roadside repair.',
+    ],
+    dialogue: [
+      {
+        speakerName: 'Jory Fen',
+        text: 'Royal metal, altered on the road. That is evidence of a supply chain, not proof of a uniform.',
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath',
+      },
+    ],
+    choices: [
+      {
+        id: 'ch01-choice-preserve-the-split-fletched-arrow',
+        label: 'Preserve the complete arrow',
+        detail: 'Keep feather, glue, shaft, and workshop notch together as one piece of evidence.',
+        effects: [
+          { type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' },
+          { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' },
+          { type: 'flag', operation: 'add', flagId: 'royal-arrow-intact' },
+          { type: 'flag', operation: 'add', flagId: 'orchard-volley-survived' },
+          { type: 'xp', amount: 8, source: 'story' },
+        ],
+        outcome: 'Jory splints the full shaft between two boards, keeping feather, glue, and workshop notch together.',
+        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        continueLabel: 'Carry the wounded toward the bridge',
+      },
+      {
+        id: 'ch01-choice-take-the-marked-arrowhead',
+        label: 'Take the marked head',
+        detail: 'Keep the stamped head safely and bag the replaced feathers separately.',
+        effects: [
+          { type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' },
+          { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' },
+          { type: 'flag', operation: 'add', flagId: 'royal-arrow-head-only' },
+          { type: 'flag', operation: 'add', flagId: 'orchard-volley-survived' },
+          { type: 'threat', amount: -1 },
+        ],
+        outcome: 'You remove the stamped head for safe keeping and bag the replaced feathers separately.',
+        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        continueLabel: 'Move before the raiders regroup',
+      },
+      {
+        id: 'ch01-choice-treat-the-orchard-wounded',
+        label: 'Treat the wounded before moving',
+        detail: 'Spend focus on pressure dressings while Jory secures the arrow and dispatch.',
+        effects: [
+          { type: 'vitals', resource: -2 },
+          { type: 'flag', operation: 'add', flagId: 'orchard-wounded-stabilized' },
+          { type: 'evidence', operation: 'add', evidenceId: 'royal-arrow' },
+          { type: 'flag', operation: 'add', flagId: 'split-fletched-arrow-secured' },
+          { type: 'flag', operation: 'add', flagId: 'orchard-volley-survived' },
+          { type: 'faction', factionId: 'greywatch', amount: 1 },
+          { type: 'tension', amount: 1 },
+        ],
+        outcome: 'You spend the remaining light on pressure dressings while Jory secures the arrow and dispatch.',
+        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        continueLabel: 'Take the bridge road',
+      },
+    ],
+  }),
 ]);
