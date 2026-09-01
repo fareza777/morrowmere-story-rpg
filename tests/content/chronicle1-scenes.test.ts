@@ -15,7 +15,7 @@ import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes, type Chronicle1Event
 import { validateChronicleSources } from '../../src/game/content/validate';
 
 const CHAPTER_LEDGER = {
-  ch01: { main: 7, companion: 5, journey: 20, combat: 6, hub: 3, total: 41 },
+  ch01: { main: 7, companion: 8, journey: 63, combat: 14, hub: 3, total: 95 },
   ch02: { main: 7, companion: 7, journey: 19, combat: 6, hub: 3, total: 42 },
   ch03: { main: 7, companion: 8, journey: 18, combat: 6, hub: 3, total: 42 },
   ch04: { main: 7, companion: 9, journey: 18, combat: 6, hub: 3, total: 43 },
@@ -63,23 +63,23 @@ function countRelationshipArcs(scenes: readonly Chronicle1Event[]) {
 
 describe('Chronicle I scene assembly', () => {
   it('ships the exact approved authored scene ledger', () => {
-    expect(CHRONICLE1_SCENES).toHaveLength(332);
+    expect(CHRONICLE1_SCENES).toHaveLength(386);
     expect(countTypes(CHRONICLE1_SCENES)).toEqual({
       main: 56,
-      companion: 64,
-      journey: 140,
-      combat: 48,
+      companion: 67,
+      journey: 183,
+      combat: 56,
       hub: 24,
     });
     expect(countJourneySubtypes(CHRONICLE1_SCENES)).toEqual({
-      travel: 48,
-      investigation: 28,
-      sideQuest: 24,
-      dungeon: 16,
-      moral: 24,
+      travel: 59,
+      investigation: 46,
+      sideQuest: 28,
+      dungeon: 19,
+      moral: 31,
     });
     expect(countRelationshipArcs(CHRONICLE1_SCENES)).toEqual({
-      mara: 10,
+      mara: 13,
       rukhar: 12,
       caldus: 12,
       lyra: 12,
@@ -118,10 +118,10 @@ describe('Chronicle I scene assembly', () => {
   });
 
   it('builds lossless unique scene and illustration indexes', () => {
-    expect(CHRONICLE1_SCENE_INDEX.size).toBe(332);
+    expect(CHRONICLE1_SCENE_INDEX.size).toBe(386);
     expect(CHRONICLE1_CONTENT.events).toBe(CHRONICLE1_SCENE_INDEX);
-    expect(new Set(CHRONICLE1_SCENES.map((scene) => scene.id)).size).toBe(332);
-    expect(new Set(CHRONICLE1_SCENES.map((scene) => scene.illustrationId)).size).toBe(332);
+    expect(new Set(CHRONICLE1_SCENES.map((scene) => scene.id)).size).toBe(386);
+    expect(new Set(CHRONICLE1_SCENES.map((scene) => scene.illustrationId)).size).toBe(386);
     for (const scene of CHRONICLE1_SCENES) {
       expect(CHRONICLE1_SCENE_INDEX.get(scene.id)).toBe(scene);
       expect(scene.illustrationId).toBe(`scene-${scene.id}`);
@@ -159,8 +159,15 @@ describe('Chronicle I scene assembly', () => {
           ...(choice.exclusions ?? []),
         ]),
       ]) {
-        expect(gate).toMatchObject({ type: 'flag', present: expect.any(Boolean) });
-        expect(gate.flagId.length, `${scene.id}/gate`).toBeGreaterThan(0);
+        expect(['flag', 'gold', 'item'], `${scene.id}/gate-type`).toContain(gate.type);
+        if (gate.type === 'flag') {
+          expect(gate).toMatchObject({ present: expect.any(Boolean) });
+          expect(gate.flagId.length, `${scene.id}/gate`).toBeGreaterThan(0);
+        } else if (gate.type === 'gold') {
+          expect(gate.amount, `${scene.id}/gate-gold`).toBeGreaterThan(0);
+        } else {
+          expect(gate.quantity, `${scene.id}/gate-item`).toBeGreaterThan(0);
+        }
       }
 
       for (const followUpId of scene.followUps) expect(sceneIds.has(followUpId), followUpId).toBe(true);
@@ -191,8 +198,8 @@ describe('Chronicle I scene assembly', () => {
   });
 
   it('exports one safe scene-art media row per scene', () => {
-    expect(CHRONICLE1_MEDIA_CONTRACT.scenes).toHaveLength(332);
-    expect(new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((row) => row.id)).size).toBe(332);
+    expect(CHRONICLE1_MEDIA_CONTRACT.scenes).toHaveLength(386);
+    expect(new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((row) => row.id)).size).toBe(386);
     expect(CHRONICLE1_MEDIA_CONTRACT.scenes).toEqual(CHRONICLE1_SCENES.map((scene) => ({
       id: scene.illustrationId,
       sceneId: scene.id,

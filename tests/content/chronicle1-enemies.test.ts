@@ -54,10 +54,10 @@ function issueCodes(
 }
 
 describe('Chronicle I enemy catalog', () => {
-  it('retains twenty tactical archetypes across ten mechanically ranked entries each', () => {
-    expect(CHRONICLE1_ARCHETYPES).toHaveLength(20);
-    expect(CHRONICLE1_RANKED_ENEMIES).toHaveLength(200);
-    expect(new Set(CHRONICLE1_RANKED_ENEMIES.map((enemy) => enemy.id)).size).toBe(200);
+  it('retains twenty-one tactical archetypes across ten mechanically ranked entries each', () => {
+    expect(CHRONICLE1_ARCHETYPES).toHaveLength(21);
+    expect(CHRONICLE1_RANKED_ENEMIES).toHaveLength(210);
+    expect(new Set(CHRONICLE1_RANKED_ENEMIES.map((enemy) => enemy.id)).size).toBe(210);
     expect([...new Set(CHRONICLE1_RANKED_ENEMIES.map((enemy) => enemy.role))].sort()).toEqual(EXPECTED_ROLES);
 
     for (const archetype of CHRONICLE1_ARCHETYPES) {
@@ -80,9 +80,9 @@ describe('Chronicle I enemy catalog', () => {
     }
   });
 
-  it('maps rank bands to exactly four portraits per archetype and eighty portraits overall', () => {
-    expect(ENEMY_PORTRAIT_IDS).toHaveLength(80);
-    expect(new Set(ENEMY_PORTRAIT_IDS).size).toBe(80);
+  it('maps rank bands to exactly four portraits per archetype and eighty-four portraits overall', () => {
+    expect(ENEMY_PORTRAIT_IDS).toHaveLength(84);
+    expect(new Set(ENEMY_PORTRAIT_IDS).size).toBe(84);
 
     for (const archetype of CHRONICLE1_ARCHETYPES) {
       const ranks = CHRONICLE1_RANKED_ENEMIES.filter((enemy) => enemy.archetypeId === archetype.id);
@@ -101,8 +101,8 @@ describe('Chronicle I enemy catalog', () => {
     expect(CHRONICLE1_BOSSES).toHaveLength(15);
     expect(BOSS_PORTRAIT_IDS).toHaveLength(15);
     expect(new Set(BOSS_PORTRAIT_IDS).size).toBe(15);
-    expect(CHRONICLE1_ENEMIES).toHaveLength(215);
-    expect(new Set(CHRONICLE1_ENEMIES.map((enemy) => enemy.id)).size).toBe(215);
+    expect(CHRONICLE1_ENEMIES).toHaveLength(225);
+    expect(new Set(CHRONICLE1_ENEMIES.map((enemy) => enemy.id)).size).toBe(225);
 
     for (const boss of CHRONICLE1_BOSSES) {
       expect(boss.isBoss, boss.id).toBe(true);

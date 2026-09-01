@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
-const EXPECTED_SCENE_COUNT = 332;
+const EXPECTED_SCENE_COUNT = 386;
 const EXPECTED_WIDTH = 1536;
 const EXPECTED_HEIGHT = 1024;
 const MIN_FILE_BYTES = 32 * 1024;

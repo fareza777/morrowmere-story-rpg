@@ -12,9 +12,9 @@ import {
 import { applyInventoryCommand, itemStackLimit, useItem, type InventoryState } from '../../src/game/inventory';
 
 const LOCKED_IDS = {
-  weapons: ['weapon-greywatch-sabre','weapon-border-pike','weapon-caravan-hatchet','weapon-scout-longbow','weapon-black-banner-cleaver','weapon-redwater-lance','weapon-orc-peaceblade','weapon-drowned-road-trident','weapon-ferryman-hook','weapon-embervault-maul','weapon-cinderpick','weapon-royal-armory-sword','weapon-conclave-focus-staff','weapon-sealbreak-wand','weapon-ashglass-dagger','weapon-crownless-halberd','weapon-voss-officer-blade','weapon-kingroad-crossbow','weapon-goblin-foldknife','weapon-talla-slingblade','weapon-mara-scout-knife','weapon-rukhar-oath-axe','weapon-lyra-seal-rod','weapon-caldus-pilgrim-mace'],
-  armor: ['armor-greywatch-guard-coat','armor-caravan-leathers','armor-scout-halfmail','armor-black-banner-cuirass','armor-redwater-scale','armor-orc-peace-lamellar','armor-flooded-chain','armor-ferryman-oilskin','armor-embervault-apron','armor-cinderplate','armor-conclave-sealcoat','armor-abbey-field-vestment','armor-crownless-sentinel-mail','armor-voss-command-plate','armor-goblin-patchcloak','armor-stonehand-harness','armor-mara-raincloak','armor-caldus-healer-mail','armor-lyra-warded-mantle','armor-road-council-coat'],
-  charms: ['charm-greywatch-key','charm-medicine-wagon-token','charm-witness-ring','charm-royal-fletching','charm-goblin-brass-button','charm-redwater-peace-knot','charm-rukhar-name-bead','charm-drowned-compass','charm-ember-ledger-seal','charm-forgemasters-mark','charm-mara-scout-badge','charm-caldus-prayer-cord','charm-lyra-cipher-lens','charm-talla-bell-coin','charm-crownless-door-key','charm-voss-broken-signet'],
+  weapons: ['weapon-greywatch-sabre','weapon-border-pike','weapon-caravan-hatchet','weapon-scout-longbow','weapon-black-banner-cleaver','weapon-redwater-lance','weapon-orc-peaceblade','weapon-drowned-road-trident','weapon-ferryman-hook','weapon-embervault-maul','weapon-cinderpick','weapon-royal-armory-sword','weapon-conclave-focus-staff','weapon-sealbreak-wand','weapon-ashglass-dagger','weapon-crownless-halberd','weapon-voss-officer-blade','weapon-kingroad-crossbow','weapon-goblin-foldknife','weapon-talla-slingblade','weapon-mara-scout-knife','weapon-rukhar-oath-axe','weapon-lyra-seal-rod','weapon-caldus-pilgrim-mace','weapon-grave-tithe'],
+  armor: ['armor-greywatch-guard-coat','armor-caravan-leathers','armor-scout-halfmail','armor-black-banner-cuirass','armor-redwater-scale','armor-orc-peace-lamellar','armor-flooded-chain','armor-ferryman-oilskin','armor-embervault-apron','armor-cinderplate','armor-conclave-sealcoat','armor-abbey-field-vestment','armor-crownless-sentinel-mail','armor-voss-command-plate','armor-goblin-patchcloak','armor-stonehand-harness','armor-mara-raincloak','armor-caldus-healer-mail','armor-lyra-warded-mantle','armor-road-council-coat','armor-cart-maw-jawguard'],
+  charms: ['charm-greywatch-key','charm-medicine-wagon-token','charm-witness-ring','charm-royal-fletching','charm-goblin-brass-button','charm-redwater-peace-knot','charm-rukhar-name-bead','charm-drowned-compass','charm-ember-ledger-seal','charm-forgemasters-mark','charm-mara-scout-badge','charm-caldus-prayer-cord','charm-lyra-cipher-lens','charm-talla-bell-coin','charm-crownless-door-key','charm-voss-broken-signet','charm-warning-tree-knot','charm-kneeling-harness-key','charm-shrine-ward-nail','charm-cart-maw-tooth'],
   consumables: ['consumable-field-bandage','consumable-greywatch-tonic','consumable-bitterroot-tea','consumable-smoke-bomb','consumable-caltrop-pouch','consumable-lamp-oil','consumable-antivenom','consumable-marsh-salts','consumable-orc-field-broth','consumable-redwater-stimulant','consumable-warding-chalk','consumable-magefire-flask','consumable-frost-salve','consumable-ember-draught','consumable-burn-paste','consumable-focus-incense','consumable-armor-pitch','consumable-whetstone-kit','consumable-hearty-ration','consumable-blackroot-brew','consumable-healing-poultice','consumable-cleansing-herbs','consumable-courage-cordial','consumable-last-light-phial'],
   tools: ['scroll-counterseal','scroll-hushed-step','scroll-breaking-ward','scroll-roadward','tool-lockpick-roll','tool-field-repair-kit','tool-surveyors-kit','tool-signal-whistle'],
   artifacts: ['quest-voss-sealed-order','quest-greywatch-witness-statement','quest-royal-arrowhead','quest-redwater-truce-copy','quest-embervault-ledger','quest-hostage-list','quest-crownless-access-seal','quest-patron-cipher-letter'],
@@ -29,31 +29,31 @@ const EMPTY_INVENTORY: InventoryState = {
 
 const TIER_VALUE_RANGES = {
   1: [10, 28],
-  2: [24, 60],
+  2: [24, 62],
   3: [55, 100],
   4: [90, 170],
   5: [150, 260],
 } as const;
 
 describe('Chronicle I item catalog', () => {
-  it('uses all 100 locked IDs in their exact authored groups', () => {
+  it('uses all 106 locked IDs in their exact authored groups', () => {
     expect(NEW_ITEM_IDS).toEqual(LOCKED_IDS);
     expect(countNewItemGroups(CHRONICLE1_NEW_ITEMS)).toEqual({
-      weapons: 24,
-      armor: 20,
-      charms: 16,
+      weapons: 25,
+      armor: 21,
+      charms: 20,
       consumables: 24,
       tools: 8,
       artifacts: 8,
     });
-    expect(CHRONICLE1_NEW_ITEMS).toHaveLength(100);
+    expect(CHRONICLE1_NEW_ITEMS).toHaveLength(106);
   });
 
-  it('combines the 100 additions with all 60 legacy items without identity collisions', () => {
+  it('combines the 106 additions with all 60 legacy items without identity collisions', () => {
     expect(ITEMS).toHaveLength(60);
-    expect(CHRONICLE1_ITEMS).toHaveLength(160);
+    expect(CHRONICLE1_ITEMS).toHaveLength(166);
     expect(CHRONICLE1_ITEMS.slice(0, 60)).toEqual(ITEMS);
-    expect(new Set(CHRONICLE1_ITEMS.map((item) => item.id)).size).toBe(160);
+    expect(new Set(CHRONICLE1_ITEMS.map((item) => item.id)).size).toBe(166);
   });
 
   it('authors readable immutable records with compatible runtime categories and unique icon IDs', () => {
@@ -93,8 +93,8 @@ describe('Chronicle I item catalog', () => {
       expect((item.stats.armor ?? 0) + (item.stats.ward ?? 0), item.id).toBeLessThanOrEqual(14);
     }
 
-    expect(NEW_ITEM_ICON_IDS).toHaveLength(100);
-    expect(new Set(NEW_ITEM_ICON_IDS).size).toBe(100);
+    expect(NEW_ITEM_ICON_IDS).toHaveLength(106);
+    expect(new Set(NEW_ITEM_ICON_IDS).size).toBe(106);
     expect(new Set(CHRONICLE1_NEW_ITEMS.map((item) => item.iconId))).toEqual(new Set(NEW_ITEM_ICON_IDS));
   });
 

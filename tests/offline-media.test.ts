@@ -49,8 +49,8 @@ describe('offline Chronicle I media', () => {
     ];
 
     expect(contract.scenes.filter((scene) => scene.type === 'main')).toHaveLength(56);
-    expect(contract.itemIcons).toHaveLength(100);
-    expect(contract.enemyPortraits).toHaveLength(80);
+    expect(contract.itemIcons).toHaveLength(106);
+    expect(contract.enemyPortraits).toHaveLength(84);
     expect(opening.shots).toHaveLength(14);
     expect(audio.music).toHaveLength(13);
     expect(audio.sfx).toHaveLength(84);

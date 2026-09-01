@@ -67,7 +67,7 @@ function assemblyIssues(scenes: readonly Chronicle1Event[]): string[] {
   const illustrationIds = new Set<string>();
   const choiceIds = new Set<string>();
 
-  if (scenes.length !== 359) issues.push(`scene_count: expected 359 scenes, received ${scenes.length}`);
+  if (scenes.length !== 386) issues.push(`scene_count: expected 386 scenes, received ${scenes.length}`);
 
   for (const scene of scenes) {
     if (eventIds.has(scene.id)) issues.push(`duplicate_event_id: ${scene.id}`);

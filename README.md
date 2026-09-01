@@ -7,12 +7,12 @@ MORROWMERE is an English-language, portrait-first sword-and-sorcery text RPG for
 | System | Included |
 | --- | ---: |
 | Chapters | 8 |
-| Authored story scenes | 332 |
-| Enemies | 215 |
+| Authored story scenes | 386 |
+| Enemies | 225 |
 | Encounter formations | 48 |
-| Items | 160 |
-| Visual assets | 341 |
-| Music tracks | 12 |
+| Items | 166 |
+| Visual assets | 600+ |
+| Music tracks | 13 |
 | Sound effects | 84 |
 | Main endings | 4 |
 | Level range | 1–15 |
@@ -67,7 +67,7 @@ Device-test artifacts are copied to `release/`. A Play Store upload still requir
 - Product name: `MORROWMERE`
 - Subtitle: `A Sword & Sorcery Chronicle`
 - Android application ID: `com.morrowmere.game`
-- Version: `1.3.0` (`versionCode 7`)
+- Version: `1.4.0` (`versionCode 8`)
 - Minimum Android: API 24
 - Target Android: API 36
 

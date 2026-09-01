@@ -240,6 +240,384 @@
       "type": "journey"
     },
     {
+      "id": "scene-ch01-living-armor-that-knelt",
+      "sceneId": "ch01-living-armor-that-knelt",
+      "title": "The Armor That Knelt",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-armor-that-knelt-aftermath",
+      "sceneId": "ch01-living-armor-that-knelt-aftermath",
+      "title": "A Soldier Finally Unharnessed",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-armor-that-knelt-test",
+      "sceneId": "ch01-living-armor-that-knelt-test",
+      "title": "The Occupant Behind the Visor",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-ash-on-officers-cuff",
+      "sceneId": "ch01-living-ash-on-officers-cuff",
+      "title": "Ash on the Officer's Cuff",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-ash-on-officers-cuff-aftermath",
+      "sceneId": "ch01-living-ash-on-officers-cuff-aftermath",
+      "title": "Evidence Wrapped Against Rain",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-ash-on-officers-cuff-test",
+      "sceneId": "ch01-living-ash-on-officers-cuff-test",
+      "title": "Three Ways to Test a Lie",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bell-wire-aftermath",
+      "sceneId": "ch01-living-bell-wire-aftermath",
+      "title": "What the Alarm Guarded",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bell-wire-choice",
+      "sceneId": "ch01-living-bell-wire-choice",
+      "title": "The Muffled Bell",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bell-wire-setup",
+      "sceneId": "ch01-living-bell-wire-setup",
+      "title": "Wire Under the Desk",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-below-desk-aftermath",
+      "sceneId": "ch01-living-below-desk-aftermath",
+      "title": "The Missing Badges",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-below-desk-choice",
+      "sceneId": "ch01-living-below-desk-choice",
+      "title": "Register, Strongbox, Tunnel",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-below-desk-setup",
+      "sceneId": "ch01-living-below-desk-setup",
+      "title": "The Square Trapdoor",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bent-axle-aftermath",
+      "sceneId": "ch01-living-bent-axle-aftermath",
+      "title": "The Wagon Rolls True",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bent-axle-setup",
+      "sceneId": "ch01-living-bent-axle-setup",
+      "title": "The Rear Wheel Sags",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-bent-axle-work",
+      "sceneId": "ch01-living-bent-axle-work",
+      "title": "Weight on the Jack",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-birch-marks-aftermath",
+      "sceneId": "ch01-living-birch-marks-aftermath",
+      "title": "The Tollhouse Below",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-birch-marks-choice",
+      "sceneId": "ch01-living-birch-marks-choice",
+      "title": "Which Marks to Follow",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-birch-marks-setup",
+      "sceneId": "ch01-living-birch-marks-setup",
+      "title": "Three Cuts on White Bark",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-cut-milestone-aftermath",
+      "sceneId": "ch01-living-cut-milestone-aftermath",
+      "title": "The Warning She Can Prove",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-living-cut-milestone-dialogue",
+      "sceneId": "ch01-living-cut-milestone-dialogue",
+      "title": "Three Groups in the Rain",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-living-cut-milestone-setup",
+      "sceneId": "ch01-living-cut-milestone-setup",
+      "title": "A Scout Beside the Stone",
+      "chapterId": "ch01",
+      "type": "companion"
+    },
+    {
+      "id": "scene-ch01-living-hooves-chalk-aftermath",
+      "sceneId": "ch01-living-hooves-chalk-aftermath",
+      "title": "Tracks Leaving the Bend",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-hooves-chalk-choice",
+      "sceneId": "ch01-living-hooves-chalk-choice",
+      "title": "What the Horses Smelled",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-hooves-chalk-setup",
+      "sceneId": "ch01-living-hooves-chalk-setup",
+      "title": "White Road, Stopped Team",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-millers-cart",
+      "sceneId": "ch01-living-millers-cart",
+      "title": "The Miller's Cart",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-millers-cart-aftermath",
+      "sceneId": "ch01-living-millers-cart-aftermath",
+      "title": "Flour on the Bridge Wind",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-millers-cart-rescue",
+      "sceneId": "ch01-living-millers-cart-rescue",
+      "title": "Axle in the Mill Race",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-riders-in-valley",
+      "sceneId": "ch01-living-riders-in-valley",
+      "title": "Riders in the Valley",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-riders-in-valley-aftermath",
+      "sceneId": "ch01-living-riders-in-valley-aftermath",
+      "title": "Greywatch Above the Pines",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-riders-in-valley-crossing",
+      "sceneId": "ch01-living-riders-in-valley-crossing",
+      "title": "The Distance to Greywatch",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-smoke-verge-aftermath",
+      "sceneId": "ch01-living-smoke-verge-aftermath",
+      "title": "The Orchard Has Been Warned",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-smoke-verge-choice",
+      "sceneId": "ch01-living-smoke-verge-choice",
+      "title": "The Signal Fire",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-smoke-verge-setup",
+      "sceneId": "ch01-living-smoke-verge-setup",
+      "title": "A Thin Column North",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-snared-scout-aftermath",
+      "sceneId": "ch01-living-snared-scout-aftermath",
+      "title": "Halen's Choice of Shelter",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-snared-scout-choice",
+      "sceneId": "ch01-living-snared-scout-choice",
+      "title": "The Bent Sapling",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-snared-scout-setup",
+      "sceneId": "ch01-living-snared-scout-setup",
+      "title": "A Boot Above the Bracken",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-split-fletched-arrow-aftermath",
+      "sceneId": "ch01-living-split-fletched-arrow-aftermath",
+      "title": "The Arrow After Battle",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-split-fletched-arrow-battle",
+      "sceneId": "ch01-living-split-fletched-arrow-battle",
+      "title": "The Opening Volley",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-split-fletched-arrow-setup",
+      "sceneId": "ch01-living-split-fletched-arrow-setup",
+      "title": "Black, White, and Fresh Glue",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-sword-in-barrow-clay",
+      "sceneId": "ch01-living-sword-in-barrow-clay",
+      "title": "The Sword in Barrow Clay",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-sword-in-barrow-clay-aftermath",
+      "sceneId": "ch01-living-sword-in-barrow-clay-aftermath",
+      "title": "A Blade With a Named Debt",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-sword-in-barrow-clay-binding",
+      "sceneId": "ch01-living-sword-in-barrow-clay-binding",
+      "title": "The Practical Price of Grave-Tithe",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-teeth-under-siege-cart",
+      "sceneId": "ch01-living-teeth-under-siege-cart",
+      "title": "Teeth Under the Siege Cart",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-teeth-under-siege-cart-aftermath",
+      "sceneId": "ch01-living-teeth-under-siege-cart-aftermath",
+      "title": "What the Siege Left Behind",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-teeth-under-siege-cart-crossing",
+      "sceneId": "ch01-living-teeth-under-siege-cart-crossing",
+      "title": "The Chain Nest",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-war-camps-last-fire",
+      "sceneId": "ch01-living-war-camps-last-fire",
+      "title": "The War Camp's Last Fire",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-war-camps-last-fire-aftermath",
+      "sceneId": "ch01-living-war-camps-last-fire-aftermath",
+      "title": "The Quartermaster's Accounting",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-war-camps-last-fire-choice",
+      "sceneId": "ch01-living-war-camps-last-fire-choice",
+      "title": "Goods Bought Twice",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-ward-beneath-shrine",
+      "sceneId": "ch01-living-ward-beneath-shrine",
+      "title": "The Ward Beneath the Shrine",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-ward-beneath-shrine-aftermath",
+      "sceneId": "ch01-living-ward-beneath-shrine-aftermath",
+      "title": "What the Ward Was Holding",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-ward-beneath-shrine-choice",
+      "sceneId": "ch01-living-ward-beneath-shrine-choice",
+      "title": "Four Nails and One Breath",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
+      "id": "scene-ch01-living-warning-tree",
+      "sceneId": "ch01-living-warning-tree",
+      "title": "The Warning Tree",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-warning-tree-aftermath",
+      "sceneId": "ch01-living-warning-tree-aftermath",
+      "title": "The Courier's Bronze Tally",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-warning-tree-choice",
+      "sceneId": "ch01-living-warning-tree-choice",
+      "title": "Punctures in the Leaf Mold",
+      "chapterId": "ch01",
+      "type": "combat"
+    },
+    {
       "id": "scene-ch01-main-a-banner-placed-too-neatly",
       "sceneId": "ch01-main-a-banner-placed-too-neatly",
       "title": "A Banner Placed Too Neatly",
@@ -2356,6 +2734,13 @@
       "tier": 1
     },
     {
+      "id": "item-icon-armor-cart-maw-jawguard",
+      "itemId": "armor-cart-maw-jawguard",
+      "name": "Cart-Maw Jawguard",
+      "group": "armor",
+      "tier": 2
+    },
+    {
       "id": "item-icon-armor-cinderplate",
       "itemId": "armor-cinderplate",
       "name": "Cinderplate Harness",
@@ -2475,6 +2860,13 @@
       "tier": 3
     },
     {
+      "id": "item-icon-charm-cart-maw-tooth",
+      "itemId": "charm-cart-maw-tooth",
+      "name": "Cart-Maw Tooth",
+      "group": "charm",
+      "tier": 2
+    },
+    {
       "id": "item-icon-charm-crownless-door-key",
       "itemId": "charm-crownless-door-key",
       "name": "Crownless Door Key",
@@ -2513,6 +2905,13 @@
       "id": "item-icon-charm-greywatch-key",
       "itemId": "charm-greywatch-key",
       "name": "Greywatch Gate Key",
+      "group": "charm",
+      "tier": 1
+    },
+    {
+      "id": "item-icon-charm-kneeling-harness-key",
+      "itemId": "charm-kneeling-harness-key",
+      "name": "Kneeling Harness Key",
       "group": "charm",
       "tier": 1
     },
@@ -2559,6 +2958,13 @@
       "tier": 2
     },
     {
+      "id": "item-icon-charm-shrine-ward-nail",
+      "itemId": "charm-shrine-ward-nail",
+      "name": "Shrine Ward Nail",
+      "group": "charm",
+      "tier": 2
+    },
+    {
       "id": "item-icon-charm-talla-bell-coin",
       "itemId": "charm-talla-bell-coin",
       "name": "Talla’s Bell Coin",
@@ -2571,6 +2977,13 @@
       "name": "Voss’s Broken Signet",
       "group": "charm",
       "tier": 5
+    },
+    {
+      "id": "item-icon-charm-warning-tree-knot",
+      "itemId": "charm-warning-tree-knot",
+      "name": "Warning Tree Knot",
+      "group": "charm",
+      "tier": 1
     },
     {
       "id": "item-icon-charm-witness-ring",
@@ -2940,6 +3353,13 @@
       "id": "item-icon-weapon-goblin-foldknife",
       "itemId": "weapon-goblin-foldknife",
       "name": "Goblin Foldknife",
+      "group": "weapon",
+      "tier": 2
+    },
+    {
+      "id": "item-icon-weapon-grave-tithe",
+      "itemId": "weapon-grave-tithe",
+      "name": "Grave-Tithe",
       "group": "weapon",
       "tier": 2
     },
@@ -3459,6 +3879,30 @@
       "id": "enemy-portrait-rain-wraith-04",
       "archetypeId": "rain-wraith",
       "name": "Black Rain Wraith",
+      "rankBand": "9-10"
+    },
+    {
+      "id": "enemy-portrait-siege-cart-maw-01",
+      "archetypeId": "siege-cart-maw",
+      "name": "Siege Cart-Maw",
+      "rankBand": "1-2"
+    },
+    {
+      "id": "enemy-portrait-siege-cart-maw-02",
+      "archetypeId": "siege-cart-maw",
+      "name": "Siege Cart-Maw",
+      "rankBand": "3-5"
+    },
+    {
+      "id": "enemy-portrait-siege-cart-maw-03",
+      "archetypeId": "siege-cart-maw",
+      "name": "Siege Cart-Maw",
+      "rankBand": "6-8"
+    },
+    {
+      "id": "enemy-portrait-siege-cart-maw-04",
+      "archetypeId": "siege-cart-maw",
+      "name": "Siege Cart-Maw",
       "rankBand": "9-10"
     },
     {

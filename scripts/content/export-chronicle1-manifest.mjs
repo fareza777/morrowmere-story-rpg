@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -13,6 +13,7 @@ function sortedById(entries) {
 export async function exportChronicle1Manifest() {
   const server = await createServer({
     root: REPOSITORY_ROOT,
+    configFile: false,
     appType: 'custom',
     logLevel: 'error',
     server: { middlewareMode: true },
@@ -38,7 +39,7 @@ export async function exportChronicle1Manifest() {
   }
 }
 
-const entryPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : '';
-if (import.meta.url === entryPath) {
+const entryPath = process.argv[1] ? resolve(process.argv[1]).toLowerCase() : '';
+if (fileURLToPath(import.meta.url).toLowerCase() === entryPath) {
   await exportChronicle1Manifest();
 }

@@ -28,7 +28,7 @@ export type {
 } from './types';
 export { CHRONICLE1_WEAPONS } from './weapons';
 
-/** The exact 100 authored additions for The Black Banner. */
+/** The 106 authored equipment, supply, and quest additions for The Black Banner. */
 export const CHRONICLE1_NEW_ITEMS: readonly Chronicle1ItemDefinition[] = deepFreeze([
   ...CHRONICLE1_WEAPONS,
   ...CHRONICLE1_ARMOR,

@@ -24,8 +24,8 @@ describe('procedural visual compositor', () => {
       enemyArtFamily: enemy.artFamily,
     }));
 
-    expect(treatments).toHaveLength(200);
-    expect(new Set(treatments.map((treatment) => treatment.visualKey)).size).toBe(200);
+    expect(treatments).toHaveLength(210);
+    expect(new Set(treatments.map((treatment) => treatment.visualKey)).size).toBe(210);
     expect(treatments.every((treatment) => treatment.enemySource?.endsWith('.webp'))).toBe(true);
   });
 

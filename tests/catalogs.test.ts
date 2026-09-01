@@ -2,19 +2,19 @@ import { ENEMIES } from '../src/game/content/enemies';
 import { ITEMS, generateItemReward } from '../src/game/content/items';
 
 describe('enemy catalog', () => {
-  it('contains exactly 200 stable unique enemies', () => {
-    expect(ENEMIES).toHaveLength(200);
-    expect(new Set(ENEMIES.map((enemy) => enemy.id)).size).toBe(200);
-    expect(new Set(ENEMIES.map((enemy) => enemy.name)).size).toBe(200);
+  it('contains exactly 210 stable unique enemies', () => {
+    expect(ENEMIES).toHaveLength(210);
+    expect(new Set(ENEMIES.map((enemy) => enemy.id)).size).toBe(210);
+    expect(new Set(ENEMIES.map((enemy) => enemy.name)).size).toBe(210);
   });
 
-  it('contains twenty archetypes with ten non-decreasing ranks each', () => {
+  it('contains twenty-one archetypes with ten non-decreasing ranks each', () => {
     const groups = new Map<string, typeof ENEMIES>();
     for (const enemy of ENEMIES) {
       groups.set(enemy.archetypeId, [...(groups.get(enemy.archetypeId) ?? []), enemy]);
     }
 
-    expect(groups.size).toBe(20);
+    expect(groups.size).toBe(21);
     for (const variants of groups.values()) {
       expect(variants).toHaveLength(10);
       const power = variants.map(

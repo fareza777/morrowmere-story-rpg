@@ -19,13 +19,13 @@ Full description:
 > Features:
 >
 > - Eight story chapters spanning levels 1–15, designed for a 10–12 hour first run
-> - 332 authored scenes with seeded routes, optional events, random encounters, and replay variation
-> - 215 enemies, including ranked variants and 15 illustrated bosses
+> - 386 authored scenes with seeded routes, optional events, random encounters, and replay variation
+> - 225 enemies, including ranked variants and 15 illustrated bosses
 > - Tactical combat with visible intent, misses, critical hits, blocks, techniques, and usable consumables
-> - 160 weapons, armor pieces, charms, supplies, and quest items
+> - 166 weapons, armor pieces, charms, supplies, and quest items
 > - Inventory, equipment, merchants, gold, leveling, and difficult companion recruitment
 > - Four main endings plus detailed epilogues shaped by evidence, allies, factions, and the fate of Greywatch
-> - 341 bright illustrated assets, a cinematic opening, 12 music tracks, and 84 distinct sound effects
+> - More than 600 bright illustrated assets, a cinematic opening, 13 music tracks, and 84 distinct sound effects
 > - Multiple save slots, autosave, save-and-exit support, chapter restart, and clear defeat recovery
 > - Adjustable text size, high contrast, reduced motion, captions, narration support, SFX controls, and haptic feedback
 > - Core story, combat, saves, artwork, music, and SFX remain playable offline
