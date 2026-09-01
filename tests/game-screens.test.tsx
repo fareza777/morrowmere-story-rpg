@@ -10,10 +10,41 @@ import { selectCampView, selectCurrentScene, selectRouteView } from '../src/ui/s
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 
 describe('camp, route, and story screens', () => {
-  it('offers camp services and Save & Exit', async () => {
+  it('maps camp chapters to bright contextual and regional hero artwork', () => {
+    const baseView = selectCampView(makeUiGame({ screen: 'camp' }), UI_CONTENT);
+    const { rerender } = render(
+      <CampScreen
+        view={baseView}
+        onChooseRoute={vi.fn()}
+        onOpenInventory={vi.fn()}
+        onOpenJournal={vi.fn()}
+        onOpenCompanions={vi.fn()}
+      />,
+    );
+    const cases = [
+      ['Chapter 1', '/assets/chronicle1/hubs/road-camp-morning.webp'],
+      ['Chapter 3', '/assets/backgrounds/drowned-road.webp'],
+      ['Chapter 5', '/assets/backgrounds/embervault.webp'],
+      ['Chapter 7', '/assets/backgrounds/crownless-keep.webp'],
+    ] as const;
+
+    for (const [chapterLabel, source] of cases) {
+      rerender(
+        <CampScreen
+          view={{ ...baseView, hero: { ...baseView.hero, chapterLabel } }}
+          onChooseRoute={vi.fn()}
+          onOpenInventory={vi.fn()}
+          onOpenJournal={vi.fn()}
+          onOpenCompanions={vi.fn()}
+        />,
+      );
+      expect(screen.getByRole('img')).toHaveAttribute('src', source);
+    }
+  });
+
+  it('offers camp services without duplicating the Pause menu exit action', async () => {
     const user = userEvent.setup();
     const onChooseRoute = vi.fn();
-    const onSaveAndExit = vi.fn();
     render(
       <CampScreen
         view={selectCampView(makeUiGame({ screen: 'camp' }), UI_CONTENT)}
@@ -21,15 +52,13 @@ describe('camp, route, and story screens', () => {
         onOpenInventory={vi.fn()}
         onOpenJournal={vi.fn()}
         onOpenCompanions={vi.fn()}
-        onSaveAndExit={onSaveAndExit}
       />,
     );
 
     expect(screen.getByRole('heading', { name: 'Road Camp' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Choose a Route' }));
-    await user.click(screen.getByRole('button', { name: 'Save & Exit' }));
     expect(onChooseRoute).toHaveBeenCalledOnce();
-    expect(onSaveAndExit).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: 'Save & Exit' })).not.toBeInTheDocument();
   });
 
   it('shows understandable risk before choosing one of three routes', async () => {
@@ -43,6 +72,7 @@ describe('camp, route, and story screens', () => {
       />,
     );
 
+    expect(screen.getByRole('img', { name: /lone traveller/i })).toHaveAttribute('src', '/assets/chronicle1/hubs/three-roads-crossroads.webp');
     expect(screen.getByRole('button', { name: /King's Road/i })).toHaveTextContent('Lower danger');
     expect(screen.getByRole('button', { name: /Old Forest/i })).toHaveTextContent('Ambush risk');
     expect(screen.getByRole('button', { name: /Ruined Pass/i })).toHaveTextContent('High danger');
@@ -86,7 +116,7 @@ describe('camp, route, and story screens', () => {
     const image = screen.getByRole('img', { name: 'A wagon on the Greywatch road.' });
     fireEvent.error(image);
 
-    expect(illustrationFallbackSource(illustrationId)).toBe('/assets/chronicle1/scenes/ch01/scene-ch01-main-a-banner-placed-too-neatly.webp');
+    expect(illustrationFallbackSource(illustrationId)).toBe('/assets/chronicle1/hubs/three-roads-crossroads.webp');
     expect(image).toHaveAttribute('src', illustrationFallbackSource(illustrationId));
     expect(screen.queryByText(/illustration unavailable/i)).not.toBeInTheDocument();
   });

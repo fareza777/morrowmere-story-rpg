@@ -106,6 +106,7 @@ describe('Chronicle product integration gate', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Begin slot 2' }));
     await user.click(screen.getByRole('button', { name: 'Watch opening story' }));
+    await user.click(await screen.findByRole('region', { name: 'Opening story' }));
     await user.click(await screen.findByRole('button', { name: 'Skip opening' }));
     await user.click(screen.getByRole('button', { name: /Warden/i }));
     await user.click(screen.getByRole('button', { name: 'Begin Chronicle' }));
@@ -164,6 +165,7 @@ describe('Chronicle product integration gate', () => {
     }
     await user.click(await screen.findByRole('button', { name: 'Return to Last Camp' }));
     expect(savedSlotTwo()).toMatchObject({ flow: { screen: 'camp' }, expedition: null });
+    await user.click(screen.getByRole('button', { name: 'Pause' }));
     await user.click(await screen.findByRole('button', { name: 'Save & Exit' }));
     await user.click(await screen.findByRole('button', { name: 'Continue slot 2' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Road Camp' })).toBeVisible());

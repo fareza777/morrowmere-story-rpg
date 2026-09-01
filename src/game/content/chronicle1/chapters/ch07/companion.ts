@@ -7,7 +7,7 @@ export const CH07_COMPANION = Object.freeze([
     weight: 75, pacing: 'quiet', illustrationId: 'scene-ch07-companion-mara-maps-the-last-march',
     title: 'Mara Maps the Last March',
     narrative: [
-      'Mara\'s supplied scouts return with a charcoal map of Crownless Keep\'s western ridge, patrol intervals, and three places where civilian carts still enter under inspection.',
+      'Greywatch scouts led by Mara Vey return with a charcoal map of Crownless Keep\'s western ridge, patrol intervals, and three places where civilian carts still enter under inspection.',
       'They can remain ahead to mark the army route or escort the evidence wagons through country still watched by Voss\'s riders. They cannot safely do both.',
     ],
     eligibility: { minLevel: 12, maxLevel: 14 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
@@ -22,7 +22,7 @@ export const CH07_COMPANION = Object.freeze([
     weight: 80, pacing: 'quiet', illustrationId: 'scene-ch07-companion-talla-finds-the-drainage-postern',
     title: 'Talla Finds the Drainage Postern',
     narrative: [
-      'Talla compares an old goblin maintenance invoice with Mara\'s ridge map and locates a drainage postern behind the keep kitchens. The opening is narrow, gated, and probably unwatched.',
+      'Goblin scout Talla Quickhand compares an old maintenance invoice with the ridge map and locates a drainage postern behind the keep kitchens. The opening is narrow, gated, and probably unwatched.',
       'Marking it for the whole march risks discovery. Keeping the route to a small covert party protects secrecy but limits how much evidence can pass.',
     ],
     eligibility: { minLevel: 12, maxLevel: 14 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
@@ -67,7 +67,7 @@ export const CH07_COMPANION = Object.freeze([
     weight: 70, pacing: 'recovery', illustrationId: 'scene-ch07-companion-caldus-and-the-abbey-delegate',
     title: 'Caldus and the Abbey Delegate',
     narrative: [
-      'Caldus meets an Iron Abbey delegate whose escort was wounded by Voss\'s outer patrol. She will testify that the coronation invitations arrived with threats against abbey hostages.',
+      'Brother Caldus arrives with an Iron Abbey delegate whose escort was wounded by Voss\'s outer patrol. She will testify that the coronation invitations arrived with threats against abbey hostages.',
       'The delegate needs treatment before the climb. Caldus can remain with her, or send his signed medical account while joining the vanguard.',
     ],
     eligibility: { minLevel: 12, maxLevel: 14 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,

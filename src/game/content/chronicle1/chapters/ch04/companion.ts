@@ -37,7 +37,7 @@ export const CH04_COMPANION = Object.freeze([
     weight: 70, pacing: 'recovery', illustrationId: 'scene-ch04-companion-caldus-in-the-field-hospital',
     title: 'Caldus in the Field Hospital',
     narrative: [
-      'Caldus turns Redwater\'s wool hall into a field hospital with beds assigned by injury rather than uniform. Greywatch surgeons object when wounded Free Host scouts arrive first.',
+      'Brother Caldus has come from Greywatch with a relief cart. He turns Redwater\'s wool hall into a field hospital with beds assigned by injury rather than uniform. Greywatch surgeons object when wounded Free Host scouts arrive first.',
       'The hall has enough clean water for surgery or the fever ward, not both. Caldus asks you to make the ration public so no officer can quietly reverse it.',
     ],
     eligibility: { minLevel: 6, maxLevel: 8 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
@@ -67,7 +67,7 @@ export const CH04_COMPANION = Object.freeze([
     weight: 80, pacing: 'quiet', illustrationId: 'scene-ch04-companion-mara-rukhar-common-ground',
     title: 'Mara and Rukhar Find Common Ground',
     narrative: [
-      'The unmarked scouts return with one prisoner from the south tower and a map of safe civilian lanes. Mara admits Rukhar\'s west-bank warnings kept them alive.',
+      'Mara and Rukhar return from a joint reconnaissance with one prisoner from the south tower and a map of safe civilian lanes. Mara admits Rukhar\'s west-bank warnings kept the scouts alive.',
       'Rukhar admits Mara was right to watch the tower. Their commanders now want separate custody of the prisoner, which could undo the trust their scouts earned.',
     ],
     eligibility: { minLevel: 6, maxLevel: 8 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
@@ -97,7 +97,7 @@ export const CH04_COMPANION = Object.freeze([
     weight: 70, pacing: 'quiet', illustrationId: 'scene-ch04-companion-talla-between-the-lines',
     title: 'Talla Between the Lines',
     narrative: [
-      'Talla recruits Redwater\'s goblin chimney sweeps to carry stand-fast notices through alleys no mounted runner can reach. Roake objects to using children near a military line.',
+      'Goblin scout Talla Quickhand reaches Redwater through the covered market. She recruits local chimney sweeps to carry stand-fast notices through alleys no mounted runner can reach. Roake objects to using children near a military line.',
       'The sweeps know every roof and insist they already live inside the danger. Adult soldiers can carry the notices more formally, but not before the next signal horn.',
     ],
     eligibility: { minLevel: 6, maxLevel: 8 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,

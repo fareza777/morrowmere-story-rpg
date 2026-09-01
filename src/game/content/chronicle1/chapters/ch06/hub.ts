@@ -17,7 +17,7 @@ export const CH06_HUB = Object.freeze([
     type: 'hub', family: 'siege-healing', weight: 20, pacing: 'recovery', tensionChange: -1,
     merchantId: 'apothecary', merchantRestockKey: 'ch06-apothecary-south-chapel',
     illustrationId: 'scene-ch06-hub-ilene-at-the-south-chapel', title: 'Ilene at the South Chapel',
-    narrative: ['Apothecary Ilene Marr works beside Caldus in the crowded chapel ward. Her remaining stock is limited to combat dressings, fever tonic, smoke balm, and a few sealed remedies.', 'She will trade quickly or spend the same time treating the hostages brought from the undercroft.'],
+    narrative: ['Apothecary Ilene Marr works beside the ward healers in the crowded chapel. Her remaining stock is limited to combat dressings, fever tonic, smoke balm, and a few sealed remedies.', 'She will trade quickly or spend the same time treating the hostages brought from the undercroft.'],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 10, maxLevel: 12 }, requirements: [], exclusions: [], cooldownRuns: 1, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch06-choice-open-ilenes-siege-stock', label: 'Open Ilene\'s siege stock', detail: 'Buy scarce field remedies for the wall, but leave her with fewer supplies for the chapel ward.', effects: [{ type: 'flag', operation: 'add', flagId: 'apothecary-stock-opened-ch06' }, { type: 'tension', amount: 1 }], outcome: 'Ilene sets out the remaining sealed remedies and names what each purchase removes from the ward.' },

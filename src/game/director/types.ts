@@ -49,6 +49,8 @@ export interface DirectorSelectedStep {
   readonly kind: 'selected';
   readonly sceneId: EventId;
   readonly event: ChronicleEvent;
+  /** Timeline position where the scene was delivered, including a bridged gap or callback deadline. */
+  readonly selectedAt: StoryPosition;
   readonly reason: DirectorReason;
   readonly state: DirectorState;
 }

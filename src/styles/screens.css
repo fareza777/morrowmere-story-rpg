@@ -5,6 +5,10 @@
 .hud-meta span { display: inline-flex; align-items: center; gap: 0.25rem; }
 .hud-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .screen-page { inline-size: 100%; min-block-size: calc(100dvh - 145px); padding: 1.1rem max(1rem, var(--safe-right)) calc(1.6rem + var(--safe-bottom)) max(1rem, var(--safe-left)); }
+.screen-hero { inline-size: 100%; max-inline-size: 720px; aspect-ratio: 3 / 2; margin: 1rem auto; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 14px; background: #eadcc0; box-shadow: 0 8px 20px rgb(70 44 23 / 0.12); }
+.screen-hero img { inline-size: 100%; block-size: 100%; display: block; object-fit: cover; object-position: center; filter: none; transform: none; }
+.screen-hero-fallback { inline-size: 100%; block-size: 100%; display: grid; place-items: center; background: #eadcc0; color: var(--accent-strong); }
+.screen-hero-fallback span { inline-size: 64px; block-size: 64px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-family: Georgia, serif; font-size: 2rem; font-weight: 800; }
 .scene-art-fallback { inline-size: 100%; block-size: 100%; display: grid; place-content: center; background: #eadcc0; color: var(--accent-strong); text-align: center; }
 .scene-art-fallback span { display: grid; place-items: center; inline-size: 64px; block-size: 64px; border: 2px solid currentColor; border-radius: 50%; font-family: Georgia, serif; font-size: 2rem; font-weight: 800; }
 .screen-copy > p:not(.eyebrow), .route-intro { max-inline-size: 46ch; color: var(--paper-1); line-height: 1.6; }

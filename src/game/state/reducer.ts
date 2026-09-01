@@ -2,7 +2,7 @@ import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companion
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
 import type { ContentIndex } from '../content/schema';
-import type { EncounterId, ItemId } from '../domain/ids';
+import type { ChapterId, EncounterId, ItemId } from '../domain/ids';
 import type { DomainEvent } from '../domain/result';
 import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
 import type { DirectorState } from '../director/types';
@@ -59,6 +59,44 @@ function directorMemory(director: DirectorState) {
     familyCooldowns: { ...director.familyCooldowns },
     pendingCallbacks: director.pendingCallbacks.map((callback) => ({ ...callback, deadline: { ...callback.deadline } })),
   };
+}
+
+const CHAPTER_SEQUENCE: readonly ChapterId[] = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'];
+
+function nextChapterId(chapterId: ChapterId): ChapterId | null {
+  const index = CHAPTER_SEQUENCE.indexOf(chapterId);
+  return index >= 0 ? CHAPTER_SEQUENCE[index + 1] ?? null : null;
+}
+
+function completeChapter(state: GameStateV2, director: DirectorState, updatedAt: string): GameTransition {
+  const expedition = state.expedition!;
+  const nextChapter = nextChapterId(state.campaign.chapterId);
+  const campaign = {
+    ...state.campaign,
+    chapterId: nextChapter ?? state.campaign.chapterId,
+    bankedGold: state.campaign.bankedGold + expedition.unbankedGold,
+    directorMemory: directorMemory(director),
+    routeSeedNonce: state.campaign.routeSeedNonce + 1,
+  };
+  const provisional: GameStateV2 = {
+    ...state,
+    campaign,
+    expedition: null,
+    adPacing: {
+      ...state.adPacing,
+      expeditionBreaksSinceInterstitial: state.adPacing.expeditionBreaksSinceInterstitial + 1,
+    },
+    checkpoints: {
+      chapter: { campaign: campaignPayload(campaign), enteredAt: updatedAt },
+      camp: { campaign: campaignPayload(campaign), campSceneId: null, savedAt: updatedAt },
+    },
+    flow: { ...state.flow, screen: nextChapter ? 'camp' : 'ending', overlay: null, merchant: null },
+    updatedAt,
+  };
+  return commit(state, provisional, [{
+    type: 'notification',
+    message: nextChapter ? `Chapter ${Number(nextChapter.slice(2))} is ready.` : 'Chronicle I complete.',
+  }]);
 }
 
 function inventoryTags(state: GameStateV2, content: ContentIndex): readonly string[] {
@@ -357,8 +395,12 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const current = currentScene(state, content);
     if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
     const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content);
-    if (step.kind !== 'selected') return diagnostic(state, 'scene_unavailable', step.diagnostic);
-    const expedition = { ...state.expedition, director: step.state, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...state.expedition.position, slot: state.expedition.position.slot + 1 } };
+    if (step.kind !== 'selected') {
+      return step.terminal === 'completed'
+        ? completeChapter(state, step.state, command.updatedAt)
+        : diagnostic(state, 'scene_unavailable', step.diagnostic);
+    }
+    const expedition = { ...state.expedition, director: step.state, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } };
     return commit(state, { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(step.state) }, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Scene ready.' }]);
   }
   if (command.type === 'resolve-choice') {

@@ -6,7 +6,7 @@ export const CH03_MAIN = Object.freeze([
     type: 'main', family: 'redwater-mission', anchorOrder: 1, weight: 100, pacing: 'quiet',
     illustrationId: 'scene-ch03-main-orders-for-redwater', title: 'Orders for Redwater',
     narrative: [
-      'Greywatch sends you south with the royal arrow, Jory Fen\'s signed Route Seven statement, and copies of the hidden-depot chits. The originals stay behind separate locks so one ambush cannot erase the case.',
+      'Greywatch sends you south with the evidence recovered so far: records of the royal arrows, Jory Fen\'s signed Route Seven statement, and the surviving hidden-depot paperwork. The originals stay behind separate locks so one ambush cannot erase the case.',
       'Your immediate goal is Redwater, where human and orc patrols are gathering on opposite banks. You must warn the town, compare what each army has been told, and return any new proof to neutral custody.',
     ],
     eligibility: { minLevel: 4, maxLevel: 6 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,

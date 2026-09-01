@@ -53,7 +53,7 @@ export const CH08_COMPANION = Object.freeze([
     title: 'Lyra Builds the Plain Case',
     narrative: [
       'After hearing Voss, Lyra reduces months of records to a sequence the whole hall can follow: create shortage, fund violence, block relief, offer protection, demand seals. Every step has a named source.',
-      'She can read the sequence herself as an expert or let the player speak while she answers technical objections. The first is precise; the second makes the accusation belong to an ordinary guard.',
+      'She can read the sequence herself as an expert or let you speak while she answers technical objections. The first is precise; the second makes the accusation belong to the guard who carried the case here.',
     ],
     eligibility: { minLevel: 14, maxLevel: 15 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
     followUps: [], callbackPromises: [], choices: [

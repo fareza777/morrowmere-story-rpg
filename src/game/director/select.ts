@@ -41,6 +41,84 @@ function selectPacedEvent(
   return weightedPick(pacingCandidates(unseen.length > 0 ? unseen : coherent, state), random, context);
 }
 
+interface CandidatePick {
+  readonly event: ChronicleEvent;
+  readonly reason: DirectorReason;
+}
+
+function pickCandidate(
+  eligible: readonly ChronicleEvent[],
+  callback: ChronicleEvent | undefined,
+  state: DirectorState,
+  context: JourneyDirectorContext,
+  content: ContentIndex,
+  random: number,
+): CandidatePick | undefined {
+  const anchor = eligible
+    .filter((event) => event.type === 'main' && (event.anchorOrder ?? Number.POSITIVE_INFINITY) <= context.position.slot)
+    .sort((left, right) => (left.anchorOrder ?? 0) - (right.anchorOrder ?? 0))[0];
+  const combatLimitReached = reachedCombatLimit(state, content);
+  const threat = state.threat >= THREAT_ENCOUNTER_THRESHOLD && !combatLimitReached
+    ? eligible.filter((event) => event.type === 'combat')[0]
+    : undefined;
+  const pacedEligible = eligible.filter((candidate) =>
+    candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
+  const paced = selectPacedEvent(pacedEligible, state, context, random);
+  const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
+  const event = callback ?? anchor ?? pacedSupport ?? threat ?? paced;
+  if (!event) return undefined;
+  return {
+    event,
+    reason: callback
+      ? 'callback'
+      : anchor
+        ? 'anchor'
+        : event === threat
+          ? 'threat'
+          : 'paced',
+  };
+}
+
+function candidatesAtPosition(
+  state: DirectorState,
+  context: JourneyDirectorContext,
+  content: ContentIndex,
+): ChronicleEvent[] {
+  return eligibleScenes(state, context, content).filter((event) =>
+    event.slot === undefined
+      || event.slot === context.position.slot
+      // A due anchor is never abandoned if a callback occupied its authored slot.
+      || event.type === 'main');
+}
+
+function futureSelectionSlots(
+  chapterScenes: readonly ChronicleEvent[],
+  state: DirectorState,
+  context: JourneyDirectorContext,
+): number[] {
+  const callbackDeadlines = state.pendingCallbacks
+    .filter((callback) => callback.status === 'pending'
+      && callback.required
+      && callback.deadline.chapterId === context.position.chapterId)
+    .map((callback) => callback.deadline.slot);
+  return [...new Set([
+    ...chapterScenes.map((scene) => scene.slot),
+    ...callbackDeadlines,
+  ].filter((slot): slot is number => slot !== undefined && slot > context.position.slot))]
+    .sort((left, right) => left - right);
+}
+
+function chapterRouteComplete(chapterScenes: readonly ChronicleEvent[], state: DirectorState): boolean {
+  const anchors = chapterScenes
+    .filter((event) => event.type === 'main')
+    .sort((left, right) => (left.anchorOrder ?? left.slot ?? 0) - (right.anchorOrder ?? right.slot ?? 0));
+  const finalAnchor = anchors[anchors.length - 1];
+  if (finalAnchor) {
+    return state.usedSceneIds.includes(finalAnchor.id) || state.seenEventIds.includes(finalAnchor.id);
+  }
+  return chapterScenes.every((scene) => state.usedSceneIds.includes(scene.id));
+}
+
 /**
  * Starts the next run atomically. A positive cooldown blocks this new run,
  * then decrements so `cooldownRuns: 2` blocks exactly the next two runs.
@@ -113,39 +191,48 @@ export function selectNextScene(state: DirectorState, context: JourneyDirectorCo
   }
   const rng = createRng(state.rngState);
   const random = rng.next();
-  const eligible = eligibleScenes(state, context, content);
   const callback = callbackScene(state, context, content);
   if (dueRequiredCallback(state, context) && !callback) {
     return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.');
   }
-  const anchor = eligible
-    .filter((event) => event.type === 'main' && (event.anchorOrder ?? Number.POSITIVE_INFINITY) <= context.position.slot)
-    .sort((left, right) => (left.anchorOrder ?? 0) - (right.anchorOrder ?? 0))[0];
-  const combatLimitReached = reachedCombatLimit(state, content);
-  const threat = state.threat >= THREAT_ENCOUNTER_THRESHOLD && !combatLimitReached
-    ? eligible.filter((event) => event.type === 'combat')[0]
-    : undefined;
-  const pacedEligible = eligible.filter((candidate) =>
-    candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
-  const paced = selectPacedEvent(pacedEligible, state, context, random);
-  const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
-  const event = callback ?? anchor ?? pacedSupport ?? threat ?? paced;
-  const reason: DirectorReason = callback
-    ? 'callback'
-    : anchor
-      ? 'anchor'
-      : event === threat
-        ? 'threat'
-        : 'paced';
-  if (!event) {
-    const completed = chapterScenes.every((scene) => state.usedSceneIds.includes(scene.id));
+  let selectedContext = context;
+  let picked = pickCandidate(candidatesAtPosition(state, context, content), callback, state, context, content, random);
+  if (!picked) {
+    // Authored slots are chronology markers, not a promise that every route has a scene at every number.
+    // Include callback deadlines even when no ordinary scene is authored there.
+    for (const slot of futureSelectionSlots(chapterScenes, state, context)) {
+      const futureContext: JourneyDirectorContext = {
+        ...context,
+        position: { chapterId: context.position.chapterId, slot },
+      };
+      const futureCallback = callbackScene(state, futureContext, content);
+      if (dueRequiredCallback(state, futureContext) && !futureCallback) {
+        return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.');
+      }
+      const futureEligible = candidatesAtPosition(state, futureContext, content);
+      picked = pickCandidate(futureEligible, futureCallback, state, futureContext, content, random);
+      if (picked) {
+        selectedContext = futureContext;
+        break;
+      }
+    }
+  }
+  if (!picked) {
+    const completed = chapterRouteComplete(chapterScenes, state);
     return terminalStep(
       state,
       completed ? 'completed' : 'precondition',
       completed
-        ? `No remaining eligible Chronicle scenes are available for ${context.position.chapterId}.`
+        ? `The chapter route is complete for ${context.position.chapterId}; no remaining eligible Chronicle scenes are available.`
         : `No eligible Chronicle scene is available for ${context.position.chapterId} slot ${context.position.slot}.`,
     );
   }
-  return { kind: 'selected', sceneId: event.id, event, reason, state: nextState(state, event, rng.state) };
+  return {
+    kind: 'selected',
+    sceneId: picked.event.id,
+    event: picked.event,
+    selectedAt: selectedContext.position,
+    reason: picked.reason,
+    state: nextState(state, picked.event, rng.state),
+  };
 }

@@ -41,10 +41,42 @@ describe('integrated portrait interface', () => {
   });
 
   it('always exposes camp, chapter, and menu recovery after defeat', () => {
-    renderShell(makeUiGame({ screen: 'defeat' }));
+    const { container } = renderShell(makeUiGame({ screen: 'defeat' }));
+    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/scenes/ch01/ui-story-art.webp');
     expect(screen.getByRole('button', { name: 'Return to Last Camp' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Restart Chapter' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Main Menu' })).toBeVisible();
+  });
+
+  it('keeps encounter art visible while battle rewards are settled', () => {
+    const combatState = makeUiGame({ screen: 'combat' });
+    const rewardState = {
+      ...combatState,
+      expedition: {
+        ...combatState.expedition!,
+        pendingReward: {
+          rewardId: 'ui-reward',
+          rewardOfferId: 'reward:41:ui-reward',
+          encounterId: combatState.expedition!.currentCombat!.encounterId,
+          itemChoices: [],
+          baseGold: 9,
+          grantedXp: 18,
+          adEligible: true,
+          rewardedGoldSettlement: 'available' as const,
+        },
+      },
+      flow: { ...combatState.flow, screen: 'reward' as const },
+    };
+
+    const { container } = renderShell(rewardState);
+    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/scenes/ch01/ui-story-art.webp');
+    expect(screen.getByRole('heading', { name: 'The road leaves something behind.' })).toBeVisible();
+  });
+
+  it('keeps the final authored scene visible on the ending screen', () => {
+    const { container } = renderShell(makeUiGame({ screen: 'ending' }));
+    expect(container.querySelector('.scene-art img')).toHaveAttribute('src', '/assets/chronicle1/scenes/ch01/ui-story-art.webp');
+    expect(screen.getByRole('heading', { name: 'The Black Banner road has ended.' })).toBeVisible();
   });
 
   it('keeps a dismissed contextual tutorial hidden after the shell remounts', async () => {

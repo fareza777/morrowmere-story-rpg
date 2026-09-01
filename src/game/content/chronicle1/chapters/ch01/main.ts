@@ -201,7 +201,7 @@ export const CH01_MAIN = Object.freeze([
     title: 'The Bridge in Smoke',
     narrative: [
       'The surviving raiders fire the timber bridge and drive a cart of villagers against the blocked approach. One wounded toll officer lies beneath the cart, still holding a Greywatch duty badge.',
-      'The medicine wagon can cross only after someone clears the span. Mara Vey, a border scout traveling alone, is already cutting civilians free while arrows strike the railing.',
+      'The medicine wagon can cross only after someone clears the span. Border scout Mara Vey is already cutting civilians free while arrows strike the railing.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 },
     requirements: [],
@@ -246,8 +246,8 @@ export const CH01_MAIN = Object.freeze([
     illustrationId: 'scene-ch01-main-a-banner-placed-too-neatly',
     title: 'A Banner Placed Too Neatly',
     narrative: [
-      'Beyond the bridge, the missing toll officer lies dead beside a clean orc war banner. The cloth is dry despite the wet ditch, and its pole has never been planted in soil.',
-      'Jory finds a royal-armory arrow beneath the body. Mara points out that the officer\'s boots were removed and put back on after death.',
+      'Beyond the bridge, searchers find the missing toll collector dead beside a clean orc war banner. He is not the wounded officer rescued from the cart. The cloth is dry despite the wet ditch, and its pole has never been planted in soil.',
+      'Jory finds a royal-armory arrow beneath the body. You notice that the collector\'s boots were removed and put back on after death.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 },
     requirements: [],
@@ -322,7 +322,7 @@ export const CH01_MAIN = Object.freeze([
           { type: 'flag', operation: 'add', flagId: 'evidence-entered-greywatch-quietly' },
           { type: 'tension', amount: 1 },
         ],
-        outcome: 'Mara places the wounded officer where the sentries can see him, and the convoy passes without naming its proof.',
+        outcome: 'You place the wounded officer where the sentries can see him, and the convoy passes without naming its proof.',
       },
     ],
   }),

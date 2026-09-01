@@ -20,7 +20,7 @@ export const CH05_COMPANION = Object.freeze([
     type: 'companion', family: 'caldus-confidence', relationship: { kind: 'companion', companionId: 'caldus' }, weight: 30, pacing: 'quiet',
     illustrationId: 'scene-ch05-companion-caldus-keeps-confidence', title: 'Caldus Keeps Confidence',
     narrative: [
-      'A frightened furnace clerk tells Caldus that guards hold workers\' relatives in a sealed bunkhouse. She will identify the hostage ledger only if her name stays out of the raid report.',
+      'Caldus reaches Embervault with Redwater\'s relief party. A frightened furnace clerk tells him that guards hold workers\' relatives in a sealed bunkhouse. She will identify the hostage ledger only if her name stays out of the raid report.',
       'Keeping her confidence protects a source and limits immediate questioning. Naming her to Dessa may verify the claim faster but makes the clerk visible to every faction in the mine.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10, requiredFlags: ['caldus-met'] }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: ['ch05-companion-caldus-reads-the-hostage-list'], callbackPromises: [],
@@ -34,7 +34,7 @@ export const CH05_COMPANION = Object.freeze([
     type: 'companion', family: 'lyra-embervault-ward', relationship: { kind: 'companion', companionId: 'lyra' }, weight: 32, pacing: 'quiet',
     illustrationId: 'scene-ch05-companion-lyra-and-the-embervault-ward', title: 'Lyra and the Embervault Ward',
     narrative: [
-      'A heat ward seals the service door behind the false wall. Lyra can overload it with a fast fire spell, but the surge may ignite dust in the worker gallery.',
+      'Lyra arrives as the evidence delegation\'s seal examiner. A heat ward seals the service door behind the false wall, and she can overload it with a fast fire spell, but the surge may ignite dust in the worker gallery.',
       'The slower method is mechanical: cool three copper anchors and turn them in order while guards continue their rounds.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10, requiredFlags: ['lyra-met'] }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: ['ch05-companion-lyra-tests-the-ledger-seals'], callbackPromises: [],
@@ -90,7 +90,7 @@ export const CH05_COMPANION = Object.freeze([
     type: 'companion', family: 'greywatch-warning', relationship: { kind: 'companion', companionId: 'mara' }, weight: 28, pacing: 'danger',
     illustrationId: 'scene-ch05-companion-mara-and-the-contingency-runner', title: 'Mara and the Contingency Runner',
     narrative: [
-      'Mara intercepts a Black Banner runner carrying an order initialed S.V. If E-17 is compromised, the message directs nearby columns to destroy Greywatch\'s witnesses and receiving register.',
+      'Mara\'s Greywatch patrol intercepts a Black Banner runner carrying an order initialed S.V. If E-17 is compromised, the message directs nearby columns to destroy Greywatch\'s witnesses and receiving register.',
       'Sending Mara\'s scout away with the warning protects the town sooner. Keeping the scout inside Embervault gives the evidence party an experienced guide for the escape.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10, requiredFlags: ['mara-met'] }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: true, followUps: ['ch06-main-smoke-over-greywatch'], callbackPromises: [],

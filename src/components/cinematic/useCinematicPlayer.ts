@@ -73,7 +73,14 @@ export function useCinematicPlayer(
 
   const startAudio = useCallback((position: number, epoch: number) => {
     setAudioUnavailable(false);
-    void audio.play(sequence, position).then(() => {
+    let playback: Promise<void>;
+    try {
+      playback = audio.play(sequence, position);
+    } catch {
+      if (mountedRef.current && epochRef.current === epoch) setAudioUnavailable(true);
+      return;
+    }
+    void playback.then(() => {
       if (!mountedRef.current) {
         audio.stop();
         return;
@@ -102,21 +109,26 @@ export function useCinematicPlayer(
     positionRef.current = 0;
     setPositionMs(0);
     setAudioUnavailable(false);
-    updateStatus('preloading');
+    startedAtRef.current = performance.now();
+    updateStatus('playing');
 
     let preload = preloadRef.current;
     if (!preload || preload.sequence !== sequence || preload.audio !== audio) {
-      preload = { sequence, audio, promise: audio.preload(sequence) };
+      let promise: Promise<void>;
+      try {
+        promise = audio.preload(sequence);
+      } catch (error) {
+        promise = Promise.reject(error);
+      }
+      preload = { sequence, audio, promise };
       preloadRef.current = preload;
     }
 
     void preload.promise.then(() => {
-      if (!mounted || epochRef.current !== epoch) return;
-      startedAtRef.current = performance.now();
-      updateStatus('playing');
-      startAudio(0, epoch);
+      if (!mounted || epochRef.current !== epoch || statusRef.current !== 'playing') return;
+      startAudio(positionRef.current, epoch);
     }).catch(() => {
-      if (mounted && epochRef.current === epoch) fail();
+      if (mounted && epochRef.current === epoch) setAudioUnavailable(true);
     });
 
     return () => {

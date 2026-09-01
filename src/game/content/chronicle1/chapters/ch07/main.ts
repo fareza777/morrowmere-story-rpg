@@ -20,7 +20,7 @@ export const CH07_MAIN = Object.freeze([
     type: 'main', family: 'earned-muster', anchorOrder: 2, weight: 100, pacing: 'quiet',
     illustrationId: 'scene-ch07-main-banners-on-the-kingroad', title: 'Banners on the Kingroad',
     narrative: [
-      'Only people helped during the campaign answer the march call. Town wardens, surviving Greywatch files, Free Host observers, and scattered delegates arrive according to the promises you actually earned.',
+      'Only people helped during the campaign answer the march call. Town wardens, surviving Greywatch officers, Free Host observers, and scattered delegates arrive according to the promises you actually earned.',
       'A written coalition can share command and evidence custody. Without enough trust, the march must continue as independent bands or a lean survivor column with fewer political claims.',
     ],
     eligibility: { minLevel: 12, maxLevel: 14 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,

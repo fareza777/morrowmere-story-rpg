@@ -92,7 +92,7 @@ export const CH05_MAIN = Object.freeze([
     illustrationId: 'scene-ch05-main-escape-through-the-cinder-shaft', title: 'Escape Through the Cinder Shaft',
     narrative: [
       'Demolition charges close the main galleries while smoke fills the hidden forge. The old cinder shaft reaches the northern slope, but only after a ladder climb above the furnace exhaust.',
-      'A stolen contingency order says Voss will strike Greywatch if the ledger leaves Embervault. Mara\'s runner waits at the shaft mouth with word that siege columns are already moving east.',
+      'A stolen contingency order says Voss will strike Greywatch if the ledger leaves Embervault. A Greywatch runner waits at the shaft mouth with word that siege columns are already moving east.',
     ],
     eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: ['ch06-main-smoke-over-greywatch'], callbackPromises: [],
     choices: [

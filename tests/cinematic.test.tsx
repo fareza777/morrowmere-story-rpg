@@ -182,11 +182,32 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.stop).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps pause disabled until the opening bundle is ready without showing replay', async () => {
-    installManualAnimationFrame();
-    let finishPreload: (() => void) | undefined;
+  it('starts the visual timeline immediately without waiting for audio preload', async () => {
+    const clock = installManualAnimationFrame();
     const audio = makeAudio();
-    audio.preload.mockImplementation(() => new Promise<void>((resolve) => { finishPreload = resolve; }));
+    audio.preload.mockImplementation(() => new Promise<void>(() => undefined));
+    render(
+      <StrictMode>
+        <OpeningCinematic
+          sequence={OPENING_SEQUENCE}
+          settings={SETTINGS}
+          audio={audio}
+          onComplete={() => undefined}
+        />
+      </StrictMode>,
+    );
+
+    await act(async () => undefined);
+    expect(clock.pendingCount()).toBeGreaterThan(0);
+    clock.frame(7_500);
+    expect(screen.getByText(/Escort two wagons of medicine north/)).toBeVisible();
+    expect(audio.play).not.toHaveBeenCalled();
+  });
+
+  it('keeps overlay controls hidden until a tap and auto-hides them after inactivity', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    installManualAnimationFrame();
+    const audio = makeAudio();
     render(
       <OpeningCinematic
         sequence={OPENING_SEQUENCE}
@@ -195,12 +216,25 @@ describe('approved Chronicle I opening sequence', () => {
         onComplete={() => undefined}
       />,
     );
+    await act(async () => undefined);
 
-    expect(screen.getByRole('button', { name: 'Pause opening' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Skip opening' })).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Replay opening' })).not.toBeInTheDocument();
-    await act(async () => finishPreload?.());
-    expect(screen.getByRole('button', { name: 'Pause opening' })).toBeEnabled();
+    const opening = screen.getByRole('region', { name: 'Opening story' });
+    expect(screen.queryByRole('button', { name: 'Pause opening' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hide captions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Skip opening' })).not.toBeInTheDocument();
+
+    fireEvent.click(opening);
+    expect(screen.getByRole('button', { name: 'Pause opening' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Skip opening' })).toBeVisible();
+    act(() => vi.advanceTimersByTime(2_999));
+    expect(screen.getByRole('button', { name: 'Skip opening' })).toBeVisible();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByRole('button', { name: 'Skip opening' })).not.toBeInTheDocument();
+
+    fireEvent.click(opening);
+    fireEvent.click(screen.getByRole('button', { name: 'Pause opening' }));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByRole('button', { name: 'Resume opening' })).toBeVisible();
   });
 
   it('pauses at the current position and seeks before synchronized resume', async () => {
@@ -216,6 +250,7 @@ describe('approved Chronicle I opening sequence', () => {
       />,
     );
     await waitFor(() => expect(audio.play).toHaveBeenCalledWith(OPENING_SEQUENCE, 0));
+    await user.click(screen.getByRole('region', { name: 'Opening story' }));
     const visual = screen.getByTestId('opening-visual');
     expect(visual).not.toHaveClass('is-timeline-paused');
 
@@ -274,6 +309,7 @@ describe('approved Chronicle I opening sequence', () => {
     const caption = screen.getByText('The job should have taken three days.');
     expect(caption).not.toHaveClass('sr-only');
 
+    await user.click(screen.getByRole('region', { name: 'Opening story' }));
     await user.click(screen.getByRole('button', { name: 'Hide captions' }));
     expect(caption).toHaveClass('sr-only');
     await user.click(screen.getByRole('button', { name: 'Show captions' }));
@@ -294,15 +330,39 @@ describe('approved Chronicle I opening sequence', () => {
       />,
     );
 
+    await user.click(screen.getByRole('region', { name: 'Opening story' }));
     await user.click(screen.getByRole('button', { name: 'Skip opening' }));
     expect(onComplete).toHaveBeenCalledOnce();
     expect(audio.stop).toHaveBeenCalledOnce();
+  });
+
+  it('auto-completes even when audio playback never settles', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const clock = installManualAnimationFrame();
+    const audio = makeAudio();
+    audio.play.mockImplementation(() => new Promise<void>(() => undefined));
+    const onComplete = vi.fn();
+    render(
+      <OpeningCinematic
+        sequence={OPENING_SEQUENCE}
+        settings={SETTINGS}
+        audio={audio}
+        onComplete={onComplete}
+      />,
+    );
+    await act(async () => undefined);
+    expect(audio.play).toHaveBeenCalledOnce();
+
+    clock.frame(105_000);
+    act(() => vi.advanceTimersByTime(1_250));
+    expect(onComplete).toHaveBeenCalledOnce();
   });
 
   it('holds the final title for 1.25 seconds, then auto-returns exactly once', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const clock = installManualAnimationFrame();
     const audio = makeAudio();
+    audio.preload.mockImplementation(() => new Promise<void>(() => undefined));
     const onComplete = vi.fn();
     const renderOpening = (finish: () => void) => (
       <OpeningCinematic
@@ -347,8 +407,9 @@ describe('approved Chronicle I opening sequence', () => {
     expect(screen.getByRole('img', { name: 'Dawn over the fractured kingdom of Morrowmere.' })).toBeVisible();
   });
 
-  it('falls back to the complete readable prologue when preload or art fails', async () => {
-    const { rerender } = render(
+  it('keeps the visual timeline running when audio preload fails', async () => {
+    const clock = installManualAnimationFrame();
+    render(
       <OpeningCinematic
         sequence={OPENING_SEQUENCE}
         settings={SETTINGS}
@@ -357,13 +418,15 @@ describe('approved Chronicle I opening sequence', () => {
       />,
     );
 
-    await screen.findByText('The illustrated opening could not be loaded. No story information has been lost.');
-    const fallback = screen.getByRole('region', { name: 'Opening story' });
-    for (const paragraph of APPROVED_NARRATION) expect(fallback).toHaveTextContent(paragraph);
-    expect(screen.getByRole('button', { name: 'Finish opening' })).toBeVisible();
+    expect(await screen.findByText('Audio is unavailable. Captions will continue.')).toBeVisible();
+    clock.frame(7_500);
+    expect(screen.getByText(/Escort two wagons of medicine north/)).toBeVisible();
+    expect(screen.queryByText(/illustrated opening could not be loaded/i)).not.toBeInTheDocument();
+  });
 
+  it('falls back to the complete readable prologue when art fails', async () => {
     installManualAnimationFrame();
-    rerender(
+    render(
       <OpeningCinematic
         sequence={OPENING_SEQUENCE}
         settings={SETTINGS}
@@ -372,7 +435,10 @@ describe('approved Chronicle I opening sequence', () => {
       />,
     );
     fireEvent.error(screen.getByRole('img'));
-    expect(await screen.findByText('Someone is preparing a war.')).toBeVisible();
+    await screen.findByText('The illustrated opening could not be loaded. No story information has been lost.');
+    const fallback = screen.getByRole('region', { name: 'Opening story' });
+    for (const paragraph of APPROVED_NARRATION) expect(fallback).toHaveTextContent(paragraph);
+    expect(screen.getByRole('button', { name: 'Finish opening' })).toBeVisible();
   });
 });
 
@@ -408,6 +474,7 @@ describe('first-launch preferences route', () => {
     expect(screen.getByRole('heading', { name: 'Set your opening preferences' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Watch opening story' }));
     expect(await screen.findByRole('region', { name: 'Opening story' })).toBeVisible();
+    await user.click(screen.getByRole('region', { name: 'Opening story' }));
     await user.click(screen.getByRole('button', { name: 'Skip opening' }));
     expect(screen.getByRole('heading', { name: 'Choose your path' })).toBeVisible();
     expect(screen.queryByRole('region', { name: 'Opening story' })).not.toBeInTheDocument();

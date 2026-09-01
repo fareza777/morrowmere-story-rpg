@@ -1,5 +1,6 @@
-import { Backpack, BookOpenText, FloppyDisk, MapTrifold, UsersThree } from '@phosphor-icons/react';
+import { Backpack, BookOpenText, MapTrifold, UsersThree } from '@phosphor-icons/react';
 import type { CampViewModel } from '../ui/types';
+import { ChapterHeroArt } from './ChapterHeroArt';
 
 interface CampScreenProps {
   readonly view: CampViewModel;
@@ -7,10 +8,9 @@ interface CampScreenProps {
   readonly onOpenInventory: () => void;
   readonly onOpenJournal: () => void;
   readonly onOpenCompanions: () => void;
-  readonly onSaveAndExit: () => void;
 }
 
-export function CampScreen({ view, onChooseRoute, onOpenInventory, onOpenJournal, onOpenCompanions, onSaveAndExit }: CampScreenProps) {
+export function CampScreen({ view, onChooseRoute, onOpenInventory, onOpenJournal, onOpenCompanions }: CampScreenProps) {
   return (
     <main className="camp-screen screen-page">
       <header className="screen-copy">
@@ -18,6 +18,7 @@ export function CampScreen({ view, onChooseRoute, onOpenInventory, onOpenJournal
         <h1>Road Camp</h1>
         <p>Rest, prepare your pack, and choose the road ahead. Gold secured here survives a failed expedition.</p>
       </header>
+      <ChapterHeroArt chapterLabel={view.hero.chapterLabel} context="camp" />
       <section className="objective-card" aria-labelledby="camp-objective-title">
         <span>Current objective</span><h2 id="camp-objective-title">{view.objective.title}</h2><p>{view.objective.summary}</p>
       </section>
@@ -28,7 +29,6 @@ export function CampScreen({ view, onChooseRoute, onOpenInventory, onOpenJournal
       </section>
       <div className="camp-primary-actions">
         <button className="button button-primary" type="button" disabled={!view.canDepart} onClick={onChooseRoute}><MapTrifold size={22} weight="duotone" aria-hidden="true" /> Choose a Route</button>
-        <button className="button button-secondary" type="button" onClick={onSaveAndExit}><FloppyDisk size={22} weight="duotone" aria-hidden="true" /> Save &amp; Exit</button>
       </div>
       <nav className="camp-services" aria-label="Camp services">
         <button type="button" onClick={onOpenInventory}><Backpack size={22} aria-hidden="true" /><span><strong>Pack &amp; Stash</strong><small>{view.hasStashItems ? 'Stored gear is waiting' : 'Manage equipment'}</small></span></button>

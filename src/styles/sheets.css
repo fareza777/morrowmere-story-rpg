@@ -25,7 +25,7 @@
 .loadout-list article > small { display: block; margin-block-start: 0.35rem; color: var(--paper-2); }
 .merchant-screen { padding-inline: max(1rem, var(--safe-left)) max(1rem, var(--safe-right)); }
 .merchant-screen .scene-art { inline-size: 100%; max-inline-size: 720px; margin-inline: auto; border: 1px solid var(--line-strong); border-radius: 14px; }
-.merchant-dialogue { color: var(--paper-1); line-height: 1.55; }
+.merchant-dialogue { color: var(--paper-1); line-height: 1.55; text-align: justify; text-justify: inter-word; hyphens: auto; }
 .merchant-gold { padding: 0.65rem; display: flex; align-items: center; gap: 0.4rem; border: 1px solid var(--line); border-radius: 8px; background: #f5e6c9; color: var(--accent-strong); font-size: 0.84rem; font-weight: 850; overflow-wrap: anywhere; }
 .merchant-note { color: var(--paper-2); font-size: 0.8rem; line-height: 1.45; }
 .merchant-list { display: grid; gap: 0.65rem; }

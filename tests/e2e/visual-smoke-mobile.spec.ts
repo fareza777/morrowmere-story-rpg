@@ -30,6 +30,7 @@ test('keeps the title, opening, camp, route, story, and sheets readable on a sma
   await expect(page.getByRole('region', { name: 'Opening story' })).toBeVisible();
   await expect(page.locator('.opening-caption')).toBeVisible();
   await page.screenshot({ path: join(output, '02-opening-caption-360x800.png') });
+  await page.getByRole('region', { name: 'Opening story' }).click();
   await page.getByRole('button', { name: 'Skip opening' }).click();
   await page.getByRole('button', { name: /Mage/i }).click();
   await page.getByRole('button', { name: 'Begin Chronicle' }).click();

@@ -5,7 +5,7 @@ The project can produce an Android QA build. Publishing requires owner-controlle
 ## Prepared in the project
 
 - Application ID `com.morrowmere.game`
-- Version `1.2.1`, version code `5`
+- Version `1.2.2`, version code `6`
 - Minimum API 24 and target API 36
 - Portrait orientation, adaptive launcher icon, and branded splash resources
 - Local Chronicle I story, artwork, music, SFX, and saves

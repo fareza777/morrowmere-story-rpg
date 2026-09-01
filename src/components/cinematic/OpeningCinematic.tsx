@@ -4,6 +4,7 @@ import { OPENING_NARRATION } from '../../ui/openingSequence';
 import { useCinematicPlayer } from './useCinematicPlayer';
 
 const FINAL_TITLE_HOLD_MS = 1_250;
+const CONTROLS_IDLE_MS = 3_000;
 
 export interface OpeningCinematicProps {
   readonly sequence: CinematicSequence;
@@ -47,6 +48,8 @@ export function OpeningCinematic({
 }: OpeningCinematicProps) {
   const player = useCinematicPlayer(sequence, settings, audio);
   const [captionsVisible, setCaptionsVisible] = useState(settings.captions);
+  const [controlsVisible, setControlsVisible] = useState(false);
+  const [controlsActivity, setControlsActivity] = useState(0);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
@@ -68,6 +71,12 @@ export function OpeningCinematic({
     return () => window.clearTimeout(timer);
   }, [completeOnce, player.status]);
 
+  useEffect(() => {
+    if (!controlsVisible || player.status !== 'playing' || player.audioUnavailable) return undefined;
+    const timer = window.setTimeout(() => setControlsVisible(false), CONTROLS_IDLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [controlsActivity, controlsVisible, player.audioUnavailable, player.status]);
+
   if (player.status === 'fallback' || !shot) {
     return <StaticOpening onComplete={completeOnce} completionLabel={completionLabel} />;
   }
@@ -82,12 +91,19 @@ export function OpeningCinematic({
     completeOnce();
   };
 
+  const revealControls = () => {
+    if (complete) return;
+    setControlsVisible(true);
+    setControlsActivity((activity) => activity + 1);
+  };
+
   return (
     <main
       className="opening-cinematic"
       role="region"
       aria-label="Opening story"
       aria-busy={preloading || undefined}
+      onClick={revealControls}
     >
       <section
         className={`opening-visual motion-${shot.motion}${settings.reducedMotion ? ' is-reduced-motion' : ''}${player.status === 'playing' ? '' : ' is-timeline-paused'}`}
@@ -127,7 +143,7 @@ export function OpeningCinematic({
         </div>
       </section>
 
-      {!complete && (
+      {!complete && controlsVisible && (
         <div className="opening-cinematic-controls">
           <button
             className="opening-control"

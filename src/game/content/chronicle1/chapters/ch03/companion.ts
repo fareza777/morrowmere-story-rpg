@@ -7,7 +7,7 @@ export const CH03_COMPANION = Object.freeze([
     weight: 75, pacing: 'quiet', illustrationId: 'scene-ch03-companion-talla-hides-the-refuge',
     title: 'Talla Hides the Refuge',
     narrative: [
-      'Talla finds six goblin families sheltering inside an abandoned eel smokehouse. They fled a smuggler crew that sells guides to whichever patrol pays first.',
+      'Goblin scout Talla Quickhand finds six families sheltering inside an abandoned eel smokehouse and brings you to them. They fled a smuggler crew that sells guides to whichever patrol pays first.',
       'A Greywatch requisition party is searching the same bank for dry buildings. Hiding the families will cost a safe storehouse and several sacks of road grain.',
     ],
     eligibility: { minLevel: 4, maxLevel: 6 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
@@ -71,7 +71,7 @@ export const CH03_COMPANION = Object.freeze([
     weight: 75, pacing: 'quiet', illustrationId: 'scene-ch03-companion-mara-and-rukhar-draw-the-line',
     title: 'Mara and Rukhar Draw the Line',
     narrative: [
-      'Mara wants scouts on the west levee before the Free Host occupies it. Rukhar says the levee shelters evacuated orc farmers and that armed entry will look like a raid.',
+      'Mara arrives with Greywatch scouts and wants them on the west levee before the Free Host occupies it. Rukhar says the levee shelters evacuated orc farmers and that armed entry will look like a raid.',
       'Both agree the signal tower must be watched. They disagree over whose uniforms can approach without turning frightened civilians into shields.',
     ],
     eligibility: { minLevel: 4, maxLevel: 6 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: true,
