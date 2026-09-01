@@ -32,6 +32,7 @@ import type { RewardBonusStatus } from './components/RewardPanel';
 import './styles/tokens.css';
 import './styles/base.css';
 import './styles/game.css';
+import './styles/dialogue.css';
 import './styles/cinematic.css';
 import './styles/screens.css';
 import './styles/combat.css';

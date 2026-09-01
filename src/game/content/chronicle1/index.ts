@@ -220,6 +220,7 @@ export const CHRONICLE1_ART_IDS: ReadonlySet<string> = new Set([
   ...CHRONICLE1_MEDIA_CONTRACT.itemIcons.map((entry) => entry.id),
   ...CHRONICLE1_MEDIA_CONTRACT.enemyPortraits.map((entry) => entry.id),
   ...CHRONICLE1_MEDIA_CONTRACT.bosses.map((entry) => entry.id),
+  ...CHRONICLE1_MEDIA_CONTRACT.characters.map((entry) => entry.id),
   ...CHRONICLE1_MERCHANTS.map((merchant) => merchant.illustrationId),
 ]);
 

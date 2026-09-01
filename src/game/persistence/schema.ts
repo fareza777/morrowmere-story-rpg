@@ -48,7 +48,7 @@ export interface CheckedAttemptDto { readonly eventId: string; readonly choiceId
 export interface AuthoredSceneQueueEntryDto { readonly sceneId: string; readonly sourceSceneId: string; readonly requirementMode: 'required' | 'optional'; readonly reason?: string; }
 interface ExpeditionBaseDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly authoredSceneQueue: readonly AuthoredSceneQueueEntryDto[]; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
 export interface ExpeditionV2Dto extends Omit<ExpeditionBaseDto, 'authoredSceneQueue'> { readonly sceneResolution: LegacySceneResolutionDto | null; readonly authoredSceneQueue?: readonly AuthoredSceneQueueEntryDto[]; }
-export interface ExpeditionDto extends ExpeditionBaseDto { readonly sceneResolution: SceneResolutionDto | null; readonly sceneVisitCounts: Readonly<Record<string, number>>; readonly checkedAttempts: readonly CheckedAttemptDto[]; }
+export interface ExpeditionDto extends ExpeditionBaseDto { readonly dialogueBeatIndex: number; readonly sceneResolution: SceneResolutionDto | null; readonly sceneVisitCounts: Readonly<Record<string, number>>; readonly checkedAttempts: readonly CheckedAttemptDto[]; }
 interface SaveStateBaseDto { readonly profile: ProfileDto; readonly campaign: CampaignDto; readonly adPacing?: AdPacingState; readonly checkpoints: { readonly chapter: { readonly campaign: CampaignCheckpointDto; readonly enteredAt: string }; readonly camp: { readonly campaign: CampaignCheckpointDto; readonly campSceneId: string | null; readonly savedAt: string } | null }; readonly flow: { readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending'; readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null; readonly merchant: { readonly merchantId: string; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null }; readonly updatedAt: string; }
 export interface SaveStateV2Dto extends SaveStateBaseDto { readonly schemaVersion: 2; readonly expedition: ExpeditionV2Dto | null; }
 export interface SaveStateDto extends SaveStateBaseDto { readonly schemaVersion: 3; readonly expedition: ExpeditionDto | null; }
@@ -233,9 +233,9 @@ function validCheckedAttempt(value: unknown): value is CheckedAttemptDto {
     && typeof value.resultKind === 'string' && ['critical-success', 'success', 'failure', 'critical-failure'].includes(value.resultKind);
 }
 function validExpedition(value: unknown): value is ExpeditionDto {
-  const keys = [...expeditionBaseKeys, 'sceneVisitCounts', 'checkedAttempts'];
+  const keys = [...expeditionBaseKeys, 'dialogueBeatIndex', 'sceneVisitCounts', 'checkedAttempts'];
   if (!exact(value, keys) || !validExpeditionBase(value, value.sceneResolution === null || isSceneResolutionDto(value.sceneResolution))) return false;
-  if (!numericRecord(value.sceneVisitCounts, 1, true) || !Array.isArray(value.checkedAttempts) || !value.checkedAttempts.every(validCheckedAttempt)) return false;
+  if (!number(value.dialogueBeatIndex, 0, true) || !numericRecord(value.sceneVisitCounts, 1, true) || !Array.isArray(value.checkedAttempts) || !value.checkedAttempts.every(validCheckedAttempt)) return false;
   const attempts = value.checkedAttempts as readonly CheckedAttemptDto[];
   const resolution = value.sceneResolution === null ? null : value.sceneResolution as SceneResolutionDto;
   const identities = attempts.map((attempt) => `${attempt.eventId}\u0000${attempt.visitOrdinal}`);

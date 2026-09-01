@@ -1,0 +1,39 @@
+.dialogue-panel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.1rem, 3vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--ink, #4d351f) 24%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--paper, #fff5dd) 93%, #b77a35);
+  box-shadow: 0 0.8rem 2rem rgb(66 38 18 / 16%);
+}
+
+.dialogue-character-layer {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  bottom: 0;
+  max-width: min(48%, 19rem);
+  max-height: 18rem;
+  object-fit: contain;
+  object-position: bottom right;
+  pointer-events: none;
+}
+
+.dialogue-character-layer[hidden] { display: none; }
+.dialogue-character-enter { animation: dialogue-character-arrival 280ms ease-out both; }
+.dialogue-speaker-plate, .dialogue-copy, .dialogue-continue, .dialogue-reveal, .dialogue-responses { position: relative; z-index: 1; }
+.dialogue-speaker-plate h2 { margin: 0; }
+.dialogue-copy { max-width: 34rem; margin: 0.8rem 0 1rem; text-align: left; text-wrap: pretty; }
+.dialogue-continue, .dialogue-reveal { width: 100%; }
+.dialogue-responses { margin-top: 1rem; }
+
+@keyframes dialogue-character-arrival { from { opacity: 0; transform: translateX(0.8rem); } to { opacity: 1; transform: translateX(0); } }
+
+@media (max-width: 360px) {
+  .dialogue-panel { padding: 1rem; }
+  .dialogue-character-layer { max-width: 42%; opacity: 0.44; }
+  .dialogue-copy { max-width: none; padding-right: 1rem; }
+}
+
+.is-reduced-motion .dialogue-character-layer { animation: none; }

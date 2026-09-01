@@ -18,6 +18,7 @@ import type { HeroClass, ItemDefinition, ItemStats } from '../game/types';
 import type {
   CampViewModel,
   CodexEntryViewModel,
+  DialogueBeatViewModel,
   CombatActionViewModel,
   CombatViewModel,
   CompanionJournalViewModel,
@@ -417,6 +418,22 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
         : unavailableReason,
     };
   });
+  const dialogueBeat = event.dialogue?.[state.expedition?.dialogueBeatIndex ?? 0];
+  const dialogue: DialogueBeatViewModel | null = dialogueBeat && event.dialogue
+    ? {
+        index: state.expedition?.dialogueBeatIndex ?? 0,
+        total: event.dialogue.length,
+        speakerName: dialogueBeat.speakerName,
+        text: dialogueBeat.text,
+        expression: dialogueBeat.expression ?? null,
+        character: dialogueBeat.characterLayer
+          ? { illustrationId: dialogueBeat.characterLayer.illustrationId, position: dialogueBeat.characterLayer.position ?? 'center' }
+          : null,
+        environmentIllustrationId: dialogueBeat.environmentIllustrationId ?? null,
+        voiceCueId: dialogueBeat.voiceCueId ?? null,
+        isFinal: (state.expedition?.dialogueBeatIndex ?? 0) === event.dialogue.length - 1,
+      }
+    : null;
   return {
     id: event.id,
     title: event.title,
@@ -443,6 +460,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
       }),
       continueLabel: resolution.continueLabel,
     } : null,
+    dialogue,
   };
 }
 

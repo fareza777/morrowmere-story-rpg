@@ -158,6 +158,18 @@ export interface StoryResolutionViewModel {
   readonly continueLabel: string | null;
 }
 
+export interface DialogueBeatViewModel {
+  readonly index: number;
+  readonly total: number;
+  readonly speakerName: string;
+  readonly text: string;
+  readonly expression: 'neutral' | 'wary' | 'resolved' | 'hurt' | 'warm' | null;
+  readonly character: { readonly illustrationId: string; readonly position: 'left' | 'right' | 'center' } | null;
+  readonly environmentIllustrationId: string | null;
+  readonly voiceCueId: string | null;
+  readonly isFinal: boolean;
+}
+
 export interface StoryViewModel {
   readonly id: string;
   readonly title: string;
@@ -168,6 +180,7 @@ export interface StoryViewModel {
   readonly resolved: boolean;
   readonly outcome: string | null;
   readonly resolution: StoryResolutionViewModel | null;
+  readonly dialogue: DialogueBeatViewModel | null;
 }
 
 export interface StatusViewModel {

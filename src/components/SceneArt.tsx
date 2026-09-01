@@ -6,6 +6,10 @@ interface SceneArtProps {
   readonly kind?: 'scene' | 'merchant';
 }
 
+export function characterIllustrationSource(illustrationId: string): string {
+  return `/assets/chronicle1/characters/${illustrationId}.webp`;
+}
+
 export function illustrationSource(illustrationId: string, kind: 'scene' | 'merchant' = 'scene'): string {
   if (kind === 'merchant') return `/assets/chronicle1/merchants/${illustrationId}.webp`;
   const chapter = illustrationId.match(/scene-(ch\d{2})-/u)?.[1] ?? 'ch01';

@@ -6,6 +6,7 @@ import {
   musicAsset,
   resolveSfxCue,
   sfxAsset,
+  voiceCueForId,
   voiceCueForScene,
   voiceProfile,
   type AmbienceId,
@@ -48,6 +49,7 @@ export interface NarrationOptions {
   readonly offsetMs?: number;
   readonly reportFailure?: boolean;
   readonly holdMusicDucking?: boolean;
+  readonly onComplete?: () => void;
 }
 
 export interface MusicPlaybackOptions {
@@ -73,6 +75,7 @@ export interface AudioService {
   playAmbience(id: AmbienceId, enabled?: boolean): Promise<void>;
   stopAmbience(): void;
   narrateCaption(text: string, options?: NarrationOptions): Promise<void>;
+  narrateCue(voiceCueId: string, onComplete?: () => void): Promise<boolean>;
   narrateScene(sceneId: string): Promise<boolean>;
   cancelNarration(): void;
   pauseAll(): void;
@@ -347,11 +350,12 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     if (!text.trim() || !settings.voiceEnabled || settings.voiceVolume === 0) return;
     const speaker = options.speaker ?? 'Eldrin';
     stopNarrationFile();
-    if (!options.audioSrc) { speakLocally(text, speaker); return; }
+    if (!options.audioSrc) { speakLocally(text, speaker); options.onComplete?.(); return; }
     try { localSpeech?.cancel(); } catch { /* Captions remain authoritative. */ }
     const clip = make(options.audioSrc);
     if (!clip) {
       speakLocally(text, speaker);
+      options.onComplete?.();
       if (options.reportFailure) throw new Error(`Unable to create narration audio ${options.audioSrc}.`);
       return;
     }
@@ -361,6 +365,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       clip.currentTime = Math.max(0, options.offsetMs ?? 0) / 1_000;
     } catch (error) {
       speakLocally(text, speaker);
+      options.onComplete?.();
       if (options.reportFailure) throw error;
       return;
     }
@@ -370,11 +375,12 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       usedFallback = true;
       speakLocally(text, speaker);
     };
-    const ended = (): void => { releaseNarration(clip, false); };
+    const ended = (): void => { releaseNarration(clip, false); options.onComplete?.(); };
     const failed = (): void => {
       const wasActive = narration?.element === clip;
       releaseNarration(clip, false);
       if (wasActive) fallback();
+      options.onComplete?.();
     };
     const active = {
       element: clip,
@@ -395,6 +401,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       const wasActive = narration?.element === clip;
       releaseNarration(clip, false);
       if (wasActive) fallback();
+      options.onComplete?.();
       if (options.reportFailure) throw error;
     }
   };
@@ -403,6 +410,13 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     const cue = voiceCueForScene(sceneId);
     if (!cue) return false;
     await narrateCaption(cue.spokenText, { speaker: cue.speaker, audioSrc: cue.audioSrc });
+    return true;
+  };
+
+  const narrateCue = async (voiceCueId: string, onComplete?: () => void): Promise<boolean> => {
+    const cue = voiceCueForId(voiceCueId);
+    if (!cue) return false;
+    await narrateCaption(cue.spokenText, { speaker: cue.speaker, audioSrc: cue.audioSrc, onComplete });
     return true;
   };
 
@@ -445,6 +459,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     playAmbience,
     stopAmbience,
     narrateCaption,
+    narrateCue,
     narrateScene,
     cancelNarration,
     pauseAll,

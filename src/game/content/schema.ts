@@ -153,6 +153,8 @@ export interface ChronicleEvent {
   /** Stable authored restock namespace; route state supplies the deterministic seed. */
   readonly merchantRestockKey?: string;
   readonly encounterId?: EncounterId;
+  /** Ordered scene-local presentation beats. Effects remain owned by choices. */
+  readonly dialogue?: readonly ChronicleDialogueBeat[];
   /** Authored continuations are optional for legacy catalogs. */
   readonly followUps?: readonly EventId[];
   readonly choices: readonly ChronicleChoice[];
@@ -223,6 +225,24 @@ export interface ChronicleVoiceCue {
   readonly text: string;
 }
 
+export type DialogueExpression = 'neutral' | 'wary' | 'resolved' | 'hurt' | 'warm';
+
+export interface ChronicleDialogueCharacterLayer {
+  readonly illustrationId: IllustrationId;
+  readonly companionId?: CompanionId;
+  readonly position?: 'left' | 'right' | 'center';
+}
+
+export interface ChronicleDialogueBeat {
+  readonly speakerId?: string;
+  readonly speakerName: string;
+  readonly text: string;
+  readonly characterLayer?: ChronicleDialogueCharacterLayer;
+  readonly expression?: DialogueExpression;
+  readonly voiceCueId?: VoiceCueId;
+  readonly environmentIllustrationId?: IllustrationId;
+}
+
 /**
  * Chronicle-only effects remain separate from the atomic core effect union.
  * The production content adapter must normalize these variants before the
@@ -282,7 +302,7 @@ export function chronicle1ChoiceEffects(choice: Chronicle1Choice): readonly Chro
 }
 
 export interface Chronicle1Event
-  extends Omit<ChronicleEvent, 'id' | 'family' | 'weight' | 'illustrationId' | 'choices'> {
+  extends Omit<ChronicleEvent, 'id' | 'family' | 'weight' | 'illustrationId' | 'choices' | 'dialogue'> {
   readonly id: EventId;
   readonly region: RegionId;
   /** Positive, chapter-local position used by source validation and callbacks. */
@@ -298,6 +318,7 @@ export interface Chronicle1Event
   readonly callbackPromises: readonly ChronicleCallbackPromise[];
   readonly encounterId?: EncounterId;
   readonly voiceCues?: readonly ChronicleVoiceCue[];
+  readonly dialogue?: readonly ChronicleDialogueBeat[];
   /** One non-selective choice is legal only when this marker is true. */
   readonly continueOnly?: boolean;
   readonly choices: readonly Chronicle1Choice[];
@@ -349,6 +370,22 @@ export interface ChronicleChoiceCheckSource {
   readonly criticalFailure?: ChronicleChoiceBranchSource;
 }
 
+export interface ChronicleDialogueCharacterLayerSource {
+  readonly illustrationId: string;
+  readonly companionId?: string;
+  readonly position?: 'left' | 'right' | 'center';
+}
+
+export interface ChronicleDialogueBeatSource {
+  readonly speakerId?: string;
+  readonly speakerName: string;
+  readonly text: string;
+  readonly characterLayer?: ChronicleDialogueCharacterLayerSource;
+  readonly expression?: DialogueExpression;
+  readonly voiceCueId?: string;
+  readonly environmentIllustrationId?: string;
+}
+
 interface Chronicle1ChoiceSourceBase {
   readonly id: string;
   readonly label: string;
@@ -392,6 +429,7 @@ export interface Chronicle1EventSource {
   readonly illustrationId: string;
   readonly audioId?: string;
   readonly voiceCues?: readonly { readonly id: string; readonly speaker: string; readonly text: string }[];
+  readonly dialogue?: readonly ChronicleDialogueBeatSource[];
   readonly title: string;
   readonly narrative: readonly string[];
   readonly eligibility: EventEligibility;

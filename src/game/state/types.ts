@@ -88,6 +88,7 @@ export interface ExpeditionState {
   readonly director: DirectorState;
   readonly position: StoryPosition;
   readonly currentSceneId: EventId | null;
+  readonly dialogueBeatIndex: number;
   readonly sceneResolution: SceneResolution | null;
   readonly authoredSceneQueue: readonly AuthoredSceneQueueEntry[];
   readonly sceneVisitCounts: Readonly<Record<string, number>>;
@@ -207,6 +208,7 @@ export type GameCommand =
   | { readonly type: 'bank-camp'; readonly updatedAt: string }
   | { readonly type: 'return-to-camp-after-defeat'; readonly updatedAt: string }
   | { readonly type: 'restart-chapter'; readonly updatedAt: string }
+  | { readonly type: 'advance-dialogue'; readonly eventId: EventId; readonly updatedAt: string }
   | { readonly type: 'resolve-choice'; readonly eventId: EventId; readonly choiceId: ChoiceId; readonly updatedAt: string }
   | { readonly type: 'claim-rewards'; readonly rewardId: string; readonly itemId: ItemId | null; readonly updatedAt: string }
   | { readonly type: 'CLAIM_REWARDED_GOLD'; readonly rewardOfferId: string; readonly updatedAt: string }

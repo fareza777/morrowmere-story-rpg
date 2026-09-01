@@ -453,7 +453,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const stats = derivedMaxima(state, content);
     const expedition = {
       routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector),
-      position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, sceneResolution: null,
+      position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null,
       authoredSceneQueue: [], sceneVisitCounts: {}, checkedAttempts: [],
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
       unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
@@ -525,6 +525,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       authoredSceneQueue,
       sceneVisitCounts: { ...state.expedition.sceneVisitCounts, [step.sceneId]: visitOrdinal },
       currentSceneId: step.sceneId,
+      dialogueBeatIndex: 0,
       sceneResolution: step.event.choices.length === 0 ? {
         eventId: step.sceneId,
         choiceId: null,
@@ -542,6 +543,20 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []),
       { type: 'notification', message: 'Scene ready.' },
     ]);
+  }
+  if (command.type === 'advance-dialogue') {
+    if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Advance dialogue while travelling.');
+    const scene = currentScene(state, content);
+    if (!scene || scene.id !== command.eventId) return diagnostic(state, 'stale_event', 'That dialogue is no longer current.');
+    const beats = scene.dialogue;
+    if (!beats?.length) return diagnostic(state, 'dialogue_unavailable', 'This scene has no dialogue to advance.');
+    if (state.expedition.sceneResolution?.eventId === scene.id) return diagnostic(state, 'dialogue_resolved', 'That scene has already been resolved.');
+    if (state.expedition.dialogueBeatIndex >= beats.length - 1) return diagnostic(state, 'dialogue_complete', 'The dialogue has reached its final beat.');
+    return commit(state, {
+      ...state,
+      expedition: { ...state.expedition, dialogueBeatIndex: state.expedition.dialogueBeatIndex + 1 },
+      updatedAt: command.updatedAt,
+    }, []);
   }
   if (command.type === 'resolve-choice') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Resolve choices while travelling.');

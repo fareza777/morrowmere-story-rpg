@@ -55,6 +55,12 @@ export interface Chronicle1VoiceContract {
   readonly text: string;
 }
 
+/** Character layers are explicit decorative poses, never scene-art fallbacks. */
+export interface Chronicle1CharacterArtContract {
+  readonly id: IllustrationId;
+  readonly companionId?: string;
+}
+
 const SCENES = deepFreeze([
   ...CH01_SCENES,
   ...CH02_SCENES,
@@ -160,5 +166,6 @@ export const CHRONICLE1_MEDIA_CONTRACT = deepFreeze({
     enemyId: boss.id,
     name: boss.name,
   })),
+  characters: [] as readonly Chronicle1CharacterArtContract[],
   voiceCues: CHRONICLE1_VOICE_CUES,
 });

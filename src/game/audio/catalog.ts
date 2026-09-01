@@ -141,6 +141,7 @@ const voiceProfileBySpeaker = new Map(VOICE_PROFILES.map((profile) => [profile.s
 const voiceCueBySceneId = new Map(
   VOICE_SCRIPT.flatMap((cue) => cue.sceneId ? [[cue.sceneId, cue] as const] : []),
 );
+const voiceCueById = new Map(VOICE_SCRIPT.map((cue) => [cue.id, cue] as const));
 
 export const SFX_CUE_VARIANTS = Object.freeze({
   ui: ['sfx-ui-tap'], confirm: ['sfx-ui-confirm'], back: ['sfx-ui-back'], page: ['sfx-ui-page'], inventory: ['sfx-ui-inventory'],
@@ -179,6 +180,7 @@ export function musicAsset(id: string): MusicAsset | undefined { return musicByI
 export function sfxAsset(id: string): SfxAsset | undefined { return sfxById.get(id); }
 export function voiceProfile(speaker: VoiceSpeaker): VoiceProfile | undefined { return voiceProfileBySpeaker.get(speaker); }
 export function voiceCueForScene(sceneId: string): VoiceScriptCue | undefined { return voiceCueBySceneId.get(sceneId); }
+export function voiceCueForId(id: string): VoiceScriptCue | undefined { return voiceCueById.get(id); }
 
 function isSemanticSfxCue(cue: string): cue is SemanticSfxCue {
   return Object.prototype.hasOwnProperty.call(SFX_CUE_VARIANTS, cue);

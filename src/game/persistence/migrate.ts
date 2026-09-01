@@ -186,6 +186,7 @@ export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migr
       schemaVersion: 3,
       expedition: {
         ...legacy.expedition,
+        dialogueBeatIndex: 0,
         sceneResolution,
         authoredSceneQueue: queue.map((entry) => ({ ...entry })),
         sceneVisitCounts,
