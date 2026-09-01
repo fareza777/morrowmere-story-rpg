@@ -5,12 +5,12 @@
  * without misreading ordinary lowercase punctuation.
  */
 export function countDialogueSentences(text: string): number {
-  const protectedText = text.trim()
+  const protectedText = text.normalize('NFKC').replace(/\s+/gu, ' ').trim()
     .replace(/\b(?:[A-Za-z]\.){2,}/gu, (abbreviation) => abbreviation.replace(/\./gu, '\uE000'))
-    .replace(/\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc)\./giu, (abbreviation) => abbreviation.replace(/\./gu, '\uE000'));
+    .replace(/\b(?:Mr|Mrs|Ms|Dr|St)\./giu, (abbreviation) => abbreviation.replace(/\./gu, '\uE000'));
   if (!protectedText) return 0;
   let count = 0;
-  for (const match of protectedText.matchAll(/[.!?]+/gu)) {
+  for (const match of protectedText.matchAll(/[.!?]+(?:["'”’\])}]+)?/gu)) {
     const next = protectedText.slice((match.index ?? 0) + match[0].length);
     if (!next || /^\s/u.test(next) || /^[A-Z]/u.test(next)) count += 1;
   }

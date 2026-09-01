@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { validateContent } from '../../src/game/content/validate';
+import { validateChroniclePlayability, validateContent } from '../../src/game/content/validate';
 import {
   CHRONICLE1_ART_IDS,
   CHRONICLE1_AUDIO_IDS,
@@ -16,6 +16,11 @@ import {
   CHRONICLE1_MERCHANTS,
   CHRONICLE1_NEW_ITEMS,
   CHRONICLE1_SCENES,
+  CHRONICLE1,
+  CHRONICLE1_COMPANIONS,
+  CHRONICLE1_FACTIONS,
+  CHRONICLE1_ROUTES,
+  CHRONICLE1_VOICE_CUES,
 } from '../../src/game/content/chronicle1';
 import type { ItemId } from '../../src/game/domain/ids';
 
@@ -42,6 +47,20 @@ describe('Chronicle I production content index', () => {
     expect(CHRONICLE1_CONTENT.companions.size).toBe(5);
     expect(CHRONICLE1_CONTENT.merchants.size).toBe(6);
     expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
+    expect(validateChroniclePlayability({
+      chronicle: CHRONICLE1,
+      routes: CHRONICLE1_ROUTES,
+      factions: CHRONICLE1_FACTIONS,
+      companions: CHRONICLE1_COMPANIONS,
+      merchants: CHRONICLE1_MERCHANTS,
+      events: CHRONICLE1_SCENES,
+      encounters: CHRONICLE1_ENCOUNTERS,
+      dialogueCatalog: {
+        environmentArtIds: new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((entry) => entry.id)),
+        characterArt: CHRONICLE1_MEDIA_CONTRACT.characters,
+        voiceCues: CHRONICLE1_VOICE_CUES,
+      },
+    })).toEqual([]);
 
     expect([...CHRONICLE1_CONTENT.events.keys()]).toEqual(CHRONICLE1_SCENES.map((scene) => scene.id));
     expect([...CHRONICLE1_CONTENT.items.keys()]).toEqual(CHRONICLE1_ITEMS.map((item) => item.id));

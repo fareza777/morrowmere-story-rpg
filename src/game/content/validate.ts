@@ -1,20 +1,22 @@
 import type { GameEffect } from '../domain/effects';
 import type {
   Chronicle1CompanionDefinition,
+  Chronicle1Choice,
   Chronicle1Event,
   Chronicle1MerchantDefinition,
+  ChronicleDialogueBeat,
+  ChronicleEffect,
   ChronicleCallbackPromise,
   ChronicleDefinition,
   ChronicleFactionDefinition,
   ChronicleRouteDefinition,
   ContentIndex,
+  EncounterDefinition,
 } from './schema';
 import {
-  chronicle1ChoiceEffects,
   chronicleCheckBranches,
   chronicleChoiceEffects,
   isChronicleCheckedChoice,
-  isChronicle1CheckedChoice,
 } from './schema';
 import { ROUTE_OPTIONS } from '../director/pacing';
 import { countDialogueSentences } from './dialogue';
@@ -65,7 +67,13 @@ export type ContentIssueCode =
   | 'invalid_dialogue_speaker'
   | 'invalid_dialogue_text'
   | 'invalid_dialogue_sentence_count'
-  | 'invalid_dialogue_voice_text';
+  | 'invalid_dialogue_voice_text'
+  | 'incomplete_checked_choice'
+  | 'missing_next_scene'
+  | 'inescapable_required_cycle'
+  | 'intangible_choice'
+  | 'spoiler_route_copy'
+  | 'unavailable_companion_art';
 
 export interface ContentIssue {
   readonly code: ContentIssueCode;
@@ -119,7 +127,7 @@ function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssu
   if (event.dialogue === undefined) return [];
   if (event.dialogue.length === 0) return [{ code: 'invalid_dialogue', message: `Scene ${event.id} has an empty dialogue list.` }];
   const issues: ContentIssue[] = [];
-  for (const beat of event.dialogue) {
+  walkDialogueBeats(event, (beat) => {
     if (!beat.speakerName.trim()) issues.push({ code: 'invalid_dialogue_speaker', message: `Scene ${event.id} has dialogue without a speaker.` });
     if (!beat.text.trim()) issues.push({ code: 'invalid_dialogue_text', message: `Scene ${event.id} has dialogue without text.` });
     if (countDialogueSentences(beat.text) < 1 || countDialogueSentences(beat.text) > 3) issues.push({ code: 'invalid_dialogue_sentence_count', message: `Scene ${event.id} has dialogue outside the one-to-three sentence limit.` });
@@ -127,8 +135,15 @@ function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssu
     if (beat.characterLayer && !index.artIds.has(beat.characterLayer.illustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue character art: ${beat.characterLayer.illustrationId}` });
     if (beat.environmentIllustrationId && !index.artIds.has(beat.environmentIllustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue environment art: ${beat.environmentIllustrationId}` });
     if (beat.voiceCueId && !index.audioIds.has(beat.voiceCueId)) issues.push({ code: 'missing_audio', message: `Missing dialogue voice cue: ${beat.voiceCueId}` });
-  }
+  });
   return issues;
+}
+
+function walkDialogueBeats(
+  event: Pick<ChronicleEvent, 'dialogue'>,
+  visit: (beat: ChronicleDialogueBeat, index: number) => void,
+): void {
+  event.dialogue?.forEach(visit);
 }
 
 export function validateContent(index: ContentIndex): ContentIssue[] {
@@ -218,6 +233,63 @@ export interface ChronicleSourceInput {
   readonly events?: readonly Chronicle1Event[];
 }
 
+export interface ChronicleDialogueValidationCatalog {
+  readonly environmentArtIds: ReadonlySet<string>;
+  readonly characterArt: readonly { readonly id: string; readonly companionId?: string }[];
+  readonly voiceCues: readonly { readonly id: string; readonly text: string }[];
+}
+
+export interface ChroniclePlayabilityInput extends ChronicleSourceInput {
+  readonly encounters: readonly EncounterDefinition[];
+  readonly dialogueCatalog: ChronicleDialogueValidationCatalog;
+}
+
+type SourceRecord = Record<string, unknown>;
+type SourceBranch = { readonly label: string; readonly value: SourceRecord };
+
+function isRecord(value: unknown): value is SourceRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function checkedChoiceBranches(choice: Chronicle1Choice, sceneId: string, issues: ContentIssue[]): readonly SourceBranch[] | null {
+  const record = choice as unknown as SourceRecord;
+  if (!Object.prototype.hasOwnProperty.call(record, 'check')) return null;
+  const check = record.check;
+  const labels = ['success', 'failure', 'criticalSuccess', 'criticalFailure'] as const;
+  if (!isRecord(check)) {
+    for (const label of labels.slice(0, 2)) issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} has malformed ${label} branch.`));
+    return [];
+  }
+  const branches: SourceBranch[] = [];
+  for (const label of labels) {
+    const branch = check[label];
+    if (branch === undefined && (label === 'criticalSuccess' || label === 'criticalFailure')) continue;
+    if (!isRecord(branch) || typeof branch.outcome !== 'string' || !branch.outcome.trim() || !Array.isArray(branch.effects)) {
+      issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} has malformed ${label} branch.`));
+      continue;
+    }
+    branches.push({ label, value: branch });
+  }
+  return branches;
+}
+
+function sourceChoiceEffects(choice: Chronicle1Choice, branches: readonly SourceBranch[] | null): readonly ChronicleEffect[] {
+  if (branches !== null) return branches.flatMap((branch) => branch.value.effects as readonly ChronicleEffect[]);
+  const effects = (choice as unknown as SourceRecord).effects;
+  return Array.isArray(effects) ? effects as readonly ChronicleEffect[] : [];
+}
+
+function sourceNextSceneId(value: SourceRecord): string | null {
+  return typeof value.nextSceneId === 'string' && value.nextSceneId.trim() ? value.nextSceneId : null;
+}
+
+function sourceCombatEncounterIds(effects: readonly ChronicleEffect[], branch: SourceRecord | null): readonly string[] {
+  return [
+    ...effects.flatMap((effect) => effect.type === 'combat' ? [effect.encounterId] : []),
+    ...(branch && typeof branch.combatEncounterId === 'string' ? [branch.combatEncounterId] : []),
+  ];
+}
+
 const SOURCE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function sourceIssue(code: ContentIssueCode, message: string): ContentIssue {
@@ -301,7 +373,7 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
 
   issues.push(...duplicateIssues(input.events, 'duplicate_event_id'));
 
-  const eventIds = new Set(input.events.map((event) => event.id));
+  const eventIds = new Set<string>(input.events.map((event) => event.id));
   const eventById = new Map(input.events.map((event) => [event.id, event]));
   const illustrationIds = new Set<string>();
   const mediaIds = new Set<string>();
@@ -393,7 +465,9 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
       issues.push(sourceIssue('invalid_scene_weight', `Scene ${event.id} has invalid authored weight ${event.weight}.`));
     }
 
-    const choiceCountIsValid = event.continueOnly
+    const choiceCountIsValid = event.dialogue?.length && event.choices.length === 0
+      ? true
+      : event.continueOnly
       ? event.choices.length === 1
       : event.choices.length >= 2 && event.choices.length <= 4;
     if (!choiceCountIsValid) {
@@ -416,12 +490,16 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
     for (const requirement of [...(event.requirements ?? []), ...(event.exclusions ?? [])]) {
       validateSourceId('requirement flag', requirement.flagId, issues);
     }
+    const effectsByChoice = new Map<Chronicle1Choice, readonly ChronicleEffect[]>();
     for (const choice of event.choices) {
       validateSourceId('choice', choice.id, issues);
       for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) {
         validateSourceId('choice requirement flag', requirement.flagId, issues);
       }
-      for (const effect of chronicle1ChoiceEffects(choice)) {
+      const branches = checkedChoiceBranches(choice, event.id, issues);
+      const effects = sourceChoiceEffects(choice, branches);
+      effectsByChoice.set(choice, effects);
+      for (const effect of effects) {
         if (effect.type === 'item') validateSourceId('effect item', effect.itemId, issues);
         if (effect.type === 'flag') validateSourceId('effect flag', effect.flagId, issues);
         if (effect.type === 'faction') validateSourceId('effect faction', effect.factionId, issues);
@@ -431,13 +509,21 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
         if (effect.type === 'combat') validateSourceId('effect encounter', effect.encounterId, issues);
         if (effect.type === 'evidence') validateSourceId('effect evidence', effect.evidenceId, issues);
       }
-      if (isChronicle1CheckedChoice(choice)) {
-        for (const branch of chronicleCheckBranches(choice.check)) {
-          if (branch.nextSceneId) validateSourceId('check next scene', branch.nextSceneId, issues);
-          if (branch.combatEncounterId) validateSourceId('check encounter', branch.combatEncounterId, issues);
+      if (branches !== null) {
+        for (const branch of branches) {
+          const nextSceneId = sourceNextSceneId(branch.value);
+          if (nextSceneId) {
+            validateSourceId('check next scene', nextSceneId, issues);
+            if (!eventIds.has(nextSceneId)) issues.push(sourceIssue('missing_next_scene', `Scene ${event.id} choice ${choice.id} ${branch.label} branch references missing next scene ${nextSceneId}.`));
+          }
+          if (typeof branch.value.combatEncounterId === 'string') validateSourceId('check encounter', branch.value.combatEncounterId, issues);
         }
-      } else if (choice.nextSceneId) {
-        validateSourceId('direct next scene', choice.nextSceneId, issues);
+      } else {
+        const nextSceneId = sourceNextSceneId(choice as unknown as SourceRecord);
+        if (nextSceneId) {
+          validateSourceId('direct next scene', nextSceneId, issues);
+          if (!eventIds.has(nextSceneId)) issues.push(sourceIssue('missing_next_scene', `Scene ${event.id} choice ${choice.id} references missing next scene ${nextSceneId}.`));
+        }
       }
     }
 
@@ -452,7 +538,7 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
 
     const callbackPromises: readonly ChronicleCallbackPromise[] = [
       ...event.callbackPromises,
-      ...event.choices.flatMap((choice) => chronicle1ChoiceEffects(choice).flatMap((effect) => (
+      ...event.choices.flatMap((choice) => (effectsByChoice.get(choice) ?? []).flatMap((effect) => (
         effect.type === 'callback' ? [effect.promise] : []
       ))),
     ];
@@ -537,4 +623,213 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
   }
 
   return issues;
+}
+
+function uniqueIssues(issues: readonly ContentIssue[]): ContentIssue[] {
+  const seen = new Set<string>();
+  return issues.filter((issue) => {
+    const key = `${issue.code}\u0000${issue.message}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizedDialogueText(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/[“”]/gu, '"')
+    .replace(/[‘’]/gu, "'")
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .toLocaleLowerCase();
+}
+
+function wholeDialogueMatch(left: string, right: string): boolean {
+  return left === right || left.startsWith(`${right} `) || left.endsWith(` ${right}`)
+    || left.includes(` ${right} `);
+}
+
+function catalogDialogueIssues(event: Chronicle1Event, input: ChroniclePlayabilityInput): ContentIssue[] {
+  if (event.dialogue === undefined) return [];
+  if (event.dialogue.length === 0) return [sourceIssue('invalid_dialogue', `Scene ${event.id} has an empty dialogue list.`)];
+  const issues: ContentIssue[] = [];
+  const companionIds = new Set(input.companions.map((companion) => companion.id));
+  const characterById = new Map(input.dialogueCatalog.characterArt.map((art) => [art.id, art]));
+  const voiceById = new Map(input.dialogueCatalog.voiceCues.map((cue) => [cue.id, cue]));
+  walkDialogueBeats(event, (beat, beatIndex) => {
+    if (!beat.speakerName.trim()) issues.push(sourceIssue('invalid_dialogue_speaker', `Scene ${event.id} beat ${beatIndex} has dialogue without a speaker.`));
+    if (!beat.text.trim()) issues.push(sourceIssue('invalid_dialogue_text', `Scene ${event.id} beat ${beatIndex} has dialogue without text.`));
+    const sentenceCount = countDialogueSentences(beat.text);
+    if (sentenceCount < 1 || sentenceCount > 3) issues.push(sourceIssue('invalid_dialogue_sentence_count', `Scene ${event.id} beat ${beatIndex} has dialogue outside the one-to-three sentence limit.`));
+    if (beat.characterLayer) {
+      const art = characterById.get(beat.characterLayer.illustrationId);
+      if (!art) issues.push(sourceIssue('missing_art', `Scene ${event.id} beat ${beatIndex} references unavailable character art ${beat.characterLayer.illustrationId}.`));
+      if (beat.characterLayer.companionId && !companionIds.has(beat.characterLayer.companionId)) issues.push(sourceIssue('missing_companion', `Scene ${event.id} beat ${beatIndex} references missing companion ${beat.characterLayer.companionId}.`));
+      if (art?.companionId && art.companionId !== beat.characterLayer.companionId) issues.push(sourceIssue('unavailable_companion_art', `Scene ${event.id} beat ${beatIndex} assigns character art ${art.id} to a different companion.`));
+    }
+    if (beat.environmentIllustrationId && !input.dialogueCatalog.environmentArtIds.has(beat.environmentIllustrationId)) issues.push(sourceIssue('missing_art', `Scene ${event.id} beat ${beatIndex} references unavailable environment art ${beat.environmentIllustrationId}.`));
+    if (beat.voiceCueId) {
+      const cue = voiceById.get(beat.voiceCueId);
+      if (!cue) issues.push(sourceIssue('missing_audio', `Scene ${event.id} beat ${beatIndex} references missing voice cue ${beat.voiceCueId}.`));
+      else {
+        const beatText = normalizedDialogueText(beat.text);
+        const cueText = normalizedDialogueText(cue.text);
+        if (!wholeDialogueMatch(beatText, cueText) && !wholeDialogueMatch(cueText, beatText)) issues.push(sourceIssue('invalid_dialogue_voice_text', `Scene ${event.id} beat ${beatIndex} voice cue ${beat.voiceCueId} does not match dialogue text.`));
+      }
+    }
+  });
+  return issues;
+}
+
+function routeSpoilerIssues(routes: readonly ChronicleRouteDefinition[]): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  const leakage = /\b(?:merchant|companion|relic|reward|combat|encounter|recovery|chance|weight|frequency)\b|\b\d+(?:\.\d+)?\s*%|\b(?:danger|risk)\s+(?:tier|level|rating|\d+|higher|lower|more|less)\b|\b(?:higher|lower)\s+(?:danger|risk)\b/iu;
+  for (const route of routes) {
+    const visible = `${route.label} ${route.description}`.normalize('NFKC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase();
+    const match = visible.match(leakage);
+    if (match) issues.push(sourceIssue('spoiler_route_copy', `Route ${route.id} exposes system copy: ${match[0]}.`));
+  }
+  return issues;
+}
+
+function branchTargets(choice: Chronicle1Choice): readonly (string | null)[] {
+  const branches = checkedChoiceBranches(choice, 'graph', []);
+  if (branches === null) return [sourceNextSceneId(choice as unknown as SourceRecord)];
+  const record = choice as unknown as SourceRecord;
+  const check = isRecord(record.check) ? record.check : null;
+  if (!check || !isRecord(check.success) || !isRecord(check.failure)) return [null];
+  return branches.map((branch) => sourceNextSceneId(branch.value));
+}
+
+function requiredCycleIssues(events: readonly Chronicle1Event[]): ContentIssue[] {
+  const eventIds = new Set(events.map((event) => event.id));
+  const edges = new Map<string, readonly string[]>();
+  const outcomes = new Map<string, readonly (string | null)[]>();
+  for (const event of events) {
+    const sceneOutcomes = event.choices.flatMap(branchTargets);
+    outcomes.set(event.id, sceneOutcomes);
+    edges.set(event.id, sceneOutcomes.filter((target): target is string => target !== null && eventIds.has(target)));
+  }
+  let nextIndex = 0;
+  const indices = new Map<string, number>();
+  const lowLinks = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const components: string[][] = [];
+  const visit = (id: string): void => {
+    indices.set(id, nextIndex);
+    lowLinks.set(id, nextIndex);
+    nextIndex += 1;
+    stack.push(id);
+    onStack.add(id);
+    for (const target of edges.get(id) ?? []) {
+      if (!indices.has(target)) {
+        visit(target);
+        lowLinks.set(id, Math.min(lowLinks.get(id)!, lowLinks.get(target)!));
+      } else if (onStack.has(target)) {
+        lowLinks.set(id, Math.min(lowLinks.get(id)!, indices.get(target)!));
+      }
+    }
+    if (lowLinks.get(id) === indices.get(id)) {
+      const component: string[] = [];
+      let member: string;
+      do {
+        member = stack.pop()!;
+        onStack.delete(member);
+        component.push(member);
+      } while (member !== id);
+      components.push(component.sort());
+    }
+  };
+  for (const event of events) if (!indices.has(event.id)) visit(event.id);
+  return components
+    .filter((component) => component.length > 1 || (edges.get(component[0]!) ?? []).includes(component[0]!))
+    .filter((component) => {
+      const members = new Set(component);
+      return component.every((id) => (outcomes.get(id) ?? []).length > 0 && (outcomes.get(id) ?? []).every((target) => target !== null && members.has(target)));
+    })
+    .sort((left, right) => left.join(',').localeCompare(right.join(',')))
+    .map((component) => sourceIssue('inescapable_required_cycle', `Required continuation cycle among scenes ${component.join(', ')}.`));
+}
+
+function laterFlagConsumption(event: Chronicle1Event, flagId: string, input: ChroniclePlayabilityInput): boolean {
+  const chapterOrder = new Map(input.chronicle.chapters.map((chapter) => [chapter.id, chapter.order]));
+  const sourceOrder = chapterOrder.get(event.chapterId);
+  if (sourceOrder === undefined) return false;
+  return input.events?.some((candidate) => {
+    const candidateOrder = chapterOrder.get(candidate.chapterId);
+    if (candidate === event || candidateOrder === undefined || candidateOrder < sourceOrder || (candidateOrder === sourceOrder && candidate.slot <= event.slot)) return false;
+    const requirements = [
+      ...(candidate.requirements ?? []), ...(candidate.exclusions ?? []),
+      ...(candidate.eligibility.requiredFlags ?? []).map((flag) => ({ flagId: flag })),
+      ...(candidate.eligibility.excludedFlags ?? []).map((flag) => ({ flagId: flag })),
+      ...candidate.choices.flatMap((choice) => [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]),
+    ];
+    return requirements.some((requirement) => requirement.flagId === flagId);
+  }) ?? false;
+}
+
+function strictInteractionIssues(input: ChroniclePlayabilityInput): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  for (const event of input.events ?? []) {
+    const choiceFacts = event.choices.map((choice) => {
+      const branches = checkedChoiceBranches(choice, event.id, []);
+      const effects = sourceChoiceEffects(choice, branches);
+      const targets = branchTargets(choice);
+      const hasCombat = sourceCombatEncounterIds(effects, null).length > 0 || (branches ?? []).some((branch) => typeof branch.value.combatEncounterId === 'string');
+      return { choice, branches, effects, targets, hasCombat };
+    });
+    const strict = event.dialogue !== undefined || event.followUps.length > 0 || choiceFacts.some((fact) => fact.branches !== null || fact.targets.some((target) => target !== null) || fact.hasCombat);
+    if (!strict) continue;
+    const neutralDialogue = event.dialogue !== undefined && (event.choices.length === 0 || (event.continueOnly === true && event.choices.length === 1 && choiceFacts[0]?.branches === null));
+    if (neutralDialogue) continue;
+    for (const fact of choiceFacts) {
+      const flagConsumedLater = fact.effects
+        .filter((effect) => effect.type === 'flag')
+        .some((effect) => laterFlagConsumption(event, effect.flagId, input));
+      const tangible = fact.branches !== null && fact.branches.length >= 2
+        || fact.targets.some((target) => target !== null)
+        || fact.hasCombat
+        || fact.effects.some((effect) => effect.type !== 'flag')
+        || event.followUps.length > 0
+        || flagConsumedLater;
+      if (!tangible) issues.push(sourceIssue('intangible_choice', `Scene ${event.id} choice ${fact.choice.id} has no tangible consequence.`));
+    }
+  }
+  return issues;
+}
+
+function encounterIssues(input: ChroniclePlayabilityInput): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  const encounterIds = new Set<string>(input.encounters.map((encounter) => encounter.id));
+  const validateEncounter = (sceneId: string, encounterId: string | undefined, owner: string): void => {
+    if (!encounterId || !encounterIds.has(encounterId)) issues.push(sourceIssue('missing_encounter', `${owner} in scene ${sceneId} references missing encounter ${encounterId ?? '(none)'}.`));
+  };
+  for (const event of input.events ?? []) {
+    if (event.type === 'combat') validateEncounter(event.id, event.encounterId, 'Combat scene');
+    else if (event.encounterId) validateEncounter(event.id, event.encounterId, 'Scene');
+    for (const choice of event.choices) {
+      const branches = checkedChoiceBranches(choice, event.id, []);
+      const effects = sourceChoiceEffects(choice, branches);
+      for (const effect of effects) if (effect.type === 'combat') validateEncounter(event.id, effect.encounterId, `Choice ${choice.id}`);
+      for (const branch of branches ?? []) if (typeof branch.value.combatEncounterId === 'string') validateEncounter(event.id, branch.value.combatEncounterId, `Choice ${choice.id} ${branch.label} branch`);
+    }
+  }
+  return issues;
+}
+
+/** Validates Chronicle source connectivity with the catalog context unavailable to generic runtime indices. */
+export function validateChroniclePlayability(input: ChroniclePlayabilityInput): ContentIssue[] {
+  const issues = [
+    ...validateChronicleSources(input),
+    ...encounterIssues(input),
+    ...requiredCycleIssues(input.events ?? []),
+    ...strictInteractionIssues(input),
+    ...routeSpoilerIssues(input.routes),
+    ...input.dialogueCatalog.characterArt.flatMap((art) => art.companionId && !input.companions.some((companion) => companion.id === art.companionId)
+      ? [sourceIssue('unavailable_companion_art', `Character art ${art.id} names unavailable companion ${art.companionId}.`)] : []),
+    ...(input.events ?? []).flatMap((event) => catalogDialogueIssues(event, input)),
+  ];
+  return uniqueIssues(issues);
 }

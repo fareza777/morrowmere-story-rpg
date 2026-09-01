@@ -5,8 +5,7 @@ import {
   type Chronicle1Event,
   type ContentIndex,
 } from '../schema';
-import { validateChronicleSources } from '../validate';
-import { countDialogueSentences } from '../dialogue';
+import { validateChroniclePlayability } from '../validate';
 import { deepFreeze } from './builders';
 import { CH01_SCENES } from './chapters/ch01';
 import { CH02_SCENES } from './chapters/ch02';
@@ -48,39 +47,20 @@ const ENGLISH_LETTER = /[A-Za-z]/;
 const PROMPT_LIKE_COPY = /\b(?:generate|continue the story|AI response)\b/i;
 const VALID_ROUTE_IDS = new Set(CHRONICLE1_ROUTES.map((route) => route.id));
 
-function dialogueAssemblyIssues(scene: Chronicle1Event): string[] {
-  if (scene.dialogue === undefined) return [];
-  if (scene.dialogue.length === 0) return [`invalid_dialogue: ${scene.id} has an empty dialogue list`];
-  const companionIds = new Set(CHRONICLE1_COMPANIONS.map((companion) => companion.id));
-  const sceneArtIds = new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((entry) => entry.id));
-  const characterArtIds = new Set(CHRONICLE1_MEDIA_CONTRACT.characters.map((entry) => entry.id));
-  const voiceById = new Map(CHRONICLE1_VOICE_CUES.map((cue) => [cue.id, cue]));
-  const issues: string[] = [];
-  for (const beat of scene.dialogue) {
-    const sentenceCount = countDialogueSentences(beat.text);
-    if (!beat.speakerName.trim()) issues.push(`invalid_dialogue_speaker: ${scene.id}`);
-    if (!beat.text.trim()) issues.push(`invalid_dialogue_text: ${scene.id}`);
-    if (sentenceCount < 1 || sentenceCount > 3) issues.push(`invalid_dialogue_sentence_count: ${scene.id}`);
-    if (beat.characterLayer?.companionId && !companionIds.has(beat.characterLayer.companionId)) issues.push(`missing_companion: ${beat.characterLayer.companionId}`);
-    if (beat.characterLayer && !characterArtIds.has(beat.characterLayer.illustrationId)) issues.push(`missing_art: ${beat.characterLayer.illustrationId}`);
-    if (beat.environmentIllustrationId && !sceneArtIds.has(beat.environmentIllustrationId)) issues.push(`missing_art: ${beat.environmentIllustrationId}`);
-    if (beat.voiceCueId) {
-      const cue = voiceById.get(beat.voiceCueId);
-      if (!cue) issues.push(`missing_audio: ${beat.voiceCueId}`);
-      else if (!cue.text.includes(beat.text) && !beat.text.includes(cue.text)) issues.push(`invalid_dialogue_voice_text: ${beat.voiceCueId}`);
-    }
-  }
-  return issues;
-}
-
 function assemblyIssues(scenes: readonly Chronicle1Event[]): string[] {
-  const issues: string[] = validateChronicleSources({
+  const issues: string[] = validateChroniclePlayability({
     chronicle: CHRONICLE1,
     routes: CHRONICLE1_ROUTES,
     factions: CHRONICLE1_FACTIONS,
     companions: CHRONICLE1_COMPANIONS,
     merchants: CHRONICLE1_MERCHANTS,
     events: scenes,
+    encounters: CHRONICLE1_ENCOUNTERS,
+    dialogueCatalog: {
+      environmentArtIds: new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((entry) => entry.id)),
+      characterArt: CHRONICLE1_MEDIA_CONTRACT.characters,
+      voiceCues: CHRONICLE1_VOICE_CUES,
+    },
   }).map((issue) => `${issue.code}: ${issue.message}`);
 
   const eventIds = new Set<string>();
@@ -97,8 +77,6 @@ function assemblyIssues(scenes: readonly Chronicle1Event[]): string[] {
       issues.push(`duplicate_illustration_id: ${scene.illustrationId}`);
     }
     illustrationIds.add(scene.illustrationId);
-    issues.push(...dialogueAssemblyIssues(scene));
-
     if (scene.type === 'main' && scene.anchorOrder === undefined) {
       issues.push(`missing_anchor_order: ${scene.id}`);
     }
