@@ -299,7 +299,8 @@ function safeEffectSummary(summary: string, content: ContentIndex): string | nul
   if (/^(?:[A-Z][a-z]+)(?: [A-Z][a-z]+)* reputation [+-]\d+$/u.test(trimmed)) return trimmed;
 
   const itemChange = /^[+-]\d+ (?<name>.+)$/u.exec(trimmed);
-  if (itemChange?.groups?.name && [...content.items.values()].some((item) => item.name === itemChange.groups.name)) return trimmed;
+  const itemName = itemChange?.groups?.name;
+  if (itemName && [...content.items.values()].some((item) => item.name === itemName)) return trimmed;
 
   for (const companion of content.companions.values()) {
     if ([`${companion.name} joined`, `${companion.name} left`, `${companion.name} injured`, `${companion.name} recovered`, `${companion.name} quest progress updated`].includes(trimmed)) return trimmed;
