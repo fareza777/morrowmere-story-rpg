@@ -350,7 +350,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
     illustrationAlt: `Illustration for ${event.title}.`,
     choices,
     resolved,
-    outcome: selectedChoice?.outcome ?? null,
+    outcome: resolution?.outcome ?? (selectedChoice && !isChronicleCheckedChoice(selectedChoice) ? selectedChoice.outcome : null),
   };
 }
 

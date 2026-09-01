@@ -303,7 +303,8 @@ export interface Chronicle1Event
  */
 export type ChronicleEffectSource =
   | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
-  | { readonly type: 'item'; readonly operation: 'grant' | 'remove'; readonly itemId: string; readonly quantity: number }
+  | { readonly type: 'item'; readonly operation: 'grant' | 'remove'; readonly itemId: string; readonly quantity: number; readonly destination?: 'pack' | 'unbanked-loot' }
+  | { readonly type: 'xp'; readonly amount: number; readonly source?: 'story' | 'quest' | 'companion' }
   | { readonly type: 'flag'; readonly operation: 'add' | 'remove'; readonly flagId: string }
   | { readonly type: 'faction'; readonly factionId: string; readonly amount: number }
   | { readonly type: 'companion'; readonly companionId: string; readonly operation: 'recruit' | 'dismiss' }

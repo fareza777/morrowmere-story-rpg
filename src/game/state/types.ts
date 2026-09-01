@@ -106,6 +106,14 @@ export interface HeroVitals {
 export interface SceneResolution {
   readonly eventId: EventId;
   readonly choiceId: ChoiceId | null;
+  /** Optional until the v2 save migration upgrades legacy compact resolutions. */
+  readonly resultKind?: 'direct' | 'critical-success' | 'success' | 'failure' | 'critical-failure';
+  readonly chance?: number | null;
+  readonly roll?: number | null;
+  readonly outcome?: string;
+  readonly effectSummary?: readonly string[];
+  readonly nextSceneId?: EventId | null;
+  readonly continueLabel?: string | null;
 }
 
 export interface PendingBattleReward {

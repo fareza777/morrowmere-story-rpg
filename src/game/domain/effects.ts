@@ -17,7 +17,8 @@ export interface CallbackPromiseDefinition {
 
 export type GameEffect =
   | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
-  | { readonly type: 'item'; readonly operation: 'grant' | 'remove'; readonly itemId: ItemId; readonly quantity: number }
+  | { readonly type: 'item'; readonly operation: 'grant' | 'remove'; readonly itemId: ItemId; readonly quantity: number; readonly destination?: 'pack' | 'unbanked-loot' }
+  | { readonly type: 'xp'; readonly amount: number; readonly source?: 'story' | 'quest' | 'companion' }
   | { readonly type: 'flag'; readonly operation: 'add' | 'remove'; readonly flagId: FlagId }
   | { readonly type: 'evidence'; readonly operation: 'add' | 'remove'; readonly evidenceId: string }
   | { readonly type: 'faction'; readonly factionId: FactionId; readonly amount: number }

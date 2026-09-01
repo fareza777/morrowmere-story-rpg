@@ -144,7 +144,7 @@ describe('Chronicle I public core integration', () => {
     expect(reduceGame(state, { type: 'resolve-choice', eventId: asEvent('stale'), choiceId: asChoice('stand-ground'), updatedAt: at(4) }, content).state).toBe(state);
 
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground'), updatedAt: at(5) }, content);
-    expect(state.expedition?.sceneResolution).toEqual({ eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground') });
+    expect(state.expedition?.sceneResolution).toMatchObject({ eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground') });
     expect(state.expedition?.currentCombat?.combat?.player.name).toBe('Aster Vale');
     expect(state.expedition?.currentCombat?.combat?.enemies).toHaveLength(2);
     const firstEnemy = state.expedition!.currentCombat!.combat!.enemies[0]!.id;

@@ -3,7 +3,7 @@ import type { ContentIndex } from '../content/schema';
 import type { GameEffect } from '../domain/effects';
 import type { CommandDiagnostic, DomainEvent, DomainResult } from '../domain/result';
 import { applyInventoryCommand } from '../inventory';
-import { deriveHeroStats } from '../progression';
+import { deriveHeroStats, grantExperience } from '../progression';
 import type { CampaignState, ExpeditionState } from './types';
 
 export interface EffectState {
@@ -36,6 +36,18 @@ export function applyEffectsAtomically(
   const events: DomainEvent[] = [];
 
   for (const effect of effects) {
+    if (effect.type === 'xp') {
+      const experience = grantExperience(campaign.hero, {
+        amount: effect.amount,
+        chapterId: campaign.chapterId,
+        source: effect.source ?? 'story',
+      });
+      if (!experience.ok) return failure(experience.error.code, experience.error.message);
+      campaign = { ...campaign, hero: experience.value.hero };
+      events.push({ type: 'notification', message: 'Experience gained.' });
+      if (experience.value.levelsGained > 0) events.push({ type: 'level_up', level: experience.value.hero.level });
+      continue;
+    }
     if (effect.type === 'gold') {
       if (!Number.isSafeInteger(effect.amount)) return failure('invalid_gold', 'Gold changes must be safe whole numbers.');
       if (effect.scope === 'banked') {
@@ -57,22 +69,30 @@ export function applyEffectsAtomically(
       const loot = [...expedition.unbankedLoot];
       let inventory = campaign.inventory;
       if (effect.operation === 'grant') {
-        const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity }, content.items);
-        if (!added.ok) return failure(added.error.code, added.error.message);
-        inventory = added.value;
-        for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
-      } else {
-        let remaining = effect.quantity;
-        for (let index = loot.length - 1; index >= 0 && remaining > 0; index -= 1) {
-          if (loot[index] === effect.itemId) { loot.splice(index, 1); remaining -= 1; }
+        if (effect.destination !== 'unbanked-loot') {
+          const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity }, content.items);
+          if (!added.ok) return failure(added.error.code, added.error.message);
+          inventory = added.value;
         }
-        if (remaining > 0) return failure('item_not_found', 'That item is not available in this expedition.');
-        for (let count = 0; count < effect.quantity; count += 1) {
-          const entry = inventory.pack.find((candidate) => candidate.itemId === effect.itemId);
-          if (!entry) return failure('item_not_found', 'That item is not available in this expedition.');
-          const removed = applyInventoryCommand(inventory, { type: 'discard', entryId: entry.id, quantity: 1 }, content.items);
-          if (!removed.ok) return failure(removed.error.code, removed.error.message);
-          inventory = removed.value;
+        if (effect.destination !== 'pack') {
+          for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
+        }
+      } else {
+        if (effect.destination !== 'pack') {
+          let remaining = effect.quantity;
+          for (let index = loot.length - 1; index >= 0 && remaining > 0; index -= 1) {
+            if (loot[index] === effect.itemId) { loot.splice(index, 1); remaining -= 1; }
+          }
+          if (remaining > 0) return failure('item_not_found', 'That item is not available in this expedition.');
+        }
+        if (effect.destination !== 'unbanked-loot') {
+          for (let count = 0; count < effect.quantity; count += 1) {
+            const entry = inventory.pack.find((candidate) => candidate.itemId === effect.itemId);
+            if (!entry) return failure('item_not_found', 'That item is not available in this expedition.');
+            const removed = applyInventoryCommand(inventory, { type: 'discard', entryId: entry.id, quantity: 1 }, content.items);
+            if (!removed.ok) return failure(removed.error.code, removed.error.message);
+            inventory = removed.value;
+          }
         }
       }
       campaign = { ...campaign, inventory };

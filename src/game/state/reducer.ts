@@ -2,7 +2,9 @@ import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companion
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
 import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
+import { calculateCheckChance, classifyCheckResult, createCheckRoll } from '../checks';
 import type { ChapterId, EncounterId, ItemId } from '../domain/ids';
+import type { GameEffect } from '../domain/effects';
 import type { DomainEvent } from '../domain/result';
 import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
 import type { DirectorState } from '../director/types';
@@ -110,6 +112,52 @@ function merchantRestockKey(state: GameStateV2, scene: NonNullable<ReturnType<ty
 
 function derivedMaxima(state: GameStateV2, content: ContentIndex) {
   return deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
+}
+
+const CHECK_TAGS: Readonly<Record<'strength' | 'cunning' | 'will', readonly string[]>> = {
+  strength: ['axe', 'heavy', 'mace', 'pick', 'polearm'],
+  cunning: ['locks', 'navigation', 'ranged', 'scout', 'stealth', 'tool'],
+  will: ['conclave', 'focus', 'oath', 'seal', 'ward'],
+} as const;
+
+function equippedItemTags(state: GameStateV2, content: ContentIndex): readonly string[] {
+  const equipment = state.campaign.inventory.equipment;
+  return [equipment.weapon, equipment.armor, ...equipment.charms]
+    .flatMap((itemId) => itemId ? content.items.get(itemId)?.tags ?? [] : []);
+}
+
+function effectiveCheckStat(
+  state: GameStateV2,
+  content: ContentIndex,
+  stat: 'strength' | 'cunning' | 'will',
+): number {
+  const derived = derivedMaxima(state, content);
+  const companion = buildCompanionCombatSnapshot(state.campaign.companions, content);
+  const equipmentBonus = equippedItemTags(state, content).some((tag) => CHECK_TAGS[stat].includes(tag)) ? 1 : 0;
+  const companionBonus = companion
+    ? stat === 'strength' ? companion.guard : stat === 'cunning' ? companion.attack : companion.will
+    : 0;
+  const healthPenalty = state.expedition!.heroVitals.health * 2 < derived.maxHealth ? 1 : 0;
+  const focusPenalty = stat !== 'strength' && state.expedition!.heroVitals.resource * 2 < derived.maxFocus ? 1 : 0;
+  return Math.max(0, derived[stat] + equipmentBonus + companionBonus - healthPenalty - Number(focusPenalty));
+}
+
+function effectSummary(effects: readonly GameEffect[], content: ContentIndex): readonly string[] {
+  return effects.flatMap((effect) => {
+    if (effect.type === 'xp') return [`+${effect.amount} XP`];
+    if (effect.type === 'item') {
+      const name = content.items.get(effect.itemId)?.name ?? effect.itemId;
+      return [`${effect.operation === 'grant' ? '+' : '-'}${effect.quantity} ${name}`];
+    }
+    if (effect.type === 'flag') return [`${effect.operation === 'add' ? '+' : '-'}${effect.flagId}`];
+    if (effect.type === 'gold') return [`${effect.amount >= 0 ? '+' : ''}${effect.amount} Gold`];
+    if (effect.type === 'vitals') return [
+      ...(effect.health === undefined ? [] : [`${effect.health >= 0 ? '+' : ''}${effect.health} Health`]),
+      ...(effect.resource === undefined ? [] : [`${effect.resource >= 0 ? '+' : ''}${effect.resource} Focus`]),
+    ];
+    if (effect.type === 'combat') return ['Combat begins'];
+    return [];
+  });
 }
 
 function clampedVitals(vitals: HeroVitals, state: GameStateV2, content: ContentIndex): HeroVitals {
@@ -413,10 +461,28 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!choiceIsAvailable(choice, state.campaign.flags, state.expedition.position)) {
       return diagnostic(state, 'choice_unavailable', 'Earlier decisions have closed that choice.');
     }
-    if (isChronicleCheckedChoice(choice)) {
-      return diagnostic(state, 'choice_unavailable', 'This checked choice cannot resolve until check resolution is available.');
-    }
-    const applied = applyEffectsAtomically(state, choice.effects, content);
+    const checked = isChronicleCheckedChoice(choice);
+    const modifier = checked
+      ? choice.check.modifiers?.reduce((total, entry) => total + entry.amount, 0) ?? 0
+      : 0;
+    const chance = checked
+      ? calculateCheckChance(effectiveCheckStat(state, content, choice.check.stat), choice.check.difficulty, modifier)
+      : null;
+    const roll = checked
+      ? createCheckRoll(state.campaign.seed, scene.id, state.expedition.position.slot, choice.id)
+      : null;
+    const resultKind = checked && chance !== null && roll !== null
+      ? classifyCheckResult(roll, chance)
+      : 'direct' as const;
+    const branch = checked
+      ? resultKind === 'critical-success' ? choice.check.criticalSuccess ?? choice.check.success
+        : resultKind === 'critical-failure' ? choice.check.criticalFailure ?? choice.check.failure
+          : resultKind === 'success' ? choice.check.success : choice.check.failure
+      : null;
+    const effects: readonly GameEffect[] = branch
+      ? [...branch.effects, ...(branch.combatEncounterId ? [{ type: 'combat' as const, encounterId: branch.combatEncounterId }] : [])]
+      : isChronicleCheckedChoice(choice) ? [] : choice.effects;
+    const applied = applyEffectsAtomically(state, effects, content);
     if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
     const bankedGoldDelta = applied.value.campaign.bankedGold - state.campaign.bankedGold;
     let checkpoints = state.checkpoints;
@@ -431,7 +497,20 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         },
       };
     }
-    let expedition = { ...applied.value.expedition!, sceneResolution: { eventId: scene.id, choiceId: choice.id } };
+    let expedition = {
+      ...applied.value.expedition!,
+      sceneResolution: {
+        eventId: scene.id,
+        choiceId: choice.id,
+        resultKind,
+        chance,
+        roll,
+        outcome: branch?.outcome ?? choice.outcome,
+        effectSummary: effectSummary(effects, content),
+        nextSceneId: branch?.nextSceneId ?? null,
+        continueLabel: branch?.continueLabel ?? null,
+      },
+    };
     const events: DomainEvent[] = [{ type: 'choice_resolved', eventId: scene.id, choiceId: choice.id }, ...applied.value.events];
     if (expedition.heroVitals.health <= 0) {
       expedition = { ...expedition, currentCombat: null, pendingReward: null };
