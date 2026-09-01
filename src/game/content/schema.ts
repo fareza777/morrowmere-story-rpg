@@ -46,6 +46,38 @@ export interface EventEligibility {
   readonly excludedFlags?: readonly string[];
 }
 
+/** The three player-facing attributes that can drive a narrative check. */
+export type ChronicleStat = 'strength' | 'cunning' | 'will';
+
+/** A visible situational adjustment to a check's final success percentage. */
+export interface ChronicleCheckModifier {
+  readonly label: string;
+  readonly amount: number;
+}
+
+/** One authored outcome of a checked choice. */
+export interface ChronicleChoiceBranch {
+  readonly outcome: string;
+  readonly effects: readonly GameEffect[];
+  readonly nextSceneId?: EventId;
+  readonly combatEncounterId?: EncounterId;
+  readonly continueLabel?: string;
+}
+
+/**
+ * A deterministic stat check. Critical branches are optional because a
+ * critical result falls back to its ordinary success or failure branch.
+ */
+export interface ChronicleChoiceCheck {
+  readonly stat: ChronicleStat;
+  readonly difficulty: number;
+  readonly modifiers?: readonly ChronicleCheckModifier[];
+  readonly success: ChronicleChoiceBranch;
+  readonly failure: ChronicleChoiceBranch;
+  readonly criticalSuccess?: ChronicleChoiceBranch;
+  readonly criticalFailure?: ChronicleChoiceBranch;
+}
+
 export interface ChronicleChoice {
   readonly id: ChoiceId;
   readonly label: string;
@@ -54,6 +86,8 @@ export interface ChronicleChoice {
   readonly exclusions?: readonly ChronicleRequirement[];
   readonly effects: readonly GameEffect[];
   readonly outcome: string;
+  /** When supplied, resolution uses its branch outcomes instead of the direct outcome. */
+  readonly check?: ChronicleChoiceCheck;
 }
 
 export interface ChronicleEvent {

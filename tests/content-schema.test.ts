@@ -12,7 +12,12 @@ import {
 } from '../src/game/content/validate';
 import { makeContentIndex } from './fixtures/game';
 import type { EventId } from '../src/game/domain/ids';
-import type { ChronicleDefinition } from '../src/game/content/schema';
+import type {
+  ChronicleChoice,
+  ChronicleChoiceCheck,
+  ChronicleChoiceBranch,
+  ChronicleDefinition,
+} from '../src/game/content/schema';
 
 function sourceScene(overrides: Record<string, unknown> = {}) {
   return defineScene({
@@ -66,6 +71,37 @@ const emptySourceCatalogs = {
 } as const;
 
 describe('Chronicle I content schema', () => {
+  it('supports a checked choice with immutable authored success and failure branches', () => {
+    const success: ChronicleChoiceBranch = {
+      outcome: 'The wagon reaches solid ground.',
+      effects: [],
+      nextSceneId: 'ch01-journey-solid-ground' as EventId,
+      continueLabel: 'Continue to the road',
+    };
+    const check: ChronicleChoiceCheck = {
+      stat: 'strength',
+      difficulty: 3,
+      modifiers: [{ label: 'Wagon braces', amount: 10 }],
+      success,
+      failure: {
+        outcome: 'The axle cracks in the mud.',
+        effects: [],
+        combatEncounterId: 'encounter-road-raiders' as never,
+      },
+    };
+    const choice: ChronicleChoice = {
+      id: 'ch01-choice-brace-the-wagon' as never,
+      label: 'Brace the wagon',
+      detail: 'Put your shoulder into the sinking frame.',
+      effects: [],
+      outcome: 'The check has not yet been resolved.',
+      check,
+    };
+
+    expect(choice.check?.success.nextSceneId).toBe('ch01-journey-solid-ground');
+    expect(choice.check?.failure.combatEncounterId).toBe('encounter-road-raiders');
+  });
+
   it('rejects duplicate IDs and broken references', () => {
     const content = makeContentIndex({ duplicateEventId: true, missingArtId: true });
     expect(validateContent(content).map((issue) => issue.code)).toEqual(
