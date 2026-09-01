@@ -63,7 +63,11 @@ export function applyEffectsAtomically(
       continue;
     }
     if (effect.type === 'item') {
-      if (!content.items.has(effect.itemId)) return failure('invalid_item', 'That item is not available.');
+      const item = content.items.get(effect.itemId);
+      if (!item) return failure('invalid_item', 'That item is not available.');
+      if (item.category === 'quest' && effect.destination === 'unbanked-loot') {
+        return failure('invalid_item_destination', 'Quest items cannot be unbanked loot.');
+      }
       if (!Number.isInteger(effect.quantity) || effect.quantity <= 0) return failure('invalid_quantity', 'Item quantity must be a positive whole number.');
       if (!expedition) return failure('no_expedition', 'There is no expedition to receive loot.');
       const loot = [...expedition.unbankedLoot];
@@ -73,7 +77,7 @@ export function applyEffectsAtomically(
         const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity, destination }, content.items);
         if (!added.ok) return failure(added.error.code, added.error.message);
         inventory = added.value;
-        if (effect.destination !== 'pack') {
+        if (item.category !== 'quest' && effect.destination !== 'pack') {
           for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
         }
       } else {

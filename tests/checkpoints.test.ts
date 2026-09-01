@@ -499,6 +499,42 @@ describe('campaign checkpoints', () => {
     expect(defeated.campaign.inventory.pack).toEqual([{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }]);
   });
 
+  it('keeps an unbanked stash marker after selling the matching secured pack copy', () => {
+    const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
+    const securedInventory = {
+      ...started.checkpoints.camp!.campaign.inventory,
+      pack: [{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }],
+    };
+    const atMerchant: GameStateV2 = {
+      ...started,
+      campaign: {
+        ...started.campaign,
+        inventory: {
+          ...securedInventory,
+          stash: [{ id: 'stash-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }],
+        },
+      },
+      checkpoints: {
+        ...started.checkpoints,
+        camp: { ...started.checkpoints.camp!, campaign: { ...started.checkpoints.camp!.campaign, inventory: securedInventory } },
+      },
+      expedition: {
+        ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
+        sceneResolution: { eventId: sceneId('merchant-scene'), choiceId: null },
+        unbankedLoot: [itemId('potion-red')],
+      },
+    };
+    const opened = reduceGame(atMerchant, { type: 'open-merchant', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
+    const sold = reduceGame(opened, {
+      type: 'trade', intent: { type: 'sell', entryId: 'pack-stack-potion-red', quantity: 1 }, updatedAt: '2026-08-31T00:03:00.000Z',
+    }, orchestrationContent).state;
+
+    expect(sold.campaign.inventory.pack).toEqual([]);
+    expect(sold.campaign.inventory.stash).toEqual([{ id: 'stash-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }]);
+    expect(sold.expedition?.unbankedLoot).toEqual([itemId('potion-red')]);
+  });
+
   it('charges a persistent banked-gold choice against the secured checkpoint atomically', () => {
     const tollScene = {
       id: sceneId('toll-scene'), chapterId: 'ch01' as const, type: 'main' as const, family: 'toll', anchorOrder: 0,

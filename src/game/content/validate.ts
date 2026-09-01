@@ -29,6 +29,7 @@ export type ContentIssueCode =
   | 'missing_art'
   | 'missing_audio'
   | 'missing_item'
+  | 'invalid_item_destination'
   | 'missing_companion'
   | 'missing_encounter'
   | 'missing_enemy'
@@ -81,8 +82,12 @@ function duplicateIssues<T extends { readonly id: string }>(
 }
 
 function effectIssues(effect: GameEffect, index: ContentIndex): ContentIssue[] {
-  if (effect.type === 'item' && !index.items.has(effect.itemId)) {
-    return [{ code: 'missing_item', message: `Missing item: ${effect.itemId}` }];
+  if (effect.type === 'item') {
+    const item = index.items.get(effect.itemId);
+    if (!item) return [{ code: 'missing_item', message: `Missing item: ${effect.itemId}` }];
+    if (item.category === 'quest' && effect.destination === 'unbanked-loot') {
+      return [{ code: 'invalid_item_destination', message: `Quest items cannot be unbanked loot: ${effect.itemId}` }];
+    }
   }
   if (
     (

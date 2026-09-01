@@ -264,6 +264,14 @@ function packQuantity(inventory: InventoryState, itemId: ItemId): number {
   return inventory.pack.reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
 }
 
+function inventoryQuantity(inventory: InventoryState, itemId: ItemId): number {
+  const stored = [...inventory.pack, ...inventory.stash]
+    .reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
+  const equipped = [inventory.equipment.weapon, inventory.equipment.armor, ...inventory.equipment.charms]
+    .filter((equippedId) => equippedId === itemId).length;
+  return stored + equipped + Number(inventory.questItems.includes(itemId));
+}
+
 /** Makes the marker ledger match the checkpoint-derived unsecured quantity without trusting stale markers. */
 function reconcileUnbankedLoot(values: readonly ItemId[], itemId: ItemId, quantity: number): readonly ItemId[] {
   let remaining = quantity;
@@ -671,8 +679,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         if (!checkpointInventory) return diagnostic(state, 'merchant_state_missing', 'The secured inventory no longer matches this trade.');
         campCampaign = { ...campCampaign, inventory: checkpointInventory };
       }
-      const securedQuantityAfter = campCampaign ? packQuantity(campCampaign.inventory, quote.value.itemId) : 0;
-      const unsecuredQuantityAfter = Math.max(0, packQuantity(inventory, quote.value.itemId) - securedQuantityAfter);
+      const securedQuantityAfter = campCampaign ? inventoryQuantity(campCampaign.inventory, quote.value.itemId) : 0;
+      const unsecuredQuantityAfter = Math.max(0, inventoryQuantity(inventory, quote.value.itemId) - securedQuantityAfter);
       unbankedLoot = reconcileUnbankedLoot(unbankedLoot, quote.value.itemId, unsecuredQuantityAfter);
     }
     const merchantVisits = [...state.expedition.merchantVisits.filter((candidate) => candidate.merchantId !== visit.merchantId || candidate.restockKey !== visit.restockKey), nextVisit];
