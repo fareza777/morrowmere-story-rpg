@@ -82,3 +82,34 @@
 
 - Content validation verifies references and cue agreement, but production pose art remains deliberately deferred to Task 13.
 - The narration hook remains local-only and intentionally persists no playback state.
+
+## Fix round 2
+
+### GREEN
+
+- A continue-only dialogue now rejects an early navigation command, then completes its final Continue as a neutral direct resolution while preserving authored follow-up order.
+- Generic validation uses only its supplied content index. Chronicle I assembly retains production cue-text and typed scene-versus-character art checks.
+- Final automatic voice cues gate responses from the first render and fail open on refusal, failure, or synchronous completion. Visible dialogue remains authored text only, with an atomic screen-reader announcement.
+- Added one shared conservative sentence counter for both validation boundaries, including abbreviations and unspaced sentence boundaries.
+- Verified once with `npm run test:run -- tests/dialogue-state.test.ts tests/dialogue-interface.test.tsx tests/dialogue-validation.test.ts` (3 files, 13 tests passing).
+
+### Changed files
+
+- `src/components/DialoguePanel.tsx`
+- `src/components/GameShell.tsx`
+- `src/game/content/dialogue.ts`
+- `src/game/content/validate.ts`
+- `src/game/content/chronicle1/index.ts`
+- `src/game/state/reducer.ts`
+- `tests/dialogue-state.test.ts`
+- `tests/dialogue-interface.test.tsx`
+- `tests/dialogue-validation.test.ts`
+
+### Commit
+
+`fix: preserve dialogue continuity`
+
+### Risks
+
+- The generic index deliberately cannot distinguish scene from character art, so that production-specific semantic validation remains at the Chronicle I assembly boundary.
+- The conservative counter recognizes common abbreviations; unusual editorial abbreviations may still need author cleanup.

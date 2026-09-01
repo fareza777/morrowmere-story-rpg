@@ -508,6 +508,32 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       }, [{ type: 'notification', message: 'Battle ready.' }]);
     }
     const current = currentScene(state, content);
+    const dialogue = current?.dialogue;
+    if (current && current.choices.length === 0 && dialogue?.length && state.expedition.sceneResolution?.eventId !== current.id) {
+      if (state.expedition.dialogueBeatIndex < dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before continuing.');
+      const sceneResolution: SceneResolution = {
+        eventId: current.id,
+        choiceId: null,
+        resultKind: 'direct',
+        chance: null,
+        roll: null,
+        outcome: current.narrative.at(-1) ?? current.title,
+        effectSummary: [],
+        nextSceneId: null,
+        continueLabel: null,
+      };
+      return commit(state, {
+        ...state,
+        expedition: {
+          ...state.expedition,
+          authoredSceneQueue: enqueueAuthoredAftermaths(state.expedition.authoredSceneQueue, current.id, null, current.followUps ?? []),
+          currentSceneId: null,
+          dialogueBeatIndex: 0,
+          sceneResolution,
+        },
+        updatedAt: command.updatedAt,
+      }, [{ type: 'notification', message: 'Scene complete.' }]);
+    }
     if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
     const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content, state.expedition.authoredSceneQueue);
     if (step.kind !== 'selected') {

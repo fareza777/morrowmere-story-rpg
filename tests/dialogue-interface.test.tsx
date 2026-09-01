@@ -14,7 +14,8 @@ describe('cinematic dialogue interface', () => {
     render(<DialoguePanel beat={firstBeat} reducedMotion={false} onAdvance={advance} onRevealVoiced={vi.fn()} voiceRevealPending={false} responses={<button type="button">Cross the ford</button>} />);
 
     expect(screen.getByRole('heading', { name: 'Mara' })).toBeInTheDocument();
-    expect(screen.getByText(`Mara: ${firstBeat.text}`)).toBeInTheDocument();
+    expect(screen.getByText(firstBeat.text, { selector: '.dialogue-copy' })).toBeInTheDocument();
+    expect(screen.getByText(`Mara: ${firstBeat.text}`)).toHaveClass('sr-only');
     expect(screen.getByTestId('dialogue-character-layer')).toHaveAttribute('src', '/assets/chronicle1/characters/character-mara-wary.webp');
     expect(screen.getByTestId('dialogue-character-layer')).toHaveAttribute('data-dialogue-position', 'left');
     expect(screen.getByText(`Mara: ${firstBeat.text}`)).toHaveAttribute('aria-live', 'polite');

@@ -9,6 +9,8 @@ import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state'
 const eventId = 'dialogue-at-the-ford' as EventId;
 const choiceId = 'answer-the-ford' as ChoiceId;
 const maraId = 'mara' as CompanionId;
+const followUpId = 'dialogue-aftermath' as EventId;
+const requiredFollowUpId = 'dialogue-required-aftermath' as EventId;
 const at = (minute: number) => `2026-09-01T00:${String(minute).padStart(2, '0')}:00.000Z`;
 
 const dialogue = [
@@ -51,7 +53,7 @@ function atDialogueScene(index: ContentIndex): GameStateV2 {
 
 function continueOnlyContent(): ContentIndex {
   const index = content();
-  const scene = { ...index.events.get(eventId)!, choices: [], oneShot: false } as ChronicleEvent;
+  const scene = { ...index.events.get(eventId)!, choices: [], followUps: [followUpId], oneShot: false } as ChronicleEvent;
   return { ...index, events: new Map([[eventId, scene]]) };
 }
 
@@ -91,15 +93,61 @@ describe('cinematic dialogue state', () => {
     expect(decodeSaveState(legacyV3, index)?.expedition?.dialogueBeatIndex).toBe(0);
   });
 
-  it('holds a continue-only scene behind dialogue until its final beat', () => {
+  it('rejects selecting away from an unfinished continue-only dialogue', () => {
     const index = continueOnlyContent();
     const created = createCampaign({ heroClass: 'warrior', seed: 11, updatedAt: at(0) }, index);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
     const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: at(2) }, index).state;
+    const earlyContinue = reduceGame(selected, { type: 'select-next-scene', updatedAt: at(3) }, index);
 
     expect(selected.expedition?.currentSceneId).toBe(eventId);
     expect(selected.expedition?.dialogueBeatIndex).toBe(0);
     expect(selected.expedition?.sceneResolution).toBeNull();
+    expect(earlyContinue.state).toBe(selected);
+    expect(earlyContinue.diagnostic?.code).toBe('dialogue_incomplete');
+  });
+
+  it('completes a final continue-only dialogue and appends its follow-up after queued scenes', () => {
+    const index = continueOnlyContent();
+    const initial = atDialogueScene(index);
+    const finalBeat = reduceGame(initial, { type: 'advance-dialogue', eventId, updatedAt: at(2) }, index).state;
+    const queued = {
+      ...finalBeat,
+      expedition: {
+        ...finalBeat.expedition!,
+        authoredSceneQueue: [{ sceneId: 'earlier-optional' as EventId, sourceSceneId: 'earlier-source' as EventId, requirementMode: 'optional' as const }],
+      },
+    };
+
+    const completed = reduceGame(queued, { type: 'select-next-scene', updatedAt: at(3) }, index);
+
+    expect(completed.diagnostic).toBeUndefined();
+    expect(completed.state.expedition).toMatchObject({ currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: { eventId, choiceId: null, resultKind: 'direct' } });
+    expect(completed.state.expedition?.authoredSceneQueue.map((entry) => [entry.sceneId, entry.requirementMode])).toEqual([
+      ['earlier-optional', 'optional'],
+      [followUpId, 'optional'],
+    ]);
+    expect(completed.state.campaign.flags).toEqual(initial.campaign.flags);
+  });
+
+  it('resolves a final choice-bearing dialogue with its required continuation before scene follow-ups', () => {
+    const index = content();
+    const scene = {
+      ...index.events.get(eventId)!,
+      followUps: [followUpId],
+      choices: [{ ...index.events.get(eventId)!.choices[0], nextSceneId: requiredFollowUpId }],
+    } as ChronicleEvent;
+    const withContinuations = { ...index, events: new Map([[eventId, scene]]) };
+    const finalBeat = reduceGame(atDialogueScene(withContinuations), { type: 'advance-dialogue', eventId, updatedAt: at(2) }, withContinuations).state;
+
+    const resolved = reduceGame(finalBeat, { type: 'resolve-choice', eventId, choiceId, updatedAt: at(3) }, withContinuations);
+
+    expect(resolved.diagnostic).toBeUndefined();
+    expect(resolved.state.expedition?.sceneResolution).toMatchObject({ eventId, choiceId, nextSceneId: requiredFollowUpId });
+    expect(resolved.state.expedition?.authoredSceneQueue.map((entry) => [entry.sceneId, entry.requirementMode])).toEqual([
+      [requiredFollowUpId, 'required'],
+      [followUpId, 'optional'],
+    ]);
   });
 
   it('rejects direct choice resolution before dialogue reaches its final beat', () => {

@@ -27,7 +27,8 @@ export function DialoguePanel({ beat, reducedMotion, onAdvance, onRevealVoiced, 
         <p className="eyebrow">Beat {beat.index + 1} of {beat.total}</p>
         <h2 id="dialogue-speaker" ref={heading} tabIndex={-1}>{beat.speakerName}</h2>
       </div>
-      <p className="dialogue-copy" aria-live="polite" aria-atomic="true">{beat.speakerName}: {beat.text}</p>
+      <p className="dialogue-copy">{beat.text}</p>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">{beat.speakerName}: {beat.text}</p>
       {!beat.isFinal && <button className="button button-primary dialogue-continue" type="button" onClick={onAdvance}>Continue</button>}
       {beat.isFinal && voiceRevealPending && <button className="button button-primary dialogue-reveal" type="button" onClick={onRevealVoiced}>Tap to reveal responses</button>}
       {showResponses && <div className="dialogue-responses">{responses}</div>}

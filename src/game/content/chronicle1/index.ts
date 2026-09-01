@@ -6,6 +6,7 @@ import {
   type ContentIndex,
 } from '../schema';
 import { validateChronicleSources } from '../validate';
+import { countDialogueSentences } from '../dialogue';
 import { deepFreeze } from './builders';
 import { CH01_SCENES } from './chapters/ch01';
 import { CH02_SCENES } from './chapters/ch02';
@@ -51,20 +52,18 @@ function dialogueAssemblyIssues(scene: Chronicle1Event): string[] {
   if (scene.dialogue === undefined) return [];
   if (scene.dialogue.length === 0) return [`invalid_dialogue: ${scene.id} has an empty dialogue list`];
   const companionIds = new Set(CHRONICLE1_COMPANIONS.map((companion) => companion.id));
-  const artIds = new Set([
-    ...CHRONICLE1_MEDIA_CONTRACT.scenes.map((entry) => entry.id),
-    ...CHRONICLE1_MEDIA_CONTRACT.characters.map((entry) => entry.id),
-  ]);
+  const sceneArtIds = new Set(CHRONICLE1_MEDIA_CONTRACT.scenes.map((entry) => entry.id));
+  const characterArtIds = new Set(CHRONICLE1_MEDIA_CONTRACT.characters.map((entry) => entry.id));
   const voiceById = new Map(CHRONICLE1_VOICE_CUES.map((cue) => [cue.id, cue]));
   const issues: string[] = [];
   for (const beat of scene.dialogue) {
-    const sentenceCount = beat.text.trim().split(/[.!?]+(?:\s+|$)/u).filter(Boolean).length;
+    const sentenceCount = countDialogueSentences(beat.text);
     if (!beat.speakerName.trim()) issues.push(`invalid_dialogue_speaker: ${scene.id}`);
     if (!beat.text.trim()) issues.push(`invalid_dialogue_text: ${scene.id}`);
     if (sentenceCount < 1 || sentenceCount > 3) issues.push(`invalid_dialogue_sentence_count: ${scene.id}`);
     if (beat.characterLayer?.companionId && !companionIds.has(beat.characterLayer.companionId)) issues.push(`missing_companion: ${beat.characterLayer.companionId}`);
-    if (beat.characterLayer && !artIds.has(beat.characterLayer.illustrationId)) issues.push(`missing_art: ${beat.characterLayer.illustrationId}`);
-    if (beat.environmentIllustrationId && !artIds.has(beat.environmentIllustrationId)) issues.push(`missing_art: ${beat.environmentIllustrationId}`);
+    if (beat.characterLayer && !characterArtIds.has(beat.characterLayer.illustrationId)) issues.push(`missing_art: ${beat.characterLayer.illustrationId}`);
+    if (beat.environmentIllustrationId && !sceneArtIds.has(beat.environmentIllustrationId)) issues.push(`missing_art: ${beat.environmentIllustrationId}`);
     if (beat.voiceCueId) {
       const cue = voiceById.get(beat.voiceCueId);
       if (!cue) issues.push(`missing_audio: ${beat.voiceCueId}`);

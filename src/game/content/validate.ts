@@ -17,7 +17,7 @@ import {
   isChronicle1CheckedChoice,
 } from './schema';
 import { ROUTE_OPTIONS } from '../director/pacing';
-import { voiceCueForId } from '../audio/catalog';
+import { countDialogueSentences } from './dialogue';
 
 export type ContentIssueCode =
   | 'duplicate_event_id'
@@ -115,10 +115,6 @@ function effectIssues(effect: GameEffect, index: ContentIndex): ContentIssue[] {
   return [];
 }
 
-function dialogueSentenceCount(text: string): number {
-  return text.trim().split(/[.!?]+(?:\s+|$)/u).filter(Boolean).length;
-}
-
 function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssue[] {
   if (event.dialogue === undefined) return [];
   if (event.dialogue.length === 0) return [{ code: 'invalid_dialogue', message: `Scene ${event.id} has an empty dialogue list.` }];
@@ -126,15 +122,11 @@ function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssu
   for (const beat of event.dialogue) {
     if (!beat.speakerName.trim()) issues.push({ code: 'invalid_dialogue_speaker', message: `Scene ${event.id} has dialogue without a speaker.` });
     if (!beat.text.trim()) issues.push({ code: 'invalid_dialogue_text', message: `Scene ${event.id} has dialogue without text.` });
-    if (dialogueSentenceCount(beat.text) < 1 || dialogueSentenceCount(beat.text) > 3) issues.push({ code: 'invalid_dialogue_sentence_count', message: `Scene ${event.id} has dialogue outside the one-to-three sentence limit.` });
+    if (countDialogueSentences(beat.text) < 1 || countDialogueSentences(beat.text) > 3) issues.push({ code: 'invalid_dialogue_sentence_count', message: `Scene ${event.id} has dialogue outside the one-to-three sentence limit.` });
     if (beat.characterLayer?.companionId && !index.companions.has(beat.characterLayer.companionId)) issues.push({ code: 'missing_companion', message: `Missing dialogue companion: ${beat.characterLayer.companionId}` });
     if (beat.characterLayer && !index.artIds.has(beat.characterLayer.illustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue character art: ${beat.characterLayer.illustrationId}` });
     if (beat.environmentIllustrationId && !index.artIds.has(beat.environmentIllustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue environment art: ${beat.environmentIllustrationId}` });
-    if (beat.voiceCueId) {
-      const cue = voiceCueForId(beat.voiceCueId);
-      if (!cue) issues.push({ code: 'missing_audio', message: `Missing dialogue voice cue: ${beat.voiceCueId}` });
-      else if (!cue.captionText.includes(beat.text) && !cue.spokenText.includes(beat.text) && !beat.text.includes(cue.captionText)) issues.push({ code: 'invalid_dialogue_voice_text', message: `Dialogue voice cue does not match beat text: ${beat.voiceCueId}` });
-    }
+    if (beat.voiceCueId && !index.audioIds.has(beat.voiceCueId)) issues.push({ code: 'missing_audio', message: `Missing dialogue voice cue: ${beat.voiceCueId}` });
   }
   return issues;
 }
