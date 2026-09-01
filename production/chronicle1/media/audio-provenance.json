@@ -17,26 +17,18 @@
       "assetId": "music-opening-score",
       "generator": "morrowmere-cc0-remaster-v1",
       "creationDate": "2026-09-01",
-      "sourceMasterSha256": "f7dfe551c30fb62403b1c13e51cf8a8877f275579a75c239ff9fa463c4a111c3",
-      "outputSha256": "d223952a63fc6325330589940990a1e00b1771b099ef9ea871c2ffff089bd782",
+      "sourceMasterSha256": "add1de5eae0771c4ce5b3782a6eae9c01f321d32446421691426587000e50cdc",
+      "outputSha256": "666d4aae68cc3b3a08a033e49e9f94f3a37f120374855911899d48b9cc44533c",
       "licenseBasis": "CC0 1.0 source remastered for Morrowmere; commercial distribution permitted. Source credit retained in docs/AUDIO-CREDITS.md.",
       "commercialDistribution": true,
       "externalSource": [
         {
-          "title": "Medieval: Exploration",
-          "author": "RandomMind",
+          "title": "Fantasy Orchestral Theme",
+          "author": "Joth",
           "license": "CC0-1.0",
           "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-          "sourceUrl": "https://opengameart.org/content/medieval-exploration",
-          "downloadUrl": "https://opengameart.org/sites/default/files/Exploration_0.mp3"
-        },
-        {
-          "title": "A Legend Will Rise (Orchestral)",
-          "author": "CodeManu",
-          "license": "CC0-1.0",
-          "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-          "sourceUrl": "https://opengameart.org/content/a-legend-will-rise-orchestral",
-          "downloadUrl": "https://opengameart.org/sites/default/files/A%20Legend%20Will%20Rise.mp3"
+          "sourceUrl": "https://opengameart.org/content/fantasy-orchestral-theme",
+          "downloadUrl": "https://opengameart.org/sites/default/files/FantasyOrchestralTheme_1.mp3"
         }
       ]
     },

@@ -167,12 +167,6 @@ export type AmbienceId = 'ambience-rain' | 'ambience-forest' | 'ambience-flood' 
 
 export const OPENING_SHOT_SFX: Readonly<Record<string, readonly string[]>> = Object.freeze({
   'opening-06-the-first-arrow': ['sfx-arrow-hit'],
-  'opening-07-goblin-attack': ['sfx-narrative-warning'],
-  'opening-08-player-responds': ['sfx-narrative-reveal'],
-  'opening-09-royal-armory-mark': ['sfx-narrative-reveal'],
-  'opening-10-false-orc-banner': ['sfx-sword-light-1'],
-  'opening-11-wounded-witness': ['sfx-heal-cast'],
-  'opening-12-enemy-riders': ['sfx-narrative-warning'],
   'opening-14-title-reveal': ['sfx-narrative-chapter-title'],
 });
 

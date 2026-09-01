@@ -53,18 +53,18 @@ const SHOT_DIRECTIONS: readonly ShotDirection[] = Object.freeze([
     sfxCueIds: [],
   },
   {
-    alt: 'An arrow strikes the medicine wagon driver.',
+    alt: 'Goblin raiders break from cover around the medicine caravan.',
     caption: 'Until this morning.',
     motion: 'push-in',
     sfxCueIds: [],
-    haptic: 'strong',
+    haptic: 'medium',
   },
   {
-    alt: 'Goblin raiders attack the caravan near a stone bridge.',
+    alt: 'An arrow strikes the medicine wagon driver.',
     caption: 'The first arrow kills the driver.',
     motion: 'pan-left',
     sfxCueIds: [],
-    haptic: 'medium',
+    haptic: 'strong',
   },
   {
     alt: 'A close view reveals the royal armory mark on the second arrow.',

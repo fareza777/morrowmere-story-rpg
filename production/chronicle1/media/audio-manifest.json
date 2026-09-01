@@ -38,9 +38,9 @@
     {
       "id": "music-opening-score",
       "root": 43,
-      "mood": "quiet road duty rising into urgent pursuit and resolve",
+      "mood": "measured road duty rising into danger, discovery, and resolve",
       "intensity": 0.68,
-      "accent": "medieval strings and flute crossfading into full orchestral percussion",
+      "accent": "one continuous fantasy-orchestral performance with strings, winds, brass, and restrained percussion",
       "motif": [
         0,
         2,
@@ -57,10 +57,10 @@
       "src": "/audio/chronicle1/music/music-opening-score.mp3",
       "loopStartMs": null,
       "loopEndMs": null,
-      "loudnessLufs": -17.8,
-      "truePeakDbtp": -1.5,
-      "bytes": 997191,
-      "sha256": "d223952a63fc6325330589940990a1e00b1771b099ef9ea871c2ffff089bd782",
+      "loudnessLufs": -18.2,
+      "truePeakDbtp": -2.0,
+      "bytes": 1329854,
+      "sha256": "666d4aae68cc3b3a08a033e49e9f94f3a37f120374855911899d48b9cc44533c",
       "provenanceId": "provenance-music-opening-score"
     },
     {

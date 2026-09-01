@@ -54,27 +54,27 @@
       "impactCut": false
     },
     {
-      "id": "opening-06-the-first-arrow",
+      "id": "opening-07-goblin-attack",
       "startMs": 32500,
       "endMs": 36500,
-      "base": "/assets/chronicle1/opening/opening-06-the-first-arrow/base.webp",
+      "base": "/assets/chronicle1/opening/opening-07-goblin-attack/base.webp",
       "captionSegmentId": "opening-narration-06",
       "camera": { "start": { "scale": 1, "x": 0, "y": 0 }, "end": { "scale": 1.1, "x": 0, "y": 0 } },
-      "focus": "first-arrow",
+      "focus": "goblin-ambush",
       "impactCut": true
     },
     {
-      "id": "opening-07-goblin-attack",
+      "id": "opening-06-the-first-arrow",
       "startMs": 36500,
       "endMs": 40000,
-      "base": "/assets/chronicle1/opening/opening-07-goblin-attack/base.webp",
+      "base": "/assets/chronicle1/opening/opening-06-the-first-arrow/base.webp",
       "captionSegmentId": "opening-narration-07",
       "camera": { "start": { "scale": 1.07, "x": 2, "y": 0 }, "end": { "scale": 1.07, "x": -2, "y": 0 } },
-      "focus": "goblin-ambush",
+      "focus": "first-arrow",
       "impactCut": false
     },
     {
-      "id": "opening-08-player-responds",
+      "id": "opening-09-royal-armory-mark",
       "startMs": 40000,
       "endMs": 44500,
       "base": "/assets/chronicle1/opening/opening-09-royal-armory-mark/base.webp",
@@ -84,7 +84,7 @@
       "impactCut": false
     },
     {
-      "id": "opening-09-royal-armory-mark",
+      "id": "opening-10-false-orc-banner",
       "startMs": 44500,
       "endMs": 53500,
       "base": "/assets/chronicle1/opening/opening-10-false-orc-banner/base.webp",
@@ -94,7 +94,7 @@
       "impactCut": false
     },
     {
-      "id": "opening-10-false-orc-banner",
+      "id": "opening-08-player-responds",
       "startMs": 53500,
       "endMs": 57500,
       "base": "/assets/chronicle1/opening/opening-08-player-responds/base.webp",

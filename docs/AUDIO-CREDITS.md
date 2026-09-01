@@ -7,13 +7,12 @@ retained here for transparent release provenance.
 
 ## Opening score
 
-- **Medieval: Exploration** — RandomMind — CC0 1.0 —
-  <https://opengameart.org/content/medieval-exploration>
-- **A Legend Will Rise (Orchestral)** — CodeManu — CC0 1.0 —
-  <https://opengameart.org/content/a-legend-will-rise-orchestral>
+- **Fantasy Orchestral Theme** — Joth — CC0 1.0 —
+  <https://opengameart.org/content/fantasy-orchestral-theme>
 
-The first piece supports the quiet road and dispatch setup. It crossfades into
-the second piece at the first-arrow turn, then resolves beneath the title.
+The opening uses one continuous passage so its melody and orchestration remain
+coherent beneath the narration. The selected passage begins with restrained
+travel tension, rises at the first-arrow turn, and fades beneath the title.
 
 ## Combat and cinematic effects
 
