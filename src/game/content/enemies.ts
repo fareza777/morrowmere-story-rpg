@@ -19,6 +19,7 @@ interface EnemyArchetype {
   readonly rewardTags: readonly string[];
   readonly lore: string;
   readonly artFamily: string;
+  readonly levelOffset?: number;
 }
 
 const ARCHETYPES: readonly EnemyArchetype[] = [
@@ -42,6 +43,7 @@ const ARCHETYPES: readonly EnemyArchetype[] = [
   { id: 'bell-apostle', baseName: 'Bell Apostle', species: 'cultist', region: 'crownless-keep', baseHealth: 29, baseAttack: 6, baseArmor: 2, baseWard: 5, intents: { hex: 4, heavy: 2, recover: 1 }, traits: ['Toll of Ruin'], rewardTags: ['scroll', 'gold'], lore: 'A final-court fanatic who hears coronation bells inside every scream.', artFamily: 'cultist' },
   { id: 'ember-fiend', baseName: 'Ember Fiend', species: 'demon', region: 'embervault', baseHealth: 31, baseAttack: 9, baseArmor: 1, baseWard: 5, intents: { strike: 3, heavy: 3, hex: 2 }, traits: ['Hellkindled'], rewardTags: ['fire', 'essence'], lore: 'A small and vicious answer to a question no sane mage should ask.', artFamily: 'demon' },
   { id: 'crown-devil', baseName: 'Crown Devil', species: 'demon', region: 'crownless-keep', baseHealth: 40, baseAttack: 10, baseArmor: 4, baseWard: 6, intents: { strike: 2, heavy: 3, hex: 3, guard: 1 }, traits: ['Royal Malice'], rewardTags: ['relic', 'gem'], lore: 'A horned courtier dressed in the shadow cast by an empty throne.', artFamily: 'demon' },
+  { id: 'siege-cart-maw', baseName: 'Siege Cart-Maw', species: 'beast', region: 'gloamwood', baseHealth: 38, baseAttack: 7, baseArmor: 4, baseWard: 1, intents: { strike: 3, heavy: 2, guard: 4, recover: 1 }, traits: ['Chain Mantle'], rewardTags: ['hide', 'tooth', 'siege'], lore: 'A road beast scarred by an old siege wreck, sheltering beneath chained timber and collecting iron from passing carts.', artFamily: 'beast', levelOffset: 1 },
 ] as const;
 
 const RANK_TITLES = [
@@ -61,7 +63,7 @@ export const ENEMIES: readonly EnemyDefinition[] = Object.freeze(
   ARCHETYPES.flatMap((archetype, archetypeIndex) =>
     RANK_TITLES.map((title, rankIndex) => {
       const rank = rankIndex + 1;
-      const level = Math.min(12, rank + Math.floor(archetypeIndex / 5));
+      const level = Math.min(12, rank + (archetype.levelOffset ?? Math.floor(archetypeIndex / 5)));
       return Object.freeze({
         id: `${archetype.id}-${rank.toString().padStart(2, '0')}`,
         archetypeId: archetype.id,

@@ -195,6 +195,14 @@ export const CHRONICLE1_ARCHETYPES = deepFreeze([
     statusInteractions: [status('guard-broken', 'exploits', 'Its command strike punishes a broken guard but never ignores an intact defense.')],
     battlefieldRule: 'It strengthens one subordinate at a time and exposes itself whenever it issues the order.',
   }),
+  archetype({
+    id: 'siege-cart-maw', baseName: 'Siege Cart-Maw', species: 'beast', region: 'gloamwood',
+    eligibleRegions: ['gloamwood'], role: 'defender',
+    compatibilityTags: ['beast', 'siege'],
+    statusInteractions: [status('guard-broken', 'resists', 'Guarding its announced chain drag opens the mantle and lowers its armor for the next exchange.')],
+    battlefieldRule: 'It guards beneath chained timber, announces a chain-drag heavy attack, and loses two armor for one exchange when that attack is guarded.',
+    threatCostModifier: 1,
+  }),
 ] as const);
 
 export const ENEMY_PORTRAIT_IDS = deepFreeze(

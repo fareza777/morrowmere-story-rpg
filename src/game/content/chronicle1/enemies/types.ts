@@ -53,6 +53,7 @@ export interface Chronicle1EnemyArchetype {
   readonly statusInteractions: readonly EnemyStatusInteraction[];
   readonly battlefieldRule: string;
   readonly portraitIds: readonly [string, string, string, string];
+  readonly threatCostModifier?: number;
 }
 
 export interface Chronicle1EnemyDefinition extends EnemyDefinition {

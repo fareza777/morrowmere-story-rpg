@@ -40,7 +40,7 @@ export const CHRONICLE1_RANKED_ENEMIES = deepFreeze(
       incompatibleTags: archetype.incompatibleTags,
       statusInteractions: archetype.statusInteractions,
       battlefieldRule: archetype.battlefieldRule,
-      threatCost: 1 + Math.ceil(enemy.rank / 2) + ROLE_THREAT[archetype.role],
+      threatCost: 1 + Math.ceil(enemy.rank / 2) + ROLE_THREAT[archetype.role] + (archetype.threatCostModifier ?? 0),
       description: `${enemy.description} In battle, ${archetype.battlefieldRule}`,
     };
   }),
