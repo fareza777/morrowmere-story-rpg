@@ -30,6 +30,8 @@ function normalizeRequirements(
 ): readonly ChronicleRequirement[] | undefined {
   return requirements?.map((requirement) => requirement.type === 'flag'
     ? { ...requirement, present: requirement.present ?? true }
+    : requirement.type === 'item'
+      ? { ...requirement, scope: requirement.scope ?? 'owned' }
     : requirement);
 }
 

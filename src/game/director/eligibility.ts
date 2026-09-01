@@ -29,11 +29,19 @@ function availabilityContext(
     : context;
 }
 
-function itemQuantity(inventory: InventoryState, itemId: string): number {
-  return [...inventory.pack, ...inventory.stash]
+function entriesQuantity(entries: readonly { readonly itemId: string; readonly quantity: number }[], itemId: string): number {
+  return entries
     .filter((entry) => entry.itemId === itemId)
-    .reduce((total, entry) => total + entry.quantity, 0)
-    + inventory.questItems.filter((candidate) => candidate === itemId).length;
+    .reduce((total, entry) => total + entry.quantity, 0);
+}
+
+function itemQuantity(inventory: InventoryState, itemId: string, scope: 'pack' | 'owned'): number {
+  const pack = entriesQuantity(inventory.pack, itemId);
+  if (scope === 'pack') return pack;
+  const equipped = [inventory.equipment.weapon, inventory.equipment.armor, ...inventory.equipment.charms]
+    .filter((candidate) => candidate === itemId).length;
+  // Equipping removes one pack entry, so equipment is a distinct owned instance.
+  return pack + entriesQuantity(inventory.stash, itemId) + inventory.questItems.filter((candidate) => candidate === itemId).length + equipped;
 }
 
 function requirementReason(
@@ -42,7 +50,7 @@ function requirementReason(
   excluded: boolean,
 ): string | null {
   if (requirement.type === 'flag') {
-    const matches = context.flags.includes(requirement.flagId) === requirement.present;
+    const matches = context.flags.includes(requirement.flagId) === (requirement.present ?? true);
     if (matches !== excluded) return null;
     return excluded ? 'An earlier decision has closed this path.' : 'A required earlier decision is missing.';
   }
@@ -55,11 +63,12 @@ function requirementReason(
       ? `This path is closed while you have at least ${requirement.amount} ${label} gold.`
       : `You need at least ${requirement.amount} ${label} gold.`;
   }
-  const matches = itemQuantity(context.inventory, requirement.itemId) >= requirement.quantity;
+  const scope = requirement.scope ?? 'owned';
+  const matches = itemQuantity(context.inventory, requirement.itemId, scope) >= requirement.quantity;
   if (matches !== excluded) return null;
   return excluded
     ? `This path is closed while you carry ${requirement.itemId}.`
-    : `You need ${requirement.quantity} ${requirement.itemId}.`;
+    : `You need ${requirement.quantity} ${requirement.itemId} in ${scope === 'pack' ? 'your pack' : 'your gear'}.`;
 }
 
 /** Returns the shared gate explanation for both presentation and command validation. */

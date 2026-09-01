@@ -6,6 +6,7 @@ import { choiceIsAvailable, unavailableChoiceReason, selectNextScene } from '../
 import { createCampaign, initialDirector } from '../src/game/state/create';
 import { currentSceneId, reduceGame } from '../src/game/state/reducer';
 import type { GameStateV2 } from '../src/game/state/types';
+import { selectCurrentScene } from '../src/ui/selectors';
 
 const asEventId = (id: string) => id as EventId;
 
@@ -39,6 +40,18 @@ function startOldForest(seed = 17): GameStateV2 {
   }, CHRONICLE1_CONTENT);
   expect(started.diagnostic).toBeUndefined();
   return started.state;
+}
+
+function currentSceneFixture(event: ChronicleEvent, state: GameStateV2): GameStateV2 {
+  return {
+    ...state,
+    expedition: {
+      ...state.expedition!,
+      currentSceneId: event.id,
+      sceneResolution: null,
+      sceneVisitCounts: { ...state.expedition!.sceneVisitCounts, [event.id]: 1 },
+    },
+  };
 }
 
 function selectAndResolve(state: GameStateV2, minute: number): { readonly state: GameStateV2; readonly sceneId: string } {
@@ -76,7 +89,7 @@ describe('Chronicle travel flow across sparse route slots', () => {
       effects: [],
       requirements: [
         { type: 'gold', scope: 'banked', amount: 6 },
-        { type: 'item', itemId: 'consumable-caltrop-pouch', quantity: 1 },
+        { type: 'item', itemId: 'consumable-caltrop-pouch', quantity: 1, scope: 'pack' },
       ],
     } as const;
     const shortOnGold = {
@@ -94,6 +107,54 @@ describe('Chronicle travel flow across sparse route slots', () => {
     expect(unavailableChoiceReason(choice, shortOnGold)).toBe('You need at least 6 secured gold.');
     expect(choiceIsAvailable(choice, ready)).toBe(true);
     expect(unavailableChoiceReason(choice, ready)).toBeNull();
+
+    const unbanked = { ...ready, bankedGold: 0, unbankedGold: 6 };
+    const unbankedChoice = { ...choice, requirements: [{ type: 'gold' as const, scope: 'unbanked' as const, amount: 6 }, choice.requirements[1]] };
+    expect(choiceIsAvailable(unbankedChoice, unbanked)).toBe(true);
+    expect(choiceIsAvailable(choice, unbanked)).toBe(false);
+
+    const stashOnly = { ...ready, inventory: { ...ready.inventory, pack: [], stash: ready.inventory.pack } };
+    expect(choiceIsAvailable(choice, stashOnly)).toBe(false);
+    expect(choiceIsAvailable({ ...choice, requirements: [{ ...choice.requirements[0] }, { ...choice.requirements[1], scope: 'owned' as const }] }, stashOnly)).toBe(true);
+  });
+
+  it('rejects unavailable choices before resolution and keeps the displayed check chance authoritative', () => {
+    const unavailableChoice = {
+      id: 'fixture-pay-six' as never, label: 'Pay six', detail: 'Spend secured gold.', outcome: 'The wagon is repaired.', effects: [],
+      requirements: [{ type: 'gold' as const, scope: 'banked' as const, amount: 6 }],
+    };
+    const unavailableEvent = fixtureEvent('fixture-pay-six-scene', 1, { choices: [unavailableChoice] });
+    const unavailableContent = { ...CHRONICLE1_CONTENT, events: new Map([[unavailableEvent.id, unavailableEvent]]) };
+    const unavailableBase = startOldForest();
+    const unavailableState = currentSceneFixture(unavailableEvent, {
+      ...unavailableBase,
+      campaign: { ...unavailableBase.campaign, bankedGold: 5 },
+    });
+
+    const unavailableView = selectCurrentScene(unavailableState, unavailableContent)!;
+    const rejected = reduceGame(unavailableState, { type: 'resolve-choice', eventId: unavailableEvent.id, choiceId: unavailableChoice.id, updatedAt: '2026-09-01T00:03:00.000Z' }, unavailableContent);
+    expect(unavailableView.choices[0]).toMatchObject({ disabled: true, unavailableReason: 'You need at least 6 secured gold.' });
+    expect(rejected.state).toBe(unavailableState);
+    expect(rejected.diagnostic).toMatchObject({ code: 'choice_unavailable', message: 'You need at least 6 secured gold.' });
+
+    const checkChoice = {
+      id: 'fixture-conditional-check' as never, label: 'Test the repair', detail: 'Use the secured rope.',
+      check: {
+        stat: 'strength' as const, difficulty: 4,
+        modifiers: [{ label: 'Rope secured', amount: 10, requirements: [{ type: 'flag' as const, flagId: 'rope-secured', present: true }] }],
+        success: { outcome: 'The rope holds.', effects: [] },
+        failure: { outcome: 'The rope slips.', effects: [] },
+      },
+    };
+    const checkEvent = fixtureEvent('fixture-conditional-check-scene', 1, { choices: [checkChoice] });
+    const checkContent = { ...CHRONICLE1_CONTENT, events: new Map([[checkEvent.id, checkEvent]]) };
+    for (const flags of [[], ['rope-secured']] as const) {
+      const base = startOldForest();
+      const state = currentSceneFixture(checkEvent, { ...base, campaign: { ...base.campaign, flags } });
+      const shownChance = selectCurrentScene(state, checkContent)!.choices[0]!.check!.chance;
+      const resolved = reduceGame(state, { type: 'resolve-choice', eventId: checkEvent.id, choiceId: checkChoice.id, updatedAt: '2026-09-01T00:04:00.000Z' }, checkContent);
+      expect(resolved.state.expedition?.checkedAttempts[0]?.chance).toBe(shownChance);
+    }
   });
 
   it('uses the nearest future route-compatible scene when the current slot has no unique candidate', () => {

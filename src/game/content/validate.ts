@@ -3,7 +3,6 @@ import type {
   Chronicle1CompanionDefinition,
   Chronicle1Choice,
   Chronicle1Event,
-  ChronicleRequirement,
   Chronicle1MerchantDefinition,
   ChronicleDialogueBeat,
   ChronicleEffect,
@@ -370,17 +369,58 @@ function validateSourceId(label: string, id: string, issues: ContentIssue[]): vo
   }
 }
 
-function validateSourceRequirement(requirement: ChronicleRequirement, label: string, issues: ContentIssue[]): void {
+function validateSourceRequirement(requirement: unknown, label: string, issues: ContentIssue[]): void {
+  if (!isRecord(requirement) || typeof requirement.type !== 'string') {
+    issues.push(sourceIssue('invalid_requirement', `Invalid ${label}.`));
+    return;
+  }
   if (requirement.type === 'flag') {
-    validateSourceId(`${label} flag`, requirement.flagId, issues);
+    if (!isNonEmptyString(requirement.flagId)) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} flag.`));
+    else validateSourceId(`${label} flag`, requirement.flagId, issues);
     return;
   }
   if (requirement.type === 'gold') {
-    if (!Number.isFinite(requirement.amount) || requirement.amount <= 0) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} gold minimum.`));
+    if ((requirement.scope !== 'banked' && requirement.scope !== 'unbanked') || !isPositiveQuantity(requirement.amount)) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} gold minimum.`));
     return;
   }
-  validateSourceId(`${label} item`, requirement.itemId, issues);
-  if (!Number.isSafeInteger(requirement.quantity) || requirement.quantity <= 0) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} item quantity.`));
+  if (requirement.type !== 'item') {
+    issues.push(sourceIssue('invalid_requirement', `Invalid ${label}.`));
+    return;
+  }
+  if (!isNonEmptyString(requirement.itemId)) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} item.`));
+  else validateSourceId(`${label} item`, requirement.itemId, issues);
+  if (!isPositiveQuantity(requirement.quantity) || (requirement.scope !== undefined && requirement.scope !== 'pack' && requirement.scope !== 'owned')) issues.push(sourceIssue('invalid_requirement', `Invalid ${label} item quantity.`));
+}
+
+function validateCheckedModifiers(choice: Chronicle1Choice, sceneId: string, issues: ContentIssue[]): void {
+  const record = choice as unknown as SourceRecord;
+  if (!Object.prototype.hasOwnProperty.call(record, 'check') || !isRecord(record.check)) return;
+  const modifiers = record.check.modifiers;
+  if (modifiers === undefined) return;
+  if (!Array.isArray(modifiers)) {
+    issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} has malformed modifiers.`));
+    return;
+  }
+  modifiers.forEach((modifier, index) => {
+    if (!isRecord(modifier) || !isNonEmptyString(modifier.label) || !isFiniteNumber(modifier.amount)) {
+      issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} has malformed modifier ${index}.`));
+      return;
+    }
+    for (const [kind, gates] of [['requirements', modifier.requirements], ['exclusions', modifier.exclusions]] as const) {
+      if (gates === undefined) continue;
+      if (!Array.isArray(gates)) {
+        issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} modifier ${index} has malformed ${kind}.`));
+        continue;
+      }
+      gates.forEach((gate, gateIndex) => {
+        if (!isRecord(gate) || gate.type !== 'flag') {
+          issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} modifier ${index} has malformed ${kind} gate ${gateIndex}.`));
+          return;
+        }
+        validateSourceRequirement(gate, 'check modifier requirement', issues);
+      });
+    }
+  });
 }
 
 /** Validates dictionary keys without forcing authored scene arrays into wrappers. */
@@ -573,12 +613,8 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
     for (const choice of event.choices) {
       validateSourceId('choice', choice.id, issues);
       for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) validateSourceRequirement(requirement, 'choice requirement', issues);
-      if (isChronicleCheckedChoice(choice)) {
-        for (const modifier of choice.check.modifiers ?? []) {
-          for (const requirement of [...(modifier.requirements ?? []), ...(modifier.exclusions ?? [])]) validateSourceRequirement(requirement, 'check modifier requirement', issues);
-        }
-      }
       const branches = checkedChoiceBranches(choice, event.id, issues);
+      validateCheckedModifiers(choice, event.id, issues);
       const effects = sourceChoiceEffects(choice, branches);
       effectsByChoice.set(choice, effects);
       for (const effect of effects) {

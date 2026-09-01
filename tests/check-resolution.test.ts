@@ -40,6 +40,9 @@ describe('deterministic narrative checks', () => {
       { label: 'Always ready', amount: 5 },
       { label: 'Repair rope secured', amount: 10, requirements: [{ type: 'flag', flagId: 'rope-secured', present: true }] },
     ]);
+    const legacyDefault = [{ label: 'Legacy flag default', amount: 5, requirements: [{ type: 'flag', flagId: 'legacy-ready' }] }] as unknown as readonly ChronicleCheckModifier[];
+    expect(activeCheckModifiers(legacyDefault, [])).toEqual([]);
+    expect(activeCheckModifiers(legacyDefault, ['legacy-ready'])).toEqual(legacyDefault);
   });
 
   it('replays one roll for the same seed, scene, visit, and choice', () => {

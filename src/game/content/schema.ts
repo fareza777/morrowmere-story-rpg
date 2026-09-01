@@ -213,7 +213,7 @@ export interface ChronicleFlagRequirement {
 export type ChronicleRequirement =
   | ChronicleFlagRequirement
   | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
-  | { readonly type: 'item'; readonly itemId: ItemId; readonly quantity: number };
+  | { readonly type: 'item'; readonly itemId: ItemId; readonly quantity: number; readonly scope: 'pack' | 'owned' };
 
 export type ChronicleRelationship =
   | { readonly kind: 'companion'; readonly companionId: CompanionId }
@@ -362,7 +362,7 @@ export interface ChronicleFlagRequirementSource {
 export type ChronicleRequirementSource =
   | ChronicleFlagRequirementSource
   | { readonly type: 'gold'; readonly scope: 'banked' | 'unbanked'; readonly amount: number }
-  | { readonly type: 'item'; readonly itemId: string; readonly quantity: number };
+  | { readonly type: 'item'; readonly itemId: string; readonly quantity: number; readonly scope?: 'pack' | 'owned' };
 
 export interface ChronicleCheckModifierSource {
   readonly label: string;

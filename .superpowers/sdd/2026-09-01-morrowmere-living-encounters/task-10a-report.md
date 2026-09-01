@@ -30,3 +30,15 @@
 ## Commit
 
 `feat: support authored choice requirements`
+
+## Review fixes
+
+- Guarded malformed checked-choice modifier inspection so `check: null`, primitives, and malformed modifier records produce deterministic structural diagnostics rather than throwing.
+- Added explicit item requirement scope. `pack` matches consumable/removal gates; `owned` counts pack, stash, quest, and equipped instances, respecting the inventory's equip/remove semantics. Legacy omitted scope normalizes to `owned`.
+- Gold minima now require positive safe integers.
+- Expanded focused coverage for banked versus unbanked gold, pack versus owned item gates, legacy flag default/exclusion semantics, reducer rejection with unchanged state and concrete reason, and displayed-versus-recorded conditional check chances.
+- Ran `npm run test:run -- tests/check-resolution.test.ts tests/director-travel-flow.test.ts`: 2 files passed, 17 tests passed.
+
+### Commit
+
+`fix: align authored choice availability`

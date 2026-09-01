@@ -17,8 +17,8 @@ export function activeCheckModifiers(
 ): readonly ChronicleCheckModifier[] {
   const present = new Set(flags);
   return modifiers?.filter((modifier) =>
-    (modifier.requirements ?? []).every((requirement) => present.has(requirement.flagId) === requirement.present)
-      && (modifier.exclusions ?? []).every((requirement) => present.has(requirement.flagId) !== requirement.present),
+    (modifier.requirements ?? []).every((requirement) => present.has(requirement.flagId) === (requirement.present ?? true))
+      && (modifier.exclusions ?? []).every((requirement) => present.has(requirement.flagId) !== (requirement.present ?? true)),
   ) ?? [];
 }
 
