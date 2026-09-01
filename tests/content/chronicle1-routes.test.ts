@@ -8,7 +8,7 @@ import {
   CHRONICLE1_SCENES,
   MAIN_ANCHOR_IDS,
 } from '../../src/game/content/chronicle1';
-import type { Chronicle1Event } from '../../src/game/content/schema';
+import { chronicle1ChoiceEffects, type Chronicle1Event } from '../../src/game/content/schema';
 import type { StoryPosition } from '../../src/game/domain/ids';
 import { scenePacing } from '../../src/game/director/pacing';
 import { createCampaign } from '../../src/game/state/create';
@@ -97,7 +97,7 @@ function resolveChoice(
     const choice = eligibleChoices[(firstChoiceIndex + offset) % eligibleChoices.length]!;
     const applied = applyEffectsAtomically(
       state,
-      [...callbackEffects, ...choice.effects],
+      [...callbackEffects, ...chronicle1ChoiceEffects(choice)],
       CHRONICLE1_CONTENT,
     );
     if (!applied.ok) continue;

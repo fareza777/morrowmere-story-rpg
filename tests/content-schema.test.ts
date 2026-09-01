@@ -113,6 +113,34 @@ describe('Chronicle I content schema', () => {
     expect(invalidMixedChoice).toBeDefined();
   });
 
+  it('validates a checked source without direct placeholder fields', () => {
+    const checked = sourceScene({
+      continueOnly: true,
+      choices: [{
+        id: 'ch01-choice-checked-source',
+        label: 'Brace the wagon',
+        detail: 'Put your shoulder into the sinking frame.',
+        check: {
+          stat: 'strength',
+          difficulty: 3,
+          success: {
+            outcome: 'The wagon reaches solid ground.',
+            effects: [{ type: 'flag', operation: 'add', flagId: 'wagon-saved' }],
+          },
+          failure: {
+            outcome: 'The axle cracks in the mud.',
+            effects: [{ type: 'threat', amount: 1 }],
+          },
+        },
+      }],
+    });
+
+    const chronicle = testChronicle([{
+      id: 'ch01', order: 1, title: 'Checked Source', levelBand: { min: 1, max: 2 }, region: 'gloamwood', anchorIds: [],
+    }] as never);
+    expect(validateChronicleSources({ chronicle, ...emptySourceCatalogs, events: [checked] })).toEqual([]);
+  });
+
   it('rejects duplicate IDs and broken references', () => {
     const content = makeContentIndex({ duplicateEventId: true, missingArtId: true });
     expect(validateContent(content).map((issue) => issue.code)).toEqual(

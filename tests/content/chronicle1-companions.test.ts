@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluateRecruitment, type CompanionRoster } from '../../src/game/companions';
 import { CHRONICLE1_SCENE_INDEX, CHRONICLE1_SCENES } from '../../src/game/content/chronicle1';
 import { CHRONICLE1_COMPANIONS } from '../../src/game/content/chronicle1/companions';
-import type { ContentIndex } from '../../src/game/content/schema';
+import { chronicle1ChoiceEffects, type ContentIndex } from '../../src/game/content/schema';
 import type { CompanionId } from '../../src/game/domain/ids';
 
 const EXPECTED_REQUIREMENTS = {
@@ -122,7 +122,7 @@ describe('Chronicle I companion contracts', () => {
   it('offers each earned recruitment in a later authored scene with a decline path', () => {
     for (const companion of CHRONICLE1_COMPANIONS) {
       const recruitmentScenes = CHRONICLE1_SCENES.filter((scene) => scene.choices.some((choice) => (
-        choice.effects.some((effect) => (
+        chronicle1ChoiceEffects(choice).some((effect) => (
           effect.type === 'companion'
           && effect.companionId === companion.id
           && effect.operation === 'recruit'
@@ -138,7 +138,7 @@ describe('Chronicle I companion contracts', () => {
       expect(recruitmentScene.eligibility.excludedFlags).toEqual(
         expect.arrayContaining([...(companion.recruitment.blockingDecisionIds ?? [])]),
       );
-      expect(recruitmentScene.choices.some((choice) => choice.effects.every((effect) => (
+      expect(recruitmentScene.choices.some((choice) => chronicle1ChoiceEffects(choice).every((effect) => (
         effect.type !== 'companion' || effect.operation !== 'recruit'
       ))), companion.id).toBe(true);
 

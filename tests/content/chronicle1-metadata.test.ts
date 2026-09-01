@@ -12,6 +12,7 @@ import {
   CHRONICLE1_ROUTE_OPTIONS,
 } from '../../src/game/content/chronicle1/routes';
 import { ROUTE_OPTIONS } from '../../src/game/director/pacing';
+import { chronicle1ChoiceEffects } from '../../src/game/content/schema';
 
 const EXPECTED_ANCHORS = {
   ch01: [
@@ -216,6 +217,6 @@ describe('Chronicle I metadata', () => {
     expect(Object.isFrozen(scene.requirements?.[0])).toBe(true);
     expect(scene.requirements?.[0]?.present).toBe(true);
     expect(Object.isFrozen(scene.choices[0]?.requirements)).toBe(true);
-    expect(Object.isFrozen(scene.choices[0]?.effects[0])).toBe(true);
+    expect(Object.isFrozen(chronicle1ChoiceEffects(scene.choices[0]!)[0])).toBe(true);
   });
 });

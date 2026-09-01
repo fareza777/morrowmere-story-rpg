@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CH03_SCENES } from '../../src/game/content/chronicle1/chapters/ch03';
 import { CH04_SCENES } from '../../src/game/content/chronicle1/chapters/ch04';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
 
 const CH03_ANCHORS = [
   'ch03-main-orders-for-redwater',
@@ -66,8 +67,8 @@ function expectConcreteCopy(scene: Scene) {
   for (const choice of scene.choices) {
     expect(choice.label.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(5);
     expect(choice.detail.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.outcome.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.effects.length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
+    expect(chronicle1ChoiceOutcomes(choice).every((outcome) => outcome.length >= 25), `${scene.id}/${choice.id}`).toBe(true);
+    expect(chronicle1ChoiceEffects(choice).length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
     expect(`${choice.label} ${choice.detail}`.toLowerCase()).not.toMatch(/\b(correct|best|optimal|wrong)\b/);
   }
 
@@ -140,7 +141,7 @@ it('earns Rukhar through callbacks, five decisions, a blocker, and a later recru
   for (const callbackId of RUKHAR_CALLBACKS) expect(sceneIds.has(callbackId), callbackId).toBe(true);
 
   const addedFlags = new Set<string>(
-    scenes.flatMap((scene) => scene.choices).flatMap((choice) => choice.effects)
+    scenes.flatMap((scene) => scene.choices).flatMap((choice) => chronicle1ChoiceEffects(choice))
       .filter((effect) => effect.type === 'flag' && effect.operation === 'add')
       .map((effect) => effect.type === 'flag' ? effect.flagId : ''),
   );
@@ -156,7 +157,7 @@ it('earns Rukhar through callbacks, five decisions, a blocker, and a later recru
   expect(recruitment.eligibility.requiredFlags).toEqual(RUKHAR_DECISIONS);
   expect(recruitment.eligibility.excludedFlags).toContain('rukhar-betrayed');
   expect(
-    recruitment.choices.flatMap((choice) => choice.effects)
+    recruitment.choices.flatMap((choice) => chronicle1ChoiceEffects(choice))
       .some((effect) => effect.type === 'companion' && effect.operation === 'recruit' && effect.companionId === 'rukhar'),
   ).toBe(true);
 });
@@ -168,6 +169,6 @@ it('reveals the false flag before settlement and points directly to Embervault',
   expect(settlement).toBeGreaterThan(reveal);
 
   const finale = CH04_SCENES.find((scene) => scene.id === 'ch04-main-what-the-river-carried-away')!;
-  expect(`${finale.narrative.join(' ')} ${finale.choices.map((choice) => choice.outcome).join(' ')}`.toLowerCase())
+  expect(`${finale.narrative.join(' ')} ${finale.choices.flatMap((choice) => chronicle1ChoiceOutcomes(choice)).join(' ')}`.toLowerCase())
     .toContain('embervault');
 });

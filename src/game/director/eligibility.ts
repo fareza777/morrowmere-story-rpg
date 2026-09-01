@@ -1,10 +1,15 @@
-import type { ChronicleChoice, ChronicleEvent, ContentIndex } from '../content/schema';
+import {
+  type Chronicle1Choice,
+  type ChronicleChoice,
+  type ChronicleEvent,
+  type ContentIndex,
+} from '../content/schema';
 import type { EventId, StoryPosition } from '../domain/ids';
 import type { DirectorState, JourneyDirectorContext } from './types';
 
 /** Shared gate semantics for both presentation and command validation. */
 export function choiceIsAvailable(
-  choice: Pick<ChronicleChoice, 'requirements' | 'exclusions' | 'effects'>,
+  choice: ChronicleChoice | Chronicle1Choice,
   flags: readonly string[],
   resolutionPosition?: StoryPosition,
 ): boolean {
@@ -12,6 +17,7 @@ export function choiceIsAvailable(
   const gatesOpen = (choice.requirements ?? []).every((gate) => present.has(gate.flagId) === gate.present)
     && (choice.exclusions ?? []).every((gate) => present.has(gate.flagId) !== gate.present);
   if (!gatesOpen || !resolutionPosition) return gatesOpen;
+  if ('check' in choice) return gatesOpen;
   return choice.effects.every((effect) =>
     effect.type !== 'callback' || comparePosition(effect.promise.deadline, resolutionPosition) >= 0);
 }

@@ -6,6 +6,7 @@ import {
   ENDING_AXIS_FLAGS,
   KEEP_CUSTODIAN_FLAGS,
 } from '../../src/game/content/chronicle1/chapters/ch08';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
 
 const CH07_ANCHORS = [
   'ch07-main-council-before-the-march',
@@ -55,7 +56,7 @@ function relationshipOwners(scenes: readonly Scene[]) {
 }
 
 function addedFlags(choice: Scene['choices'][number]): string[] {
-  return choice.effects
+  return chronicle1ChoiceEffects(choice)
     .flatMap((effect) => (
       effect.type === 'flag' && effect.operation === 'add' ? [effect.flagId] : []
     ));
@@ -70,8 +71,8 @@ function expectConcreteCopy(scene: Scene) {
   for (const choice of scene.choices) {
     expect(choice.label.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(5);
     expect(choice.detail.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.outcome.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.effects.length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
+    expect(chronicle1ChoiceOutcomes(choice).every((outcome) => outcome.length >= 25), `${scene.id}/${choice.id}`).toBe(true);
+    expect(chronicle1ChoiceEffects(choice).length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
     expect(`${choice.label} ${choice.detail}`.toLowerCase()).not.toMatch(/\b(correct|best|optimal|wrong)\b/);
   }
 }
@@ -188,7 +189,7 @@ it('selects one eligible custodian only after Voss is resolved', () => {
   for (const [index, choice] of custodian.choices.entries()) {
     const selected = addedFlags(choice).filter((flag) => KEEP_CUSTODIAN_FLAGS.includes(flag as typeof KEEP_CUSTODIAN_FLAGS[number]));
     expect(selected, choice.id).toEqual([KEEP_CUSTODIAN_FLAGS[index]]);
-    const removed = choice.effects
+    const removed = chronicle1ChoiceEffects(choice)
       .filter((effect) => effect.type === 'flag' && effect.operation === 'remove')
       .map((effect) => effect.type === 'flag' ? effect.flagId : '')
       .filter((flag) => KEEP_CUSTODIAN_FLAGS.includes(flag as typeof KEEP_CUSTODIAN_FLAGS[number]));

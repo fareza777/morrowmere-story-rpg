@@ -11,7 +11,7 @@ import {
   CHRONICLE1_SCENE_INDEX,
   CHRONICLE1_SCENES,
 } from '../../src/game/content/chronicle1';
-import type { Chronicle1Event } from '../../src/game/content/schema';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes, type Chronicle1Event } from '../../src/game/content/schema';
 import { validateChronicleSources } from '../../src/game/content/validate';
 
 const CHAPTER_LEDGER = {
@@ -176,7 +176,7 @@ describe('Chronicle I scene assembly', () => {
       const copy = [
         scene.title,
         ...scene.narrative,
-        ...scene.choices.flatMap((choice) => [choice.label, choice.detail, choice.outcome]),
+        ...scene.choices.flatMap((choice) => [choice.label, choice.detail, ...chronicle1ChoiceOutcomes(choice)]),
       ];
       for (const text of copy) {
         expect(text, scene.id).toMatch(ORDINARY_ENGLISH);
@@ -184,8 +184,8 @@ describe('Chronicle I scene assembly', () => {
         expect(text, scene.id).not.toMatch(PROMPT_LIKE_COPY);
       }
       for (const choice of scene.choices) {
-        expect(choice.outcome.trim().length, choice.id).toBeGreaterThanOrEqual(25);
-        expect(choice.effects.length, choice.id).toBeGreaterThan(0);
+        expect(chronicle1ChoiceOutcomes(choice).every((outcome) => outcome.trim().length >= 25), choice.id).toBe(true);
+        expect(chronicle1ChoiceEffects(choice).length, choice.id).toBeGreaterThan(0);
       }
     }
   });

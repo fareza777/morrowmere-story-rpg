@@ -6,6 +6,7 @@ import {
   GREYWATCH_OUTCOME_FLAGS,
   LEAK_PATH_IDS,
 } from '../../src/game/content/chronicle1/chapters/ch06';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
 
 const CH05_ANCHORS = [
   'ch05-main-the-mouth-of-embervault',
@@ -62,8 +63,8 @@ function expectConcreteCopy(scene: Scene) {
   for (const choice of scene.choices) {
     expect(choice.label.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(5);
     expect(choice.detail.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.outcome.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.effects.length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
+    expect(chronicle1ChoiceOutcomes(choice).every((outcome) => outcome.length >= 25), `${scene.id}/${choice.id}`).toBe(true);
+    expect(chronicle1ChoiceEffects(choice).length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
     expect(`${choice.label} ${choice.detail}`.toLowerCase()).not.toMatch(/\b(correct|best|optimal|wrong)\b/);
   }
 }
@@ -146,7 +147,7 @@ it('offers exactly one mutually exclusive Greywatch result per eligible aftermat
   const aftermath = CH06_SCENES.find((scene) => scene.id === 'ch06-main-what-remains-of-greywatch');
   expect(aftermath?.choices).toHaveLength(3);
 
-  const added = aftermath?.choices.map((choice) => choice.effects
+  const added = aftermath?.choices.map((choice) => chronicle1ChoiceEffects(choice)
     .flatMap((effect) => (
       effect.type === 'flag' && effect.operation === 'add' ? [effect.flagId] : []
     ))
@@ -154,7 +155,7 @@ it('offers exactly one mutually exclusive Greywatch result per eligible aftermat
   expect(added).toEqual([['greywatch-held'], ['greywatch-damaged'], ['greywatch-fallen']]);
 
   for (const choice of aftermath?.choices ?? []) {
-    const removed = choice.effects
+    const removed = chronicle1ChoiceEffects(choice)
       .flatMap((effect) => (
         effect.type === 'flag' && effect.operation === 'remove' ? [effect.flagId] : []
       ))

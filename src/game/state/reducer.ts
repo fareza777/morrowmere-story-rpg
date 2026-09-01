@@ -1,7 +1,7 @@
 import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companions';
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
-import type { ContentIndex } from '../content/schema';
+import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
 import type { ChapterId, EncounterId, ItemId } from '../domain/ids';
 import type { DomainEvent } from '../domain/result';
 import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
@@ -412,6 +412,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
     if (!choiceIsAvailable(choice, state.campaign.flags, state.expedition.position)) {
       return diagnostic(state, 'choice_unavailable', 'Earlier decisions have closed that choice.');
+    }
+    if (isChronicleCheckedChoice(choice)) {
+      return diagnostic(state, 'choice_unavailable', 'This checked choice cannot resolve until check resolution is available.');
     }
     const applied = applyEffectsAtomically(state, choice.effects, content);
     if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);

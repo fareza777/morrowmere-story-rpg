@@ -78,6 +78,18 @@ export interface ChronicleChoiceCheck<Effect = GameEffect> {
   readonly criticalFailure?: ChronicleChoiceBranch<Effect>;
 }
 
+/** Lists every authored branch, including optional critical branches. */
+export function chronicleCheckBranches<Effect>(
+  check: ChronicleChoiceCheck<Effect>,
+): readonly ChronicleChoiceBranch<Effect>[] {
+  return [
+    check.success,
+    check.failure,
+    ...(check.criticalSuccess ? [check.criticalSuccess] : []),
+    ...(check.criticalFailure ? [check.criticalFailure] : []),
+  ];
+}
+
 interface ChronicleChoiceBase {
   readonly id: ChoiceId;
   readonly label: string;
@@ -102,6 +114,19 @@ export interface ChronicleCheckedChoice extends ChronicleChoiceBase {
 
 export type ChronicleChoice = ChronicleDirectChoice | ChronicleCheckedChoice;
 
+export function isChronicleCheckedChoice(
+  choice: ChronicleChoice,
+): choice is ChronicleCheckedChoice {
+  return 'check' in choice;
+}
+
+/** Returns every effect a generic runtime choice can author. */
+export function chronicleChoiceEffects(choice: ChronicleChoice): readonly GameEffect[] {
+  return isChronicleCheckedChoice(choice)
+    ? chronicleCheckBranches(choice.check).flatMap((branch) => branch.effects)
+    : choice.effects;
+}
+
 export interface ChronicleEvent {
   readonly id: EventId;
   readonly chapterId: ChapterId;
@@ -125,6 +150,7 @@ export interface ChronicleEvent {
   readonly merchantId?: MerchantId;
   /** Stable authored restock namespace; route state supplies the deterministic seed. */
   readonly merchantRestockKey?: string;
+  readonly encounterId?: EncounterId;
   readonly choices: readonly ChronicleChoice[];
 }
 
@@ -228,6 +254,26 @@ export interface Chronicle1CheckedChoice extends Chronicle1ChoiceBase {
 }
 
 export type Chronicle1Choice = Chronicle1DirectChoice | Chronicle1CheckedChoice;
+
+export function isChronicle1CheckedChoice(
+  choice: Chronicle1Choice,
+): choice is Chronicle1CheckedChoice {
+  return 'check' in choice;
+}
+
+/** Returns all visible outcome text for source assembly checks. */
+export function chronicle1ChoiceOutcomes(choice: Chronicle1Choice): readonly string[] {
+  return isChronicle1CheckedChoice(choice)
+    ? chronicleCheckBranches(choice.check).map((branch) => branch.outcome)
+    : [choice.outcome];
+}
+
+/** Returns every effect a Chronicle I choice can author. */
+export function chronicle1ChoiceEffects(choice: Chronicle1Choice): readonly ChronicleEffect[] {
+  return isChronicle1CheckedChoice(choice)
+    ? chronicleCheckBranches(choice.check).flatMap((branch) => branch.effects)
+    : choice.effects;
+}
 
 export interface Chronicle1Event
   extends Omit<ChronicleEvent, 'id' | 'family' | 'weight' | 'illustrationId' | 'choices'> {

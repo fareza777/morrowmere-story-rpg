@@ -1,6 +1,10 @@
 import type { EnemyId, EventId, ItemId } from '../../domain/ids';
 import type { ItemDefinition } from '../../types';
-import type { Chronicle1Event, ContentIndex } from '../schema';
+import {
+  chronicle1ChoiceOutcomes,
+  type Chronicle1Event,
+  type ContentIndex,
+} from '../schema';
 import { validateChronicleSources } from '../validate';
 import { deepFreeze } from './builders';
 import { CH01_SCENES } from './chapters/ch01';
@@ -88,7 +92,7 @@ function assemblyIssues(scenes: readonly Chronicle1Event[]): string[] {
     const copy = [
       scene.title,
       ...scene.narrative,
-      ...scene.choices.flatMap((choice) => [choice.label, choice.detail, choice.outcome]),
+      ...scene.choices.flatMap((choice) => [choice.label, choice.detail, ...chronicle1ChoiceOutcomes(choice)]),
     ];
     if (copy.some((text) => !text.trim() || !ENGLISH_LETTER.test(text))) {
       issues.push(`missing_english_copy: ${scene.id}`);
@@ -100,7 +104,9 @@ function assemblyIssues(scenes: readonly Chronicle1Event[]): string[] {
     for (const choice of scene.choices) {
       if (choiceIds.has(choice.id)) issues.push(`duplicate_choice_id: ${choice.id}`);
       choiceIds.add(choice.id);
-      if (!choice.outcome.trim()) issues.push(`missing_outcome: ${choice.id}`);
+      if (chronicle1ChoiceOutcomes(choice).some((outcome) => !outcome.trim())) {
+        issues.push(`missing_outcome: ${choice.id}`);
+      }
     }
   }
 

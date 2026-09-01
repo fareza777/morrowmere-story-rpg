@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CH02_SCENES } from '../../src/game/content/chronicle1/chapters/ch02';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
 
 const CH01_ANCHORS = [
   'ch01-main-three-days-to-greywatch',
@@ -51,8 +52,8 @@ function expectConcreteCopy(scene: Scene) {
   for (const choice of scene.choices) {
     expect(choice.label.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(5);
     expect(choice.detail.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.outcome.length, `${scene.id}/${choice.id}`).toBeGreaterThanOrEqual(25);
-    expect(choice.effects.length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
+    expect(chronicle1ChoiceOutcomes(choice).every((outcome) => outcome.length >= 25), `${scene.id}/${choice.id}`).toBe(true);
+    expect(chronicle1ChoiceEffects(choice).length, `${scene.id}/${choice.id}`).toBeGreaterThan(0);
     expect(`${choice.label} ${choice.detail}`.toLowerCase()).not.toMatch(/\b(correct|best|optimal|wrong)\b/);
   }
 

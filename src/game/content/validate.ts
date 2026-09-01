@@ -9,6 +9,13 @@ import type {
   ChronicleRouteDefinition,
   ContentIndex,
 } from './schema';
+import {
+  chronicle1ChoiceEffects,
+  chronicleCheckBranches,
+  chronicleChoiceEffects,
+  isChronicleCheckedChoice,
+  isChronicle1CheckedChoice,
+} from './schema';
 import { ROUTE_OPTIONS } from '../director/pacing';
 
 export type ContentIssueCode =
@@ -127,7 +134,17 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
     }
     issues.push(...duplicateIssues(event.choices, 'duplicate_choice_id'));
     for (const choice of event.choices) {
-      for (const effect of choice.effects) issues.push(...effectIssues(effect, index));
+      for (const effect of chronicleChoiceEffects(choice)) issues.push(...effectIssues(effect, index));
+      if (isChronicleCheckedChoice(choice)) {
+        for (const branch of chronicleCheckBranches(choice.check)) {
+          if (branch.nextSceneId && !index.events.has(branch.nextSceneId)) {
+            issues.push({ code: 'missing_callback_target', message: `Missing check branch scene: ${branch.nextSceneId}` });
+          }
+          if (branch.combatEncounterId && !index.encounters.has(branch.combatEncounterId)) {
+            issues.push({ code: 'missing_encounter', message: `Missing check branch encounter: ${branch.combatEncounterId}` });
+          }
+        }
+      }
     }
   }
 
@@ -374,7 +391,7 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
       for (const requirement of [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]) {
         validateSourceId('choice requirement flag', requirement.flagId, issues);
       }
-      for (const effect of choice.effects) {
+      for (const effect of chronicle1ChoiceEffects(choice)) {
         if (effect.type === 'item') validateSourceId('effect item', effect.itemId, issues);
         if (effect.type === 'flag') validateSourceId('effect flag', effect.flagId, issues);
         if (effect.type === 'faction') validateSourceId('effect faction', effect.factionId, issues);
@@ -383,6 +400,12 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
         }
         if (effect.type === 'combat') validateSourceId('effect encounter', effect.encounterId, issues);
         if (effect.type === 'evidence') validateSourceId('effect evidence', effect.evidenceId, issues);
+      }
+      if (isChronicle1CheckedChoice(choice)) {
+        for (const branch of chronicleCheckBranches(choice.check)) {
+          if (branch.nextSceneId) validateSourceId('check next scene', branch.nextSceneId, issues);
+          if (branch.combatEncounterId) validateSourceId('check encounter', branch.combatEncounterId, issues);
+        }
       }
     }
 
@@ -397,7 +420,7 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
 
     const callbackPromises: readonly ChronicleCallbackPromise[] = [
       ...event.callbackPromises,
-      ...event.choices.flatMap((choice) => choice.effects.flatMap((effect) => (
+      ...event.choices.flatMap((choice) => chronicle1ChoiceEffects(choice).flatMap((effect) => (
         effect.type === 'callback' ? [effect.promise] : []
       ))),
     ];

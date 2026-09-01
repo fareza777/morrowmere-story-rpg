@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { roleForEnemy } from '../../src/game/combat/enemy-ai';
 import { CHRONICLE1_SCENES } from '../../src/game/content/chronicle1';
+import { chronicle1ChoiceEffects } from '../../src/game/content/schema';
 import {
   BOSS_IDS,
   BOSS_PORTRAIT_IDS,
@@ -137,7 +138,7 @@ describe('Chronicle I encounter catalog', () => {
     const encounterIds = new Set<string>(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id));
     const referencedIds = CHRONICLE1_SCENES.flatMap((scene) => [
       ...(scene.encounterId ? [scene.encounterId] : []),
-      ...scene.choices.flatMap((choice) => choice.effects.flatMap((effect) => (
+      ...scene.choices.flatMap((choice) => chronicle1ChoiceEffects(choice).flatMap((effect) => (
         effect.type === 'combat' ? [effect.encounterId] : []
       ))),
     ]);

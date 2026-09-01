@@ -1,6 +1,12 @@
 import { loyaltyTier } from '../game/companions';
 import type { CombatState, EnemyCombatant } from '../game/combat/types';
-import type { ChronicleChoice, ChronicleEvent, ContentIndex } from '../game/content/schema';
+import {
+  chronicleChoiceEffects,
+  isChronicleCheckedChoice,
+  type ChronicleChoice,
+  type ChronicleEvent,
+  type ContentIndex,
+} from '../game/content/schema';
 import { CHRONICLE1_ROUTES } from '../game/content/chronicle1/routes';
 import type { EnemyId, EventId, ItemId } from '../game/domain/ids';
 import { inventorySlotUsage, PACK_CAPACITY, type InventoryEntry } from '../game/inventory';
@@ -328,7 +334,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
       id: choice.id,
       label: choice.label,
       detail: choice.detail,
-      outcome: choice.outcome,
+      outcome: isChronicleCheckedChoice(choice) ? '' : choice.outcome,
       selected: selectedChoice?.id === choice.id,
       disabled: resolved || unavailableReason !== null,
       unavailableReason: resolved && selectedChoice?.id !== choice.id
@@ -608,14 +614,14 @@ export function selectMerchantView(state: GameStateV2, content: ContentIndex): M
 function authoredConsequence(flag: string, content: ContentIndex): ConsequenceViewModel | null {
   for (const event of content.events.values()) {
     for (const choice of event.choices) {
-      const addsFlag = choice.effects.some((effect) =>
+      const addsFlag = chronicleChoiceEffects(choice).some((effect) =>
         effect.type === 'flag' && effect.operation === 'add' && effect.flagId === flag,
       );
       if (addsFlag) {
         return {
           id: flag,
           label: choice.label,
-          summary: choice.outcome,
+          summary: isChronicleCheckedChoice(choice) ? choice.check.success.outcome : choice.outcome,
           sceneTitle: event.title,
         };
       }
