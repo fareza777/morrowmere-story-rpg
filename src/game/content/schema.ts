@@ -148,6 +148,8 @@ export interface ChronicleEvent {
   readonly title: string;
   readonly narrative: readonly string[];
   readonly eligibility: EventEligibility;
+  readonly requirements?: readonly ChronicleRequirement[];
+  readonly exclusions?: readonly ChronicleRequirement[];
   readonly cooldownRuns: number;
   readonly oneShot: boolean;
   /** A hub scene may authorize exactly one merchant identity. */
@@ -323,8 +325,6 @@ export interface Chronicle1Event
   readonly illustrationId: IllustrationId;
   readonly journeySubtype?: JourneySubtype;
   readonly relationship?: ChronicleRelationship;
-  readonly requirements?: readonly ChronicleRequirement[];
-  readonly exclusions?: readonly ChronicleRequirement[];
   readonly followUps: readonly EventId[];
   readonly callbackPromises: readonly ChronicleCallbackPromise[];
   readonly encounterId?: EncounterId;

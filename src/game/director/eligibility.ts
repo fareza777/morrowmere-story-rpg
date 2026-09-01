@@ -2,6 +2,7 @@ import {
   type Chronicle1Choice,
   type ChronicleChoice,
   type ChronicleEvent,
+  type ChronicleRequirement,
   type ContentIndex,
 } from '../content/schema';
 import type { EventId, StoryPosition } from '../domain/ids';
@@ -20,13 +21,19 @@ const EMPTY_INVENTORY: InventoryState = {
   pack: [], stash: [], questItems: [], equipment: { weapon: null, armor: null, charms: [] },
 };
 
+function isAvailabilityContext(
+  context: ChoiceAvailabilityContext | readonly string[],
+): context is ChoiceAvailabilityContext {
+  return !Array.isArray(context);
+}
+
 function availabilityContext(
   context: ChoiceAvailabilityContext | readonly string[],
   resolutionPosition?: StoryPosition,
 ): ChoiceAvailabilityContext {
-  return Array.isArray(context)
-    ? { flags: context, bankedGold: 0, unbankedGold: 0, inventory: EMPTY_INVENTORY, resolutionPosition }
-    : context;
+  return isAvailabilityContext(context)
+    ? context
+    : { flags: context, bankedGold: 0, unbankedGold: 0, inventory: EMPTY_INVENTORY, resolutionPosition };
 }
 
 function entriesQuantity(entries: readonly { readonly itemId: string; readonly quantity: number }[], itemId: string): number {
@@ -45,7 +52,7 @@ function itemQuantity(inventory: InventoryState, itemId: string, scope: 'pack' |
 }
 
 function requirementReason(
-  requirement: NonNullable<Chronicle1Choice['requirements']>[number],
+  requirement: ChronicleRequirement,
   context: ChoiceAvailabilityContext,
   excluded: boolean,
 ): string | null {
@@ -71,6 +78,15 @@ function requirementReason(
     : `You need ${requirement.quantity} ${requirement.itemId} in ${scope === 'pack' ? 'your pack' : 'your gear'}.`;
 }
 
+function requirementsAreSatisfied(
+  requirements: readonly ChronicleRequirement[] | undefined,
+  exclusions: readonly ChronicleRequirement[] | undefined,
+  context: ChoiceAvailabilityContext,
+): boolean {
+  return (requirements?.every((requirement) => requirementReason(requirement, context, false) === null) ?? true)
+    && (exclusions?.every((requirement) => requirementReason(requirement, context, true) === null) ?? true);
+}
+
 /** Returns the shared gate explanation for both presentation and command validation. */
 export function unavailableChoiceReason(
   choice: ChronicleChoice | Chronicle1Choice,
@@ -79,11 +95,11 @@ export function unavailableChoiceReason(
 ): string | null {
   const context = availabilityContext(input, resolutionPosition);
   for (const requirement of choice.requirements ?? []) {
-    const reason = requirementReason(requirement as NonNullable<Chronicle1Choice['requirements']>[number], context, false);
+    const reason = requirementReason(requirement, context, false);
     if (reason) return reason;
   }
   for (const requirement of choice.exclusions ?? []) {
-    const reason = requirementReason(requirement as NonNullable<Chronicle1Choice['requirements']>[number], context, true);
+    const reason = requirementReason(requirement, context, true);
     if (reason) return reason;
   }
   if (!context.resolutionPosition || 'check' in choice) return null;
@@ -115,6 +131,13 @@ export function eligibleScenes(
     chapterId: context.position.chapterId,
     slot: context.position.slot + 1,
   } as const;
+  const sceneAvailability = {
+    flags: context.flags,
+    bankedGold: context.bankedGold ?? 0,
+    unbankedGold: context.unbankedGold ?? 0,
+    inventory: context.inventory ?? EMPTY_INVENTORY,
+    resolutionPosition,
+  } satisfies ChoiceAvailabilityContext;
   return [...content.events.values()]
     .filter((event) => event.chapterId === context.position.chapterId)
     .filter((event) => event.slot === undefined || event.slot <= context.position.slot)
@@ -125,15 +148,10 @@ export function eligibleScenes(
     .filter((event) => (event.eligibility.maxLevel ?? Number.POSITIVE_INFINITY) >= context.level)
     .filter((event) => event.eligibility.requiredFlags?.every((flag) => context.flags.includes(flag)) ?? true)
     .filter((event) => event.eligibility.excludedFlags?.every((flag) => !context.flags.includes(flag)) ?? true)
+    .filter((event) => requirementsAreSatisfied(event.requirements, event.exclusions, sceneAvailability))
     .filter((event) => event.eligibility.routes?.includes(context.routeProfile) ?? true)
     .filter((event) => event.choices.length === 0
-      || event.choices.some((choice) => choiceIsAvailable(choice, {
-        flags: context.flags,
-        bankedGold: context.bankedGold ?? 0,
-        unbankedGold: context.unbankedGold ?? 0,
-        inventory: context.inventory ?? EMPTY_INVENTORY,
-        resolutionPosition,
-      })))
+      || event.choices.some((choice) => choiceIsAvailable(choice, sceneAvailability)))
     .filter((event) => event.type === 'main' || !state.currentRunBlockedFamilies.includes(event.family))
     .sort((left, right) => left.id.localeCompare(right.id));
 }
