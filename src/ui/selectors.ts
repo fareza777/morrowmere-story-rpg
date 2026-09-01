@@ -317,7 +317,8 @@ function safeEffectSummary(summary: string, content: ContentIndex): string | nul
   if (/^Evidence gained:\s+\S/u.test(trimmed)) return 'Evidence secured';
   if (/^Evidence removed:\s+\S/u.test(trimmed)) return 'Evidence removed';
   if (trimmed === 'Evidence secured' || trimmed === 'Evidence removed' || trimmed === 'Combat begins') return trimmed;
-  if (/^[+-]\d+ (?:XP|Gold|Health|Focus|Threat|Tension)$/u.test(trimmed)) return trimmed;
+  if (/^[+-]\d+ (?:XP|Gold|Health|Focus)$/u.test(trimmed)) return trimmed;
+  if (/^(?:Threat|Tension) [+-]\d+$/u.test(trimmed)) return trimmed;
   if (/^(?:[A-Z][a-z]+)(?: [A-Z][a-z]+)* reputation [+-]\d+$/u.test(trimmed)) return trimmed;
 
   const itemChange = /^[+-]\d+ (?<name>.+)$/u.exec(trimmed);

@@ -220,6 +220,8 @@ describe('living choice interface', () => {
       '+1 hidden-cache-key',
       'secret-aftermath enabled',
       '+5 Gold',
+      'Threat +1',
+      'Tension -1',
       '+1 Red Mercy',
     ]), CHECKED_CONTENT)!;
     render(<StoryPanel view={view} onChoose={vi.fn()} onContinue={vi.fn()} />);
@@ -228,6 +230,8 @@ describe('living choice interface', () => {
     expect(screen.getByText('Evidence removed')).toBeInTheDocument();
     expect(screen.getByText('Mara Venn quest progress updated')).toBeInTheDocument();
     expect(screen.getByText('+5 Gold')).toBeInTheDocument();
+    expect(screen.getByText('Threat +1')).toBeInTheDocument();
+    expect(screen.getByText('Tension -1')).toBeInTheDocument();
     expect(screen.getByText('+1 Red Mercy')).toBeInTheDocument();
     expect(screen.queryByText(/wagon-secured|some_flag|field-evidence|old-order|quest stage|follow-up scheduled|hidden-cache-key|secret-aftermath|Unknown Scout/i)).not.toBeInTheDocument();
   });
