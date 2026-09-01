@@ -312,6 +312,17 @@ function checkDifficultyLabel(difficulty: number): string {
   return 'Daunting';
 }
 
+function safeEffectSummary(summary: string): string | null {
+  const trimmed = summary.trim();
+  if (/^Evidence gained:\s+\S/u.test(trimmed)) return 'Evidence secured';
+  if (/^Evidence removed:\s+\S/u.test(trimmed)) return 'Evidence removed';
+  const questStage = /^(?<name>.+) quest stage \d+$/u.exec(trimmed);
+  if (questStage?.groups?.name) return `${questStage.groups.name} quest progress updated`;
+  if (trimmed === 'Follow-up scheduled') return null;
+  if (/^[+-][A-Za-z][A-Za-z0-9_-]*$/u.test(trimmed)) return null;
+  return trimmed;
+}
+
 function effectiveCheckStat(
   state: GameStateV2,
   content: ContentIndex,
@@ -416,7 +427,10 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
               ? 'Check failed'
               : 'Choice resolved',
       outcome: resolution.outcome,
-      effectSummary: resolution.effectSummary,
+      effectSummary: resolution.effectSummary.flatMap((summary) => {
+        const safeSummary = safeEffectSummary(summary);
+        return safeSummary ? [safeSummary] : [];
+      }),
       continueLabel: resolution.continueLabel,
     } : null,
   };

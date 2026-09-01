@@ -108,6 +108,7 @@ function checkedScene(resolved: boolean) {
 function sceneWithResult(
   resultKind: 'critical-success' | 'success' | 'failure' | 'critical-failure',
   choice = choiceId('pick-the-latch'),
+  effectSummary: readonly string[] = [],
 ) {
   const state = checkedScene(false);
   return {
@@ -121,7 +122,7 @@ function sceneWithResult(
         chance: 65,
         roll: resultKind === 'critical-success' ? 3 : resultKind === 'critical-failure' ? 98 : 41,
         outcome: 'The tollhouse keeps its answer close.',
-        effectSummary: [],
+        effectSummary,
         nextSceneId: null,
         continueLabel: null,
       },
@@ -205,6 +206,27 @@ describe('living choice interface', () => {
     render(<StoryPanel view={view} onChoose={vi.fn()} onContinue={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
+  });
+
+  it('sanitizes stored legacy effect summaries before they reach the resolved outcome', () => {
+    const view = selectCurrentScene(sceneWithResult('success', choiceId('legacy-checked:ui-checked-choice-event'), [
+      '+wagon-secured',
+      '-some_flag',
+      'Evidence gained: field-evidence',
+      'Evidence removed: old-order',
+      'Mara quest stage 3',
+      'Follow-up scheduled',
+      '+5 Gold',
+      '+1 Packed Tonic',
+    ]), CHECKED_CONTENT)!;
+    render(<StoryPanel view={view} onChoose={vi.fn()} onContinue={vi.fn()} />);
+
+    expect(screen.getByText('Evidence secured')).toBeInTheDocument();
+    expect(screen.getByText('Evidence removed')).toBeInTheDocument();
+    expect(screen.getByText('Mara quest progress updated')).toBeInTheDocument();
+    expect(screen.getByText('+5 Gold')).toBeInTheDocument();
+    expect(screen.getByText('+1 Packed Tonic')).toBeInTheDocument();
+    expect(screen.queryByText(/wagon-secured|some_flag|field-evidence|old-order|quest stage|follow-up scheduled/i)).not.toBeInTheDocument();
   });
 
   it('describes each choice detail and keeps 360px, 200% text-scale feedback readable', () => {
