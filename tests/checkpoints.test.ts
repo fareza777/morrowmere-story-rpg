@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCampaign, currentScene, reduceGame, restartChapter, returnToCampAfterDefeat } from '../src/game/state';
-import type { ContentIndex } from '../src/game/content/schema';
+import type { ChronicleEvent, ContentIndex } from '../src/game/content/schema';
 import type { EventId, ItemId } from '../src/game/domain/ids';
 import { createSaveRepository } from '../src/game/persistence/repository';
 import { applyEffectsAtomically } from '../src/game/state/effects';
@@ -148,7 +148,15 @@ describe('campaign checkpoints', () => {
     const nextRoute = reduceGame(banked, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:15.000Z' }, content).state;
     const state = {
       ...nextRoute,
-      campaign: { ...nextRoute.campaign, hero: { ...nextRoute.campaign.hero, xp: 60, level: 2 }, bankedGold: 7 },
+      campaign: {
+        ...nextRoute.campaign,
+        hero: { ...nextRoute.campaign.hero, xp: 60, level: 2 },
+        bankedGold: 7,
+        inventory: {
+          ...nextRoute.campaign.inventory,
+          stash: [{ id: 'stash-item-warrior-blade-1', itemId: itemId('warrior-blade'), quantity: 1 }],
+        },
+      },
       expedition: { ...nextRoute.expedition!, unbankedGold: 40, unbankedLoot: [itemId('warrior-blade')], temporaryBoons: ['road-blessing'] },
       flow: { ...nextRoute.flow, screen: 'defeat' as const },
     };
@@ -179,7 +187,7 @@ describe('campaign checkpoints', () => {
     expect(duplicate.diagnostic?.code).toBe('safe_hub_required');
   });
 
-  it('banks missing unbanked loot into retained inventory without duplicating a carried copy', () => {
+  it('does not synthesize inventory copies from an unsecured loot marker while banking', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const routed = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;
     const atCamp = arriveAtCamp(routed, '2026-08-31T00:00:45.000Z');
@@ -195,9 +203,43 @@ describe('campaign checkpoints', () => {
     expect(banked.diagnostic).toBeUndefined();
     expect(banked.state.campaign.inventory.pack).toEqual([
       { id: 'pack-item-warrior-blade-1', itemId: itemId('warrior-blade'), quantity: 1 },
-      { id: 'pack-item-warrior-blade-2', itemId: itemId('warrior-blade'), quantity: 1 },
     ]);
     expect(banked.state.checkpoints.camp?.campaign.inventory).toEqual(banked.state.campaign.inventory);
+  });
+
+  it('keeps an unbanked-only item when a chapter completes', () => {
+    const finale: ChronicleEvent = {
+      id: sceneId('chapter-finale'), chapterId: 'ch01', slot: 2, type: 'main', family: 'finale', anchorOrder: 7,
+      illustrationId: 'camp-art', title: 'Finale', narrative: ['The road ends.'], eligibility: {}, cooldownRuns: 0, oneShot: true, choices: [],
+    };
+    const nextOpening: ChronicleEvent = {
+      ...finale, id: sceneId('chapter-two-opening'), chapterId: 'ch02', slot: 1, title: 'New road', family: 'opening',
+    };
+    const completionContent: ContentIndex = { ...content, events: new Map([[finale.id, finale], [nextOpening.id, nextOpening]]) };
+    const created = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, completionContent);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, completionContent).state;
+    const granted = applyEffectsAtomically(started, [
+      { type: 'item', operation: 'grant', itemId: itemId('warrior-blade'), quantity: 1, destination: 'unbanked-loot' },
+    ], completionContent);
+    if (!granted.ok) throw new Error('Expected the unbanked item reward to apply.');
+    const before = {
+      ...started,
+      campaign: granted.value.campaign,
+      expedition: {
+        ...granted.value.expedition!,
+        position: { chapterId: 'ch01' as const, slot: 3 }, currentSceneId: finale.id,
+        sceneResolution: { eventId: finale.id, choiceId: null },
+        director: { ...started.expedition!.director, usedSceneIds: [finale.id], seenEventIds: [finale.id] },
+      },
+    };
+
+    const completed = reduceGame(before, { type: 'select-next-scene', updatedAt: '2026-08-31T00:01:00.000Z' }, completionContent);
+
+    expect(completed.diagnostic).toBeUndefined();
+    expect(completed.state.expedition).toBeNull();
+    expect(completed.state.campaign.inventory.stash).toEqual([
+      { id: 'stash-item-warrior-blade-1', itemId: itemId('warrior-blade'), quantity: 1 },
+    ]);
   });
 
   it('restores exact chapter payload without rewinding attempt, nonce, or profile', () => {

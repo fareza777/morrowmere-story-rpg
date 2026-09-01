@@ -70,6 +70,17 @@ function content(): ContentIndex {
       outcome: 'The road bends toward Greywatch.', effects: [{ type: 'flag', operation: 'add', flagId: 'direct-kept' as never }],
     }],
   });
+  const mixedDestinationHub = scene({
+    id: asEvent('mixed-destination-hub'), type: 'hub',
+    choices: [{
+      id: asChoice('take-both'), label: 'Secure both tonic crates', detail: 'Keep one ready and send one to the camp chest.',
+      outcome: 'Both crates are accounted for.',
+      effects: [
+        { type: 'item', operation: 'grant', itemId: asItem('packed-tonic'), quantity: 1, destination: 'pack' },
+        { type: 'item', operation: 'grant', itemId: asItem('packed-tonic'), quantity: 1, destination: 'unbanked-loot' },
+      ],
+    }] as never,
+  });
   const summary = scene({
     id: asEvent('summary-choice'),
     choices: [{
@@ -100,7 +111,7 @@ function content(): ContentIndex {
     id: asEncounter('bog-raiders'), family: 'bog-raiders', kind: 'regular', enemyIds: [enemy.id], reward: { xp: 0, gold: 0, itemChoices: [] },
   };
   return {
-    events: new Map([success, failure, direct, summary, aftermath].map((entry) => [entry.id, entry])),
+    events: new Map([success, failure, direct, mixedDestinationHub, summary, aftermath].map((entry) => [entry.id, entry])),
     items: new Map([
       [asItem('packed-tonic'), item(asItem('packed-tonic'), 'Packed Tonic')],
       [asItem('loose-token'), item(asItem('loose-token'), 'Loose Token')],
@@ -109,7 +120,7 @@ function content(): ContentIndex {
       id: asCompanion('mara'), name: 'Mara', recruitment: { requiredDecisionIds: [] }, personalQuestIds: [],
       combat: { attack: 1, guard: 1, will: 1, actionId: 'covering-shot' },
     }]]), merchants: new Map(),
-    artIds: new Set([success, failure, direct, summary, aftermath].map((entry) => entry.illustrationId)), audioIds: new Set(),
+    artIds: new Set([success, failure, direct, mixedDestinationHub, summary, aftermath].map((entry) => entry.illustrationId)), audioIds: new Set(),
   };
 }
 
@@ -178,6 +189,25 @@ describe('narrative choice resolution', () => {
       resultKind: 'direct', chance: null, roll: null, outcome: 'The road bends toward Greywatch.',
       effectSummary: ['+direct-kept'], nextSceneId: null, continueLabel: null,
     });
+  });
+
+  it('keeps separately authored pack and unbanked copies through banking', () => {
+    const index = content();
+    const resolved = reduceGame(
+      atScene(asEvent('mixed-destination-hub'), index),
+      { type: 'resolve-choice', eventId: asEvent('mixed-destination-hub'), choiceId: asChoice('take-both'), updatedAt: at(2) },
+      index,
+    ).state;
+
+    expect(resolved.campaign.inventory.pack).toEqual([{ id: 'pack-stack-packed-tonic', itemId: asItem('packed-tonic'), quantity: 1 }]);
+    expect(resolved.campaign.inventory.stash).toEqual([{ id: 'stash-stack-packed-tonic', itemId: asItem('packed-tonic'), quantity: 1 }]);
+    expect(resolved.expedition?.unbankedLoot).toEqual([asItem('packed-tonic')]);
+
+    const banked = reduceGame(resolved, { type: 'bank-camp', updatedAt: at(3) }, index);
+
+    expect(banked.diagnostic).toBeUndefined();
+    expect(banked.state.campaign.inventory.pack).toEqual(resolved.campaign.inventory.pack);
+    expect(banked.state.campaign.inventory.stash).toEqual(resolved.campaign.inventory.stash);
   });
 
   it('round-trips a rich checked resolution through save encoding', () => {

@@ -264,13 +264,6 @@ function packQuantity(inventory: InventoryState, itemId: ItemId): number {
   return inventory.pack.reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
 }
 
-function inventoryQuantity(inventory: InventoryState, itemId: ItemId): number {
-  const packed = [...inventory.pack, ...inventory.stash].reduce((total, entry) => total + (entry.itemId === itemId ? entry.quantity : 0), 0);
-  const equipped = [inventory.equipment.weapon, inventory.equipment.armor, ...inventory.equipment.charms]
-    .filter((equippedId) => equippedId === itemId).length;
-  return packed + equipped + Number(inventory.questItems.includes(itemId));
-}
-
 /** Makes the marker ledger match the checkpoint-derived unsecured quantity without trusting stale markers. */
 function reconcileUnbankedLoot(values: readonly ItemId[], itemId: ItemId, quantity: number): readonly ItemId[] {
   let remaining = quantity;
@@ -443,19 +436,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const scene = currentScene(state, content);
     if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
     const gold = state.expedition.unbankedGold;
-    const securedInventory = state.checkpoints.camp?.campaign.inventory ?? state.campaign.inventory;
-    let inventory = state.campaign.inventory;
-    const lootCounts = new Map<ItemId, number>();
-    for (const itemId of state.expedition.unbankedLoot) lootCounts.set(itemId, (lootCounts.get(itemId) ?? 0) + 1);
-    for (const [itemId, quantity] of lootCounts) {
-      const alreadyUnsecured = Math.max(0, inventoryQuantity(inventory, itemId) - inventoryQuantity(securedInventory, itemId));
-      const missing = Math.max(0, quantity - alreadyUnsecured);
-      if (missing === 0) continue;
-      const added = applyInventoryCommand(inventory, { type: 'add', itemId, quantity: missing }, content.items);
-      if (!added.ok) return diagnostic(state, added.error.code, added.error.message);
-      inventory = added.value;
-    }
-    const campaign = { ...state.campaign, inventory, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
+    const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
     const provisional: GameStateV2 = {
       ...state,
       campaign,

@@ -69,11 +69,10 @@ export function applyEffectsAtomically(
       const loot = [...expedition.unbankedLoot];
       let inventory = campaign.inventory;
       if (effect.operation === 'grant') {
-        if (effect.destination !== 'unbanked-loot') {
-          const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity }, content.items);
-          if (!added.ok) return failure(added.error.code, added.error.message);
-          inventory = added.value;
-        }
+        const destination = effect.destination === 'unbanked-loot' ? 'stash' : 'pack';
+        const added = applyInventoryCommand(inventory, { type: 'add', itemId: effect.itemId, quantity: effect.quantity, destination }, content.items);
+        if (!added.ok) return failure(added.error.code, added.error.message);
+        inventory = added.value;
         if (effect.destination !== 'pack') {
           for (let i = 0; i < effect.quantity; i += 1) loot.push(effect.itemId);
         }
@@ -85,14 +84,13 @@ export function applyEffectsAtomically(
           }
           if (remaining > 0) return failure('item_not_found', 'That item is not available in this expedition.');
         }
-        if (effect.destination !== 'unbanked-loot') {
-          for (let count = 0; count < effect.quantity; count += 1) {
-            const entry = inventory.pack.find((candidate) => candidate.itemId === effect.itemId);
-            if (!entry) return failure('item_not_found', 'That item is not available in this expedition.');
-            const removed = applyInventoryCommand(inventory, { type: 'discard', entryId: entry.id, quantity: 1 }, content.items);
-            if (!removed.ok) return failure(removed.error.code, removed.error.message);
-            inventory = removed.value;
-          }
+        const destination = effect.destination === 'unbanked-loot' ? 'stash' : 'pack';
+        for (let count = 0; count < effect.quantity; count += 1) {
+          const entry = inventory[destination].find((candidate) => candidate.itemId === effect.itemId);
+          if (!entry) return failure('item_not_found', 'That item is not available in this expedition.');
+          const removed = applyInventoryCommand(inventory, { type: 'discard', entryId: entry.id, quantity: 1 }, content.items);
+          if (!removed.ok) return failure(removed.error.code, removed.error.message);
+          inventory = removed.value;
         }
       }
       campaign = { ...campaign, inventory };
