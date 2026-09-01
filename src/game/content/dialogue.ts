@@ -1,13 +1,24 @@
-/**
- * Counts authored dialogue sentences without treating common abbreviations as
- * sentence endings. An unspaced boundary counts only when the next sentence
- * begins with an uppercase letter, which keeps the authoring limit strict
- * without misreading ordinary lowercase punctuation.
- */
+const SENTENCE_STARTERS = new Set([
+  'a', 'an', 'he', 'here', 'i', 'it', 'she', 'that', 'the', 'then', 'there', 'they', 'this', 'we', 'you',
+]);
+
+function abbreviationEndsSentence(source: string, offset: number, abbreviation: string): boolean {
+  const next = source.slice(offset + abbreviation.length).replace(/^[\s"'”’\])}]+/u, '');
+  if (!next) return true;
+  const word = next.match(/^\p{L}+/u)?.[0]?.toLocaleLowerCase();
+  if ((abbreviation.toLocaleLowerCase() === 'e.g.' || abbreviation.toLocaleLowerCase() === 'i.e.') && (word === 'a' || word === 'an')) return false;
+  return word !== undefined && SENTENCE_STARTERS.has(word);
+}
+
+/** Counts display sentences while preserving in-sentence English abbreviations. */
 export function countDialogueSentences(text: string): number {
-  const protectedText = text.normalize('NFKC').replace(/\s+/gu, ' ').trim()
-    .replace(/\b(?:[A-Za-z]\.){2,}/gu, (abbreviation) => abbreviation.replace(/\./gu, '\uE000'))
-    .replace(/\b(?:Mr|Mrs|Ms|Dr|St)\./giu, (abbreviation) => abbreviation.replace(/\./gu, '\uE000'));
+  const normalized = text.normalize('NFKC').replace(/\s+/gu, ' ').trim();
+  const protectedText = normalized.replace(
+    /\b(?:Mr|Mrs|Ms|Dr|St|etc|e\.g|i\.e)\./giu,
+    (abbreviation, offset: number, source: string) => abbreviationEndsSentence(source, offset, abbreviation)
+      ? abbreviation
+      : abbreviation.replace(/\./gu, '\uE000'),
+  );
   if (!protectedText) return 0;
   let count = 0;
   for (const match of protectedText.matchAll(/[.!?]+(?:["'”’\])}]+)?/gu)) {

@@ -30,3 +30,17 @@
 
 - The strict legacy exemption is intentionally retained until Tasks 10 and 12 convert older flag-only scenes.
 - The sentence counter handles the documented English abbreviation set; unusual editorial punctuation may still require author review.
+
+## Fix round 1
+
+### GREEN
+
+- Checked branch effects are now validated entry by entry before traversal. Null, incomplete, and unknown discriminants emit ID-rich structural diagnostics without throwing.
+- Graph analysis preserves an explicit null exit for every malformed required or present critical branch, preventing uncertain authored data from creating a false required cycle.
+- Abbreviations now distinguish in-sentence use from a following new sentence. Cue text uses normalized Unicode word boundaries, so punctuation-adjacent words match without accepting embedded substrings.
+- Expanded focused fixtures cover malformed success/failure effects, unknown branch encounters, self-loop exits, later-consumed flags and tangible effects, typed media mismatch, index-local generic audio, and the abbreviation boundaries.
+- Ran `npm run test:run -- tests/content/chronicle1-playability.test.ts tests/content/chronicle1-validation.test.ts tests/content/chronicle1-effects.test.ts`: 16 of 17 tests passed. The sole failure exposed an empty direct fixture response beside a strict checked choice; that fixture was corrected, but no rerun was made under the one-command limit.
+
+### Commit
+
+`fix: harden chronicle validation`

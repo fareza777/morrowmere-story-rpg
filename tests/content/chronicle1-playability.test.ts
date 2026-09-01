@@ -4,7 +4,9 @@ import type {
   ChronicleDefinition,
   ChronicleRouteDefinition,
 } from '../../src/game/content/schema';
-import { validateChroniclePlayability, validateChronicleSources, type ChroniclePlayabilityInput } from '../../src/game/content/validate';
+import { validateChroniclePlayability, validateChronicleSources, validateContent, type ChroniclePlayabilityInput } from '../../src/game/content/validate';
+import { countDialogueSentences } from '../../src/game/content/dialogue';
+import { makeContentIndex } from '../fixtures/game';
 
 const chronicle: ChronicleDefinition = {
   id: 'fixture-chronicle',
@@ -118,5 +120,82 @@ describe('Chronicle I playability validation', () => {
 
     expect(issueCodes([quoted])).not.toContain('invalid_dialogue_sentence_count');
     expect(issueCodes([terminalAbbreviation])).toContain('invalid_dialogue_sentence_count');
+  });
+
+  it('guards malformed branch effects and keeps every uncertain branch as a graph exit', () => {
+    const malformed = {
+      ...scene('fixture-malformed', 1),
+      choices: [{
+        id: 'fixture-malformed-check' as never, label: 'Read the omen', detail: 'A malformed checked choice.',
+        check: {
+          success: { outcome: 'A false loop.', effects: [null, { type: 'unknown-effect' }], nextSceneId: 'fixture-malformed' },
+          failure: null,
+          criticalSuccess: { outcome: 'Another false loop.', effects: [], nextSceneId: 'fixture-malformed' },
+        },
+      }, scene('fixture-malformed', 1).choices[1]],
+    } as unknown as Chronicle1Event;
+
+    expect(() => validateChroniclePlayability(input([malformed]))).not.toThrow();
+    const codes = issueCodes([malformed]);
+    expect(codes).toContain('incomplete_checked_choice');
+    expect(codes).not.toContain('inescapable_required_cycle');
+  });
+
+  it('recognizes unknown branch encounters, self-loop escapes, and later-consumed flag consequences', () => {
+    const checkedEncounter = {
+      ...scene('fixture-branch-combat', 1),
+      choices: [{
+        id: 'fixture-branch-combat-choice' as never, label: 'Test the line', detail: 'A valid checked shape.',
+        check: {
+          success: { outcome: 'Hold fast.', effects: [], combatEncounterId: 'unknown-encounter' },
+          failure: { outcome: 'Fall back.', effects: [] },
+        },
+      }, { ...scene('fixture-branch-combat', 1).choices[1], effects: [{ type: 'evidence', operation: 'add', evidenceId: 'road-proof' }] }],
+    } as unknown as Chronicle1Event;
+    const escapingSelfLoop = {
+      ...scene('fixture-self-loop', 2),
+      choices: [{ ...scene('fixture-self-loop', 2).choices[0], nextSceneId: 'fixture-self-loop' as never }, { ...scene('fixture-self-loop', 2).choices[1], effects: [{ type: 'evidence', operation: 'add', evidenceId: 'road-proof' }] }],
+    } as Chronicle1Event;
+    const consumedFlag = {
+      ...scene('fixture-consumed-flag', 3), dialogue: [{ speakerName: 'Mara', text: 'The road waits.' }],
+      choices: scene('fixture-consumed-flag', 3).choices.map((choice) => ({ ...choice, effects: [{ type: 'flag', operation: 'add', flagId: 'gate-opened' }] })),
+    } as Chronicle1Event;
+    const gate = { ...scene('fixture-gate', 4), requirements: [{ type: 'flag', flagId: 'gate-opened', present: true }] } as Chronicle1Event;
+    const tangibleEffect = { ...scene('fixture-tangible-effect', 5), dialogue: [{ speakerName: 'Mara', text: 'The marker is real.' }], choices: scene('fixture-tangible-effect', 5).choices.map((choice) => ({ ...choice, effects: [{ type: 'evidence', operation: 'add', evidenceId: 'road-proof' }] })) } as Chronicle1Event;
+    const codes = issueCodes([checkedEncounter, escapingSelfLoop, consumedFlag, gate, tangibleEffect]);
+
+    expect(codes).toContain('missing_encounter');
+    expect(codes).not.toContain('inescapable_required_cycle');
+    expect(codes).not.toContain('intangible_choice');
+  });
+
+  it('uses Unicode word boundaries for cue text and preserves index-local generic audio', () => {
+    const punctuationCue = {
+      ...scene('fixture-cue-boundary', 1), dialogue: [{ speakerName: 'Mara', text: 'Wait', voiceCueId: 'fixture-cue' }], choices: [],
+    } as Chronicle1Event;
+    const boundaryIssues = validateChroniclePlayability({
+      ...input([punctuationCue]),
+      dialogueCatalog: { environmentArtIds: new Set([punctuationCue.illustrationId]), characterArt: [], voiceCues: [{ id: 'fixture-cue', text: 'Wait, traveller.' }] },
+    });
+    const runtime = makeContentIndex();
+    const runtimeScene = [...runtime.events.values()][0]!;
+    const withLocalAudio = {
+      ...runtime,
+      events: new Map([[runtimeScene.id, { ...runtimeScene, dialogue: [{ speakerName: 'Mara', text: 'A local cue.', voiceCueId: 'fixture-local-cue' as never }] }]]),
+      audioIds: new Set([...runtime.audioIds, 'fixture-local-cue']),
+    };
+
+    expect(boundaryIssues.map((issue) => issue.code)).not.toContain('invalid_dialogue_voice_text');
+    expect(validateContent(withLocalAudio).map((issue) => issue.code)).not.toContain('missing_audio');
+    expect(validateContent({ ...withLocalAudio, audioIds: new Set() }).map((issue) => issue.code)).toContain('missing_audio');
+  });
+
+  it('handles title and example abbreviations according to their sentence context', () => {
+    expect(countDialogueSentences('Dr. Vale waits.')).toBe(1);
+    expect(countDialogueSentences('St. Then leave.')).toBe(2);
+    expect(countDialogueSentences('Use e.g. a lantern.')).toBe(1);
+    expect(countDialogueSentences('e.g. Then leave.')).toBe(2);
+    expect(countDialogueSentences('i.e. Then leave.')).toBe(2);
+    expect(countDialogueSentences('Pack rope, etc. before dusk.')).toBe(1);
   });
 });

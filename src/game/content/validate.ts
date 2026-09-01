@@ -246,9 +246,31 @@ export interface ChroniclePlayabilityInput extends ChronicleSourceInput {
 
 type SourceRecord = Record<string, unknown>;
 type SourceBranch = { readonly label: string; readonly value: SourceRecord };
+const SOURCE_EFFECT_TYPES = new Set([
+  'gold', 'item', 'xp', 'flag', 'faction', 'companion', 'vitals', 'callback', 'combat', 'evidence',
+  'companion-loyalty', 'companion-quest', 'companion-injury', 'threat', 'tension',
+]);
 
 function isRecord(value: unknown): value is SourceRecord {
   return typeof value === 'object' && value !== null;
+}
+
+function isSourceEffect(value: unknown): value is ChronicleEffect {
+  if (!isRecord(value) || typeof value.type !== 'string' || !SOURCE_EFFECT_TYPES.has(value.type)) return false;
+  if (value.type === 'item') return typeof value.itemId === 'string';
+  if (value.type === 'flag') return typeof value.flagId === 'string';
+  if (value.type === 'faction') return typeof value.factionId === 'string';
+  if (value.type === 'companion' || value.type === 'companion-loyalty' || value.type === 'companion-quest' || value.type === 'companion-injury') return typeof value.companionId === 'string';
+  if (value.type === 'combat') return typeof value.encounterId === 'string';
+  if (value.type === 'evidence') return typeof value.evidenceId === 'string';
+  if (value.type === 'callback') {
+    return isRecord(value.promise)
+      && typeof value.promise.targetEventId === 'string'
+      && isRecord(value.promise.deadline)
+      && typeof value.promise.deadline.chapterId === 'string'
+      && typeof value.promise.deadline.slot === 'number';
+  }
+  return true;
 }
 
 function checkedChoiceBranches(choice: Chronicle1Choice, sceneId: string, issues: ContentIssue[]): readonly SourceBranch[] | null {
@@ -268,15 +290,18 @@ function checkedChoiceBranches(choice: Chronicle1Choice, sceneId: string, issues
       issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} has malformed ${label} branch.`));
       continue;
     }
+    branch.effects.forEach((effect, effectIndex) => {
+      if (!isSourceEffect(effect)) issues.push(sourceIssue('incomplete_checked_choice', `Scene ${sceneId} choice ${String(record.id)} ${label} branch has malformed effect ${effectIndex}.`));
+    });
     branches.push({ label, value: branch });
   }
   return branches;
 }
 
 function sourceChoiceEffects(choice: Chronicle1Choice, branches: readonly SourceBranch[] | null): readonly ChronicleEffect[] {
-  if (branches !== null) return branches.flatMap((branch) => branch.value.effects as readonly ChronicleEffect[]);
+  if (branches !== null) return branches.flatMap((branch) => (branch.value.effects as readonly unknown[]).filter(isSourceEffect));
   const effects = (choice as unknown as SourceRecord).effects;
-  return Array.isArray(effects) ? effects as readonly ChronicleEffect[] : [];
+  return Array.isArray(effects) ? effects.filter(isSourceEffect) : [];
 }
 
 function sourceNextSceneId(value: SourceRecord): string | null {
@@ -646,8 +671,15 @@ function normalizedDialogueText(value: string): string {
 }
 
 function wholeDialogueMatch(left: string, right: string): boolean {
-  return left === right || left.startsWith(`${right} `) || left.endsWith(` ${right}`)
-    || left.includes(` ${right} `);
+  if (!right) return false;
+  let offset = left.indexOf(right);
+  while (offset >= 0) {
+    const before = left.slice(0, offset).at(-1) ?? '';
+    const after = left.at(offset + right.length) ?? '';
+    if (!/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after)) return true;
+    offset = left.indexOf(right, offset + right.length);
+  }
+  return false;
 }
 
 function catalogDialogueIssues(event: Chronicle1Event, input: ChroniclePlayabilityInput): ContentIssue[] {
@@ -693,13 +725,22 @@ function routeSpoilerIssues(routes: readonly ChronicleRouteDefinition[]): Conten
   return issues;
 }
 
+function graphBranchTarget(branch: unknown): string | null {
+  if (!isRecord(branch) || typeof branch.outcome !== 'string' || !branch.outcome.trim() || !Array.isArray(branch.effects) || !branch.effects.every(isSourceEffect)) return null;
+  return sourceNextSceneId(branch);
+}
+
 function branchTargets(choice: Chronicle1Choice): readonly (string | null)[] {
-  const branches = checkedChoiceBranches(choice, 'graph', []);
-  if (branches === null) return [sourceNextSceneId(choice as unknown as SourceRecord)];
   const record = choice as unknown as SourceRecord;
-  const check = isRecord(record.check) ? record.check : null;
-  if (!check || !isRecord(check.success) || !isRecord(check.failure)) return [null];
-  return branches.map((branch) => sourceNextSceneId(branch.value));
+  if (!Object.prototype.hasOwnProperty.call(record, 'check')) return [sourceNextSceneId(record)];
+  const check = record.check;
+  if (!isRecord(check)) return [null, null];
+  const labels = ['success', 'failure', 'criticalSuccess', 'criticalFailure'] as const;
+  return labels.flatMap((label) => {
+    const branch = check[label];
+    if (branch === undefined && (label === 'criticalSuccess' || label === 'criticalFailure')) return [];
+    return [graphBranchTarget(branch)];
+  });
 }
 
 function requiredCycleIssues(events: readonly Chronicle1Event[]): ContentIssue[] {
