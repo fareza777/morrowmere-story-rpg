@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { ChronicleEvent, ContentIndex } from '../src/game/content/schema';
 import type { ChoiceId, CompanionId, EventId } from '../src/game/domain/ids';
-import { decodeSaveState, encodeSaveState } from '../src/game/persistence/codec';
+import { decodeSaveState, decodeSaveStateWithDiagnostics, encodeSaveState } from '../src/game/persistence/codec';
+import { createSaveRepository, saveActiveKey } from '../src/game/persistence/repository';
+import { createSaveEnvelope } from '../src/game/persistence/schema';
 import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state';
 
 const eventId = 'dialogue-at-the-ford' as EventId;
@@ -13,6 +15,16 @@ const dialogue = [
   { speakerId: 'mara', speakerName: 'Mara', text: 'The ford is too quiet. Keep your hand near the blade.', characterLayer: { illustrationId: 'character-mara-wary', companionId: maraId, position: 'left' }, expression: 'wary' },
   { speakerId: 'mara', speakerName: 'Mara', text: 'We can cross now, or wait for the mist to lift.', voiceCueId: 'voice-dialogue-ford' },
 ] as const;
+
+class MemoryStorage implements Storage {
+  private readonly values = new Map<string, string>();
+  get length() { return this.values.size; }
+  clear() { this.values.clear(); }
+  getItem(key: string) { return this.values.get(key) ?? null; }
+  key(index: number) { return [...this.values.keys()][index] ?? null; }
+  removeItem(key: string) { this.values.delete(key); }
+  setItem(key: string, value: string) { this.values.set(key, value); }
+}
 
 function content(): ContentIndex {
   const event = {
@@ -35,6 +47,12 @@ function atDialogueScene(index: ContentIndex): GameStateV2 {
     ...started,
     expedition: { ...started.expedition!, currentSceneId: eventId, dialogueBeatIndex: 0, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 } },
   } as GameStateV2;
+}
+
+function continueOnlyContent(): ContentIndex {
+  const index = content();
+  const scene = { ...index.events.get(eventId)!, choices: [], oneShot: false } as ChronicleEvent;
+  return { ...index, events: new Map([[eventId, scene]]) };
 }
 
 describe('cinematic dialogue state', () => {
@@ -71,5 +89,53 @@ describe('cinematic dialogue state', () => {
     delete legacyV3.expedition.dialogueBeatIndex;
 
     expect(decodeSaveState(legacyV3, index)?.expedition?.dialogueBeatIndex).toBe(0);
+  });
+
+  it('holds a continue-only scene behind dialogue until its final beat', () => {
+    const index = continueOnlyContent();
+    const created = createCampaign({ heroClass: 'warrior', seed: 11, updatedAt: at(0) }, index);
+    const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
+    const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: at(2) }, index).state;
+
+    expect(selected.expedition?.currentSceneId).toBe(eventId);
+    expect(selected.expedition?.dialogueBeatIndex).toBe(0);
+    expect(selected.expedition?.sceneResolution).toBeNull();
+  });
+
+  it('rejects direct choice resolution before dialogue reaches its final beat', () => {
+    const index = content();
+    const initial = atDialogueScene(index);
+    const result = reduceGame(initial, { type: 'resolve-choice', eventId, choiceId, updatedAt: at(2) }, index);
+
+    expect(result.state).toBe(initial);
+    expect(result.diagnostic?.code).toBe('dialogue_incomplete');
+    expect(result.state.campaign.flags).toEqual([]);
+    expect(result.state.expedition?.checkedAttempts).toEqual([]);
+    expect(result.state.expedition?.authoredSceneQueue).toEqual([]);
+  });
+
+  it('reports current-v3 dialogue index recovery when it clamps or clears the stored index', () => {
+    const index = content();
+    const encoded = encodeSaveState({ ...atDialogueScene(index), expedition: { ...atDialogueScene(index).expedition!, dialogueBeatIndex: 99 } }, index)!;
+    const recovered = decodeSaveStateWithDiagnostics(encoded, index);
+    const cleared = decodeSaveStateWithDiagnostics({ ...encoded, expedition: { ...encoded.expedition!, currentSceneId: null, dialogueBeatIndex: 1, sceneVisitCounts: {} } }, index);
+
+    expect(recovered?.state.expedition?.dialogueBeatIndex).toBe(1);
+    expect(recovered?.diagnostics.join(' ')).toMatch(/dialogue/i);
+    expect(cleared?.state.expedition?.dialogueBeatIndex).toBe(0);
+    expect(cleared?.diagnostics.join(' ')).toMatch(/dialogue/i);
+  });
+
+  it('rewrites a recovered v3 dialogue index through the save repository', () => {
+    const index = content();
+    const state = atDialogueScene(index);
+    const encoded = encodeSaveState({ ...state, expedition: { ...state.expedition!, dialogueBeatIndex: 99 } }, index)!;
+    const storage = new MemoryStorage();
+    storage.setItem(saveActiveKey(1), JSON.stringify(createSaveEnvelope(1, encoded, at(3))));
+
+    const loaded = createSaveRepository(storage, () => at(4), index).loadSlot(1);
+
+    expect(loaded).toMatchObject({ ok: true, state: { expedition: { dialogueBeatIndex: 1 } }, notice: expect.stringMatching(/dialogue/i) });
+    expect(JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}').state.expedition.dialogueBeatIndex).toBe(1);
   });
 });

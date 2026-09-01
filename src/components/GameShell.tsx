@@ -142,10 +142,6 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   }, [state.flow.screen, state.expedition?.currentSceneId]);
 
   useEffect(() => {
-    setVoiceRevealPending(Boolean(dialogueBeat?.isFinal && dialogueBeat.voiceCueId));
-  }, [dialogueBeat?.index, dialogueBeat?.isFinal, dialogueBeat?.voiceCueId]);
-
-  useEffect(() => {
     try {
       window.localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify({ skipped: tutorialsSkipped, seen: [...tutorialsSeen] }));
     } catch { /* Tutorial state remains active for this session. */ }
@@ -160,10 +156,25 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   }, [dialogueBeat, settings.voiceReplay, settings.voiceVolume, state.flow.screen, storyAudio, voicedScene?.id, voicedScene?.sceneId]);
 
   useEffect(() => {
-    if (!storyAudio || !dialogueBeat?.voiceCueId || !voiceCueForId(dialogueBeat.voiceCueId) || state.flow.screen !== 'story' || settings.voiceReplay !== 'automatic' || settings.voiceVolume <= 0) return undefined;
-    void storyAudio.narrateCue(dialogueBeat.voiceCueId, () => setVoiceRevealPending(false));
-    return () => storyAudio.cancelNarration();
-  }, [dialogueBeat?.index, dialogueBeat?.voiceCueId, settings.voiceReplay, settings.voiceVolume, state.flow.screen, storyAudio]);
+    const cueId = dialogueBeat?.isFinal ? dialogueBeat.voiceCueId : null;
+    const cue = cueId ? voiceCueForId(cueId) : undefined;
+    if (!storyAudio || !cueId || !cue || state.flow.screen !== 'story' || settings.voiceReplay !== 'automatic' || settings.voiceVolume <= 0) {
+      setVoiceRevealPending(false);
+      return undefined;
+    }
+    let active = true;
+    let completed = false;
+    setVoiceRevealPending(false);
+    void storyAudio.narrateCue(cueId, () => {
+      completed = true;
+      if (active) setVoiceRevealPending(false);
+    }).then((started) => {
+      if (active) setVoiceRevealPending(started && !completed);
+    }).catch(() => {
+      if (active) setVoiceRevealPending(false);
+    });
+    return () => { active = false; storyAudio.cancelNarration(); };
+  }, [dialogueBeat?.index, dialogueBeat?.isFinal, dialogueBeat?.voiceCueId, settings.voiceReplay, settings.voiceVolume, state.flow.screen, storyAudio]);
 
   const currentTutorial: TutorialKind | null = tutorialsSkipped ? null
     : state.flow.screen === 'story' && displayedScene && !displayedScene.resolved && (!displayedScene.dialogue || displayedScene.dialogue.isFinal) && displayedScene.choices.length > 0 && !tutorialsSeen.has('choice') ? 'choice'

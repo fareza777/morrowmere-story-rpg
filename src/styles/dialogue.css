@@ -20,6 +20,10 @@
   pointer-events: none;
 }
 
+.dialogue-character-left { left: 0; right: auto; object-position: bottom left; }
+.dialogue-character-right { right: 0; left: auto; object-position: bottom right; }
+.dialogue-character-center { left: 50%; right: auto; translate: -50% 0; object-position: bottom center; }
+
 .dialogue-character-layer[hidden] { display: none; }
 .dialogue-character-enter { animation: dialogue-character-arrival 280ms ease-out both; }
 .dialogue-speaker-plate, .dialogue-copy, .dialogue-continue, .dialogue-reveal, .dialogue-responses { position: relative; z-index: 1; }

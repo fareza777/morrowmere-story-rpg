@@ -17,6 +17,7 @@ import {
   isChronicle1CheckedChoice,
 } from './schema';
 import { ROUTE_OPTIONS } from '../director/pacing';
+import { voiceCueForId } from '../audio/catalog';
 
 export type ContentIssueCode =
   | 'duplicate_event_id'
@@ -59,7 +60,12 @@ export type ContentIssueCode =
   | 'invalid_journey_subtype'
   | 'invalid_callback_window'
   | 'unreachable_callback'
-  | 'missing_follow_up';
+  | 'missing_follow_up'
+  | 'invalid_dialogue'
+  | 'invalid_dialogue_speaker'
+  | 'invalid_dialogue_text'
+  | 'invalid_dialogue_sentence_count'
+  | 'invalid_dialogue_voice_text';
 
 export interface ContentIssue {
   readonly code: ContentIssueCode;
@@ -109,6 +115,30 @@ function effectIssues(effect: GameEffect, index: ContentIndex): ContentIssue[] {
   return [];
 }
 
+function dialogueSentenceCount(text: string): number {
+  return text.trim().split(/[.!?]+(?:\s+|$)/u).filter(Boolean).length;
+}
+
+function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssue[] {
+  if (event.dialogue === undefined) return [];
+  if (event.dialogue.length === 0) return [{ code: 'invalid_dialogue', message: `Scene ${event.id} has an empty dialogue list.` }];
+  const issues: ContentIssue[] = [];
+  for (const beat of event.dialogue) {
+    if (!beat.speakerName.trim()) issues.push({ code: 'invalid_dialogue_speaker', message: `Scene ${event.id} has dialogue without a speaker.` });
+    if (!beat.text.trim()) issues.push({ code: 'invalid_dialogue_text', message: `Scene ${event.id} has dialogue without text.` });
+    if (dialogueSentenceCount(beat.text) < 1 || dialogueSentenceCount(beat.text) > 3) issues.push({ code: 'invalid_dialogue_sentence_count', message: `Scene ${event.id} has dialogue outside the one-to-three sentence limit.` });
+    if (beat.characterLayer?.companionId && !index.companions.has(beat.characterLayer.companionId)) issues.push({ code: 'missing_companion', message: `Missing dialogue companion: ${beat.characterLayer.companionId}` });
+    if (beat.characterLayer && !index.artIds.has(beat.characterLayer.illustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue character art: ${beat.characterLayer.illustrationId}` });
+    if (beat.environmentIllustrationId && !index.artIds.has(beat.environmentIllustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue environment art: ${beat.environmentIllustrationId}` });
+    if (beat.voiceCueId) {
+      const cue = voiceCueForId(beat.voiceCueId);
+      if (!cue) issues.push({ code: 'missing_audio', message: `Missing dialogue voice cue: ${beat.voiceCueId}` });
+      else if (!cue.captionText.includes(beat.text) && !cue.spokenText.includes(beat.text) && !beat.text.includes(cue.captionText)) issues.push({ code: 'invalid_dialogue_voice_text', message: `Dialogue voice cue does not match beat text: ${beat.voiceCueId}` });
+    }
+  }
+  return issues;
+}
+
 export function validateContent(index: ContentIndex): ContentIssue[] {
   const issues = [
     ...duplicateIssues(index.events.values(), 'duplicate_event_id'),
@@ -126,6 +156,7 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
     if (event.audioId && !index.audioIds.has(event.audioId)) {
       issues.push({ code: 'missing_audio', message: `Missing audio: ${event.audioId}` });
     }
+    issues.push(...dialogueIssues(event, index));
     if (event.merchantId && !index.merchants.has(event.merchantId)) {
       issues.push({ code: 'missing_event_merchant', message: `Missing event merchant: ${event.merchantId}` });
     }

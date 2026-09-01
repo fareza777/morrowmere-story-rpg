@@ -375,12 +375,17 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
       usedFallback = true;
       speakLocally(text, speaker);
     };
-    const ended = (): void => { releaseNarration(clip, false); options.onComplete?.(); };
-    const failed = (): void => {
-      const wasActive = narration?.element === clip;
+    let completed = false;
+    const finish = (fallbackToSpeech: boolean): void => {
+      if (completed || narration?.element !== clip) return;
+      completed = true;
       releaseNarration(clip, false);
-      if (wasActive) fallback();
+      if (fallbackToSpeech) fallback();
       options.onComplete?.();
+    };
+    const ended = (): void => { finish(false); };
+    const failed = (): void => {
+      finish(true);
     };
     const active = {
       element: clip,
@@ -398,10 +403,7 @@ export function createAudioService(dependencies: AudioServiceDependencies = {}):
     try {
       await attemptPlay(clip);
     } catch (error) {
-      const wasActive = narration?.element === clip;
-      releaseNarration(clip, false);
-      if (wasActive) fallback();
-      options.onComplete?.();
+      failed();
       if (options.reportFailure) throw error;
     }
   };
