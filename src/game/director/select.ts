@@ -4,6 +4,7 @@ import type { EventId } from '../domain/ids';
 import { callbackScene, comparePosition, eligibleScenes } from './eligibility';
 import { nextTension, nextThreat, pacingCandidates, routeWeight, scenePacing } from './pacing';
 import type {
+  AuthoredSceneQueueEntry,
   DirectorReason,
   DirectorState,
   DirectorStep,
@@ -46,13 +47,57 @@ interface CandidatePick {
   readonly reason: DirectorReason;
 }
 
+interface AuthoredQueuePick {
+  readonly event?: ChronicleEvent;
+  readonly queue: readonly AuthoredSceneQueueEntry[];
+  readonly diagnostics: readonly string[];
+}
+
+function authoredQueuePick(
+  queue: readonly AuthoredSceneQueueEntry[],
+  state: DirectorState,
+  context: JourneyDirectorContext,
+  content: ContentIndex,
+  priorDiagnostics: readonly string[] = [],
+): AuthoredQueuePick {
+  let remaining = queue;
+  const diagnostics = [...priorDiagnostics];
+  while (remaining.length > 0) {
+    const entry = remaining[0]!;
+    const event = content.events.get(entry.sceneId);
+    if (event?.chapterId === context.position.chapterId
+      && event.slot !== undefined
+      && event.slot > context.position.slot) {
+      return { queue: remaining, diagnostics };
+    }
+    const directorWithoutTargetReservation = {
+      ...state,
+      pendingCallbacks: state.pendingCallbacks.filter((callback) => callback.targetEventId !== entry.sceneId),
+    };
+    const eligible = event?.chapterId === context.position.chapterId
+      && eligibleScenes(directorWithoutTargetReservation, context, content).some((candidate) => candidate.id === event.id);
+    if (event && eligible) {
+      return { event, queue: remaining.slice(1), diagnostics };
+    }
+    remaining = remaining.slice(1);
+    if (entry.requirementMode === 'required') {
+      diagnostics.push(
+        `Required authored scene ${entry.sceneId} from ${entry.sourceSceneId} is invalid or ineligible${entry.reason ? ` (${entry.reason})` : ''}; continuing at the next valid route anchor.`,
+      );
+    }
+  }
+  return { queue: remaining, diagnostics };
+}
+
 function pickCandidate(
   eligible: readonly ChronicleEvent[],
+  authored: ChronicleEvent | undefined,
   callback: ChronicleEvent | undefined,
   state: DirectorState,
   context: JourneyDirectorContext,
   content: ContentIndex,
   random: number,
+  recoverToAnchor: boolean,
 ): CandidatePick | undefined {
   const anchor = eligible
     .filter((event) => event.type === 'main' && (event.anchorOrder ?? Number.POSITIVE_INFINITY) <= context.position.slot)
@@ -65,12 +110,14 @@ function pickCandidate(
     candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
   const paced = selectPacedEvent(pacedEligible, state, context, random);
   const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
-  const event = callback ?? anchor ?? pacedSupport ?? threat ?? paced;
+  const event = authored ?? callback ?? anchor ?? (recoverToAnchor ? undefined : pacedSupport ?? threat ?? paced);
   if (!event) return undefined;
   return {
     event,
-    reason: callback
-      ? 'callback'
+    reason: authored
+      ? 'authored'
+      : callback
+        ? 'callback'
       : anchor
         ? 'anchor'
         : event === threat
@@ -153,8 +200,9 @@ function terminalStep(
   state: DirectorState,
   terminal: 'completed' | 'precondition',
   diagnostic: string,
+  authoredSceneQueue: readonly AuthoredSceneQueueEntry[],
 ): DirectorStep {
-  return { kind: 'terminal', terminal, diagnostic, state };
+  return { kind: 'terminal', terminal, diagnostic, state, authoredSceneQueue };
 }
 
 function fulfilledCallbacks(state: DirectorState, sceneId: EventId): DirectorState['pendingCallbacks'] {
@@ -184,19 +232,25 @@ function nextState(state: DirectorState, event: ChronicleEvent, rngState: number
 }
 
 /** Selects one authored scene only. It deliberately never materializes a route. */
-export function selectNextScene(state: DirectorState, context: JourneyDirectorContext, content: ContentIndex): DirectorStep {
+export function selectNextScene(
+  state: DirectorState,
+  context: JourneyDirectorContext,
+  content: ContentIndex,
+  authoredSceneQueue: readonly AuthoredSceneQueueEntry[] = [],
+): DirectorStep {
   const chapterScenes = [...content.events.values()].filter((event) => event.chapterId === context.position.chapterId);
   if (chapterScenes.length === 0) {
-    return terminalStep(state, 'precondition', `No Chronicle scenes are authored for ${context.position.chapterId}.`);
+    return terminalStep(state, 'precondition', `No Chronicle scenes are authored for ${context.position.chapterId}.`, authoredSceneQueue);
   }
   const rng = createRng(state.rngState);
   const random = rng.next();
+  let queuePick = authoredQueuePick(authoredSceneQueue, state, context, content);
   const callback = callbackScene(state, context, content);
-  if (dueRequiredCallback(state, context) && !callback) {
-    return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.');
+  if (!queuePick.event && dueRequiredCallback(state, context) && !callback) {
+    return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.', queuePick.queue);
   }
   let selectedContext = context;
-  let picked = pickCandidate(candidatesAtPosition(state, context, content), callback, state, context, content, random);
+  let picked = pickCandidate(candidatesAtPosition(state, context, content), queuePick.event, callback, state, context, content, random, queuePick.diagnostics.length > 0);
   if (!picked) {
     // Authored slots are chronology markers, not a promise that every route has a scene at every number.
     // Include callback deadlines even when no ordinary scene is authored there.
@@ -205,12 +259,13 @@ export function selectNextScene(state: DirectorState, context: JourneyDirectorCo
         ...context,
         position: { chapterId: context.position.chapterId, slot },
       };
+      queuePick = authoredQueuePick(queuePick.queue, state, futureContext, content, queuePick.diagnostics);
       const futureCallback = callbackScene(state, futureContext, content);
-      if (dueRequiredCallback(state, futureContext) && !futureCallback) {
-        return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.');
+      if (!queuePick.event && dueRequiredCallback(state, futureContext) && !futureCallback) {
+        return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.', queuePick.queue);
       }
       const futureEligible = candidatesAtPosition(state, futureContext, content);
-      picked = pickCandidate(futureEligible, futureCallback, state, futureContext, content, random);
+      picked = pickCandidate(futureEligible, queuePick.event, futureCallback, state, futureContext, content, random, queuePick.diagnostics.length > 0);
       if (picked) {
         selectedContext = futureContext;
         break;
@@ -225,6 +280,7 @@ export function selectNextScene(state: DirectorState, context: JourneyDirectorCo
       completed
         ? `The chapter route is complete for ${context.position.chapterId}; no remaining eligible Chronicle scenes are available.`
         : `No eligible Chronicle scene is available for ${context.position.chapterId} slot ${context.position.slot}.`,
+      queuePick.queue,
     );
   }
   return {
@@ -234,5 +290,7 @@ export function selectNextScene(state: DirectorState, context: JourneyDirectorCo
     selectedAt: selectedContext.position,
     reason: picked.reason,
     state: nextState(state, picked.event, rng.state),
+    authoredSceneQueue: queuePick.queue,
+    ...(queuePick.diagnostics.length > 0 ? { diagnostic: queuePick.diagnostics.join(' ') } : {}),
   };
 }

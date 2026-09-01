@@ -26,6 +26,7 @@ const content = makeContentIndex();
 const state = () => createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
 const persistedExpeditionDefaults = {
   sceneResolution: null,
+  authoredSceneQueue: [],
   heroVitals: { health: 20, resource: 10 },
   pendingReward: null,
 } as const;

@@ -102,6 +102,8 @@ interface ChronicleChoiceBase {
 export interface ChronicleDirectChoice extends ChronicleChoiceBase {
   readonly effects: readonly GameEffect[];
   readonly outcome: string;
+  readonly nextSceneId?: EventId;
+  readonly continueLabel?: string;
   readonly check?: never;
 }
 
@@ -151,6 +153,8 @@ export interface ChronicleEvent {
   /** Stable authored restock namespace; route state supplies the deterministic seed. */
   readonly merchantRestockKey?: string;
   readonly encounterId?: EncounterId;
+  /** Authored continuations are optional for legacy catalogs. */
+  readonly followUps?: readonly EventId[];
   readonly choices: readonly ChronicleChoice[];
 }
 
@@ -244,6 +248,8 @@ interface Chronicle1ChoiceBase {
 export interface Chronicle1DirectChoice extends Chronicle1ChoiceBase {
   readonly effects: readonly ChronicleEffect[];
   readonly outcome: string;
+  readonly nextSceneId?: EventId;
+  readonly continueLabel?: string;
   readonly check?: never;
 }
 
@@ -354,6 +360,8 @@ interface Chronicle1ChoiceSourceBase {
 export interface Chronicle1DirectChoiceSource extends Chronicle1ChoiceSourceBase {
   readonly effects: readonly ChronicleEffectSource[];
   readonly outcome: string;
+  readonly nextSceneId?: string;
+  readonly continueLabel?: string;
   readonly check?: never;
 }
 

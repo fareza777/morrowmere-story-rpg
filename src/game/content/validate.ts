@@ -149,6 +149,8 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
             issues.push({ code: 'missing_encounter', message: `Missing check branch encounter: ${branch.combatEncounterId}` });
           }
         }
+      } else if (choice.nextSceneId && !index.events.has(choice.nextSceneId)) {
+        issues.push({ code: 'missing_callback_target', message: `Missing direct choice scene: ${choice.nextSceneId}` });
       }
     }
   }
@@ -411,6 +413,8 @@ export function validateChronicleSources(input: ChronicleSourceInput): ContentIs
           if (branch.nextSceneId) validateSourceId('check next scene', branch.nextSceneId, issues);
           if (branch.combatEncounterId) validateSourceId('check encounter', branch.combatEncounterId, issues);
         }
+      } else if (choice.nextSceneId) {
+        validateSourceId('direct next scene', choice.nextSceneId, issues);
       }
     }
 

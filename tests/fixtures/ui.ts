@@ -333,6 +333,7 @@ export function makeUiGame(options: UiGameOptions = {}): GameStateV2 {
         director: initialDirector(77),
         position: { chapterId: 'ch01' as const, slot: 1 },
         currentSceneId,
+        authoredSceneQueue: [],
         sceneResolution: screen === 'story'
           ? { eventId: STORY_EVENT.id, choiceId: null }
           : null,

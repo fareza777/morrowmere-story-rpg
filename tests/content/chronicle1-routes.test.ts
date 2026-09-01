@@ -60,6 +60,7 @@ function initialEffectState(seed: number): EffectState {
       position: { chapterId: 'ch01', slot: 1 },
       currentSceneId: null,
       sceneResolution: null,
+      authoredSceneQueue: [],
       heroVitals: { health: 44, resource: 8 },
       currentCombat: null,
       pendingReward: null,

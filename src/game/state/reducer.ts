@@ -3,11 +3,11 @@ import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
 import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
 import { calculateCheckChance, classifyCheckResult, createCheckRoll } from '../checks';
-import type { ChapterId, EncounterId, ItemId } from '../domain/ids';
+import type { ChapterId, EncounterId, EventId, ItemId } from '../domain/ids';
 import type { GameEffect } from '../domain/effects';
 import type { DomainEvent } from '../domain/result';
 import { beginDirectorRun, choiceIsAvailable, selectNextScene } from '../director';
-import type { DirectorState } from '../director/types';
+import type { AuthoredSceneQueueEntry, DirectorState } from '../director/types';
 import { applyInventoryCommand, useItem, type InventoryState } from '../inventory';
 import { generateMerchantVisit, quoteTrade } from '../merchant';
 import { isRewardedGoldEligible, shouldShowInterstitial } from '../../native/ads/policy';
@@ -338,6 +338,31 @@ export function currentSceneId(state: GameStateV2) {
   return state.expedition?.currentSceneId ?? null;
 }
 
+function enqueueAuthoredAftermaths(
+  queue: readonly AuthoredSceneQueueEntry[],
+  sourceSceneId: EventId,
+  requiredSceneId: EventId | null,
+  followUps: readonly EventId[],
+): readonly AuthoredSceneQueueEntry[] {
+  let next = [...queue];
+  if (requiredSceneId) {
+    next = next.filter((entry) => entry.sceneId !== requiredSceneId);
+    const entry: AuthoredSceneQueueEntry = {
+      sceneId: requiredSceneId,
+      sourceSceneId,
+      requirementMode: 'required',
+      reason: 'selected choice continuation',
+    };
+    const firstOptional = next.findIndex((candidate) => candidate.requirementMode === 'optional');
+    next.splice(firstOptional < 0 ? next.length : firstOptional, 0, entry);
+  }
+  for (const sceneId of followUps) {
+    if (next.some((entry) => entry.sceneId === sceneId)) continue;
+    next.push({ sceneId, sourceSceneId, requirementMode: 'optional' });
+  }
+  return next;
+}
+
 function commitCampMutation(state: GameStateV2, campaign: GameStateV2['campaign'], updatedAt: string, events: readonly DomainEvent[]): GameTransition {
   const provisional = { ...state, campaign, updatedAt };
   const campSceneId = state.checkpoints.camp?.campSceneId ?? null;
@@ -428,6 +453,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const expedition = {
       routeProfile: command.routeProfile ?? 'kings-road', routeSeed: seed, director: beginDirectorRun(seededDirector),
       position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, sceneResolution: null,
+      authoredSceneQueue: [],
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
       unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], merchantVisits: [],
     } as const;
@@ -471,14 +497,20 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
     const current = currentScene(state, content);
     if (current && current.choices.length > 0 && state.expedition.sceneResolution?.eventId !== current.id) return diagnostic(state, 'choice_required', 'Resolve the current choice before continuing.');
-    const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content);
+    const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile }, content, state.expedition.authoredSceneQueue);
     if (step.kind !== 'selected') {
       return step.terminal === 'completed'
         ? completeChapter(state, step.state, command.updatedAt)
         : diagnostic(state, 'scene_unavailable', step.diagnostic);
     }
-    const expedition = { ...state.expedition, director: step.state, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } };
-    return commit(state, { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(step.state) }, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Scene ready.' }]);
+    const authoredSceneQueue = step.event.choices.length === 0
+      ? enqueueAuthoredAftermaths(step.authoredSceneQueue, step.event.id, null, step.event.followUps ?? [])
+      : step.authoredSceneQueue;
+    const expedition = { ...state.expedition, director: step.state, authoredSceneQueue, currentSceneId: step.sceneId, sceneResolution: step.event.choices.length === 0 ? { eventId: step.sceneId, choiceId: null } : null, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } };
+    return commit(state, { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(step.state) }, expedition, updatedAt: command.updatedAt }, [
+      ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []),
+      { type: 'notification', message: 'Scene ready.' },
+    ]);
   }
   if (command.type === 'resolve-choice') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Resolve choices while travelling.');
@@ -508,6 +540,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         : resultKind === 'critical-failure' ? choice.check.criticalFailure ?? choice.check.failure
           : resultKind === 'success' ? choice.check.success : choice.check.failure
       : null;
+    const nextSceneId = branch?.nextSceneId ?? (!checked ? choice.nextSceneId ?? null : null);
+    const continueLabel = branch?.continueLabel ?? (!checked ? choice.continueLabel ?? null : null);
     const effects: readonly GameEffect[] = branch
       ? [...branch.effects, ...(branch.combatEncounterId ? [{ type: 'combat' as const, encounterId: branch.combatEncounterId }] : [])]
       : isChronicleCheckedChoice(choice) ? [] : choice.effects;
@@ -536,9 +570,15 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         roll,
         outcome: branch?.outcome ?? choice.outcome,
         effectSummary: effectSummary(effects, content),
-        nextSceneId: branch?.nextSceneId ?? null,
-        continueLabel: branch?.continueLabel ?? null,
+        nextSceneId,
+        continueLabel,
       },
+      authoredSceneQueue: enqueueAuthoredAftermaths(
+        applied.value.expedition!.authoredSceneQueue,
+        scene.id,
+        nextSceneId,
+        scene.followUps ?? [],
+      ),
     };
     const events: DomainEvent[] = [{ type: 'choice_resolved', eventId: scene.id, choiceId: choice.id }, ...applied.value.events];
     if (expedition.heroVitals.health <= 0) {

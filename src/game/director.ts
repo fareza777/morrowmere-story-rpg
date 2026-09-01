@@ -6,6 +6,7 @@ export { chooseRouteOptions } from './director/pacing';
 export { beginDirectorRun, selectNextScene } from './director/select';
 export { choiceIsAvailable } from './director/eligibility';
 export type {
+  AuthoredSceneQueueEntry,
   DirectorReason,
   DirectorSelectedStep,
   DirectorState,

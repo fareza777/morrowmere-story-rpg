@@ -25,6 +25,7 @@ export type {
   ProfileState,
   SequencedDomainEvent,
 } from './state/types';
+export type { AuthoredSceneQueueEntry } from './director/types';
 
 export interface GameSettings {
   readonly textScale: number;

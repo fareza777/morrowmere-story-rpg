@@ -2,7 +2,7 @@ import type { CompanionRoster } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { ChapterId, ChoiceId, CompanionId, EncounterId, EventId, ItemId, MerchantId, StoryPosition } from '../domain/ids';
 import type { CommandDiagnostic, DomainEvent } from '../domain/result';
-import type { DirectorState, RouteProfileId } from '../director/types';
+import type { AuthoredSceneQueueEntry, DirectorState, RouteProfileId } from '../director/types';
 import type { InventoryCommand, InventoryState } from '../inventory';
 import type { HeroProgress } from '../progression';
 import type { HeroClass } from '../types';
@@ -89,6 +89,7 @@ export interface ExpeditionState {
   readonly position: StoryPosition;
   readonly currentSceneId: EventId | null;
   readonly sceneResolution: SceneResolution | null;
+  readonly authoredSceneQueue: readonly AuthoredSceneQueueEntry[];
   readonly heroVitals: HeroVitals;
   readonly currentCombat: { readonly encounterId: EncounterId; readonly combat: CombatState | null } | null;
   readonly pendingReward: PendingBattleReward | null;

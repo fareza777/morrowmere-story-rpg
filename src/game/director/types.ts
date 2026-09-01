@@ -2,8 +2,15 @@ import type { ChronicleEvent } from '../content/schema';
 import type { EventId, StoryPosition } from '../domain/ids';
 
 export type RouteProfileId = 'kings-road' | 'old-forest' | 'ruined-pass';
-export type DirectorReason = 'callback' | 'anchor' | 'threat' | 'paced';
+export type DirectorReason = 'authored' | 'callback' | 'anchor' | 'threat' | 'paced';
 export type ScenePacing = 'danger' | 'merchant' | 'recovery' | 'quiet';
+
+export interface AuthoredSceneQueueEntry {
+  readonly sceneId: EventId;
+  readonly sourceSceneId: EventId;
+  readonly requirementMode: 'required' | 'optional';
+  readonly reason?: string;
+}
 
 export interface RouteOption {
   readonly id: RouteProfileId;
@@ -53,6 +60,9 @@ export interface DirectorSelectedStep {
   readonly selectedAt: StoryPosition;
   readonly reason: DirectorReason;
   readonly state: DirectorState;
+  readonly authoredSceneQueue: readonly AuthoredSceneQueueEntry[];
+  /** Non-blocking recovery detail, emitted while a valid fallback is still selected. */
+  readonly diagnostic?: string;
 }
 
 export interface DirectorTerminalStep {
@@ -60,6 +70,7 @@ export interface DirectorTerminalStep {
   readonly terminal: 'completed' | 'precondition';
   readonly diagnostic: string;
   readonly state: DirectorState;
+  readonly authoredSceneQueue: readonly AuthoredSceneQueueEntry[];
 }
 
 export type DirectorStep = DirectorSelectedStep | DirectorTerminalStep;

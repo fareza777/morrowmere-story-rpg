@@ -39,6 +39,7 @@ function effectState(content: ContentIndex) {
     position: { chapterId: 'ch01', slot: 1 },
     currentSceneId: null,
     sceneResolution: null,
+    authoredSceneQueue: [],
     heroVitals: { health: 40, resource: 12 },
     currentCombat: null,
     pendingReward: null,
