@@ -1,4 +1,4 @@
-import type { ChapterId, EncounterId, EnemyId } from '../../../domain/ids';
+import type { ChapterId, EncounterId, EnemyId, ItemId } from '../../../domain/ids';
 import { deepFreeze } from '../builders';
 import { CHRONICLE1_BOSSES } from './bosses';
 import { CHRONICLE1_RANKED_ENEMIES } from './ranked';

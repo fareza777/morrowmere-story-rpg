@@ -296,7 +296,11 @@ function isSourceEffect(value: unknown): value is ChronicleEffect {
     case 'companion-loyalty':
       return isNonEmptyString(value.companionId) && isFiniteNumber(value.amount);
     case 'companion-quest':
-      return isNonEmptyString(value.companionId) && Number.isInteger(value.stage) && value.stage >= 0 && value.stage <= 3;
+      return isNonEmptyString(value.companionId)
+        && isFiniteNumber(value.stage)
+        && Number.isInteger(value.stage)
+        && value.stage >= 0
+        && value.stage <= 3;
     case 'companion-injury':
       return isNonEmptyString(value.companionId) && typeof value.injured === 'boolean';
     case 'threat':
@@ -832,9 +836,10 @@ function graphBranchTarget(branch: unknown): string | null {
 
 function hasCompleteCheckedBranches(choice: Chronicle1Choice): boolean {
   const record = choice as unknown as SourceRecord;
-  if (!isRecord(record.check)) return false;
+  const check = record.check;
+  if (!isRecord(check)) return false;
   return ['success', 'failure'].every((label) => {
-    const branch = record.check[label];
+    const branch = check[label];
     return isRecord(branch)
       && typeof branch.outcome === 'string'
       && branch.outcome.trim().length > 0
@@ -857,7 +862,7 @@ function branchTargets(choice: Chronicle1Choice): readonly (string | null)[] {
 }
 
 function requiredCycleIssues(events: readonly Chronicle1Event[]): ContentIssue[] {
-  const eventIds = new Set(events.map((event) => event.id));
+  const eventIds = new Set<string>(events.map((event) => event.id));
   const edges = new Map<string, readonly string[]>();
   const outcomes = new Map<string, readonly (string | null)[]>();
   for (const event of events) {
