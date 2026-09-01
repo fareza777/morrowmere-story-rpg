@@ -364,6 +364,15 @@ function enqueueAuthoredAftermaths(
   return next;
 }
 
+function abandonAuthoredCombatContinuations(
+  queue: readonly AuthoredSceneQueueEntry[],
+  sourceSceneId: EventId | null,
+): readonly AuthoredSceneQueueEntry[] {
+  return sourceSceneId === null
+    ? queue
+    : queue.filter((entry) => entry.sourceSceneId !== sourceSceneId);
+}
+
 function commitCampMutation(state: GameStateV2, campaign: GameStateV2['campaign'], updatedAt: string, events: readonly DomainEvent[]): GameTransition {
   const provisional = { ...state, campaign, updatedAt };
   const campSceneId = state.checkpoints.camp?.campSceneId ?? null;
@@ -718,8 +727,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const heroVitals = { health: result.combat.player.health, resource: result.combat.player.focus };
     const unbankedLoot = usedItemId ? removeOneUnbanked(state.expedition.unbankedLoot, usedItemId) : state.expedition.unbankedLoot;
     if (result.combat.outcome === 'active') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat } }, updatedAt: command.updatedAt }, result.events);
-    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: null, pendingReward: null, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
-    if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
+    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, authoredSceneQueue: abandonAuthoredCombatContinuations(state.expedition.authoredSceneQueue, state.expedition.currentSceneId), currentCombat: null, pendingReward: null, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, authoredSceneQueue: abandonAuthoredCombatContinuations(state.expedition.authoredSceneQueue, state.expedition.currentSceneId), currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
     const priorVictories = state.campaign.encounterFamilyVictories[encounter.family] ?? 0;
     const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
     if (!xp.ok) return diagnostic(state, xp.error.code, xp.error.message);

@@ -58,7 +58,7 @@ function content(): ContentIndex {
         success: { outcome: 'You find a dry line through the reeds.', effects: [{ type: 'flag', operation: 'add', flagId: 'unexpected-bog-success' as never }] },
         failure: {
           outcome: 'Raiders rise from the waterline.', effects: [{ type: 'flag', operation: 'add', flagId: 'bog-ambush' as never }],
-          combatEncounterId: asEncounter('bog-raiders'), continueLabel: 'Draw your sword',
+          combatEncounterId: asEncounter('bog-raiders'), nextSceneId: asEvent('success-aftermath'), continueLabel: 'Draw your sword',
         },
       },
     }] as never,
@@ -197,6 +197,7 @@ describe('narrative choice resolution', () => {
     expect(fled.state.expedition?.currentCombat).toBeNull();
     expect(fled.state.expedition?.currentSceneId).toBeNull();
     expect(fled.state.expedition?.sceneResolution).toBeNull();
+    expect(fled.state.expedition?.authoredSceneQueue).toEqual([]);
 
     const rewarded = {
       ...handedOff.state,
@@ -212,6 +213,7 @@ describe('narrative choice resolution', () => {
     expect(claimed.state.expedition?.currentCombat).toBeNull();
     expect(claimed.state.expedition?.currentSceneId).toBeNull();
     expect(claimed.state.expedition?.sceneResolution).toBeNull();
+    expect(claimed.state.expedition?.authoredSceneQueue.map((entry) => entry.sceneId)).toEqual([asEvent('success-aftermath')]);
   });
 
   it('records direct choices as non-random resolutions', () => {
