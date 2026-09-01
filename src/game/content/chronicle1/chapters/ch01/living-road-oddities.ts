@@ -457,6 +457,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     illustrationId: 'scene-ch01-living-armor-that-knelt-aftermath',
     title: 'A Soldier Finally Unharnessed',
     requirements: [{ type: 'flag', flagId: 'kneeling-armor-route-chosen' }],
+    exclusions: [{ type: 'flag', flagId: 'kneeling-armor-avoided' }],
     narrative: [
       "The old levy corpse lies flat at last. Its command token names the barrow road and bears a quartermaster's office number still used inside Greywatch. The useful pieces are a locking key, two sound plates, and the testimony of the token itself.",
     ],

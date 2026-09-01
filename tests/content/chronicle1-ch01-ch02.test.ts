@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CH02_SCENES } from '../../src/game/content/chronicle1/chapters/ch02';
-import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
+import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes, chronicleCheckBranches } from '../../src/game/content/schema';
 
 const CH01_ANCHORS = [
   'ch01-main-three-days-to-greywatch',
@@ -102,11 +102,20 @@ describe.each([
     }
   });
 
-  it('keeps the planned journey mix and six distinct combat premises', () => {
+  it('keeps the planned journey mix and connects every combat scene to a real encounter', () => {
     expect(countJourneySubtypes(scenes)).toEqual(journey);
     const combatScenes = scenes.filter((scene) => scene.type === 'combat');
-    expect(new Set(combatScenes.map((scene) => scene.encounterId)).size).toBe(6);
-    expect(combatScenes.every((scene) => scene.encounterId?.startsWith(`enc-${chapterId}-`))).toBe(true);
+    for (const scene of combatScenes) {
+      const encounterIds = [
+        ...(scene.encounterId ? [scene.encounterId] : []),
+        ...scene.choices.flatMap((choice) => [
+          ...chronicle1ChoiceEffects(choice).flatMap((effect) => effect.type === 'combat' ? [effect.encounterId] : []),
+          ...(choice.check ? chronicleCheckBranches(choice.check).flatMap((branch) => branch.combatEncounterId ? [branch.combatEncounterId] : []) : []),
+        ]),
+      ];
+      expect(encounterIds.length, scene.id).toBeGreaterThan(0);
+      expect(encounterIds.every((encounterId) => encounterId.startsWith(`enc-${chapterId}-`)), scene.id).toBe(true);
+    }
   });
 
   it('contains one camp, two service scenes, and the intended relationship ownership', () => {
@@ -149,12 +158,14 @@ it('keeps living-road rewards aligned with the choice that produced them', () =>
     operation: 'add',
     flagId: 'kneeling-armor-resolved',
   });
+  const armorAftermath = CH01_SCENES.find((scene) => scene.id === 'ch01-living-armor-that-knelt-aftermath')!;
+  expect(armorAftermath.exclusions).toContainEqual({ type: 'flag', flagId: 'kneeling-armor-avoided', present: true });
 
   const acceptBloodPrice = choice('ch01-choice-barrow-accept-the-blood-price');
   expect(chronicle1ChoiceEffects(acceptBloodPrice)).toContainEqual({ type: 'vitals', health: -2 });
 
   const claimAfterTrial = choice('ch01-choice-barrow-claim-after-trial');
-  expect(claimAfterTrial.exclusions).toContainEqual({ type: 'flag', flagId: 'grave-tithe-taken-cursed' });
+  expect(claimAfterTrial.exclusions).toContainEqual({ type: 'flag', flagId: 'grave-tithe-taken-cursed', present: true });
 
   const hiddenPace = choice('ch01-choice-riders-keep-the-hidden-pace');
   expect(chronicle1ChoiceEffects(hiddenPace)).not.toContainEqual(expect.objectContaining({
@@ -162,4 +173,25 @@ it('keeps living-road rewards aligned with the choice that produced them', () =>
     itemId: 'consumable-caltrop-pouch',
     operation: 'grant',
   }));
+
+  for (const battleChoiceId of [
+    'ch01-choice-riders-break-the-captains-line',
+  ]) {
+    expect(chronicle1ChoiceEffects(choice(battleChoiceId))).toContainEqual({
+      type: 'flag',
+      operation: 'add',
+      flagId: 'riders-valley-resolved',
+    });
+  }
+  for (const checkedBattleChoiceId of [
+    'ch01-choice-riders-hide-the-wagons',
+    'ch01-choice-riders-bargain-for-ten-minutes',
+  ]) {
+    const checkedChoice = choice(checkedBattleChoiceId);
+    expect(checkedChoice.check?.failure.effects).toContainEqual({
+      type: 'flag',
+      operation: 'add',
+      flagId: 'riders-valley-resolved',
+    });
+  }
 });

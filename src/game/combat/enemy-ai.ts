@@ -15,7 +15,7 @@ export function roleForEnemy(enemy: { readonly species: string; readonly traits:
   const trait = enemy.traits.join(' ').toLowerCase();
   // The shipped catalog uses evocative trait names rather than role labels.
   // Keep this mapping explicit so content changes do not silently flatten roles.
-  if (trait.includes('shield wall') || trait.includes('unliving plate') || trait.includes('chitinous')) return 'defender';
+  if (trait.includes('shield wall') || trait.includes('unliving plate') || trait.includes('chitinous') || trait.includes('chain mantle')) return 'defender';
   if (trait.includes('quick hands') || trait.includes('executioner') || trait.includes('pack hunter') || trait.includes('incorporeal')) return 'assassin';
   if (trait.includes('cinder flask') || trait.includes('stone wings')) return 'archer';
   if (trait.includes('witchfire')) return 'shaman';

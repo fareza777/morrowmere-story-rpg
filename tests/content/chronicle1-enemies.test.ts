@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { roleForEnemy } from '../../src/game/combat/enemy-ai';
 import { CHRONICLE1_SCENES } from '../../src/game/content/chronicle1';
-import { chronicle1ChoiceEffects } from '../../src/game/content/schema';
+import { chronicle1ChoiceEffects, chronicleCheckBranches } from '../../src/game/content/schema';
 import {
   BOSS_IDS,
   BOSS_PORTRAIT_IDS,
@@ -124,13 +124,17 @@ describe('Chronicle I enemy catalog', () => {
 });
 
 describe('Chronicle I encounter catalog', () => {
-  it('maps exactly one definition to each of the forty-eight authored combat scenes', () => {
-    const combatScenes = CHRONICLE1_SCENES.filter((scene) => scene.type === 'combat');
-    const sceneEncounterIds = combatScenes.map((scene) => scene.encounterId).sort();
+  it('maps all fifty-seven encounter definitions to a direct or choice-driven scene branch', () => {
+    const sceneEncounterIds = [...new Set(CHRONICLE1_SCENES.flatMap((scene) => [
+      ...(scene.encounterId ? [scene.encounterId] : []),
+      ...scene.choices.flatMap((choice) => [
+        ...chronicle1ChoiceEffects(choice).flatMap((effect) => effect.type === 'combat' ? [effect.encounterId] : []),
+        ...(choice.check ? chronicleCheckBranches(choice.check).flatMap((branch) => branch.combatEncounterId ? [branch.combatEncounterId] : []) : []),
+      ]),
+    ]))].sort();
 
-    expect(combatScenes).toHaveLength(48);
-    expect(new Set(sceneEncounterIds).size).toBe(48);
-    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(48);
+    expect(sceneEncounterIds).toHaveLength(57);
+    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(57);
     expect(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id).sort()).toEqual(sceneEncounterIds);
   });
 

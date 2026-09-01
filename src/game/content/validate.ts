@@ -973,7 +973,18 @@ function encounterIssues(input: ChroniclePlayabilityInput): ContentIssue[] {
     if (!encounterId || !encounterIds.has(encounterId)) issues.push(sourceIssue('missing_encounter', `${owner} in scene ${sceneId} references missing encounter ${encounterId ?? '(none)'}.`));
   };
   for (const event of input.events ?? []) {
-    if (event.type === 'combat') validateEncounter(event.id, event.encounterId, 'Combat scene');
+    const choiceEncounterIds = event.choices.flatMap((choice) => {
+      const branches = checkedChoiceBranches(choice, event.id, []);
+      const effects = sourceChoiceEffects(choice, branches);
+      return [
+        ...effects.flatMap((effect) => effect.type === 'combat' ? [effect.encounterId] : []),
+        ...(branches ?? []).flatMap((branch) => typeof branch.value.combatEncounterId === 'string' ? [branch.value.combatEncounterId] : []),
+      ];
+    });
+    if (event.type === 'combat') {
+      if (event.encounterId) validateEncounter(event.id, event.encounterId, 'Combat scene');
+      else if (choiceEncounterIds.length === 0) validateEncounter(event.id, undefined, 'Combat scene');
+    }
     else if (event.encounterId) validateEncounter(event.id, event.encounterId, 'Scene');
     for (const choice of event.choices) {
       const branches = checkedChoiceBranches(choice, event.id, []);

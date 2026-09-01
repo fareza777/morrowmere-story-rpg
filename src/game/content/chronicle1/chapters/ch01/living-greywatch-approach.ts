@@ -601,7 +601,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
       {
         id: 'ch01-choice-riders-hide-the-wagons',
         label: 'Hide wagons and false the trail',
-        detail: 'Use Cunning against difficulty 4 to send the mounted scouts into the wrong gully.',
+        detail: 'Use Cunning against difficulty 4 to send the mounted scouts into an empty gully.',
         requirements: [{ type: 'flag', flagId: 'riders-hide-prepared' }],
         check: {
           stat: 'cunning',
@@ -632,6 +632,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
             outcome: 'A wheel cuts fresh chalk through the disguise and the riders turn at once.',
             effects: [
               { type: 'flag', operation: 'add', flagId: 'riders-valley-fought' },
+              { type: 'flag', operation: 'add', flagId: 'riders-valley-resolved' },
               { type: 'vitals', health: -2 },
             ],
             combatEncounterId: 'enc-ch01-reedbank-pursuers',
@@ -672,6 +673,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
             effects: [
               { type: 'vitals', resource: -2 },
               { type: 'flag', operation: 'add', flagId: 'riders-valley-fought' },
+              { type: 'flag', operation: 'add', flagId: 'riders-valley-resolved' },
             ],
             combatEncounterId: 'enc-ch01-reedbank-pursuers',
             nextSceneId: 'ch01-living-riders-in-valley-aftermath',
@@ -686,6 +688,7 @@ export const CH01_LIVING_GREYWATCH_APPROACH = Object.freeze([
         requirements: [{ type: 'flag', flagId: 'riders-fight-prepared' }],
         effects: [
           { type: 'flag', operation: 'add', flagId: 'riders-valley-fought' },
+          { type: 'flag', operation: 'add', flagId: 'riders-valley-resolved' },
           { type: 'combat', encounterId: 'enc-ch01-reedbank-pursuers' },
         ],
         outcome: 'The guard pikes force the first horses inward where the riders cannot circle.',

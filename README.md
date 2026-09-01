@@ -9,7 +9,7 @@ MORROWMERE is an English-language, portrait-first sword-and-sorcery text RPG for
 | Chapters | 8 |
 | Authored story scenes | 386 |
 | Enemies | 225 |
-| Encounter formations | 48 |
+| Encounter formations | 57 |
 | Items | 166 |
 | Visual assets | 600+ |
 | Music tracks | 13 |

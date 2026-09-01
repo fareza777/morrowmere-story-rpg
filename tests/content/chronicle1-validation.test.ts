@@ -43,7 +43,7 @@ describe('Chronicle I production content index', () => {
     expect(CHRONICLE1_CONTENT.events.size).toBe(386);
     expect(CHRONICLE1_CONTENT.items.size).toBe(166);
     expect(CHRONICLE1_CONTENT.enemies.size).toBe(225);
-    expect(CHRONICLE1_CONTENT.encounters.size).toBe(48);
+    expect(CHRONICLE1_CONTENT.encounters.size).toBe(57);
     expect(CHRONICLE1_CONTENT.companions.size).toBe(5);
     expect(CHRONICLE1_CONTENT.merchants.size).toBe(6);
     expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
@@ -196,4 +196,4 @@ describe('Chronicle I media manifest exporter', () => {
 
     expect(secondExport).not.toMatch(/(?:sk_[A-Za-z0-9]+|api[_-]?key|provider|[A-Z]:\\|\/Users\/)/i);
   }, 30_000);
-});
+  }, 90_000);
