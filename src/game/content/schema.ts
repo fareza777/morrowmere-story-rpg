@@ -56,9 +56,9 @@ export interface ChronicleCheckModifier {
 }
 
 /** One authored outcome of a checked choice. */
-export interface ChronicleChoiceBranch {
+export interface ChronicleChoiceBranch<Effect = GameEffect> {
   readonly outcome: string;
-  readonly effects: readonly GameEffect[];
+  readonly effects: readonly Effect[];
   readonly nextSceneId?: EventId;
   readonly combatEncounterId?: EncounterId;
   readonly continueLabel?: string;
@@ -68,27 +68,39 @@ export interface ChronicleChoiceBranch {
  * A deterministic stat check. Critical branches are optional because a
  * critical result falls back to its ordinary success or failure branch.
  */
-export interface ChronicleChoiceCheck {
+export interface ChronicleChoiceCheck<Effect = GameEffect> {
   readonly stat: ChronicleStat;
   readonly difficulty: number;
   readonly modifiers?: readonly ChronicleCheckModifier[];
-  readonly success: ChronicleChoiceBranch;
-  readonly failure: ChronicleChoiceBranch;
-  readonly criticalSuccess?: ChronicleChoiceBranch;
-  readonly criticalFailure?: ChronicleChoiceBranch;
+  readonly success: ChronicleChoiceBranch<Effect>;
+  readonly failure: ChronicleChoiceBranch<Effect>;
+  readonly criticalSuccess?: ChronicleChoiceBranch<Effect>;
+  readonly criticalFailure?: ChronicleChoiceBranch<Effect>;
 }
 
-export interface ChronicleChoice {
+interface ChronicleChoiceBase {
   readonly id: ChoiceId;
   readonly label: string;
   readonly detail: string;
   readonly requirements?: readonly ChronicleRequirement[];
   readonly exclusions?: readonly ChronicleRequirement[];
+}
+
+/** Legacy/direct choices retain their authored outcome and effects. */
+export interface ChronicleDirectChoice extends ChronicleChoiceBase {
   readonly effects: readonly GameEffect[];
   readonly outcome: string;
-  /** When supplied, resolution uses its branch outcomes instead of the direct outcome. */
-  readonly check?: ChronicleChoiceCheck;
+  readonly check?: never;
 }
+
+/** Checked choices own every outcome and effect through their check branches. */
+export interface ChronicleCheckedChoice extends ChronicleChoiceBase {
+  readonly check: ChronicleChoiceCheck;
+  readonly effects?: never;
+  readonly outcome?: never;
+}
+
+export type ChronicleChoice = ChronicleDirectChoice | ChronicleCheckedChoice;
 
 export interface ChronicleEvent {
   readonly id: EventId;
@@ -195,15 +207,27 @@ export type ChronicleEffect =
   | { readonly type: 'threat'; readonly amount: number }
   | { readonly type: 'tension'; readonly amount: number };
 
-export interface Chronicle1Choice {
+interface Chronicle1ChoiceBase {
   readonly id: DecisionId;
   readonly label: string;
   readonly detail: string;
   readonly requirements?: readonly ChronicleRequirement[];
   readonly exclusions?: readonly ChronicleRequirement[];
+}
+
+export interface Chronicle1DirectChoice extends Chronicle1ChoiceBase {
   readonly effects: readonly ChronicleEffect[];
   readonly outcome: string;
+  readonly check?: never;
 }
+
+export interface Chronicle1CheckedChoice extends Chronicle1ChoiceBase {
+  readonly check: ChronicleChoiceCheck<ChronicleEffect>;
+  readonly effects?: never;
+  readonly outcome?: never;
+}
+
+export type Chronicle1Choice = Chronicle1DirectChoice | Chronicle1CheckedChoice;
 
 export interface Chronicle1Event
   extends Omit<ChronicleEvent, 'id' | 'family' | 'weight' | 'illustrationId' | 'choices'> {
@@ -254,15 +278,45 @@ export interface ChronicleRequirementSource {
   readonly present?: boolean;
 }
 
-export interface Chronicle1ChoiceSource {
+export interface ChronicleChoiceBranchSource {
+  readonly outcome: string;
+  readonly effects: readonly ChronicleEffectSource[];
+  readonly nextSceneId?: string;
+  readonly combatEncounterId?: string;
+  readonly continueLabel?: string;
+}
+
+export interface ChronicleChoiceCheckSource {
+  readonly stat: ChronicleStat;
+  readonly difficulty: number;
+  readonly modifiers?: readonly ChronicleCheckModifier[];
+  readonly success: ChronicleChoiceBranchSource;
+  readonly failure: ChronicleChoiceBranchSource;
+  readonly criticalSuccess?: ChronicleChoiceBranchSource;
+  readonly criticalFailure?: ChronicleChoiceBranchSource;
+}
+
+interface Chronicle1ChoiceSourceBase {
   readonly id: string;
   readonly label: string;
   readonly detail: string;
   readonly requirements?: readonly ChronicleRequirementSource[];
   readonly exclusions?: readonly ChronicleRequirementSource[];
+}
+
+export interface Chronicle1DirectChoiceSource extends Chronicle1ChoiceSourceBase {
   readonly effects: readonly ChronicleEffectSource[];
   readonly outcome: string;
+  readonly check?: never;
 }
+
+export interface Chronicle1CheckedChoiceSource extends Chronicle1ChoiceSourceBase {
+  readonly check: ChronicleChoiceCheckSource;
+  readonly effects?: never;
+  readonly outcome?: never;
+}
+
+export type Chronicle1ChoiceSource = Chronicle1DirectChoiceSource | Chronicle1CheckedChoiceSource;
 
 export interface Chronicle1EventSource {
   readonly id: string;

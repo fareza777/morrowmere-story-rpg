@@ -16,6 +16,8 @@ import type {
   ChronicleChoice,
   ChronicleChoiceCheck,
   ChronicleChoiceBranch,
+  ChronicleCheckedChoice,
+  ChronicleDirectChoice,
   ChronicleDefinition,
 } from '../src/game/content/schema';
 
@@ -89,17 +91,26 @@ describe('Chronicle I content schema', () => {
         combatEncounterId: 'encounter-road-raiders' as never,
       },
     };
-    const choice: ChronicleChoice = {
+    const choice: ChronicleCheckedChoice = {
       id: 'ch01-choice-brace-the-wagon' as never,
       label: 'Brace the wagon',
       detail: 'Put your shoulder into the sinking frame.',
-      effects: [],
-      outcome: 'The check has not yet been resolved.',
       check,
     };
+    const directChoice: ChronicleDirectChoice = {
+      id: 'ch01-choice-take-the-detour' as never,
+      label: 'Take the detour',
+      detail: 'Avoid the washed verge.',
+      effects: [],
+      outcome: 'The longer road is clear.',
+    };
+    // @ts-expect-error Checked choices own their outcome/effects in branches.
+    const invalidMixedChoice: ChronicleChoice = { ...choice, effects: [], outcome: 'Unused direct outcome.' };
 
-    expect(choice.check?.success.nextSceneId).toBe('ch01-journey-solid-ground');
-    expect(choice.check?.failure.combatEncounterId).toBe('encounter-road-raiders');
+    expect(choice.check.success.nextSceneId).toBe('ch01-journey-solid-ground');
+    expect(choice.check.failure.combatEncounterId).toBe('encounter-road-raiders');
+    expect(directChoice.outcome).toBe('The longer road is clear.');
+    expect(invalidMixedChoice).toBeDefined();
   });
 
   it('rejects duplicate IDs and broken references', () => {
