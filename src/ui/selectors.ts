@@ -8,6 +8,7 @@ import {
   type ChronicleEvent,
   type ContentIndex,
 } from '../game/content/schema';
+import { visibleDialogueBeats } from '../game/content/dialogue';
 import { CHRONICLE1_ROUTES } from '../game/content/chronicle1/routes';
 import { unavailableChoiceReason } from '../game/director/eligibility';
 import type { EnemyId, EventId, ItemId } from '../game/domain/ids';
@@ -399,11 +400,12 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
         : unavailableReason,
     };
   });
-  const dialogueBeat = event.dialogue?.[state.expedition?.dialogueBeatIndex ?? 0];
-  const dialogue: DialogueBeatViewModel | null = dialogueBeat && event.dialogue
+  const visibleDialogue = visibleDialogueBeats(event.dialogue, state.campaign.flags);
+  const dialogueBeat = visibleDialogue[state.expedition?.dialogueBeatIndex ?? 0];
+  const dialogue: DialogueBeatViewModel | null = dialogueBeat
     ? {
         index: state.expedition?.dialogueBeatIndex ?? 0,
-        total: event.dialogue.length,
+        total: visibleDialogue.length,
         speakerName: dialogueBeat.speakerName,
         text: dialogueBeat.text,
         expression: dialogueBeat.expression ?? null,
@@ -412,7 +414,7 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
           : null,
         environmentIllustrationId: dialogueBeat.environmentIllustrationId ?? null,
         voiceCueId: dialogueBeat.voiceCueId ?? null,
-        isFinal: (state.expedition?.dialogueBeatIndex ?? 0) === event.dialogue.length - 1,
+        isFinal: (state.expedition?.dialogueBeatIndex ?? 0) === visibleDialogue.length - 1,
       }
     : null;
   return {

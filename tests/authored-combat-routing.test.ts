@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHRONICLE1_CONTENT } from '../src/game/content/chronicle1';
 import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state';
 import type { ChoiceId, EventId } from '../src/game/domain/ids';
+import { encodeSaveState } from '../src/game/persistence/codec';
 
 const updatedAt = '2026-09-01T00:00:00.000Z';
 
@@ -15,6 +16,49 @@ function stateAtCombatScene(sceneId: EventId): GameStateV2 {
 }
 
 describe('authored combat scene routing', () => {
+  it('turns the orchard setup flags into a persistent battle opening', () => {
+    const sceneId = 'ch01-living-split-fletched-arrow-battle' as EventId;
+    const base = stateAtCombatScene(sceneId);
+    const prepared = {
+      ...base,
+      campaign: {
+        ...base.campaign,
+        flags: [
+          'orchard-high-bank-held',
+          'orchard-jory-shielded',
+          'orchard-horses-controlled',
+          'combat-ch01-orchard-cover',
+          'orchard-reaver-marked',
+          'opening-volley-delayed',
+          'medicine-protected-at-orchard',
+        ],
+      },
+      expedition: { ...base.expedition!, dialogueBeatIndex: 2, sceneVisitCounts: { [sceneId]: 1 } },
+    } as GameStateV2;
+    const resolved = reduceGame(prepared, {
+      type: 'resolve-choice',
+      eventId: sceneId,
+      choiceId: 'ch01-choice-charge-from-the-high-bank' as ChoiceId,
+      updatedAt,
+    }, CHRONICLE1_CONTENT);
+    const started = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt }, CHRONICLE1_CONTENT).state;
+    const combat = started.expedition?.currentCombat?.combat;
+
+    expect(combat?.player.guarding).toBe(true);
+    expect(combat?.player.attackBonus).toBeGreaterThan(0);
+    expect(combat?.player.statuses.map((status) => status.id)).toEqual(expect.arrayContaining([
+      'jory-and-dispatch-secured',
+      'horse-teams-controlled',
+      'medicine-protected',
+    ]));
+    expect(combat?.enemies.find((enemy) => enemy.id === 'black-banner-01')).toMatchObject({
+      evasion: 0,
+      parryChance: 0,
+      statuses: [expect.objectContaining({ id: 'marked-reaver' })],
+    });
+    expect(encodeSaveState(started, CHRONICLE1_CONTENT)).not.toBeNull();
+  });
+
   it('starts the authored combat encounter after resolving its setup choice', () => {
     const scene = [...CHRONICLE1_CONTENT.events.values()].find((candidate) => candidate.type === 'combat' && candidate.choices.length > 0);
     expect(scene).toBeDefined();

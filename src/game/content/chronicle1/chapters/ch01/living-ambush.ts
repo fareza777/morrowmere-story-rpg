@@ -39,6 +39,30 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
         text: 'Then somebody lit it after they saw us.',
         environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
       },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The measured gaps match the buried points on the chalk road. This ground was prepared by the same kind of hand.',
+        requirements: [{ type: 'flag', flagId: 'chalk-trap-read' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
+      {
+        speakerName: 'Eda Pell',
+        text: 'The cut mare can pull, but not through another sudden turn.',
+        requirements: [{ type: 'flag', flagId: 'chalk-horse-cut' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
+      {
+        speakerName: 'Eda Pell',
+        text: 'The repaired trace will not survive another hard surge.',
+        requirements: [{ type: 'flag', flagId: 'chalk-trace-torn' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
+      {
+        speakerName: 'Eda Pell',
+        text: 'The rear brace has knocked harder since the chalk bend.',
+        requirements: [{ type: 'flag', flagId: 'chalk-wheel-struck' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-setup',
+      },
     ],
     choices: [
       {
@@ -233,6 +257,19 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
       {
         speakerName: 'Ressa Holt',
         text: 'We will take the south lane and tell Greywatch what we saw.',
+        requirements: [{ type: 'flag', flagId: 'verge-travelers-warned' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'Your solo approach kept the convoy outside their signal line.',
+        requirements: [{ type: 'flag', flagId: 'verge-scouted-alone' }],
+        environmentIllustrationId: 'scene-ch01-living-smoke-verge-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The joined wagon poles kept the travelers and medicine under one guard.',
+        requirements: [{ type: 'flag', flagId: 'verge-convoy-formed' }],
         environmentIllustrationId: 'scene-ch01-living-smoke-verge-aftermath',
       },
       {
@@ -246,6 +283,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
         id: 'ch01-choice-send-the-travelers-south',
         label: 'Send the travelers south under cover',
         detail: 'Move the charcoal burners away from the orchard before the convoy advances.',
+        requirements: [{ type: 'flag', flagId: 'verge-travelers-warned' }],
         effects: [
           { type: 'flag', operation: 'add', flagId: 'verge-travelers-safe' },
           { type: 'faction', factionId: 'greywatch', amount: 1 },
@@ -287,6 +325,24 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
       {
         speakerName: 'Jory Fen',
         text: 'Royal shaft. New feathers. Someone wanted us to recognize the wrong owner.',
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The orchard spacing matches the paired trap line from the chalk road.',
+        requirements: [{ type: 'flag', flagId: 'chalk-trap-read' }],
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The stopped smoke bought us a few breaths. Their first line is still settling.',
+        requirements: [{ type: 'flag', flagId: 'opening-volley-delayed' }],
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The escaped watchers reached the orchard first. Every firing lane is ready.',
+        requirements: [{ type: 'flag', flagId: 'verge-watchers-escaped' }],
         environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-setup',
       },
     ],
@@ -363,6 +419,18 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
       {
         speakerName: 'Jory Fen',
         text: 'Two fingers. The smoke used the same count.',
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-battle',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The dispatch is covered. Watch the high line.',
+        requirements: [{ type: 'flag', flagId: 'orchard-jory-shielded' }],
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-battle',
+      },
+      {
+        speakerName: 'Eda Pell',
+        text: 'The teams are against the wall. They will hold.',
+        requirements: [{ type: 'flag', flagId: 'orchard-horses-controlled' }],
         environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-battle',
       },
     ],
@@ -536,6 +604,18 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
         text: 'Royal metal, altered on the road. That is evidence of a supply chain, not proof of a uniform.',
         environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath',
       },
+      {
+        speakerName: 'Eda Pell',
+        text: 'Every sealed medicine case survived the cinder throw.',
+        requirements: [{ type: 'flag', flagId: 'medicine-protected-at-orchard' }],
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The dispatch and both teams stayed inside our line.',
+        requirements: [{ type: 'flag', flagId: 'jory-and-teams-held' }],
+        environmentIllustrationId: 'scene-ch01-living-split-fletched-arrow-aftermath',
+      },
     ],
     choices: [
       {
@@ -550,7 +630,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
           { type: 'xp', amount: 8, source: 'story' },
         ],
         outcome: 'Jory splints the full shaft between two boards, keeping feather, glue, and workshop notch together.',
-        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
         continueLabel: 'Carry the wounded toward the bridge',
       },
       {
@@ -565,7 +645,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
           { type: 'threat', amount: -1 },
         ],
         outcome: 'You remove the stamped head for safe keeping and bag the replaced feathers separately.',
-        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
         continueLabel: 'Move before the raiders regroup',
       },
       {
@@ -582,7 +662,7 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
           { type: 'tension', amount: 1 },
         ],
         outcome: 'You spend the remaining light on pressure dressings while Jory secures the arrow and dispatch.',
-        nextSceneId: 'ch01-main-the-bridge-in-smoke',
+        nextSceneId: 'ch01-journey-the-field-surgery-road',
         continueLabel: 'Take the bridge road',
       },
     ],

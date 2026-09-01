@@ -9,7 +9,12 @@ export const CH01_COMBAT = Object.freeze([
       'Three road cutters rise from the drainage ditch with hooked blades meant for wagon reins. A fourth waits behind the caravan with a short bow.',
       'The attackers want the horses alive and the guards separated. The stone culvert offers cover, but it leaves the rear wagon exposed.',
     ],
-    eligibility: { routes: ['kings-road'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
+    eligibility: {
+      routes: ['kings-road'],
+      minLevel: 1,
+      maxLevel: 2,
+      excludedFlags: ['chalk-rear-brake-held', 'chalk-drivers-sheltered'],
+    }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch01-choice-hold-between-the-wagons', label: 'Hold between the wagons', detail: 'Protect both teams from the hooked blades, but begin the fight in full view of the archer.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-ditch-formation' }], outcome: 'You plant your feet between the wagon poles as the first cutter reaches for the reins.' },
       { id: 'ch01-choice-rush-the-culvert-archer', label: 'Rush the culvert archer', detail: 'Remove the ranged threat early, but leave the drivers to resist the cutters for one exchange.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-ditch-rush' }], outcome: 'You vault the ditch toward the bow while the drivers pull their horses tight against the wagons.' },
@@ -23,7 +28,12 @@ export const CH01_COMBAT = Object.freeze([
       'Two disguised soldiers step from the orchard as the convoy clears the tollhouse. Their cloaks lack badges, but both move with practiced shield spacing.',
       'A goblin skirmisher watches from the roof, trapped between the soldiers and your line of retreat. The empty yard gives no safe middle ground.',
     ],
-    eligibility: { routes: ['kings-road', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: false, followUps: [], callbackPromises: [],
+    eligibility: {
+      routes: ['kings-road', 'ruined-pass'],
+      minLevel: 1,
+      maxLevel: 2,
+      excludedFlags: ['bell-wire-doorway-cleared', 'bell-wire-pinned'],
+    }, requirements: [], exclusions: [], cooldownRuns: 3, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch01-choice-break-the-soldiers-shield-line', label: 'Break the soldiers\' shield line', detail: 'Attack the trained pair before they settle, while accepting fire from the rooftop skirmisher.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-tollhouse-break-line' }], outcome: 'You drive toward the shields before the soldiers can close the gap between them.' },
       { id: 'ch01-choice-call-the-goblin-down', label: 'Call the goblin down', detail: 'Offer the rooftop skirmisher a way out, but give the soldiers time to take firm positions.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-tollhouse-parley' }, { type: 'threat', amount: 1 }], outcome: 'The goblin hesitates at the roof edge while the two soldiers lock shields below.' },
@@ -37,7 +47,17 @@ export const CH01_COMBAT = Object.freeze([
       'Archers move between low apple trees while two goblin knife fighters crawl beneath the wagon line. The royal-fletched arrows come from a disciplined shooter farther uphill.',
       'The wagon boards can shield the wounded, or the convoy can push into the orchard before the next coordinated volley.',
     ],
-    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 1, maxLevel: 2 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [],
+    eligibility: {
+      routes: ['kings-road', 'old-forest', 'ruined-pass'],
+      minLevel: 1,
+      maxLevel: 2,
+      excludedFlags: [
+        'orchard-jory-shielded',
+        'orchard-high-bank-held',
+        'orchard-wheel-cover',
+        'orchard-horses-controlled',
+      ],
+    }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch01-choice-form-behind-the-wagon-boards', label: 'Form behind the wagon boards', detail: 'Gain cover from arrows, but let the knife fighters close beneath the wagons.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-cover' }], outcome: 'The guards turn the rear wagon into a shield wall as knives scrape along the axle.' },
       { id: 'ch01-choice-charge-the-uphill-shooter', label: 'Charge the uphill shooter', detail: 'Disrupt the disciplined archer quickly, but cross open ground under the supporting volley.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-orchard-charge' }], outcome: 'You run between the trees as the marked archer reaches for another black-and-white shaft.' },

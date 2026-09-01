@@ -487,6 +487,7 @@ export const CH01_LIVING_MARA = Object.freeze([
         detail: 'Leave the wagons below the rise and enter the yard unseen.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-approach-hidden' },
+          { type: 'flag', operation: 'add', flagId: 'warning-tree-entry-ready' },
           { type: 'threat', amount: -1 },
         ],
         outcome: 'The wagons stop below the rise while you reach the yard unseen.',
@@ -499,6 +500,7 @@ export const CH01_LIVING_MARA = Object.freeze([
         detail: 'Keep the convoy together while accepting that the orchard can see it.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-convoy-close' },
+          { type: 'flag', operation: 'add', flagId: 'warning-tree-entry-ready' },
           { type: 'tension', amount: -1 },
         ],
         outcome: 'The full convoy enters the yard together, ready to move but visible from the orchard.',

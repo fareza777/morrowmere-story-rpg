@@ -106,6 +106,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
         id: 'ch01-choice-lift-and-pin-the-axle',
         label: 'Lift and pin the axle',
         detail: 'Use Strength against difficulty 6 while the drivers hold the lifting bars.',
+        requirements: [{ type: 'flag', flagId: 'bent-axle-wedged' }],
         check: {
           stat: 'strength',
           difficulty: 6,
@@ -155,6 +156,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
         id: 'ch01-choice-rebalance-by-manifest',
         label: 'Rebalance by the manifest',
         detail: 'Use Cunning against difficulty 6 to redistribute the numbered cases without breaking their seals.',
+        requirements: [{ type: 'flag', flagId: 'bent-axle-cases-unloaded' }],
         check: {
           stat: 'cunning',
           difficulty: 6,
@@ -435,7 +437,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
             ],
             combatEncounterId: 'enc-ch01-ditch-road-cutters',
             nextSceneId: 'ch01-living-hooves-chalk-aftermath',
-            continueLabel: 'Defend the teams',
+            continueLabel: 'See what the trap cost',
           },
         },
       },
@@ -484,7 +486,7 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
             ],
             combatEncounterId: 'enc-ch01-ditch-road-cutters',
             nextSceneId: 'ch01-living-hooves-chalk-aftermath',
-            continueLabel: 'Defend the teams',
+            continueLabel: 'See what the trap cost',
           },
         },
       },
@@ -507,6 +509,24 @@ export const CH01_LIVING_DEPARTURE = Object.freeze([
       {
         speakerName: 'Jory Fen',
         text: 'Raiders scatter. Soldiers are taught when to scatter.',
+        environmentIllustrationId: 'scene-ch01-living-hooves-chalk-aftermath',
+      },
+      {
+        speakerName: 'Eda Pell',
+        text: 'The rear brace is knocking again. Keep that wheel off the broken edge.',
+        requirements: [{ type: 'flag', flagId: 'rear-wagon-braced-poorly' }],
+        environmentIllustrationId: 'scene-ch01-living-hooves-chalk-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The new iron held. Every medicine seal is where I marked it.',
+        requirements: [{ type: 'flag', flagId: 'replacement-fitting-installed' }],
+        environmentIllustrationId: 'scene-ch01-living-hooves-chalk-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The new loading order kept the medicine cases steady when the teams lurched.',
+        requirements: [{ type: 'flag', flagId: 'load-redistributed' }],
         environmentIllustrationId: 'scene-ch01-living-hooves-chalk-aftermath',
       },
     ],

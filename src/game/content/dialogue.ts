@@ -1,3 +1,25 @@
+import type { ChronicleDialogueBeat } from './schema';
+
+function dialogueFlagGateMatches(
+  requirement: NonNullable<ChronicleDialogueBeat['requirements']>[number],
+  present: ReadonlySet<string>,
+): boolean {
+  return present.has(requirement.flagId) === (requirement.present ?? true);
+}
+
+/** Returns the ordered dialogue sequence visible for the current campaign state. */
+export function visibleDialogueBeats(
+  dialogue: readonly ChronicleDialogueBeat[] | undefined,
+  flags: readonly string[],
+): readonly ChronicleDialogueBeat[] {
+  if (!dialogue?.length) return [];
+  const present = new Set(flags);
+  return dialogue.filter((beat) =>
+    (beat.requirements ?? []).every((requirement) => dialogueFlagGateMatches(requirement, present))
+      && (beat.exclusions ?? []).every((requirement) => !dialogueFlagGateMatches(requirement, present)),
+  );
+}
+
 const NON_NAME_OR_PLACE_TOKENS = new Set(['then', 'the', 'a', 'an', 'it', 'we', 'he', 'she', 'they', 'this', 'that', 'there', 'here', 'you', 'i']);
 const STREET_DESCRIPTORS = new Set(['high', 'low', 'main', 'old', 'new']);
 

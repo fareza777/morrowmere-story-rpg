@@ -1,5 +1,6 @@
 import { buildCompanionCombatSnapshot } from '../companions';
 import type { ContentIndex, EncounterDefinition } from '../content/schema';
+import { visibleDialogueBeats } from '../content/dialogue';
 import { roleForEnemy } from '../combat/enemy-ai';
 import { calculateCompanionSupportCeiling } from '../combat/encounters';
 import type { CombatState, EnemyCombatant, HeroCombatant, StatusEffect } from '../combat/types';
@@ -618,7 +619,9 @@ function decodeExpedition(value: ExpeditionDto, campaign: CampaignState, content
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
   const currentCombat = value.currentCombat === null ? null : { encounterId: value.currentCombat.encounterId as never, combat: value.currentCombat.combat === null || !encounter ? null : decodeCombat(value.currentCombat.combat, campaign, encounter, content) };
   if (value.currentCombat !== null && value.currentCombat.combat !== null && currentCombat?.combat === null) return null;
-  const dialogueLength = value.currentSceneId === null ? 0 : content.events.get(value.currentSceneId as never)?.dialogue?.length ?? 0;
+  const dialogueLength = value.currentSceneId === null
+    ? 0
+    : visibleDialogueBeats(content.events.get(value.currentSceneId as never)?.dialogue, campaign.flags).length;
   const dialogueBeatIndex = dialogueLength === 0 ? 0 : Math.min(value.dialogueBeatIndex, dialogueLength - 1);
   return { dialogueRecovered: dialogueBeatIndex !== value.dialogueBeatIndex, expedition: { routeProfile: value.routeProfile, routeSeed: value.routeSeed, director: decodeDirector(value.director), position: { chapterId: value.position.chapterId as never, slot: value.position.slot }, currentSceneId: value.currentSceneId as never, dialogueBeatIndex, sceneResolution: decodeSceneResolution(value.sceneResolution), authoredSceneQueue: value.authoredSceneQueue.map((entry) => ({ sceneId: entry.sceneId as never, sourceSceneId: entry.sourceSceneId as never, requirementMode: entry.requirementMode, ...(entry.reason ? { reason: entry.reason } : {}) })), sceneVisitCounts: { ...value.sceneVisitCounts }, checkedAttempts: value.checkedAttempts.map((attempt) => ({ ...attempt, eventId: attempt.eventId as never, choiceId: attempt.choiceId as never })), heroVitals: { ...value.heroVitals }, currentCombat, pendingReward: value.pendingReward === null ? null : { rewardId: value.pendingReward.rewardId, rewardOfferId: value.pendingReward.rewardOfferId ?? `reward:${campaign.seed}:${value.pendingReward.rewardId}`, encounterId: value.pendingReward.encounterId as never, itemChoices: value.pendingReward.itemChoices as never, baseGold: value.pendingReward.baseGold, grantedXp: value.pendingReward.grantedXp, adEligible: value.pendingReward.adEligible, rewardedGoldSettlement: value.pendingReward.rewardedGoldSettlement ?? (value.pendingReward.adEligible && value.pendingReward.baseGold > 0 ? 'available' : 'ineligible') }, unbankedGold: value.unbankedGold, unbankedLoot: value.unbankedLoot as never, temporaryBoons: [...value.temporaryBoons], merchantVisits: value.merchantVisits.map((visit) => ({ merchantId: visit.merchantId as never, restockKey: visit.restockKey, restockSeed: merchantRestockSeed(value.routeSeed, visit.merchantId as never, visit.restockKey), generatedAtLevel: visit.generatedAtLevel, stock: visit.stock.map((entry) => ({ id: entry.id, itemId: entry.itemId as never })) })) } };
 }

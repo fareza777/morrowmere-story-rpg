@@ -28,11 +28,12 @@ export function deepFreeze<const T>(value: T): DeepReadonly<T> {
 function normalizeRequirements(
   requirements: readonly ChronicleRequirementSource[] | undefined,
 ): readonly ChronicleRequirement[] | undefined {
-  return requirements?.map((requirement) => requirement.type === 'flag'
+  const normalized = requirements?.map((requirement) => requirement.type === 'flag'
     ? { ...requirement, present: requirement.present ?? true }
     : requirement.type === 'item'
       ? { ...requirement, scope: requirement.scope ?? 'owned' }
     : requirement);
+  return normalized as unknown as readonly ChronicleRequirement[] | undefined;
 }
 
 /**
@@ -47,13 +48,18 @@ export function defineScene<const Source extends Chronicle1EventSource>(
     ...scene,
     requirements: normalizeRequirements(scene.requirements),
     exclusions: normalizeRequirements(scene.exclusions),
+    dialogue: scene.dialogue?.map((beat) => ({
+      ...beat,
+      requirements: normalizeRequirements(beat.requirements),
+      exclusions: normalizeRequirements(beat.exclusions),
+    })),
     choices: scene.choices.map((choice) => {
       const normalizedChoice = {
         ...choice,
         requirements: normalizeRequirements(choice.requirements),
         exclusions: normalizeRequirements(choice.exclusions),
       };
-      if (!('check' in choice)) return normalizedChoice;
+      if (!choice.check) return normalizedChoice;
       return {
         ...normalizedChoice,
         check: {

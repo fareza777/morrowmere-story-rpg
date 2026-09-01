@@ -224,6 +224,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
       {
         speakerName: 'Halen Reeve',
         text: 'Take me if you need a witness. Leave the whistle if you need the hour. Either choice costs you something.',
+        exclusions: [{ type: 'flag', flagId: 'snared-scout-rescued-unconscious' }],
         environmentIllustrationId: 'scene-ch01-living-snared-scout-aftermath',
       },
     ],
@@ -512,11 +513,19 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
       {
         speakerName: 'Captured Watcher',
         text: 'We only watched the road.',
+        requirements: [{ type: 'flag', flagId: 'tollhouse-watcher-captured' }],
         environmentIllustrationId: 'scene-ch01-living-bell-wire-aftermath',
       },
       {
         speakerName: 'Jory Fen',
         text: 'Then you can explain the missing register below it.',
+        requirements: [{ type: 'flag', flagId: 'tollhouse-watcher-captured' }],
+        environmentIllustrationId: 'scene-ch01-living-bell-wire-aftermath',
+      },
+      {
+        speakerName: 'Jory Fen',
+        text: 'The watcher took the orchard line. If he reaches a signal, the convoy will be counted twice.',
+        requirements: [{ type: 'flag', flagId: 'tollhouse-watcher-escaped' }],
         environmentIllustrationId: 'scene-ch01-living-bell-wire-aftermath',
       },
     ],
@@ -612,6 +621,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
       {
         speakerName: 'Tunnel Raider',
         text: 'Leave the book and climb out.',
+        requirements: [{ type: 'flag', flagId: 'cellar-raiders-alerted' }],
         environmentIllustrationId: 'scene-ch01-living-below-desk-choice',
       },
     ],
@@ -778,6 +788,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         detail: 'Wrap each recovered record and alarm piece separately for Greywatch.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-evidence-sealed' },
+          { type: 'flag', operation: 'add', flagId: 'kneeling-armor-entry-ready' },
           { type: 'xp', amount: 8, source: 'story' },
         ],
         outcome: 'Jory wraps pages, badge cuts, and alarm pieces in separate waxed cloths.',
@@ -790,6 +801,7 @@ export const CH01_LIVING_TOLLHOUSE = Object.freeze([
         detail: 'Block the low passage before returning to the convoy.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'tollhouse-tunnel-collapsed' },
+          { type: 'flag', operation: 'add', flagId: 'kneeling-armor-entry-ready' },
           { type: 'threat', amount: -2 },
           { type: 'tension', amount: 1 },
         ],

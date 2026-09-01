@@ -244,6 +244,10 @@ export interface ChronicleDialogueBeat {
   readonly speakerId?: string;
   readonly speakerName: string;
   readonly text: string;
+  /** A beat is shown only when every authored flag requirement matches. */
+  readonly requirements?: readonly ChronicleFlagRequirement[];
+  /** A beat is hidden when any authored exclusion matches. */
+  readonly exclusions?: readonly ChronicleFlagRequirement[];
   readonly characterLayer?: ChronicleDialogueCharacterLayer;
   readonly expression?: DialogueExpression;
   readonly voiceCueId?: VoiceCueId;
@@ -399,6 +403,8 @@ export interface ChronicleDialogueBeatSource {
   readonly speakerId?: string;
   readonly speakerName: string;
   readonly text: string;
+  readonly requirements?: readonly ChronicleFlagRequirementSource[];
+  readonly exclusions?: readonly ChronicleFlagRequirementSource[];
   readonly characterLayer?: ChronicleDialogueCharacterLayerSource;
   readonly expression?: DialogueExpression;
   readonly voiceCueId?: string;

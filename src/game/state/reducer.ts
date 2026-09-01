@@ -1,7 +1,9 @@
 import { applyCompanionEffect, buildCompanionCombatSnapshot } from '../companions';
 import { createEncounter } from '../combat/encounters';
 import { resolveCombatTurn } from '../combat/resolve';
+import type { CombatState, HeroCombatant, StatusEffect } from '../combat/types';
 import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
+import { visibleDialogueBeats } from '../content/dialogue';
 import { activeCheckModifiers, calculateCheckChance, classifyCheckResult, createCheckRoll } from '../checks';
 import type { ChapterId, EncounterId, EventId, ItemId } from '../domain/ids';
 import type { GameEffect } from '../domain/effects';
@@ -215,11 +217,153 @@ function heroCombatant(state: GameStateV2, content: ContentIndex) {
   };
 }
 
+function openingStatus(id: string, label: string): StatusEffect {
+  return { id, label, duration: 2, potency: 1 };
+}
+
+function addOpeningStatus(
+  player: HeroCombatant,
+  id: string,
+  label: string,
+): HeroCombatant {
+  return player.statuses.some((status) => status.id === id)
+    ? player
+    : { ...player, statuses: [...player.statuses, openingStatus(id, label)] };
+}
+
+/** Converts authored road preparation into visible, mechanical battle openings. */
+function applyAuthoredCombatOpening(
+  combat: CombatState,
+  encounterId: EncounterId,
+  campaignFlags: readonly string[],
+): CombatState {
+  const flags = new Set(campaignFlags);
+  const has = (flagId: string) => flags.has(flagId);
+  let player = combat.player;
+  let enemies = combat.enemies;
+  const openingLog: string[] = [];
+
+  if (encounterId === 'enc-ch01-ditch-road-cutters') {
+    if (has('chalk-rear-brake-held')) {
+      player = { ...player, guarding: true };
+      openingLog.push('The locked rear brake gives you a firm wagon line.');
+    }
+    if (has('chalk-drivers-sheltered')) {
+      player = { ...player, focus: Math.min(player.maxFocus, player.focus + 1) };
+      openingLog.push('The drivers are clear of the ditch, leaving you one threat to track.');
+    }
+    if (has('load-redistributed')) {
+      player = addOpeningStatus(player, 'medicine-load-secured', 'Medicine load secured');
+      openingLog.push('The redistributed medicine cases stay locked when the horses surge.');
+    }
+  }
+
+  if (encounterId === 'enc-ch01-verge-signalers') {
+    if (has('verge-convoy-formed')) {
+      player = { ...player, guarding: true };
+      openingLog.push('The closed wagon formation shields the convoy from the first cinder throw.');
+    }
+    if (has('verge-scouted-alone')) {
+      player = { ...player, cunning: player.cunning + 1 };
+      openingLog.push('Your quiet approach gives you a clear line on the signal team.');
+    }
+    if (has('verge-travelers-warned')) {
+      player = addOpeningStatus(player, 'travelers-under-cover', 'Travelers under cover');
+      openingLog.push('Ressa and her family remain below the road line.');
+    }
+  }
+
+  if (encounterId === 'enc-ch01-tollhouse-cellar' && has('tollhouse-yard-secured')) {
+    player = { ...player, guarding: true };
+    openingLog.push('The secured yard leaves the tunnel raiders no path to the wagons.');
+  }
+
+  if (encounterId === 'enc-ch01-orchard-volley') {
+    if (has('combat-ch01-orchard-cover')) {
+      player = { ...player, guarding: true };
+      openingLog.push('The wagon boards absorb the edge of the opening volley.');
+    }
+    if (has('combat-ch01-orchard-charge')) {
+      player = {
+        ...player,
+        cunning: player.cunning + 1,
+        attackBonus: player.attackBonus + 1,
+      };
+      openingLog.push('The high-bank charge breaks the prepared firing lane.');
+    }
+    if (has('orchard-reaver-marked')) {
+      enemies = enemies.map((enemy) => enemy.id.startsWith('black-banner-01')
+        ? {
+            ...enemy,
+            evasion: 0,
+            parryChance: 0,
+            statuses: [...enemy.statuses, openingStatus('marked-reaver', 'Marked reaver')],
+          }
+        : enemy);
+      openingLog.push('The wagon-side reaver begins exposed and marked.');
+    }
+    if (has('opening-volley-delayed')) {
+      player = { ...player, cunning: player.cunning + 1 };
+      openingLog.push('The stopped smoke signal delays the first coordinated volley.');
+    }
+    if (has('orchard-jory-shielded')) {
+      player = addOpeningStatus(player, 'jory-and-dispatch-secured', 'Jory and dispatch secured');
+      player = { ...player, focus: Math.min(player.maxFocus, player.focus + 1) };
+      openingLog.push('Jory and the Route Seven dispatch begin behind the rear wheel.');
+    }
+    if (has('orchard-horses-controlled') || has('lead-wagon-controlled')) {
+      player = addOpeningStatus(player, 'horse-teams-controlled', 'Horse teams controlled');
+      player = { ...player, cunning: player.cunning + 1 };
+      openingLog.push('The horse teams hold against the orchard wall.');
+    }
+    if (has('medicine-protected-at-orchard')) {
+      player = addOpeningStatus(player, 'medicine-protected', 'Medicine protected');
+      player = { ...player, guarding: true };
+      openingLog.push('The dropped sideboard keeps the cinder flask away from the medicine.');
+    }
+    if (has('jory-and-teams-held')) {
+      player = addOpeningStatus(player, 'convoy-line-held', 'Convoy line held');
+      player = { ...player, guarding: true };
+      openingLog.push('Jory and both teams remain inside the guarded wagon line.');
+    }
+
+    const horsesStillCompromised = (has('chalk-horse-cut') || has('chalk-trace-torn'))
+      && !has('chalk-horses-tended')
+      && !has('orchard-horses-controlled')
+      && !has('jory-and-teams-held');
+    if (horsesStillCompromised) {
+      player = {
+        ...player,
+        cunning: Math.max(0, player.cunning - 1),
+        focus: Math.max(0, player.focus - 1),
+      };
+      player = addOpeningStatus(player, 'divided-by-horse-team', 'Divided by the horse team');
+      openingLog.push('The injured horse team pulls one guard away from the opening line.');
+    }
+    if (has('chalk-wheel-struck') && !has('replacement-fitting-installed') && !has('orchard-wheel-cover')) {
+      player = { ...player, focus: Math.max(0, player.focus - 1) };
+      player = addOpeningStatus(player, 'damaged-rear-brace', 'Damaged rear brace');
+      openingLog.push('The struck rear brace knocks under the first impact.');
+    }
+    if (has('verge-watchers-escaped')) openingLog.push('The escaped signalers prepared every orchard firing lane.');
+    if (has('medicine-convoy-targeted')) openingLog.push('The captured signal confirms that the attackers are aiming for the medicine.');
+  }
+
+  const primary = enemies.find((enemy) => enemy.id === combat.enemy.id) ?? enemies[0]!;
+  return {
+    ...combat,
+    player,
+    enemies,
+    enemy: primary,
+    log: [...combat.log, ...openingLog].slice(-8),
+  };
+}
+
 function beginCombat(state: GameStateV2, encounterId: EncounterId, content: ContentIndex) {
   const encounter = content.encounters.get(encounterId);
   if (!encounter || !state.expedition || state.expedition.heroVitals.health <= 0) return null;
   try {
-    return createEncounter(
+    const combat = createEncounter(
       heroCombatant(state, content),
       encounter,
       content,
@@ -227,6 +371,7 @@ function beginCombat(state: GameStateV2, encounterId: EncounterId, content: Cont
       undefined,
       buildCompanionCombatSnapshot(state.campaign.companions, content),
     );
+    return applyAuthoredCombatOpening(combat, encounterId, state.campaign.flags);
   } catch {
     return null;
   }
@@ -517,7 +662,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       }, [{ type: 'notification', message: 'Battle ready.' }]);
     }
     const current = currentScene(state, content);
-    const dialogue = current?.dialogue;
+    const dialogue = visibleDialogueBeats(current?.dialogue, state.campaign.flags);
     if (current && current.choices.length === 0 && dialogue?.length && state.expedition.sceneResolution?.eventId !== current.id) {
       if (state.expedition.dialogueBeatIndex < dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before continuing.');
       const sceneResolution: SceneResolution = {
@@ -550,7 +695,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         ? completeChapter(state, step.state, command.updatedAt)
         : diagnostic(state, 'scene_unavailable', step.diagnostic);
     }
-    const autoResolved = step.event.choices.length === 0 && !step.event.dialogue?.length;
+    const autoResolved = step.event.choices.length === 0 && visibleDialogueBeats(step.event.dialogue, state.campaign.flags).length === 0;
     const authoredSceneQueue = autoResolved
       ? enqueueAuthoredAftermaths(step.authoredSceneQueue, step.event.id, null, step.event.followUps ?? [])
       : step.authoredSceneQueue;
@@ -584,8 +729,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Advance dialogue while travelling.');
     const scene = currentScene(state, content);
     if (!scene || scene.id !== command.eventId) return diagnostic(state, 'stale_event', 'That dialogue is no longer current.');
-    const beats = scene.dialogue;
-    if (!beats?.length) return diagnostic(state, 'dialogue_unavailable', 'This scene has no dialogue to advance.');
+    const beats = visibleDialogueBeats(scene.dialogue, state.campaign.flags);
+    if (!beats.length) return diagnostic(state, 'dialogue_unavailable', 'This scene has no dialogue to advance.');
     if (state.expedition.sceneResolution?.eventId === scene.id) return diagnostic(state, 'dialogue_resolved', 'That scene has already been resolved.');
     if (state.expedition.dialogueBeatIndex >= beats.length - 1) return diagnostic(state, 'dialogue_complete', 'The dialogue has reached its final beat.');
     return commit(state, {
@@ -599,7 +744,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const scene = currentScene(state, content);
     if (!scene || scene.id !== command.eventId) return diagnostic(state, 'stale_event', 'That story choice is no longer current.');
     if (state.expedition.sceneResolution?.eventId === scene.id) return diagnostic(state, 'choice_resolved', 'That choice has already been resolved.');
-    if (scene.dialogue?.length && state.expedition.dialogueBeatIndex < scene.dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before choosing a response.');
+    const visibleDialogue = visibleDialogueBeats(scene.dialogue, state.campaign.flags);
+    if (visibleDialogue.length && state.expedition.dialogueBeatIndex < visibleDialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before choosing a response.');
     const choice = scene.choices.find((candidate) => candidate.id === command.choiceId);
     if (!choice) return diagnostic(state, 'invalid_choice', 'That choice does not belong to this scene.');
     const availability = { flags: state.campaign.flags, bankedGold: state.campaign.bankedGold, unbankedGold: state.expedition.unbankedGold, inventory: state.campaign.inventory, resolutionPosition: state.expedition.position };

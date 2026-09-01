@@ -5,6 +5,7 @@ import { decodeSaveState, decodeSaveStateWithDiagnostics, encodeSaveState } from
 import { createSaveRepository, saveActiveKey } from '../src/game/persistence/repository';
 import { createSaveEnvelope } from '../src/game/persistence/schema';
 import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state';
+import { selectCurrentScene } from '../src/ui/selectors';
 
 const eventId = 'dialogue-at-the-ford' as EventId;
 const choiceId = 'answer-the-ford' as ChoiceId;
@@ -58,6 +59,27 @@ function continueOnlyContent(): ContentIndex {
 }
 
 describe('cinematic dialogue state', () => {
+  it('shows and advances only dialogue beats whose flag gates match', () => {
+    const base = content();
+    const scene = {
+      ...base.events.get(eventId)!,
+      dialogue: [
+        { speakerName: 'Captured Watcher', text: 'We only watched the road.', requirements: [{ type: 'flag', flagId: 'watcher-captured', present: true }] },
+        { speakerName: 'Jory', text: 'The register is still missing.' },
+      ],
+    } as ChronicleEvent;
+    const index = { ...base, events: new Map([[eventId, scene]]) };
+    const withoutCapture = atDialogueScene(index);
+
+    expect(selectCurrentScene(withoutCapture, index)?.dialogue).toMatchObject({ speakerName: 'Jory', total: 1, isFinal: true });
+    expect(reduceGame(withoutCapture, { type: 'advance-dialogue', eventId, updatedAt: at(2) } as never, index).diagnostic?.code).toBe('dialogue_complete');
+
+    const withCapture = { ...withoutCapture, campaign: { ...withoutCapture.campaign, flags: ['watcher-captured'] } };
+    expect(selectCurrentScene(withCapture, index)?.dialogue).toMatchObject({ speakerName: 'Captured Watcher', total: 2, isFinal: false });
+    const advanced = reduceGame(withCapture, { type: 'advance-dialogue', eventId, updatedAt: at(2) } as never, index).state;
+    expect(selectCurrentScene(advanced, index)?.dialogue).toMatchObject({ speakerName: 'Jory', index: 1, isFinal: true });
+  });
+
   it('advances one ordered beat without resolving or changing campaign state', () => {
     const index = content();
     const initial = atDialogueScene(index);

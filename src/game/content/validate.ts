@@ -5,6 +5,7 @@ import type {
   Chronicle1Event,
   Chronicle1MerchantDefinition,
   ChronicleDialogueBeat,
+  ChronicleEvent,
   ChronicleEffect,
   ChronicleCallbackPromise,
   ChronicleDefinition,
@@ -136,12 +137,15 @@ function dialogueIssues(event: ChronicleEvent, index: ContentIndex): ContentIssu
     if (beat.characterLayer && !index.artIds.has(beat.characterLayer.illustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue character art: ${beat.characterLayer.illustrationId}` });
     if (beat.environmentIllustrationId && !index.artIds.has(beat.environmentIllustrationId)) issues.push({ code: 'missing_art', message: `Missing dialogue environment art: ${beat.environmentIllustrationId}` });
     if (beat.voiceCueId && !index.audioIds.has(beat.voiceCueId)) issues.push({ code: 'missing_audio', message: `Missing dialogue voice cue: ${beat.voiceCueId}` });
+    for (const gate of [...(beat.requirements ?? []), ...(beat.exclusions ?? [])]) {
+      if (!gate.flagId.trim()) issues.push({ code: 'invalid_requirement', message: `Scene ${event.id} has an invalid dialogue flag gate.` });
+    }
   });
   return issues;
 }
 
 function walkDialogueBeats(
-  event: Pick<ChronicleEvent, 'dialogue'>,
+  event: { readonly dialogue?: readonly ChronicleDialogueBeat[] },
   visit: (beat: ChronicleDialogueBeat, index: number) => void,
 ): void {
   event.dialogue?.forEach(visit);
@@ -803,6 +807,9 @@ function catalogDialogueIssues(event: Chronicle1Event, input: ChroniclePlayabili
         if (!wholeDialogueMatch(beatText, cueText) && !wholeDialogueMatch(cueText, beatText)) issues.push(sourceIssue('invalid_dialogue_voice_text', `Scene ${event.id} beat ${beatIndex} voice cue ${beat.voiceCueId} does not match dialogue text.`));
       }
     }
+    for (const gate of [...(beat.requirements ?? []), ...(beat.exclusions ?? [])]) {
+      validateSourceRequirement(gate, `dialogue beat ${beatIndex} requirement`, issues);
+    }
   });
   return issues;
 }
@@ -907,13 +914,25 @@ function laterFlagConsumption(event: Chronicle1Event, flagId: string, input: Chr
   return input.events?.some((candidate) => {
     const candidateOrder = chapterOrder.get(candidate.chapterId);
     if (candidate === event || candidateOrder === undefined || candidateOrder < sourceOrder || (candidateOrder === sourceOrder && candidate.slot <= event.slot)) return false;
-    const requirements = [
-      ...(candidate.requirements ?? []), ...(candidate.exclusions ?? []),
-      ...(candidate.eligibility.requiredFlags ?? []).map((flag) => ({ flagId: flag })),
-      ...(candidate.eligibility.excludedFlags ?? []).map((flag) => ({ flagId: flag })),
-      ...candidate.choices.flatMap((choice) => [...(choice.requirements ?? []), ...(choice.exclusions ?? [])]),
+    const authoredFlagGates = [
+      ...(candidate.requirements ?? []).flatMap((requirement) => requirement.type === 'flag' ? [requirement.flagId] : []),
+      ...(candidate.exclusions ?? []).flatMap((requirement) => requirement.type === 'flag' ? [requirement.flagId] : []),
+      ...(candidate.eligibility.requiredFlags ?? []),
+      ...(candidate.eligibility.excludedFlags ?? []),
+      ...(candidate.dialogue ?? []).flatMap((beat) => [
+        ...(beat.requirements ?? []).map((requirement) => requirement.flagId),
+        ...(beat.exclusions ?? []).map((requirement) => requirement.flagId),
+      ]),
+      ...candidate.choices.flatMap((choice) => [
+        ...(choice.requirements ?? []).flatMap((requirement) => requirement.type === 'flag' ? [requirement.flagId] : []),
+        ...(choice.exclusions ?? []).flatMap((requirement) => requirement.type === 'flag' ? [requirement.flagId] : []),
+        ...(choice.check?.modifiers ?? []).flatMap((modifier) => [
+          ...(modifier.requirements ?? []).map((requirement) => requirement.flagId),
+          ...(modifier.exclusions ?? []).map((requirement) => requirement.flagId),
+        ]),
+      ]),
     ];
-    return requirements.some((requirement) => requirement.type === 'flag' && requirement.flagId === flagId);
+    return authoredFlagGates.includes(flagId);
   }) ?? false;
 }
 
