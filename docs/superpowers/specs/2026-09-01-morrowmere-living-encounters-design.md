@@ -246,7 +246,7 @@ A dialogue scene contains short beats rather than a wall of prose:
 
 The scene background remains unique to the event. Character layers may reuse a canonical face/outfit reference for visual consistency, but pose, lighting, expression, and placement must match the event. No unrecruited companion appears as a party member in travel art.
 
-Major story and companion milestones may use voice-over. Ordinary dialogue remains text-first so the package stays practical and pacing remains fast.
+The full opening cinematic, every main-story anchor, and every authored rare sword-and-sorcery encounter use English voice-over generated through ElevenLabs from the final locked narration. Main companion milestones may also use character voice-over. Ordinary procedural travel dialogue remains text-first so pacing stays fast and the package remains practical. Provider credentials are read only from a local environment secret during production and are never written to source, generated manifests, logs, or release files.
 
 ### 8.2 Dialogue memory
 
@@ -277,6 +277,10 @@ Android delivery remains under the Play Store package target. New stills use hig
 ## 11. Audio and haptics
 
 Music is organized by location and tension state, with smooth crossfades instead of unrelated restarts. Cinematic narration, image timing, and music cues share authored timestamps.
+
+The opening is mixed as one continuous film cue. It uses a coherent dark medieval-orchestral theme, restrained natural road/wind/fire ambience, and only story-motivated impacts. Music ducks beneath spoken narration and returns between lines. No decorative whoosh, synthetic chirp, random hit, or unrelated creature sound may be added merely to fill silence. Each opening panel declares narration start/end, image transition, music state, ambience, and optional SFX in one cue sheet, and the final waveform/timeline is reviewed against that sheet.
+
+Main-story and rare-event narration uses the exact final on-screen English copy, split at natural sentence boundaries. Visual transitions follow sentence timestamps; they do not advance in the middle of a sentence. Dialogue voice and narrator voice remain clearly distinct where both are used.
 
 New feedback cues cover:
 

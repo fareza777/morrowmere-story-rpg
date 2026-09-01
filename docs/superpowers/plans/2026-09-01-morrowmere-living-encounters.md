@@ -645,8 +645,15 @@ Commits:
 - Modify: `src/game/audio/catalog.ts`
 - Modify: `src/game/audio/service.ts`
 - Modify: `src/components/GameShell.tsx`
+- Modify: `src/components/cinematic/OpeningCinematic.tsx`
+- Modify: `src/components/cinematic/useCinematicPlayer.ts`
+- Modify: `scripts/media/generate-elevenlabs-voice.mjs`
+- Add: `scripts/media/cue-sheets/opening.json`
 - Add/Modify: `public/assets/audio/sfx/*`
 - Add/Modify: `public/assets/audio/music/*`
+- Add/Modify: `public/assets/audio/voice/opening/*`
+- Add/Modify: `public/assets/audio/voice/main/*`
+- Add/Modify: `public/assets/audio/voice/rare/*`
 - Modify: `docs/AUDIO-CREDITS.md`
 - Modify: `tests/feedback.test.ts`
 - Modify: `tests/haptics.test.ts`
@@ -654,7 +661,7 @@ Commits:
 
 **Step 1 — Write failing cue tests**
 
-Assert distinct cues for normal/critical check success, failure, ambush, battle start, hit, miss, critical, block, item reward, companion approval, and companion disapproval. Assert settings independently gate music, SFX, narration, and haptics.
+Assert distinct cues for normal/critical check success, failure, ambush, battle start, hit, miss, critical, block, item reward, companion approval, and companion disapproval. Assert settings independently gate music, SFX, narration, and haptics. Require voice mappings for every opening panel, all main-story anchors, and all 54 Chapter 1 rare-encounter scenes. Validate that the opening cue sheet aligns narration and image intervals, ducks music during speech, and never overlaps a nonessential high-impact SFX with narration.
 
 **Step 2 — Run RED**
 
@@ -664,11 +671,13 @@ Expected: the new cue IDs and transitions are missing.
 
 **Step 3 — Integrate licensed/original clean assets**
 
-Use cohesive medieval acoustic textures, avoid abrupt cinematic music edits, and normalize perceived loudness. Record source/license in `docs/AUDIO-CREDITS.md`. No secret or provider API key enters source control.
+Use cohesive medieval acoustic textures, avoid abrupt cinematic music edits, and normalize perceived loudness. Replace the current odd/contextless opening cues with restrained natural ambience and story-motivated impacts. Record source/license in `docs/AUDIO-CREDITS.md`. No secret or provider API key enters source control.
+
+Generate final English voice through the existing ElevenLabs production script using only `ELEVENLABS_API_KEY` from the local process environment. Select one grounded adult narrator suitable for medieval adventure and stable character voices only where dialogue requires them. The script must redact provider errors, never echo credentials, and skip network generation with a clear diagnostic when the environment secret is absent.
 
 **Step 4 — Trigger feedback from domain events**
 
-Map check result, dialogue response, combat result, reward, and companion relationship events to sound and haptics. Keep service calls outside the pure reducer.
+Map check result, dialogue response, combat result, reward, and companion relationship events to sound and haptics. Keep service calls outside the pure reducer. Drive the opening's image transitions, narration playback, music ducking, ambience, and permitted SFX from `scripts/media/cue-sheets/opening.json` rather than independent timers.
 
 **Step 5 — Run GREEN**
 
