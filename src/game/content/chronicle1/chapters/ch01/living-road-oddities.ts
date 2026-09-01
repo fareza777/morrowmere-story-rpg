@@ -97,14 +97,14 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
     illustrationId: 'scene-ch01-living-warning-tree-choice',
     title: 'Punctures in the Leaf Mold',
     narrative: [
-      'The round marks are from iron climbing spikes strapped to human boots. Two masked road zealots return along the upper branches, moving above the ordinary trail. The goblin was a courier, and the slates were bait for anyone who knew his route.',
+      'The round marks are from iron climbing spikes strapped to human boots. A Thorn Penitent returns along the upper branches beside a Black Banner handler wearing the same bark mask. The goblin was a courier, and the slates were bait for anyone who knew his route.',
     ],
     requirements: [{ type: 'flag', flagId: 'warning-tree-route-chosen' }],
     choices: [
       {
         id: 'ch01-choice-warning-tree-trace-the-spikes',
         label: 'Trace the spikes and spring their snare',
-        detail: "Use Cunning against difficulty 4 to turn the zealots' own return rope against them.",
+        detail: "Use Cunning against difficulty 4 to turn the masked pair's own return rope against them.",
         check: {
           stat: 'cunning',
           difficulty: 4,
@@ -121,7 +121,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
             },
           ],
           success: {
-            outcome: "You pull the zealots' return rope from below, stranding them in the crown until the convoy passes.",
+            outcome: 'You pull their return rope from below, stranding both attackers in the crown until the convoy passes.',
             effects: [
               { type: 'flag', operation: 'add', flagId: 'warning-tree-executioners-identified' },
               { type: 'flag', operation: 'add', flagId: 'warning-tree-clue-held' },
@@ -133,7 +133,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
             continueLabel: 'Question them from the ground',
           },
           failure: {
-            outcome: 'A hidden branch loop catches a guard and the zealots descend behind you.',
+            outcome: 'A hidden branch loop catches a guard and the masked pair descend behind you.',
             effects: [
               { type: 'vitals', health: -3 },
               { type: 'flag', operation: 'add', flagId: 'warning-tree-fight-committed' },
@@ -147,7 +147,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
       {
         id: 'ch01-choice-warning-tree-demand-a-name',
         label: "Demand the courier's name and sentence",
-        detail: 'Use Will against difficulty 4 to force the masked zealots to name their victim and employer.',
+        detail: 'Use Will against difficulty 4 to force the masked pair to name their victim and employer.',
         check: {
           stat: 'will',
           difficulty: 4,
@@ -159,7 +159,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
             },
           ],
           success: {
-            outcome: 'One zealot admits the slates serve hidden goblin families and names a paid officer at the tollhouse.',
+            outcome: 'The Penitent admits the slates serve hidden goblin families and names a paid officer at the tollhouse.',
             effects: [
               { type: 'evidence', operation: 'add', evidenceId: 'warning-tree-officer-testimony' },
               { type: 'flag', operation: 'add', flagId: 'warning-tree-witness-clue' },
@@ -170,7 +170,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
             continueLabel: 'Carry the named clue',
           },
           failure: {
-            outcome: 'The zealots answer by dropping weighted hooks into the guards.',
+            outcome: 'The pair answer by dropping weighted hooks into the guards.',
             effects: [
               { type: 'vitals', resource: -2 },
               { type: 'threat', amount: 1 },
@@ -190,7 +190,7 @@ export const CH01_LIVING_ROAD_ODDITIES = Object.freeze([
           { type: 'flag', operation: 'add', flagId: 'warning-tree-avoided' },
           { type: 'threat', amount: -2 },
         ],
-        outcome: 'The zealots cannot descend without abandoning masks and weapons, buying the convoy a clean mile.',
+        outcome: 'The pair cannot descend without abandoning masks and weapons, buying the convoy a clean mile.',
         nextSceneId: 'ch01-living-warning-tree-aftermath',
         continueLabel: 'Take the courier from their road',
       },
