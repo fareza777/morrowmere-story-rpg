@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { ChronicleEvent, ContentIndex, EncounterDefinition } from '../src/game/content/schema';
 import type { ChoiceId, CompanionId, EncounterId, EnemyId, EventId, ItemId } from '../src/game/domain/ids';
-import { createCheckRoll } from '../src/game/checks';
+import { classifyCheckResult, createCheckRoll } from '../src/game/checks';
 import { checksumFor } from '../src/game/persistence/checksum';
 import { decodeSaveState, encodeSaveState } from '../src/game/persistence/codec';
 import { createSaveRepository, saveActiveKey } from '../src/game/persistence/repository';
+import { isSaveStateDto } from '../src/game/persistence/schema';
 import { createCampaign, reduceGame } from '../src/game/state';
 
 const asChoice = (value: string) => value as ChoiceId;
@@ -201,6 +202,92 @@ describe('schema-v2 living encounter migration', () => {
     }, content);
     expect(replay.diagnostic?.code).toBe('choice_resolved');
     expect(replay.state.expedition?.checkedAttempts).toHaveLength(1);
+  });
+
+  it.each([
+    ['success with null chance', 'success', null, 70],
+    ['failure with null roll', 'failure', 55, null],
+    ['critical success with chance above 100', 'critical-success', 101, 1],
+    ['critical failure with roll above 100', 'critical-failure', 15, 101],
+    ['critical success with an incompatible ordinary-success roll', 'critical-success', 50, 50],
+    ['success with an incompatible critical-success roll', 'success', 50, 1],
+    ['failure with an incompatible critical-failure roll', 'failure', 50, 100],
+    ['critical failure with an incompatible success roll', 'critical-failure', 50, 50],
+  ] as const)('normalizes a schema-valid v2 %s without downgrading it', (_label, resultKind, chance, roll) => {
+    const content = fixtureContent();
+    const resolved = reduceGame(
+      atScene(asEvent('migration-checked'), content),
+      { type: 'resolve-choice', eventId: asEvent('migration-checked'), choiceId: asChoice('test-the-lock'), updatedAt: at(2) },
+      content,
+    ).state;
+    const encoded = encodeSaveState(resolved, content);
+    if (!encoded?.expedition) throw new Error('Expected a valid checked fixture.');
+    const v2 = asV2Dto(encoded);
+    v2.expedition.sceneResolution = {
+      eventId: 'migration-checked', choiceId: 'test-the-lock', resultKind, chance, roll,
+      outcome: `Preserved ${resultKind} outcome.`, effectSummary: [`Preserved ${resultKind} consequence.`],
+      nextSceneId: null, continueLabel: 'Continue the preserved result',
+    };
+
+    const migrated = decodeSaveState(v2, content);
+    const resolution = migrated?.expedition?.sceneResolution;
+    const attempts = migrated?.expedition?.checkedAttempts;
+    const reencoded = migrated ? encodeSaveState(migrated, content) : null;
+
+    expect(migrated).not.toBeNull();
+    expect(resolution).toMatchObject({
+      eventId: 'migration-checked', choiceId: 'test-the-lock', resultKind,
+      outcome: `Preserved ${resultKind} outcome.`, effectSummary: [`Preserved ${resultKind} consequence.`],
+      nextSceneId: null, continueLabel: 'Continue the preserved result',
+      chance: expect.any(Number), roll: expect.any(Number),
+    });
+    if (!resolution || resolution.resultKind === 'direct') throw new Error('Expected a checked v3 resolution.');
+    expect(classifyCheckResult(resolution.roll, resolution.chance)).toBe(resultKind);
+    expect(resolution.chance).toBeGreaterThanOrEqual(0);
+    expect(resolution.chance).toBeLessThanOrEqual(100);
+    expect(resolution.roll).toBeGreaterThanOrEqual(1);
+    expect(resolution.roll).toBeLessThanOrEqual(100);
+    expect(attempts).toEqual([{
+      eventId: resolution.eventId, choiceId: resolution.choiceId, visitOrdinal: 1,
+      chance: resolution.chance, roll: resolution.roll, resultKind,
+    }]);
+    expect(isSaveStateDto(reencoded)).toBe(true);
+  });
+
+  it('keeps a schema-valid checked v2 receipt checked when its legacy choice ID is null', () => {
+    const content = fixtureContent();
+    const sceneId = asEvent('migration-aftermath');
+    const staged = atScene(sceneId, content);
+    const resolved = {
+      ...staged,
+      expedition: {
+        ...staged.expedition!,
+        sceneResolution: {
+          eventId: sceneId, choiceId: null, resultKind: 'direct' as const, chance: null, roll: null,
+          outcome: 'The aftermath was already read.', effectSummary: [], nextSceneId: null, continueLabel: null,
+        },
+      },
+    };
+    const encoded = encodeSaveState(resolved, content);
+    if (!encoded?.expedition) throw new Error('Expected a valid zero-choice fixture.');
+    const v2 = asV2Dto(encoded);
+    v2.expedition.sceneResolution = {
+      eventId: 'migration-aftermath', choiceId: null, resultKind: 'success', chance: null, roll: null,
+      outcome: 'The legacy checked aftermath remains complete.', effectSummary: ['Prior consequence preserved.'],
+      nextSceneId: null, continueLabel: null,
+    };
+
+    const migrated = decodeSaveState(v2, content);
+    const resolution = migrated?.expedition?.sceneResolution;
+
+    expect(resolution).toMatchObject({
+      resultKind: 'success', choiceId: 'legacy-checked:migration-aftermath',
+      outcome: 'The legacy checked aftermath remains complete.',
+    });
+    expect(migrated?.expedition?.checkedAttempts).toEqual([expect.objectContaining({
+      eventId: 'migration-aftermath', choiceId: 'legacy-checked:migration-aftermath', resultKind: 'success', visitOrdinal: 1,
+    })]);
+    expect(migrated && encodeSaveState(migrated, content)).not.toBeNull();
   });
 
   it('increments scene visits on selection and seeds later checks from the visit ordinal', () => {

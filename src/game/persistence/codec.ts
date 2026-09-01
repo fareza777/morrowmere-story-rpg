@@ -277,7 +277,12 @@ function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, con
   if (value.currentSceneId !== null && (!scene || scene.chapterId !== value.position.chapterId)) return false;
   if (value.sceneResolution !== null) {
     if (!scene || value.sceneResolution.eventId !== scene.id) return false;
-    if (value.sceneResolution.choiceId === null ? scene.choices.length !== 0 : !scene.choices.some((choice) => choice.id === value.sceneResolution!.choiceId)) return false;
+    const legacyCheckedReceipt = value.sceneResolution.resultKind !== 'direct'
+      && value.sceneResolution.choiceId === `legacy-checked:${value.sceneResolution.eventId}`
+      && scene.choices.length === 0;
+    if (value.sceneResolution.choiceId === null
+      ? scene.choices.length !== 0
+      : !legacyCheckedReceipt && !scene.choices.some((choice) => choice.id === value.sceneResolution!.choiceId)) return false;
   } else if (scene && scene.choices.length === 0) return false;
   const decodedCampaign = decodeCampaign(campaign);
   const maxima = deriveHeroStats(decodedCampaign.hero, decodedCampaign.inventory, content.items);

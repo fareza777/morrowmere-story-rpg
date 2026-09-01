@@ -1,7 +1,8 @@
 import { isChronicleCheckedChoice, type ContentIndex } from '../content/schema';
 import type { GameEffect } from '../domain/effects';
+import { classifyCheckResult } from '../checks';
 import { createCampaign } from '../state/create';
-import type { GameStateV2, ProfileState } from '../state/types';
+import type { CheckedResultKind, GameStateV2, ProfileState } from '../state/types';
 import type { HeroClass } from '../types';
 import { isSaveStateV2Dto, type LegacySceneResolutionDto, type SaveStateDto, type SaveStateV2Dto, type SceneResolutionDto } from './schema';
 
@@ -110,6 +111,23 @@ function safeDirectResolution(
   };
 }
 
+function normalizedCheckedValues(
+  resultKind: CheckedResultKind,
+  chance: number | null,
+  roll: number | null,
+): { readonly chance: number; readonly roll: number } {
+  const normalizedChance = chance === null ? null : Math.max(0, Math.min(100, chance));
+  const normalizedRoll = roll === null ? null : Math.max(1, Math.min(100, roll));
+  if (normalizedChance !== null && normalizedRoll !== null
+    && classifyCheckResult(normalizedRoll, normalizedChance) === resultKind) {
+    return { chance: normalizedChance, roll: normalizedRoll };
+  }
+  if (resultKind === 'critical-success') return { chance: 95, roll: 1 };
+  if (resultKind === 'success') return { chance: 95, roll: 50 };
+  if (resultKind === 'critical-failure') return { chance: 15, roll: 100 };
+  return { chance: 15, roll: 50 };
+}
+
 /** Converts a validated v2 DTO without re-running any gameplay effects. */
 export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migration | null {
   if (!isSaveStateV2Dto(value)) return null;
@@ -123,19 +141,28 @@ export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migr
   const legacyResolution = legacy.expedition.sceneResolution;
   const checked = legacyResolution !== null
     && 'resultKind' in legacyResolution
-    && legacyResolution.resultKind !== 'direct'
-    && legacyResolution.choiceId !== null
-    && typeof legacyResolution.chance === 'number'
-    && typeof legacyResolution.roll === 'number';
+    && legacyResolution.resultKind !== 'direct';
+  const checkedChoiceId = checked
+    ? legacyResolution.choiceId
+      ?? content.events.get(legacyResolution.eventId as never)?.choices[0]?.id
+      ?? `legacy-checked:${legacyResolution.eventId}`
+    : null;
+  const checkedValues = checked
+    ? normalizedCheckedValues(
+        legacyResolution.resultKind as CheckedResultKind,
+        legacyResolution.chance,
+        legacyResolution.roll,
+      )
+    : null;
   const sceneResolution: SceneResolutionDto | null = legacyResolution === null
     ? null
     : checked
       ? {
           eventId: legacyResolution.eventId,
-          choiceId: legacyResolution.choiceId!,
+          choiceId: checkedChoiceId!,
           resultKind: legacyResolution.resultKind as Exclude<typeof legacyResolution.resultKind, 'direct'>,
-          chance: legacyResolution.chance!,
-          roll: legacyResolution.roll!,
+          chance: checkedValues!.chance,
+          roll: checkedValues!.roll,
           outcome: legacyResolution.outcome,
           effectSummary: [...legacyResolution.effectSummary],
           nextSceneId: legacyResolution.nextSceneId,
