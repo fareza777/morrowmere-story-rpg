@@ -21,13 +21,15 @@ export function StoryPanel({ view, onChoose, onContinue, onNarrate, extraActions
       </header>
       <div className="story-prose">{view.paragraphs.map((paragraph, index) => <p key={`${view.id}-paragraph-${index}`}>{paragraph}</p>)}</div>
       {view.resolved ? (
-        <div className="outcome-panel" role="status">
-          {view.outcome && <p>{view.outcome}</p>}
+        <section className="outcome-panel" role="status" aria-live="polite" aria-atomic="true">
+          {view.resolution && <h2>{view.resolution.statusLabel}</h2>}
+          {(view.resolution?.outcome ?? view.outcome) && <p className="outcome-copy">{view.resolution?.outcome ?? view.outcome}</p>}
+          {view.resolution && view.resolution.effectSummary.length > 0 && <ul className="outcome-effects" aria-label="Applied consequences">{view.resolution.effectSummary.map((effect) => <li key={effect}>{effect}</li>)}</ul>}
           <button className="button button-primary" type="button" onClick={onContinue}>
-            Continue <ArrowRight size={18} weight="bold" aria-hidden="true" />
+            {view.resolution?.continueLabel ?? 'Continue'} <ArrowRight size={18} weight="bold" aria-hidden="true" />
           </button>
           {extraActions}
-        </div>
+        </section>
       ) : (
         view.choices.length > 0 ? <ChoiceList choices={view.choices} onChoose={onChoose} /> : <button className="button button-primary" type="button" onClick={onContinue}>Continue <ArrowRight size={18} weight="bold" aria-hidden="true" /></button>
       )}

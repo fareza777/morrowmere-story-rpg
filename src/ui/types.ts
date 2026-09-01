@@ -141,9 +141,21 @@ export interface StoryChoiceViewModel {
   readonly label: string;
   readonly detail: string;
   readonly outcome: string;
+  readonly check: {
+    readonly statLabel: 'Strength' | 'Cunning' | 'Will';
+    readonly difficultyLabel: string;
+    readonly chance: number;
+  } | null;
   readonly selected: boolean;
   readonly disabled: boolean;
   readonly unavailableReason: string | null;
+}
+
+export interface StoryResolutionViewModel {
+  readonly statusLabel: string;
+  readonly outcome: string;
+  readonly effectSummary: readonly string[];
+  readonly continueLabel: string | null;
 }
 
 export interface StoryViewModel {
@@ -155,6 +167,7 @@ export interface StoryViewModel {
   readonly choices: readonly StoryChoiceViewModel[];
   readonly resolved: boolean;
   readonly outcome: string | null;
+  readonly resolution: StoryResolutionViewModel | null;
 }
 
 export interface StatusViewModel {

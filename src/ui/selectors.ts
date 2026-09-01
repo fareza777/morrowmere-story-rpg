@@ -1,4 +1,5 @@
-import { loyaltyTier } from '../game/companions';
+import { buildCompanionCombatSnapshot, loyaltyTier } from '../game/companions';
+import { calculateCheckChance } from '../game/checks';
 import type { CombatState, EnemyCombatant } from '../game/combat/types';
 import {
   chronicleChoiceEffects,
@@ -292,6 +293,47 @@ function unavailableChoiceReason(choice: ChronicleChoice, state: GameStateV2): s
   return excluded ? 'An earlier decision has closed this path.' : null;
 }
 
+const CHECK_TAGS: Readonly<Record<'strength' | 'cunning' | 'will', readonly string[]>> = {
+  strength: ['axe', 'heavy', 'mace', 'pick', 'polearm'],
+  cunning: ['locks', 'navigation', 'ranged', 'scout', 'stealth', 'tool'],
+  will: ['conclave', 'focus', 'oath', 'seal', 'ward'],
+};
+
+const CHECK_STAT_LABELS = {
+  strength: 'Strength',
+  cunning: 'Cunning',
+  will: 'Will',
+} as const;
+
+function checkDifficultyLabel(difficulty: number): string {
+  if (difficulty <= 4) return 'Easy';
+  if (difficulty <= 7) return 'Moderate';
+  if (difficulty <= 10) return 'Hard';
+  return 'Daunting';
+}
+
+function effectiveCheckStat(
+  state: GameStateV2,
+  content: ContentIndex,
+  stat: 'strength' | 'cunning' | 'will',
+): number {
+  const derived = deriveHeroStats(state.campaign.hero, state.campaign.inventory, content.items);
+  const equipmentIds = [
+    state.campaign.inventory.equipment.weapon,
+    state.campaign.inventory.equipment.armor,
+    ...state.campaign.inventory.equipment.charms,
+  ];
+  const equipmentBonus = equipmentIds.some((itemId) => itemId && content.items.get(itemId)?.tags.some((tag) => CHECK_TAGS[stat].includes(tag))) ? 1 : 0;
+  const companion = buildCompanionCombatSnapshot(state.campaign.companions, content);
+  const companionBonus = companion
+    ? stat === 'strength' ? companion.guard : stat === 'cunning' ? companion.attack : companion.will
+    : 0;
+  const vitals = state.expedition?.heroVitals;
+  const healthPenalty = vitals && vitals.health * 2 < derived.maxHealth ? 1 : 0;
+  const focusPenalty = vitals && stat !== 'strength' && vitals.resource * 2 < derived.maxFocus ? 1 : 0;
+  return Math.max(0, derived[stat] + equipmentBonus + companionBonus - healthPenalty - Number(focusPenalty));
+}
+
 export function selectCampView(state: GameStateV2, content: ContentIndex): CampViewModel {
   return {
     hero: heroHud(state, content),
@@ -328,13 +370,28 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
   const selectedChoice = resolved
     ? event.choices.find((choice) => choice.id === resolution.choiceId)
     : undefined;
+  const selectedCheckedChoice = selectedChoice && isChronicleCheckedChoice(selectedChoice)
+    ? selectedChoice
+    : null;
   const choices: readonly StoryChoiceViewModel[] = event.choices.map((choice) => {
     const unavailableReason = unavailableChoiceReason(choice, state);
+    const check = isChronicleCheckedChoice(choice)
+      ? {
+          statLabel: CHECK_STAT_LABELS[choice.check.stat],
+          difficultyLabel: checkDifficultyLabel(choice.check.difficulty),
+          chance: calculateCheckChance(
+            effectiveCheckStat(state, content, choice.check.stat),
+            choice.check.difficulty,
+            choice.check.modifiers?.reduce((total, modifier) => total + modifier.amount, 0) ?? 0,
+          ),
+        }
+      : null;
     return {
       id: choice.id,
       label: choice.label,
       detail: choice.detail,
       outcome: isChronicleCheckedChoice(choice) ? '' : choice.outcome,
+      check,
       selected: selectedChoice?.id === choice.id,
       disabled: resolved || unavailableReason !== null,
       unavailableReason: resolved && selectedChoice?.id !== choice.id
@@ -351,6 +408,14 @@ export function selectCurrentScene(state: GameStateV2, content: ContentIndex): S
     choices,
     resolved,
     outcome: resolution?.outcome ?? (selectedChoice && !isChronicleCheckedChoice(selectedChoice) ? selectedChoice.outcome : null),
+    resolution: resolved && resolution ? {
+      statusLabel: selectedCheckedChoice
+        ? `${CHECK_STAT_LABELS[selectedCheckedChoice.check.stat]} check ${resolution.resultKind === 'success' || resolution.resultKind === 'critical-success' ? 'succeeded' : 'failed'}`
+        : 'Choice resolved',
+      outcome: resolution.outcome,
+      effectSummary: resolution.effectSummary,
+      continueLabel: resolution.continueLabel,
+    } : null,
   };
 }
 

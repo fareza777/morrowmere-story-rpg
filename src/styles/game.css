@@ -128,9 +128,13 @@
 .choice-button > span, .reward-list button > span { display: grid; gap: 0.25rem; }
 .choice-button strong, .reward-list strong { font-size: 1.02rem; }
 .choice-button small, .reward-list small { color: var(--paper-2); line-height: 1.4; }
+.choice-check { color: var(--accent-strong) !important; font-size: 0.78rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .choice-button em { color: var(--accent-strong); font-size: 0.76rem; font-style: normal; font-weight: 800; text-transform: capitalize; }
 .outcome-panel { border-inline-start: 4px solid var(--accent); padding: 0.2rem 0 0.2rem 1rem; }
-.outcome-panel p { color: var(--paper-1); font-size: 1.06rem; line-height: 1.62; text-align: justify; text-justify: inter-word; hyphens: auto; }
+.outcome-panel h2 { margin-block: 0 0.45rem; color: var(--accent-strong); font-size: 1rem; letter-spacing: 0.02em; }
+.outcome-copy { margin-block: 0 0.75rem; color: var(--paper-1); font-size: 1.06rem; line-height: 1.62; overflow-wrap: anywhere; text-align: start; }
+.outcome-effects { display: flex; flex-wrap: wrap; gap: 0.38rem 0.5rem; margin: 0 0 0.85rem; padding: 0; list-style: none; }
+.outcome-effects li { border-inline-start: 2px solid var(--line-strong); padding-inline-start: 0.45rem; color: var(--paper-2); font-size: 0.9rem; font-weight: 800; }
 
 .enemy-heading { display: flex; justify-content: space-between; align-items: end; gap: 1rem; position: relative; }
 .enemy-heading h1 { margin-block-end: 0.55rem; font-size: clamp(1.65rem, 7vw, 2.8rem); text-wrap: balance; }
