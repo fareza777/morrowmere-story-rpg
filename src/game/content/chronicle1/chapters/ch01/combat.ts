@@ -2,18 +2,17 @@ import { defineScene } from '../../builders';
 
 export const CH01_COMBAT = Object.freeze([
   defineScene({
-    id: 'ch01-combat-ditch-road-cutters', chapterId: 'ch01', region: 'gloamwood', slot: 25,
+    id: 'ch01-combat-ditch-road-cutters', chapterId: 'ch01', region: 'gloamwood', slot: 5,
     type: 'combat', family: 'roadside-ambush', weight: 14, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-ditch-road-cutters', illustrationId: 'scene-ch01-combat-ditch-road-cutters', title: 'Blades in the Drainage Ditch',
     narrative: [
-      'Three road cutters rise from the drainage ditch with hooked blades meant for wagon reins. A fourth waits behind the caravan with a short bow.',
-      'The attackers want the horses alive and the guards separated. The stone culvert offers cover, but it leaves the rear wagon exposed.',
+      'Before the repaired wheel completes its second mile, two goblin cutpurses rise from the drainage ditch and hook at the lead reins. A human reaver in a stripped border cloak steps behind the rear wagon with a short bow.',
+      'They want the horses alive and the medicine guard divided. The stone culvert offers cover from the bow, but reaching it leaves the rear wagon open to both goblins.',
     ],
     eligibility: {
-      routes: ['kings-road'],
+      routes: ['kings-road', 'old-forest', 'ruined-pass'],
       minLevel: 1,
       maxLevel: 2,
-      excludedFlags: ['chalk-rear-brake-held', 'chalk-drivers-sheltered'],
     }, requirements: [], exclusions: [], cooldownRuns: 2, oneShot: false, followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch01-choice-hold-between-the-wagons', label: 'Hold between the wagons', detail: 'Protect both teams from the hooked blades, but begin the fight in full view of the archer.', effects: [{ type: 'flag', operation: 'add', flagId: 'combat-ch01-ditch-formation' }], outcome: 'You plant your feet between the wagon poles as the first cutter reaches for the reins.' },

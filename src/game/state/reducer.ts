@@ -853,6 +853,13 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!expedition.currentCombat && scene.type === 'combat' && scene.encounterId) {
       expedition = { ...expedition, currentCombat: { encounterId: scene.encounterId, combat: null } };
     }
+    if (expedition.currentCombat && !expedition.currentCombat.combat) {
+      const temporary = { ...state, campaign: applied.value.campaign, expedition };
+      const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
+      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
+      expedition = { ...expedition, currentCombat: { ...expedition.currentCombat, combat } };
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
+    }
     return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
   }
   if (command.type === 'use-item') {

@@ -2,7 +2,7 @@ import { defineScene } from '../../builders';
 
 export const CH01_JOURNEY = Object.freeze([
   defineScene({
-    id: 'ch01-journey-jorys-waxed-tube', chapterId: 'ch01', region: 'gloamwood', slot: 5,
+    id: 'ch01-journey-jorys-waxed-tube', chapterId: 'ch01', region: 'gloamwood', slot: 25,
     type: 'journey', journeySubtype: 'investigation', family: 'dispatch-provenance', weight: 16, pacing: 'quiet',
     illustrationId: 'scene-ch01-journey-jorys-waxed-tube', title: 'Jory\'s Waxed Tube',
     narrative: [

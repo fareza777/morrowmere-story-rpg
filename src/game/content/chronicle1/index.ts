@@ -1,5 +1,5 @@
 import type { EnemyId, EventId, ItemId } from '../../domain/ids';
-import type { ItemDefinition } from '../../types';
+import type { EnemyDefinition, ItemDefinition } from '../../types';
 import {
   chronicle1ChoiceOutcomes,
   type Chronicle1Event,
@@ -172,8 +172,34 @@ export const CHRONICLE1_ITEM_INDEX: ContentIndex['items'] = new Map(
   CHRONICLE1_RUNTIME_ITEMS.map((item) => [item.id as ItemId, item] as const),
 );
 
+function runtimeEnemy(enemy: EnemyDefinition): EnemyDefinition {
+  return deepFreeze({
+    id: enemy.id,
+    archetypeId: enemy.archetypeId,
+    name: enemy.name,
+    rank: enemy.rank,
+    level: enemy.level,
+    species: enemy.species,
+    region: enemy.region,
+    maxHealth: enemy.maxHealth,
+    attack: enemy.attack,
+    armor: enemy.armor,
+    ward: enemy.ward,
+    intentWeights: { ...enemy.intentWeights },
+    traits: [...enemy.traits],
+    rewardTags: [...enemy.rewardTags],
+    description: enemy.description,
+    artFamily: enemy.artFamily,
+  });
+}
+
+/** Combat and save-state runtime data excludes authoring-only enemy metadata. */
+export const CHRONICLE1_RUNTIME_ENEMIES: readonly EnemyDefinition[] = deepFreeze(
+  CHRONICLE1_ENEMIES.map(runtimeEnemy),
+);
+
 export const CHRONICLE1_ENEMY_INDEX: ContentIndex['enemies'] = new Map(
-  CHRONICLE1_ENEMIES.map((enemy) => [enemy.id as EnemyId, enemy] as const),
+  CHRONICLE1_RUNTIME_ENEMIES.map((enemy) => [enemy.id as EnemyId, enemy] as const),
 );
 
 export const CHRONICLE1_ENCOUNTER_INDEX: ContentIndex['encounters'] = new Map(

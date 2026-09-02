@@ -60,7 +60,7 @@ describe('authored combat scene routing', () => {
   });
 
   it('starts the authored combat encounter after resolving its setup choice', () => {
-    const scene = [...CHRONICLE1_CONTENT.events.values()].find((candidate) => candidate.type === 'combat' && candidate.choices.length > 0);
+    const scene = [...CHRONICLE1_CONTENT.events.values()].find((candidate) => candidate.type === 'combat' && candidate.encounterId && candidate.choices.length > 0);
     expect(scene).toBeDefined();
     const choice = scene!.choices[0]!;
     const before = stateAtCombatScene(scene!.id);
