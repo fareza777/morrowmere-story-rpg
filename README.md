@@ -20,6 +20,8 @@ MORROWMERE is an English-language, portrait-first sword-and-sorcery text RPG for
 
 Runs vary through seeded routes, optional events, encounters, rewards, companion decisions, faction standing, and accumulated evidence. Combat includes visible enemy intent, misses, critical hits, blocks, techniques, consumables, and level-scaled opposition. The game also includes merchants, gold, inventory and equipment screens, multiple local save slots, autosave, save-and-exit support, chapter restart, and clear recovery actions after defeat.
 
+Road Tactics puts one decision between each road leg: choose a route, then Scout, Press On, Make Camp, or use your active companion's road move. Each action trades resources, recovery, or risk to shape the next illustrated scene. Resolve its choices and any battle, claim your rewards, then return to Road Tactics for the next leg. Secure carried gold at a safe hub; Make Camp is a roadside recovery action, not a way to bank it.
+
 The complete adventure, local artwork, music, and sound effects remain available without a connection. Android test builds include Google Mobile Ads and consent handling; ads require a network, ad failure never blocks play, and rewarded battle gold is optional. Game progress and settings stay on the device.
 
 ## Run locally

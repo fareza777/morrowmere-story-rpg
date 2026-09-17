@@ -136,7 +136,9 @@ describe('Chronicle I public core integration', () => {
 
     state = dispatch(state, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt: at(2) }, content);
     expect(state.expedition?.heroVitals).toEqual({ health: 44, resource: 8 });
-    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(3) }, content);
+    expect(state.flow.screen).toBe('travel');
+    expect(currentSceneId(state)).toBeNull();
+    state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(3) }, content);
     expect(currentSceneId(state)).toBe(asEvent('road-fight'));
     const blocked = reduceGame(state, { type: 'select-next-scene', updatedAt: at(4) }, content);
     expect(blocked.state).toBe(state);
@@ -185,8 +187,10 @@ describe('Chronicle I public core integration', () => {
     expect(state.expedition?.pendingReward).toBeNull();
     expect(state.expedition?.currentCombat).toBeNull();
     expect(state.campaign.inventory.pack.some((entry) => entry.itemId === asItem('road-token'))).toBe(true);
+    expect(state.flow.screen).toBe('travel');
+    expect(currentSceneId(state)).toBeNull();
 
-    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(22) }, content);
+    state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(22) }, content);
     expect(currentSceneId(state)).toBe(asEvent('safe-trader'));
     state = dispatch(state, { type: 'open-merchant', updatedAt: at(23) }, content);
     const visit = state.expedition!.merchantVisits[0]!;
@@ -207,7 +211,8 @@ describe('Chronicle I public core integration', () => {
 
     state = dispatch(state, { type: 'start-expedition', routeProfile: 'old-forest', updatedAt: at(29) }, content);
     expect(state.expedition?.routeSeed).not.toBe(firstRouteSeed);
-    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(30) }, content);
+    expect(state.flow.screen).toBe('travel');
+    state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(30) }, content);
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('field-wound'), choiceId: asChoice('bind-wound'), updatedAt: at(31) }, content);
     const fieldPotion = state.campaign.inventory.pack.find((entry) => entry.itemId === asItem('red-mercy'))!;
     const rngBefore = state.expedition!.director.rngState;
@@ -217,6 +222,9 @@ describe('Chronicle I public core integration', () => {
     expect(state.expedition?.position.slot).toBe(slotBefore);
 
     state = dispatch(state, { type: 'select-next-scene', updatedAt: at(33) }, content);
+    expect(state.flow.screen).toBe('travel');
+    expect(currentSceneId(state)).toBeNull();
+    state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(33) }, content);
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('losing-fight'), choiceId: asChoice('face-raider'), updatedAt: at(34) }, content);
     for (let turn = 0; turn < 4 && state.flow.screen === 'combat'; turn += 1) {
       state = dispatch(state, { type: 'combat-turn', commandId: `lose:${turn}`, action: { type: 'guard' }, updatedAt: at(35 + turn) }, content);
@@ -237,10 +245,11 @@ describe('Chronicle I public core integration', () => {
     const content = makeContent();
     let state = createCampaign({ heroClass: 'warden', seed: 2, updatedAt: at(0) }, content);
     state = dispatch(state, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt: at(1) }, content);
-    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(2) }, content);
+    state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, content);
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground'), updatedAt: at(3) }, content);
     state = dispatch(state, { type: 'combat-turn', commandId: 'flee:1', action: { type: 'flee' }, updatedAt: at(4) }, content);
-    expect(state.flow.screen).toBe('story');
+    expect(state.flow.screen).toBe('travel');
+    expect(currentSceneId(state)).toBeNull();
     expect(state.expedition?.currentCombat).toBeNull();
     expect(state.expedition?.pendingReward).toBeNull();
     expect(state.campaign.hero.xp).toBe(0);
