@@ -3,13 +3,19 @@ import { readFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
-const EXPECTED_SCENE_COUNT = 386;
+const EXPECTED_SCENE_COUNT = 402;
 const EXPECTED_WIDTH = 1536;
 const EXPECTED_HEIGHT = 1024;
 const MIN_FILE_BYTES = 32 * 1024;
 
 const root = resolve(import.meta.dirname, '../..');
 const sceneArtRoot = resolve(root, 'public/assets/chronicle1/scenes');
+const ACTION_ART_PATHS = [
+  'public/assets/chronicle1/travel/travel-road-scout.webp',
+  'public/assets/chronicle1/travel/travel-road-press-on.webp',
+  'public/assets/chronicle1/travel/travel-road-make-camp.webp',
+  'public/assets/chronicle1/travel/travel-road-companion.webp',
+];
 
 const toProjectPath = (path) => relative(root, path).replaceAll('\\', '/');
 
@@ -136,21 +142,10 @@ const main = async () => {
   }
 
   const assetsByHash = new Map();
-  let validAssetCount = 0;
+  let validSceneAssetCount = 0;
+  let validActionAssetCount = 0;
 
-  for (const scene of scenes) {
-    if (typeof scene.chapterId !== 'string' || typeof scene.illustrationId !== 'string') {
-      errors.push(`scene "${scene.id ?? '<unknown>'}" has an invalid chapterId or illustrationId`);
-      continue;
-    }
-    if (!/^ch\d{2}$/.test(scene.chapterId) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(scene.illustrationId)) {
-      errors.push(
-        `scene "${scene.id}" cannot map to an exact scene-art path (${scene.chapterId}/${scene.illustrationId})`,
-      );
-      continue;
-    }
-
-    const assetPath = resolve(sceneArtRoot, scene.chapterId, `${scene.illustrationId}.webp`);
+  const validateAsset = async (assetPath) => {
     const displayPath = toProjectPath(assetPath);
     let bytes;
     try {
@@ -158,10 +153,10 @@ const main = async () => {
     } catch (error) {
       if (error?.code === 'ENOENT') {
         errors.push(`missing ${displayPath}`);
-        continue;
+        return false;
       }
       errors.push(`cannot read ${displayPath}: ${error.message}`);
-      continue;
+      return false;
     }
 
     if (bytes.length < MIN_FILE_BYTES) {
@@ -177,14 +172,34 @@ const main = async () => {
       }
     } catch (error) {
       errors.push(`${displayPath} is not a valid WebP: ${error.message}`);
-      continue;
+      return false;
     }
 
     const hash = createHash('sha256').update(bytes).digest('hex');
     const paths = assetsByHash.get(hash) ?? [];
     paths.push(displayPath);
     assetsByHash.set(hash, paths);
-    validAssetCount += 1;
+    return true;
+  };
+
+  for (const scene of scenes) {
+    if (typeof scene.chapterId !== 'string' || typeof scene.illustrationId !== 'string') {
+      errors.push(`scene "${scene.id ?? '<unknown>'}" has an invalid chapterId or illustrationId`);
+      continue;
+    }
+    if (!/^ch\d{2}$/.test(scene.chapterId) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(scene.illustrationId)) {
+      errors.push(
+        `scene "${scene.id}" cannot map to an exact scene-art path (${scene.chapterId}/${scene.illustrationId})`,
+      );
+      continue;
+    }
+
+    const assetPath = resolve(sceneArtRoot, scene.chapterId, `${scene.illustrationId}.webp`);
+    if (await validateAsset(assetPath)) validSceneAssetCount += 1;
+  }
+
+  for (const actionPath of ACTION_ART_PATHS) {
+    if (await validateAsset(resolve(root, actionPath))) validActionAssetCount += 1;
   }
 
   for (const [hash, paths] of assetsByHash) {
@@ -203,7 +218,7 @@ const main = async () => {
   }
 
   console.log(
-    `Scene-art validation passed: ${validAssetCount}/${EXPECTED_SCENE_COUNT} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP assets (${assetsByHash.size} distinct SHA-256 hashes).`,
+    `Scene-art validation passed: ${validSceneAssetCount}/${EXPECTED_SCENE_COUNT} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP scene assets and ${validActionAssetCount}/${ACTION_ART_PATHS.length} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP action-card assets (${assetsByHash.size} distinct SHA-256 hashes).`,
   );
 };
 
