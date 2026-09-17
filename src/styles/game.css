@@ -105,7 +105,7 @@
 .hud-vitals span:first-child svg { color: var(--danger); }
 .hud-vitals span:last-child svg { color: var(--witchlight); }
 .hud-nav { grid-area: nav; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
-.hud-nav button { min-inline-size: 0; min-block-size: 46px; border: 1px solid var(--line); border-radius: 9px; padding: 0.3rem 0.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.14rem; background: var(--ink-0); color: var(--paper-1); }
+.hud-nav button { min-inline-size: 0; min-block-size: 48px; border: 1px solid var(--line); border-radius: 9px; padding: 0.3rem 0.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.14rem; background: var(--ink-0); color: var(--paper-1); }
 .hud-nav button span { font-size: 0.7rem; font-weight: 800; line-height: 1; }
 .hud-nav button:hover { border-color: var(--accent); background: var(--ink-2); }
 
@@ -113,7 +113,7 @@
 .scene-art img { inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center; display: block; filter: none; transform: none; }
 .scene-art.has-enemy img { object-position: center 15%; }
 .game-main { min-block-size: calc(100dvh - 112px); }
-.story-panel, .combat-panel, .reward-panel, .end-panel { padding: 1.1rem 1rem calc(1.6rem + var(--safe-bottom)); }
+.story-panel, .combat-panel, .reward-panel, .travel-panel, .end-panel { padding: 1.1rem 1rem calc(1.6rem + var(--safe-bottom)); }
 .story-panel > header { position: relative; }
 .story-panel > header > p, .enemy-heading p { margin-block-end: 0.42rem; color: var(--accent-strong); font-size: 0.76rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
 .story-panel h1 { max-inline-size: 18ch; margin-block-end: 0.9rem; font-size: clamp(1.85rem, 8vw, 3.2rem); text-wrap: balance; }
@@ -157,6 +157,29 @@
 .reward-list { display: grid; gap: 0.75rem; margin-block-start: 1rem; }
 .end-panel > p:not(.eyebrow) { max-inline-size: 43ch; color: var(--paper-1); font-size: 1.08rem; line-height: 1.65; }
 .end-actions { inline-size: min(100%, 30rem); margin-block-start: 1rem; display: grid; gap: 0.7rem; }
+
+.travel-heading > p:not(.eyebrow) { max-inline-size: 42ch; margin: 0; color: var(--paper-1); line-height: 1.55; }
+.travel-heading h1 { margin-block-end: 0.55rem; font-size: clamp(1.85rem, 8vw, 3.2rem); text-wrap: balance; }
+.travel-meters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin: 1rem 0; }
+.travel-meters div { min-inline-size: 0; padding: 0.65rem; border: 1px solid var(--line); border-radius: 9px; background: var(--ink-1); }
+.travel-meters dt { color: var(--paper-2); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.travel-meters dd { margin: 0.25rem 0 0; color: var(--paper-0); font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.travel-meters small { display: block; margin-block-start: 0.25rem; color: var(--paper-2); font-size: 0.72rem; font-weight: 400; line-height: 1.3; }
+.travel-companion, .travel-receipt { display: grid; gap: 0.25rem; margin-block-end: 1rem; padding: 0.75rem; border-inline-start: 3px solid var(--accent); background: var(--ink-1); }
+.travel-companion strong, .travel-receipt strong { color: var(--accent-strong); }
+.travel-companion span, .travel-receipt span { color: var(--paper-1); font-size: 0.9rem; line-height: 1.4; overflow-wrap: anywhere; }
+.travel-actions { display: grid; gap: 0.75rem; }
+.travel-action { min-inline-size: 0; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--ink-1); box-shadow: 0 3px 10px rgb(70 44 23 / 0.07); }
+.travel-action img { inline-size: 100%; aspect-ratio: 3 / 2; display: block; object-fit: cover; }
+.travel-action-copy { display: grid; gap: 0.3rem; padding: 0.8rem; }
+.travel-action-copy h2, .travel-action-copy p { margin: 0; }
+.travel-action-copy h2 { font-size: 1.12rem; }
+.travel-action-copy p, .travel-action-copy small { color: var(--paper-2); line-height: 1.35; }
+.travel-action-copy small { color: var(--accent-strong); font-weight: 800; }
+.travel-disabled-reason { color: var(--danger); font-size: 0.84rem; font-weight: 800; line-height: 1.35; }
+.travel-action button { inline-size: calc(100% - 1.6rem); min-block-size: 48px; margin: 0 0.8rem 0.8rem; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--ink-0); color: var(--paper-0); font: inherit; font-weight: 800; }
+.travel-action button:not(:disabled):hover { border-color: var(--accent); background: #f9eedb; }
+.travel-action.is-unavailable { opacity: 0.78; }
 
 .sheet-backdrop { position: fixed; z-index: var(--layer-overlay); inset: 0; padding-inline: var(--safe-left) var(--safe-right); padding-block-end: var(--ad-banner-inset); display: flex; align-items: end; justify-content: center; background: rgb(45 31 19 / 0.5); }
 .sheet { inline-size: min(100%, 900px); max-block-size: min(92dvh, 820px); border: 1px solid var(--line-strong); border-block-end: 0; border-radius: 18px 18px 0 0; background: var(--ink-1); box-shadow: var(--shadow); overflow: hidden; }
@@ -211,7 +234,7 @@
   .hud-location strong { font-size: 0.84rem; }
   .hud-vitals { gap: 0.45rem; }
   .hud-nav button span { font-size: 0.66rem; }
-  .story-panel, .combat-panel, .reward-panel, .end-panel { padding-inline: 0.8rem; }
+  .story-panel, .combat-panel, .reward-panel, .travel-panel, .end-panel { padding-inline: 0.8rem; }
   .enemy-heading { display: grid; gap: 0; }
   .enemy-heading > span { padding-block-end: 0.55rem; }
 }
@@ -236,7 +259,8 @@
   .top-hud { grid-template-columns: minmax(0, 1fr) auto minmax(310px, 0.8fr); grid-template-areas: "location vitals nav"; align-items: center; min-block-size: calc(72px + var(--safe-top)); }
   .hud-nav button { flex-direction: row; gap: 0.35rem; }
   .scene-art { inline-size: min(100%, 720px); margin-inline: auto; border: 1px solid var(--line-strong); border-radius: 14px; }
-  .story-panel, .combat-panel, .reward-panel, .end-panel { padding-inline: 2rem; }
+  .story-panel, .combat-panel, .reward-panel, .travel-panel, .end-panel { padding-inline: 2rem; }
+  .travel-actions { grid-template-columns: 1fr 1fr; }
   .combat-actions { grid-template-columns: repeat(4, 1fr); }
   .combat-actions .flee-action { grid-column: 1 / -1; }
   .equipment-slots { grid-template-columns: 1fr 1fr; }

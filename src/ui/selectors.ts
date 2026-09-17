@@ -16,6 +16,7 @@ import { inventorySlotUsage, PACK_CAPACITY, type InventoryEntry } from '../game/
 import { quoteTrade, type MerchantContext, type MerchantVisit } from '../game/merchant';
 import { deriveHeroStats } from '../game/progression';
 import type { GameStateV2 } from '../game/state/types';
+import type { TravelAction } from '../game/state/road-tactics';
 import type { HeroClass, ItemDefinition, ItemStats } from '../game/types';
 import type {
   CampViewModel,
@@ -41,6 +42,8 @@ import type {
   StatLineViewModel,
   StoryChoiceViewModel,
   StoryViewModel,
+  TravelActionViewModel,
+  TravelViewModel,
 } from './types';
 
 const CLASS_LABELS: Readonly<Record<HeroClass, string>> = {
@@ -49,7 +52,7 @@ const CLASS_LABELS: Readonly<Record<HeroClass, string>> = {
   warden: 'Warden',
 };
 
-const RESOURCE_LABELS: Readonly<Record<HeroClass, HeroHudViewModel['resourceLabel']>> = {
+export const RESOURCE_LABELS: Readonly<Record<HeroClass, HeroHudViewModel['resourceLabel']>> = {
   warrior: 'Stamina',
   mage: 'Mana',
   warden: 'Focus',
@@ -356,6 +359,90 @@ export function selectRouteView(state: GameStateV2, content: ContentIndex): Rout
     hero: heroHud(state, content),
     objective: selectObjective(state, content),
     routes: CHRONICLE1_ROUTES.map(routeOption),
+  };
+}
+
+const TRAVEL_ART: Readonly<Record<TravelAction, { readonly src: string; readonly alt: string }>> = {
+  scout: { src: '/assets/chronicle1/travel/travel-road-scout.webp', alt: 'Scout reading tracks beside a guarded wagon.' },
+  'press-on': { src: '/assets/chronicle1/travel/travel-road-press-on.webp', alt: 'Convoy pressing through rain and hostile terrain.' },
+  'make-camp': { src: '/assets/chronicle1/travel/travel-road-make-camp.webp', alt: 'Guarded night camp beneath a wagon awning.' },
+  companion: { src: '/assets/chronicle1/travel/travel-road-companion.webp', alt: 'A companion directing the convoy at a fork.' },
+};
+
+function travelCompanion(state: GameStateV2, content: ContentIndex): TravelViewModel['companion'] {
+  const activeId = state.campaign.companions.activeCompanionId;
+  const progress = activeId
+    ? state.campaign.companions.records.find((record) => record.companionId === activeId)
+    : null;
+  const definition = activeId ? content.companions.get(activeId) : null;
+  if (!activeId || !progress || progress.status !== 'recruited' || !definition) return null;
+  const capability = (definition as typeof definition & {
+    readonly explorationCapability?: { readonly label: string; readonly description: string };
+  }).explorationCapability;
+  return {
+    name: definition.name,
+    capabilityLabel: capability?.label ?? 'Road move',
+    capabilityDescription: capability?.description ?? 'Uses their field experience to guide the convoy.',
+  };
+}
+
+function travelReceipt(boons: readonly string[]): TravelViewModel['receipt'] {
+  const boon = [...boons].reverse().find((candidate) => candidate.startsWith('road:'));
+  const summary = boon ? ({
+    'road:scouted': 'Threat reduced and safer leads favored.',
+    'road:pressed': 'The convoy pressed forward; danger is more likely.',
+    'road:rested': 'The convoy recovered, but the road grew more tense.',
+    'road:guarded': 'The convoy moved under Rukhar’s watch.',
+    'road:triaged': 'Caldus triaged the convoy before the next scene.',
+    'road:proof': 'Lyra marked the route for evidence and investigation.',
+    'road:hidden': 'Talla found a quieter hidden way.',
+  } as Readonly<Record<string, string>>)[boon] : null;
+  return summary ? { label: 'Last road choice', summary } : null;
+}
+
+export function selectTravelView(state: GameStateV2, content: ContentIndex): TravelViewModel {
+  const expedition = state.expedition;
+  if (!expedition) throw new Error('Travel view requires an active expedition.');
+  const hero = heroHud(state, content);
+  const companion = travelCompanion(state, content);
+  const scoutReason = hero.resource < 1 ? `Need 1 ${hero.resourceLabel} resource.` : null;
+  const companionReason = companion ? null : 'Recruit and activate a companion at camp.';
+  const actions: readonly TravelActionViewModel[] = [
+    {
+      action: 'scout', label: 'Scout', cost: `Cost: 1 ${hero.resourceLabel}`, risk: 'Low immediate risk',
+      effectPreview: 'Threat -2 · Favors investigation, quiet, and recovery.',
+      artSrc: TRAVEL_ART.scout.src, artAlt: TRAVEL_ART.scout.alt,
+      available: scoutReason === null, unavailableReason: scoutReason,
+    },
+    {
+      action: 'press-on', label: 'Press On', cost: 'Cost: none', risk: 'Threat +1 · Tension +1',
+      effectPreview: 'Favors danger and combat scenes.',
+      artSrc: TRAVEL_ART['press-on'].src, artAlt: TRAVEL_ART['press-on'].alt,
+      available: true, unavailableReason: null,
+    },
+    {
+      action: 'make-camp', label: 'Make Camp', cost: 'Cost: none', risk: 'Tension +1',
+      effectPreview: `Health +6 · ${hero.resourceLabel} +2 · Favors recovery and merchants.`,
+      artSrc: TRAVEL_ART['make-camp'].src, artAlt: TRAVEL_ART['make-camp'].alt,
+      available: true, unavailableReason: null,
+    },
+    {
+      action: 'companion', label: companion ? 'Companion Move' : 'Companion Move', cost: companion ? `${companion.name}'s road capability` : 'No active companion', risk: companion ? companion.capabilityLabel : 'Unavailable',
+      effectPreview: companion ? companion.capabilityDescription : companionReason!,
+      artSrc: TRAVEL_ART.companion.src, artAlt: TRAVEL_ART.companion.alt,
+      available: companionReason === null, unavailableReason: companionReason,
+    },
+  ];
+  return {
+    routeLabel: routeLabel(state),
+    chapterLabel: hero.chapterLabel,
+    legLabel: `Road leg ${expedition.position.slot + 1}`,
+    hero,
+    threat: expedition.director.threat,
+    tension: expedition.director.tension,
+    companion,
+    actions,
+    receipt: travelReceipt(expedition.temporaryBoons),
   };
 }
 

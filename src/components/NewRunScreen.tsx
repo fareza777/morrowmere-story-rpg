@@ -8,8 +8,8 @@ interface NewRunScreenProps {
 }
 
 const CLASSES = [
-  { id: 'warrior' as const, name: 'Warrior', icon: Sword, detail: 'High armor. Cleave through hard fights and punish announced strikes.', stats: '44 Health   8 Focus' },
-  { id: 'mage' as const, name: 'Mage', icon: Sparkle, detail: 'Strong ward. Spend Focus to burn through sorcery and armored foes.', stats: '30 Health   14 Focus' },
+  { id: 'warrior' as const, name: 'Warrior', icon: Sword, detail: 'High armor. Cleave through hard fights and punish announced strikes.', stats: '44 Health   8 Stamina' },
+  { id: 'mage' as const, name: 'Mage', icon: Sparkle, detail: 'Strong ward. Spend Mana to burn through sorcery and armored foes.', stats: '30 Health   14 Mana' },
   { id: 'warden' as const, name: 'Warden', icon: Shield, detail: 'Balanced scout. Read the road, escape danger, and turn supplies into survival.', stats: '37 Health   10 Focus' },
 ] as const;
 

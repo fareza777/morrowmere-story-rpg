@@ -2,6 +2,7 @@ import type { ContentIndex } from '../game/content/schema';
 import type { DomainEvent } from '../game/domain/result';
 import type { RouteProfileId } from '../game/director/types';
 import type { GameCommand, GameStateV2 } from '../game/state/types';
+import type { TravelAction } from '../game/state/road-tactics';
 import type { HeroClass, ItemCategory } from '../game/types';
 
 export interface SaveSlotSummary {
@@ -134,6 +135,39 @@ export interface RouteViewModel {
   readonly hero: HeroHudViewModel;
   readonly objective: ObjectiveViewModel;
   readonly routes: readonly RouteOptionViewModel[];
+}
+
+export interface TravelActionViewModel {
+  readonly action: TravelAction;
+  readonly label: string;
+  readonly cost: string;
+  readonly risk: string;
+  readonly effectPreview: string;
+  readonly artSrc: string;
+  readonly artAlt: string;
+  readonly available: boolean;
+  readonly unavailableReason: string | null;
+}
+
+export interface TravelReceiptViewModel {
+  readonly label: string;
+  readonly summary: string;
+}
+
+export interface TravelViewModel {
+  readonly routeLabel: string;
+  readonly chapterLabel: string;
+  readonly legLabel: string;
+  readonly hero: HeroHudViewModel;
+  readonly threat: number;
+  readonly tension: number;
+  readonly companion: {
+    readonly name: string;
+    readonly capabilityLabel: string;
+    readonly capabilityDescription: string;
+  } | null;
+  readonly actions: readonly TravelActionViewModel[];
+  readonly receipt: TravelReceiptViewModel | null;
 }
 
 export interface StoryChoiceViewModel {

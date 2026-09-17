@@ -104,6 +104,19 @@ export function OpeningCinematic({
     setControlsActivity((activity) => activity + 1);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      skip();
+      return;
+    }
+    if (event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      revealControls();
+      if (!preloading) (paused ? player.resume : player.pause)();
+    }
+  };
+
   return (
     <main
       className="opening-cinematic"
@@ -111,6 +124,8 @@ export function OpeningCinematic({
       aria-label="Opening story"
       aria-busy={preloading || undefined}
       onClick={revealControls}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
     >
       <section
         className={`opening-visual motion-${shot.motion}${settings.reducedMotion ? ' is-reduced-motion' : ''}${player.status === 'playing' ? '' : ' is-timeline-paused'}`}
