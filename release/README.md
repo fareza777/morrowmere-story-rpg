@@ -10,9 +10,9 @@ These QA artifacts use Google's official sample ad identifiers. Live AdMob ident
 
 The Android package keeps Chronicle media local, excludes stale PWA caches, and enforces a 180 MiB bundle-size gate. Regenerate native artwork with `npx capacitor-assets generate --android --assetPath assets`, run `npm run android:sync`, build with `.\gradlew.bat assembleDebug bundleRelease` from `android`, and finish with `npm run check:android-size`.
 
-Existing version 1.4.1 artifact checksum (not a verification of the current source):
+Current version 1.4.1 artifact checksum:
 
-- `MORROWMERE-v1.4.1-debug.apk` — 192,496,183 bytes — SHA-256 `400A4FABA0983A9214636B9DE6D6613D249C217D4D6A76D86241DC46E04C79E2`
+- `MORROWMERE-v1.4.1-debug.apk` — 200,123,700 bytes — SHA-256 `01EDA8D38EBEDDC622469D398FC3A50E65C83835E39FBDD144B97EC788A78B13`
 
 Historical version 1.3.0 checksums:
 
