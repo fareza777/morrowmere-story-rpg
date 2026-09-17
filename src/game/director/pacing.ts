@@ -1,5 +1,5 @@
 import type { ChronicleEvent } from '../content/schema';
-import type { DirectorState, JourneyDirectorContext, RouteOption, ScenePacing } from './types';
+import type { DirectorState, JourneyDirectorContext, RoadBias, RouteOption, ScenePacing } from './types';
 
 export const ROUTE_OPTIONS: readonly RouteOption[] = [
   {
@@ -69,6 +69,26 @@ export function routeWeight(event: ChronicleEvent, context: JourneyDirectorConte
   if (pacing === 'merchant') return base * Math.max(0.25, profile.merchantBias);
   if (pacing === 'recovery') return base * profile.recoveryBias;
   return base;
+}
+
+/**
+ * Road choices deliberately alter only the weighted, paced pool. Values are
+ * multipliers so a candidate remains selectable when it is the only valid one.
+ */
+export function roadBiasWeight(event: ChronicleEvent, bias: RoadBias | undefined): number {
+  const pacing = scenePacing(event);
+  const investigation = 'journeySubtype' in event && event.journeySubtype === 'investigation';
+  switch (bias) {
+    case 'scout': return investigation ? 8 : pacing === 'danger' ? 0.25 : pacing === 'quiet' || pacing === 'recovery' ? 3 : 1;
+    case 'press-on': return pacing === 'danger' || event.type === 'combat' ? 4 : pacing === 'recovery' ? 0.25 : 1;
+    case 'make-camp': return pacing === 'recovery' || pacing === 'merchant' ? 4 : 1;
+    case 'mara': return investigation ? 8 : pacing === 'danger' ? 0.25 : 1;
+    case 'rukhar': return pacing === 'danger' ? 3 : 1;
+    case 'caldus': return pacing === 'recovery' || pacing === 'merchant' ? 4 : 1;
+    case 'lyra': return investigation ? 8 : pacing === 'danger' ? 0.25 : 1;
+    case 'talla': return pacing === 'quiet' ? 4 : 1;
+    default: return 1;
+  }
 }
 
 export function nextTension(state: DirectorState, event: ChronicleEvent): number {

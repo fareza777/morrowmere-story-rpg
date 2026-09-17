@@ -2,7 +2,7 @@ import { createRng } from '../rng';
 import type { ChronicleEvent, ContentIndex } from '../content/schema';
 import type { EventId } from '../domain/ids';
 import { callbackScene, comparePosition, eligibleScenes } from './eligibility';
-import { nextTension, nextThreat, pacingCandidates, routeWeight, scenePacing } from './pacing';
+import { nextTension, nextThreat, pacingCandidates, roadBiasWeight, routeWeight, scenePacing } from './pacing';
 import type {
   AuthoredSceneQueueEntry,
   DirectorReason,
@@ -22,10 +22,11 @@ function reachedCombatLimit(state: DirectorState, content: ContentIndex): boolea
 }
 
 function weightedPick(events: readonly ChronicleEvent[], random: number, context: JourneyDirectorContext): ChronicleEvent {
-  const total = events.reduce((sum, event) => sum + routeWeight(event, context), 0);
+  const weightFor = (event: ChronicleEvent) => routeWeight(event, context) * roadBiasWeight(event, context.roadBias);
+  const total = events.reduce((sum, event) => sum + weightFor(event), 0);
   let cursor = random * total;
   for (const event of events) {
-    cursor -= routeWeight(event, context);
+    cursor -= weightFor(event);
     if (cursor < 0) return event;
   }
   return events[events.length - 1]!;
@@ -111,8 +112,7 @@ function pickCandidate(
   const pacedEligible = eligible.filter((candidate) =>
     candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
   const paced = selectPacedEvent(pacedEligible, state, context, random);
-  const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
-  const event = authored ?? callback ?? anchor ?? (recoverToAnchor ? undefined : pacedSupport ?? threat ?? paced);
+  const event = authored ?? callback ?? anchor ?? (recoverToAnchor ? undefined : threat ?? paced);
   if (!event) return undefined;
   return {
     event,

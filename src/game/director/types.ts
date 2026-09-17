@@ -3,6 +3,7 @@ import type { EventId, StoryPosition } from '../domain/ids';
 import type { InventoryState } from '../inventory';
 
 export type RouteProfileId = 'kings-road' | 'old-forest' | 'ruined-pass';
+export type RoadBias = 'scout' | 'press-on' | 'make-camp' | 'mara' | 'rukhar' | 'caldus' | 'lyra' | 'talla';
 export type DirectorReason = 'authored' | 'callback' | 'anchor' | 'threat' | 'paced';
 export type ScenePacing = 'danger' | 'merchant' | 'recovery' | 'quiet';
 
@@ -54,6 +55,8 @@ export interface JourneyDirectorContext {
   readonly bankedGold?: number;
   readonly unbankedGold?: number;
   readonly inventory?: InventoryState;
+  /** One-leg travel preference; it only affects weights among paced candidates. */
+  readonly roadBias?: RoadBias;
 }
 
 export interface DirectorSelectedStep {

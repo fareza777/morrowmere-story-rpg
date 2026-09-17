@@ -2,7 +2,7 @@ import { activeCompanion } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { DomainEvent } from '../domain/result';
 import { selectNextScene } from '../director';
-import type { AuthoredSceneQueueEntry, DirectorState } from '../director/types';
+import type { AuthoredSceneQueueEntry, DirectorState, RoadBias } from '../director/types';
 import { deriveHeroStats } from '../progression';
 import { visibleDialogueBeats } from '../content/dialogue';
 import { campaignPayload } from './create';
@@ -83,11 +83,11 @@ export function enterTravel(state: GameStateV2, updatedAt: string): GameStateV2 
 
 function companionEffect(companionId: string, vitals: HeroVitals) {
   switch (companionId) {
-    case 'mara': return { vitals, threat: -2, tension: 0, boon: 'road:scouted' };
-    case 'rukhar': return { vitals, threat: -1, tension: -1, boon: 'road:guarded' };
-    case 'caldus': return { vitals: { health: vitals.health + 8, resource: vitals.resource + 1 }, threat: 0, tension: 0, boon: 'road:rested' };
-    case 'lyra': return { vitals, threat: -1, tension: 0, boon: 'road:proof' };
-    case 'talla': return { vitals, threat: -1, tension: -1, boon: 'road:hidden' };
+    case 'mara': return { vitals, threat: -2, tension: 0, boon: 'road:scouted', roadBias: 'mara' as const };
+    case 'rukhar': return { vitals, threat: -1, tension: -1, boon: 'road:guarded', roadBias: 'rukhar' as const };
+    case 'caldus': return { vitals: { health: vitals.health + 8, resource: vitals.resource + 1 }, threat: 0, tension: 0, boon: 'road:triaged', roadBias: 'caldus' as const };
+    case 'lyra': return { vitals, threat: -1, tension: 0, boon: 'road:proof', roadBias: 'lyra' as const };
+    case 'talla': return { vitals, threat: -1, tension: -1, boon: 'road:hidden', roadBias: 'talla' as const };
     default: return null;
   }
 }
@@ -102,19 +102,23 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   let threat = expedition.director.threat;
   let tension = expedition.director.tension;
   let boon: string;
+  let roadBias: RoadBias;
   if (action === 'scout') {
     if (vitals.resource < 1) return { state, events: [], diagnostic: { code: 'insufficient_resource', message: 'Scout requires one resource.' } };
     vitals = { ...vitals, resource: vitals.resource - 1 };
     threat -= 2;
     boon = 'road:scouted';
+    roadBias = 'scout';
   } else if (action === 'press-on') {
     threat += 1;
     tension += 1;
     boon = 'road:pressed';
+    roadBias = 'press-on';
   } else if (action === 'make-camp') {
     vitals = { health: vitals.health + 6, resource: vitals.resource + 2 };
     tension += 1;
     boon = 'road:rested';
+    roadBias = 'make-camp';
   } else {
     const companion = activeCompanion(state.campaign.companions);
     if (!companion || companion.status !== 'recruited') {
@@ -126,6 +130,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     threat += effect.threat;
     tension += effect.tension;
     boon = effect.boon;
+    roadBias = effect.roadBias;
   }
 
   const prepared = {
@@ -144,6 +149,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     bankedGold: state.campaign.bankedGold,
     unbankedGold: prepared.unbankedGold,
     inventory: state.campaign.inventory,
+    roadBias,
   }, content, prepared.authoredSceneQueue);
   const event: DomainEvent = { type: 'travel_action_taken', action };
   if (step.kind !== 'selected') {
