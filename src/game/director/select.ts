@@ -112,7 +112,9 @@ function pickCandidate(
   const pacedEligible = eligible.filter((candidate) =>
     candidate.type !== 'main' && (!combatLimitReached || candidate.type !== 'combat'));
   const paced = selectPacedEvent(pacedEligible, state, context, random);
-  const event = authored ?? callback ?? anchor ?? (recoverToAnchor ? undefined : threat ?? paced);
+  const pacedSupport = paced && ['merchant', 'recovery'].includes(scenePacing(paced)) ? paced : undefined;
+  const fallback = context.roadBias ? threat ?? paced : pacedSupport ?? threat ?? paced;
+  const event = authored ?? callback ?? anchor ?? (recoverToAnchor ? undefined : fallback);
   if (!event) return undefined;
   return {
     event,

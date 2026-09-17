@@ -14,6 +14,8 @@ function roadContent() {
     type: 'journey',
     weight: 10,
     pacing: 'quiet',
+    threatChange: 0,
+    tensionChange: 0,
   });
   return content;
 }
@@ -68,6 +70,28 @@ describe('Road Tactics reducer', () => {
     expect(result.state.flow.screen).toBe('story');
     expect(result.state.expedition!.currentSceneId).not.toBeNull();
     expect(result.events.some((event) => event.domain.type === 'travel_action_taken')).toBe(true);
+  });
+
+  it.each([
+    ['scout', 0, -1, -2, 0],
+    ['press-on', 0, 0, 1, 1],
+    ['make-camp', 6, 2, 0, 1],
+  ] as const)('%s applies its exact bounded road effect', (action, healthDelta, resourceDelta, threatDelta, tensionDelta) => {
+    const { content, state } = routeState();
+    const before = {
+      ...state,
+      expedition: {
+        ...state.expedition!,
+        heroVitals: { health: 20, resource: 3 },
+        director: { ...state.expedition!.director, threat: 5, tension: 5 },
+      },
+    };
+    const result = reduceGame(before, { type: 'travel-action', action, updatedAt }, content);
+
+    expect(result.state.expedition!.heroVitals.health - before.expedition!.heroVitals.health).toBe(healthDelta);
+    expect(result.state.expedition!.heroVitals.resource - before.expedition!.heroVitals.resource).toBe(resourceDelta);
+    expect(result.state.expedition!.director.threat - before.expedition!.director.threat).toBe(threatDelta);
+    expect(result.state.expedition!.director.tension - before.expedition!.director.tension).toBe(tensionDelta);
   });
 
   it('rejects scout at zero resource without changing state', () => {

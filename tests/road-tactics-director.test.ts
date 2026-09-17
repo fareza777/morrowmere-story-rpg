@@ -49,4 +49,47 @@ describe('Road Tactics director bias', () => {
     expect(selected.kind).toBe('selected');
     expect(selected.kind === 'selected' && selected.reason).toBe('callback');
   });
+
+  it('keeps paced merchant support ahead of forced threat combat without a road bias', () => {
+    const selected = selectNextScene({ ...director, threat: 6, recentSceneKinds: ['danger', 'danger', 'danger'] }, context, content([
+      event('merchant', { type: 'hub', pacing: 'merchant', weight: 1_000 }),
+      event('combat', { type: 'combat', pacing: 'danger', weight: 1 }),
+    ]), []);
+
+    expect(selected.kind).toBe('selected');
+    expect(selected.kind === 'selected' && selected.sceneId).toBe('merchant');
+    expect(selected.kind === 'selected' && selected.reason).toBe('paced');
+  });
+
+  it('does not let road bias bypass a chapter anchor', () => {
+    const selected = selectNextScene(director, { ...context, roadBias: 'scout' }, content([
+      event('anchor', { type: 'main', anchorOrder: 1 }),
+      event('investigation', { journeySubtype: 'investigation', weight: 1_000 }),
+    ]), []);
+
+    expect(selected.kind === 'selected' && selected.sceneId).toBe('anchor');
+    expect(selected.kind === 'selected' && selected.reason).toBe('anchor');
+  });
+
+  it('does not let road bias select an ineligible favored investigation', () => {
+    const selected = selectNextScene(director, { ...context, roadBias: 'scout' }, content([
+      event('locked-investigation', { journeySubtype: 'investigation', weight: 1_000, eligibility: { requiredFlags: ['proof'] } }),
+      event('available-road'),
+    ]), []);
+
+    expect(selected.kind === 'selected' && selected.sceneId).toBe('available-road');
+  });
+
+  it('does not let press-on exceed the combat streak cap', () => {
+    const usedCombatIds = [asEventId('combat-one'), asEventId('combat-two'), asEventId('combat-three')];
+    const selected = selectNextScene({ ...director, usedSceneIds: usedCombatIds }, { ...context, roadBias: 'press-on' }, content([
+      event('combat-one', { type: 'combat' }),
+      event('combat-two', { type: 'combat' }),
+      event('combat-three', { type: 'combat' }),
+      event('next-combat', { type: 'combat', weight: 1_000 }),
+      event('safe-road'),
+    ]), []);
+
+    expect(selected.kind === 'selected' && selected.sceneId).toBe('safe-road');
+  });
 });
