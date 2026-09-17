@@ -142,7 +142,13 @@ describe('Chronicle I metadata', () => {
       { id: 'old-forest', danger: 2, recoveryWeight: 2, merchantWeight: 1, companionWeight: 3, relicWeight: 1 },
       { id: 'ruined-pass', danger: 3, recoveryWeight: 1, merchantWeight: 0, companionWeight: 1, relicWeight: 3 },
     ]);
-    expect(CHRONICLE1_ROUTE_OPTIONS).toEqual(ROUTE_OPTIONS);
+    // Authored route prose is richer than the compatibility director's copy;
+    // identity and gameplay tuning must still match exactly.
+    const gameplay = ({ description: _description, ...option }: typeof ROUTE_OPTIONS[number]) => option;
+    expect(CHRONICLE1_ROUTE_OPTIONS.map(gameplay)).toEqual(ROUTE_OPTIONS.map(gameplay));
+    expect(CHRONICLE1_ROUTE_OPTIONS.map(({ description }) => description)).toEqual(
+      CHRONICLE1_ROUTES.map(({ description }) => description),
+    );
   });
 
   it('defines the canonical factions and six stable merchant identities', () => {

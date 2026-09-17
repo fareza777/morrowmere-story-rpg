@@ -40,9 +40,12 @@ describe('procedural visual compositor', () => {
       sceneKey: `${event.id}|actor|location|weather`,
     }).backgroundSource);
 
-    expect(new Set(sources).size).toBe(EVENTS.length);
+    expect(sources).toHaveLength(48);
+    expect(new Set(sources).size).toBe(48);
     expect(sources.every((source) => source.startsWith('/assets/events/'))).toBe(true);
-    expect(sources.every((source) => existsSync(join(process.cwd(), 'public', source)))).toBe(true);
+    for (const source of sources) {
+      expect(existsSync(join(process.cwd(), 'public', source)), source).toBe(true);
+    }
   });
 
   it('ships every visual source referenced by the compositor', () => {

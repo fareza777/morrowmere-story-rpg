@@ -10,33 +10,36 @@ function sortedById(entries) {
   return [...entries].sort((left, right) => left.id.localeCompare(right.id));
 }
 
-export async function exportChronicle1Manifest() {
-  const server = await createServer({
-    root: REPOSITORY_ROOT,
-    configFile: false,
-    appType: 'custom',
-    logLevel: 'error',
-    server: { middlewareMode: true },
-  });
-
-  try {
-    const module = await server.ssrLoadModule('/src/game/content/chronicle1/media-contract.ts');
-    const contract = module.CHRONICLE1_MEDIA_CONTRACT;
-    const payload = {
-      version: 1,
-      scenes: sortedById(contract.scenes),
-      itemIcons: sortedById(contract.itemIcons),
-      enemyPortraits: sortedById(contract.enemyPortraits),
-      bosses: sortedById(contract.bosses),
-      voiceCues: sortedById(contract.voiceCues),
-    };
-
-    await mkdir(dirname(OUTPUT_PATH), { recursive: true });
-    await writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-    return OUTPUT_PATH;
-  } finally {
-    await server.close();
+export async function exportChronicle1Manifest(contract) {
+  // Callers that already loaded Chronicle content can reuse that exact graph.
+  // The CLI still loads authored TypeScript, never the previously exported JSON.
+  if (contract === undefined) {
+    const server = await createServer({
+      root: REPOSITORY_ROOT,
+      configFile: false,
+      appType: 'custom',
+      logLevel: 'error',
+      server: { middlewareMode: true },
+    });
+    try {
+      const module = await server.ssrLoadModule('/src/game/content/chronicle1/media-contract.ts');
+      contract = module.CHRONICLE1_MEDIA_CONTRACT;
+    } finally {
+      await server.close();
+    }
   }
+  const payload = {
+    version: 1,
+    scenes: sortedById(contract.scenes),
+    itemIcons: sortedById(contract.itemIcons),
+    enemyPortraits: sortedById(contract.enemyPortraits),
+    bosses: sortedById(contract.bosses),
+    voiceCues: sortedById(contract.voiceCues),
+  };
+
+  await mkdir(dirname(OUTPUT_PATH), { recursive: true });
+  await writeFile(OUTPUT_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  return OUTPUT_PATH;
 }
 
 const entryPath = process.argv[1] ? resolve(process.argv[1]).toLowerCase() : '';

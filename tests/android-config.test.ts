@@ -4,21 +4,27 @@ import { resolve } from 'node:path';
 import { isAndroidMode } from '../vite.config';
 
 describe('Android release configuration', () => {
-  it('uses version 1.2.0, package code 4, and native-only build modes', () => {
+  it('uses version 1.4.1, package code 9, and native-only build modes', () => {
     const packageJson = JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as { version: string; scripts: Record<string, string> };
     const gradle = readFileSync(resolve('android/app/build.gradle'), 'utf8');
 
-    expect(packageJson.version).toBe('1.2.0');
+    expect(packageJson.version).toBe('1.4.1');
     expect(packageJson.scripts['build:android']).toContain('--mode android-test');
     expect(packageJson.scripts['build:android:live']).toContain('verify-live-admob.mjs');
     expect(packageJson.scripts['android:sync:live']).toContain('build:android:live');
     expect(gradle).toContain('applicationId "com.morrowmere.game"');
-    expect(gradle).toContain('versionCode 4');
-    expect(gradle).toContain('versionName "1.2.0"');
+    expect(gradle).toMatch(/\bversionCode 9\b/);
+    expect(gradle).toContain('versionName "1.4.1"');
     expect(isAndroidMode('android')).toBe(true);
     expect(isAndroidMode('android-test')).toBe(true);
     expect(isAndroidMode('android-live')).toBe(true);
     expect(isAndroidMode('production')).toBe(false);
+  });
+
+  it.each(['README.md', 'docs/PLAY-STORE-CHECKLIST.md', 'release/README.md'])('publishes the current release identity in %s', (path) => {
+    const doc = readFileSync(resolve(path), 'utf8');
+    expect(doc).toMatch(/(?:Version|version)\s*:?\s*`?1\.4\.1\b/);
+    expect(doc).toMatch(/version(?:Code| code)\s*`?\s*9\b/);
   });
 
   it('declares AdMob metadata and network access without Firebase config', () => {

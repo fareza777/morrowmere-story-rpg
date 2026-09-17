@@ -151,11 +151,31 @@ describe('Chronicle I production content index', () => {
 });
 
 describe('Chronicle I media manifest exporter', () => {
-  it('writes the exact sorted payload byte-identically on repeat', () => {
+  it('exports supplied live content instead of reloading a second content graph', async () => {
+    const exporterPath = EXPORTER_PATH;
+    const { exportChronicle1Manifest } = await import(/* @vite-ignore */ exporterPath);
+    const supplied = {
+      ...CHRONICLE1_MEDIA_CONTRACT,
+      scenes: CHRONICLE1_MEDIA_CONTRACT.scenes.map((scene, index) => index === 0 ? { ...scene, title: 'Live content export regression' } : scene),
+    };
+    try {
+      await exportChronicle1Manifest(supplied);
+      const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
+      expect(manifest.scenes.find((scene: { id: string }) => scene.id === supplied.scenes[0].id).title).toBe('Live content export regression');
+    } finally {
+      await exportChronicle1Manifest(CHRONICLE1_MEDIA_CONTRACT);
+    }
+  }, 30_000);
+
+  it('writes the exact sorted payload byte-identically on repeat', async () => {
+    const startedAt = performance.now();
     execFileSync(process.execPath, [EXPORTER_PATH], { cwd: REPOSITORY_ROOT, stdio: 'pipe' });
     const firstExport = readFileSync(MANIFEST_PATH, 'utf8');
-    execFileSync(process.execPath, [EXPORTER_PATH], { cwd: REPOSITORY_ROOT, stdio: 'pipe' });
+    const exporterPath = EXPORTER_PATH;
+    const { exportChronicle1Manifest } = await import(/* @vite-ignore */ exporterPath);
+    await exportChronicle1Manifest(CHRONICLE1_MEDIA_CONTRACT);
     const secondExport = readFileSync(MANIFEST_PATH, 'utf8');
+    expect(performance.now() - startedAt).toBeLessThan(30_000);
     expect(secondExport).toBe(firstExport);
 
     const manifest = JSON.parse(secondExport) as {
@@ -196,4 +216,4 @@ describe('Chronicle I media manifest exporter', () => {
 
     expect(secondExport).not.toMatch(/(?:sk_[A-Za-z0-9]+|api[_-]?key|provider|[A-Z]:\\|\/Users\/)/i);
   }, 30_000);
-  }, 90_000);
+});

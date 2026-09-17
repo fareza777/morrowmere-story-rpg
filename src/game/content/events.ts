@@ -2,6 +2,11 @@ import type { EventChoice, EventEffect, RegionId, SkillStat } from '../types';
 
 export type EventTone = 'ominous' | 'violent' | 'mournful' | 'mystic' | 'hopeful';
 
+/** Canonicalize the old Sigil Court / Iron Chime tone at the legacy boundary. */
+export function normalizeEventTone(tone: EventTone | 'mysterious'): EventTone {
+  return tone === 'mysterious' ? 'mystic' : tone;
+}
+
 export interface StoryEvent {
   readonly id: string;
   readonly family: string;
@@ -102,7 +107,7 @@ function makeEvent(blueprint: Blueprint): StoryEvent {
     family: blueprint.family,
     title: blueprint.title,
     region: blueprint.region,
-    tone: blueprint.tone,
+    tone: normalizeEventTone(blueprint.tone),
     weight: blueprint.weight ?? 10,
     requiredFlags: blueprint.requiredFlags ?? [],
     excludedFlags: blueprint.excludedFlags ?? [],
@@ -169,6 +174,8 @@ const BLUEPRINTS: readonly Blueprint[] = [
   { id: 'crownless-keep-throne-shadow', family: 'throne-shadow', region: 'crownless-keep', title: 'The Shadow That Still Kneels', tone: 'mystic', opening: 'The old throne is gone, yet its shadow remains across the floor with one human silhouette kneeling inside it.', choiceA: ['Stand the shadow upright', 'Refuse the posture the Crown preserved.', { corruption: -2, addFlags: ['freed-throne-shadow', 'crown-refused'], mercy: 1 }, 'The silhouette rises, bows to no one, and becomes the outline of an open door.', 'strength', 10], choiceB: ['Kneel beside it', 'Learn what submission protected from the old kings.', { focus: 4, corruption: 2, addFlags: ['learned-kneeling-secret'] }, 'For one breath the Crown cannot see you. Something else can.'] },
 ] as const;
 
+// The 16 road additions are authored in modern Chronicle chapters ch01/ch02/ch05/ch08.
+// Keep this facade at the original 48 shipped legacy events and background plates.
 export const EVENTS: readonly StoryEvent[] = Object.freeze(BLUEPRINTS.map(makeEvent));
 
 export const SCENE_VARIANT_KEYS: readonly string[] = Object.freeze(

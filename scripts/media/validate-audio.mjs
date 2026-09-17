@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const AUDIO_ROOT = resolve(ROOT, 'public/audio/chronicle1');
@@ -41,24 +43,71 @@ function assetPath(src) {
 
 function run(command, args, label) {
   const result = spawnSync(command, args, { encoding: 'utf8', windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-  assert(result.status === 0, `${label} failed: ${(result.stderr || result.stdout || 'unknown error').trim()}`);
+  assert(!result.error && result.status === 0, `${label} failed: ${(result.error?.message || result.stderr || result.stdout || 'unknown error').trim()}`);
   return `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
 }
 
-function probe(path, id) {
-  const output = run('ffprobe', [
+// This checks every Layer III frame, not a bitrate estimate or trusted metadata.
+// FFmpeg decoding and post-encode loudness checks remain mandatory below.
+export function probeMp3(bytes, id) {
+  let offset = 0;
+  let end = bytes.length;
+  if (bytes.toString('ascii', 0, 3) === 'ID3') {
+    assert(bytes.length >= 10 && [2, 3, 4].includes(bytes[3]), `${id} has an invalid MP3 ID3 header.`);
+    const sizeBytes = [...bytes.subarray(6, 10)];
+    assert(sizeBytes.every((value) => value < 128), `${id} has an invalid MP3 ID3 size.`);
+    offset = 10 + sizeBytes.reduce((size, value) => size * 128 + value, 0);
+    if (bytes[3] === 4 && (bytes[5] & 0x10)) offset += 10;
+    assert(offset < end, `${id} has a truncated MP3 ID3 tag or no frames.`);
+  }
+  if (end - offset >= 128 && bytes.toString('ascii', end - 128, end - 125) === 'TAG') end -= 128;
+  let format;
+  let samples = 0;
+  while (offset < end) {
+    assert(offset + 4 <= end, `${id} has a truncated MP3 frame header.`);
+    const header = bytes.readUInt32BE(offset);
+    const version = (header >>> 19) & 3;
+    const layer = (header >>> 17) & 3;
+    const bitrateIndex = (header >>> 12) & 15;
+    const rateIndex = (header >>> 10) & 3;
+    assert((header >>> 21) === 0x7ff && version !== 1 && layer === 1
+      && bitrateIndex > 0 && bitrateIndex < 15 && rateIndex < 3 && (header & 3) !== 2,
+    `${id} has an invalid MPEG Layer III frame at byte ${offset}.`);
+    const sampleRate = [44100, 48000, 32000][rateIndex] / (version === 3 ? 1 : version === 2 ? 2 : 4);
+    const channels = ((header >>> 6) & 3) === 3 ? 1 : 2;
+    const bitrate = (version === 3
+      ? [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+      : [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160])[bitrateIndex];
+    const frameBytes = Math.floor((version === 3 ? 144000 : 72000) * bitrate / sampleRate) + ((header >>> 9) & 1);
+    assert(offset + frameBytes <= end, `${id} has a truncated MP3 frame at byte ${offset}.`);
+    assert(!format || (format.sampleRate === sampleRate && format.channels === channels), `${id} changes format between MP3 frames.`);
+    format ??= { codec: 'mp3', sampleRate, channels };
+    samples += version === 3 ? 1152 : 576;
+    offset += frameBytes;
+  }
+  assert(format && samples > 0, `${id} contains no MP3 audio frames.`);
+  return { ...format, durationMs: samples / format.sampleRate * 1000 };
+}
+
+export function probe(path, id, spawn = spawnSync) {
+  const result = spawn('ffprobe', [
     '-v', 'error', '-select_streams', 'a:0',
     '-show_entries', 'stream=codec_name,sample_rate,channels:format=duration',
     '-of', 'json', path,
-  ], `ffprobe ${id}`);
-  const data = JSON.parse(output);
+  ], { encoding: 'utf8', windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+  if (result.error?.code === 'ENOENT') return probeMp3(readFileSync(path), id);
+  assert(!result.error && result.status === 0 && !result.stderr?.trim(),
+    `ffprobe ${id} failed: ${(result.error?.message || result.stderr || result.signal || 'unknown error').trim()}`);
+  const data = JSON.parse(result.stdout);
   assert(data.streams?.length === 1, `${id} must contain one audio stream.`);
   const stream = data.streams[0];
-  return { codec: stream.codec_name, sampleRate: Number(stream.sample_rate), channels: Number(stream.channels), durationMs: Number(data.format.duration) * 1_000 };
+  const media = { codec: stream.codec_name, sampleRate: Number(stream.sample_rate), channels: Number(stream.channels), durationMs: Number(data.format?.duration) * 1_000 };
+  assert(Number.isFinite(media.durationMs) && media.durationMs > 0 && media.sampleRate > 0 && media.channels > 0, `${id} has invalid audio probe metadata.`);
+  return media;
 }
 
 function decode(path, id) {
-  run('ffmpeg', ['-v', 'error', '-nostdin', '-i', path, '-map', '0:a:0', '-f', 'null', '-'], `decode ${id}`);
+  run('ffmpeg', ['-v', 'error', '-xerror', '-err_detect', 'explode', '-nostdin', '-i', path, '-map', '0:a:0', '-f', 'null', '-'], `decode ${id}`);
 }
 
 function measureLoudness(path, id) {
@@ -221,7 +270,9 @@ async function main() {
   process.stdout.write(`Audio validation passed: 13 music, 84 SFX, 38 voice clips, 135 decoded MP3 files, ${totalBytes} bytes.\n`);
 }
 
-main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.message : 'Audio validation failed.'}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && fileURLToPath(import.meta.url).toLowerCase() === resolve(process.argv[1]).toLowerCase()) {
+  main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.message : 'Audio validation failed.'}\n`);
+    process.exitCode = 1;
+  });
+}

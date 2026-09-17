@@ -7,7 +7,7 @@ MORROWMERE is an English-language, portrait-first sword-and-sorcery text RPG for
 | System | Included |
 | --- | ---: |
 | Chapters | 8 |
-| Authored story scenes | 386 |
+| Authored story scenes | 402 |
 | Enemies | 225 |
 | Encounter formations | 57 |
 | Items | 166 |
@@ -24,7 +24,7 @@ The complete adventure, local artwork, music, and sound effects remain available
 
 ## Run locally
 
-Requirements: Node.js 22 or newer. Android builds also require JDK 21 and Android SDK 36.
+Requirements: Node.js 22 or newer. Android builds also require JDK 21 and Android SDK 36. Audio validation requires FFmpeg on PATH for decoding, loudness, and loop checks; when ffprobe is absent, a built-in MP3 frame parser supplies format and duration checks.
 
 ```bash
 npm install
@@ -67,7 +67,7 @@ Device-test artifacts are copied to `release/`. A Play Store upload still requir
 - Product name: `MORROWMERE`
 - Subtitle: `A Sword & Sorcery Chronicle`
 - Android application ID: `com.morrowmere.game`
-- Version: `1.4.0` (`versionCode 8`)
+- Version: `1.4.1` (`versionCode 9`)
 - Minimum Android: API 24
 - Target Android: API 36
 
