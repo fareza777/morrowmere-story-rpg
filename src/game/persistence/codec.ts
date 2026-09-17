@@ -313,6 +313,7 @@ function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, con
 
 function validFlowContent(value: SaveStateDto, content: ContentIndex): boolean {
   const { expedition, flow } = value;
+  if (flow.screen === 'travel' && (!expedition || expedition.currentSceneId !== null || expedition.currentCombat !== null || expedition.pendingReward !== null || flow.merchant !== null)) return false;
   if ((flow.screen === 'merchant') !== (flow.merchant !== null)) return false;
   if (flow.merchant !== null) {
     const scene = expedition?.currentSceneId === null || expedition === null ? null : content.events.get(expedition.currentSceneId as never);
@@ -541,6 +542,7 @@ function validRuntimeShell(state: GameStateV2): boolean {
   if (!exact(state.adPacing, ['lastInterstitialAt', 'expeditionBreaksSinceInterstitial', 'rewardedShownAtCurrentBreak', 'claimedRewardOfferIds', 'rewardedClaimsThisExpedition']) || (state.adPacing.lastInterstitialAt !== null && (typeof state.adPacing.lastInterstitialAt !== 'string' || !Number.isFinite(Date.parse(state.adPacing.lastInterstitialAt)))) || !finiteInteger(state.adPacing.expeditionBreaksSinceInterstitial) || state.adPacing.expeditionBreaksSinceInterstitial < 0 || typeof state.adPacing.rewardedShownAtCurrentBreak !== 'boolean' || !strings(state.adPacing.claimedRewardOfferIds) || new Set(state.adPacing.claimedRewardOfferIds).size !== state.adPacing.claimedRewardOfferIds.length || !finiteInteger(state.adPacing.rewardedClaimsThisExpedition) || state.adPacing.rewardedClaimsThisExpedition < 0 || state.adPacing.rewardedClaimsThisExpedition > 3) return false;
   if (state.checkpoints.camp !== null && (!exact(state.checkpoints.camp, ['campaign', 'campSceneId', 'savedAt']) || typeof state.checkpoints.camp.savedAt !== 'string' || (state.checkpoints.camp.campSceneId !== null && !id(state.checkpoints.camp.campSceneId)))) return false;
   if (!['camp', 'travel', 'story', 'combat', 'reward', 'merchant', 'defeat', 'ending'].includes(state.flow.screen)) return false;
+  if (state.flow.screen === 'travel' && (!state.expedition || state.expedition.currentSceneId !== null || state.expedition.currentCombat !== null || state.expedition.pendingReward !== null || state.flow.merchant !== null)) return false;
   if (state.flow.overlay !== null && !['inventory', 'chronicle', 'bestiary', 'settings'].includes(state.flow.overlay)) return false;
   return state.flow.merchant === null || (exact(state.flow.merchant, ['merchantId', 'restockKey', 'returnScreen']) && id(state.flow.merchant.merchantId) && id(state.flow.merchant.restockKey) && ['camp', 'story'].includes(state.flow.merchant.returnScreen));
 }

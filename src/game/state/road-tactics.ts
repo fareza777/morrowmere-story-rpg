@@ -2,7 +2,10 @@ import { activeCompanion } from '../companions';
 import type { ContentIndex } from '../content/schema';
 import type { DomainEvent } from '../domain/result';
 import { selectNextScene } from '../director';
+import type { AuthoredSceneQueueEntry, DirectorState } from '../director/types';
 import { deriveHeroStats } from '../progression';
+import { visibleDialogueBeats } from '../content/dialogue';
+import { campaignPayload } from './create';
 import type { GameStateV2, GameTransition, HeroVitals } from './types';
 
 export type TravelAction = 'scout' | 'press-on' | 'make-camp' | 'companion';
@@ -26,6 +29,45 @@ function clampVitals(vitals: HeroVitals, state: GameStateV2, content: ContentInd
 
 function roadBoon(boons: readonly string[], boon: string): readonly string[] {
   return boons.includes(boon) ? boons : [...boons, boon];
+}
+
+function enqueueAuthoredAftermaths(
+  queue: readonly AuthoredSceneQueueEntry[],
+  sourceSceneId: string,
+  followUps: readonly string[],
+): readonly AuthoredSceneQueueEntry[] {
+  const next = [...queue];
+  for (const sceneId of followUps) {
+    if (!next.some((entry) => entry.sceneId === sceneId)) {
+      next.push({ sceneId: sceneId as never, sourceSceneId: sourceSceneId as never, requirementMode: 'optional' });
+    }
+  }
+  return next;
+}
+
+function completeTravelChapter(state: GameStateV2, director: DirectorState, updatedAt: string, event: DomainEvent): GameTransition {
+  const expedition = state.expedition!;
+  const chapters = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'] as const;
+  const nextChapter = chapters[chapters.indexOf(state.campaign.chapterId) + 1] ?? null;
+  const campaign = {
+    ...state.campaign,
+    chapterId: nextChapter ?? state.campaign.chapterId,
+    bankedGold: state.campaign.bankedGold + expedition.unbankedGold,
+    directorMemory: { rngState: director.rngState, seenEventIds: [...director.seenEventIds], familyCooldowns: { ...director.familyCooldowns }, pendingCallbacks: director.pendingCallbacks.map((callback) => ({ ...callback, deadline: { ...callback.deadline } })) },
+    routeSeedNonce: state.campaign.routeSeedNonce + 1,
+  };
+  return transition(state, {
+    ...state,
+    campaign,
+    expedition: null,
+    adPacing: { ...state.adPacing, expeditionBreaksSinceInterstitial: state.adPacing.expeditionBreaksSinceInterstitial + 1 },
+    checkpoints: {
+      chapter: { campaign: campaignPayload(campaign), enteredAt: updatedAt },
+      camp: { campaign: campaignPayload(campaign), campSceneId: null, savedAt: updatedAt },
+    },
+    flow: { ...state.flow, screen: nextChapter ? 'camp' : 'ending', overlay: null, merchant: null },
+    updatedAt,
+  }, [event, { type: 'notification', message: nextChapter ? `Chapter ${Number(nextChapter.slice(2))} is ready.` : 'Chronicle I complete.' }]);
 }
 
 /** Leaves a resolved scene behind while preserving its receipt for hub banking. */
@@ -52,7 +94,7 @@ function companionEffect(companionId: string, vitals: HeroVitals) {
 
 export function resolveTravelAction(state: GameStateV2, action: TravelAction, content: ContentIndex, updatedAt: string): GameTransition {
   const expedition = state.expedition;
-  if (!expedition || state.flow.screen !== 'travel' || expedition.currentCombat || expedition.pendingReward) {
+  if (!expedition || state.flow.screen !== 'travel' || expedition.currentSceneId !== null || expedition.currentCombat || expedition.pendingReward || state.flow.merchant) {
     return { state, events: [], diagnostic: { code: 'travel_required', message: 'Choose a road tactic while travelling.' } };
   }
 
@@ -105,14 +147,17 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   }, content, prepared.authoredSceneQueue);
   const event: DomainEvent = { type: 'travel_action_taken', action };
   if (step.kind !== 'selected') {
+    if (step.terminal === 'completed') return completeTravelChapter(state, step.state, updatedAt, event);
     return transition(state, { ...state, expedition: prepared, updatedAt }, [event], { code: 'scene_unavailable', message: step.diagnostic });
   }
-  const autoResolved = step.event.choices.length === 0 && (step.event.dialogue?.length ?? 0) === 0;
+  const autoResolved = step.event.choices.length === 0 && visibleDialogueBeats(step.event.dialogue, state.campaign.flags).length === 0;
   const visitOrdinal = (prepared.sceneVisitCounts[step.sceneId] ?? 0) + 1;
   const selected = {
     ...prepared,
     director: step.state,
-    authoredSceneQueue: step.authoredSceneQueue,
+    authoredSceneQueue: autoResolved
+      ? enqueueAuthoredAftermaths(step.authoredSceneQueue, step.sceneId, step.event.followUps ?? [])
+      : step.authoredSceneQueue,
     sceneVisitCounts: { ...prepared.sceneVisitCounts, [step.sceneId]: visitOrdinal },
     currentSceneId: step.sceneId,
     dialogueBeatIndex: 0,
