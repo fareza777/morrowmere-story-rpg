@@ -9,9 +9,10 @@ const updatedAt = '2026-09-01T00:00:00.000Z';
 function stateAtCombatScene(sceneId: EventId): GameStateV2 {
   const created = createCampaign({ heroClass: 'warrior', name: 'Aster Vale', seed: 91, updatedAt }, CHRONICLE1_CONTENT);
   const started = reduceGame(created, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt }, CHRONICLE1_CONTENT);
+  const travelled = reduceGame(started.state, { type: 'travel-action', action: 'press-on', updatedAt }, CHRONICLE1_CONTENT);
   return {
-    ...started.state,
-    expedition: { ...started.state.expedition!, currentSceneId: sceneId },
+    ...travelled.state,
+    expedition: { ...travelled.state.expedition!, currentSceneId: sceneId },
   };
 }
 

@@ -12,7 +12,7 @@ const resolvedScene = (eventId: EventId) => ({
 
 function anchor(chapterId: ChapterId, id: string, slot: number): ChronicleEvent {
   return {
-    id: asEventId(id), chapterId, slot, type: 'main', family: id, anchorOrder: 7,
+    id: asEventId(id), chapterId, slot, type: 'main', family: id, anchorOrder: 1,
     illustrationId: 'fixture-art', title: id, narrative: ['The chapter reaches its final road.'], eligibility: {},
     cooldownRuns: 0, oneShot: true, choices: [],
   };
@@ -33,10 +33,13 @@ function stateAfterFinalAnchor(chapterId: ChapterId, finale: ChronicleEvent, fix
   const started = reduceGame(created, {
     type: 'start-expedition', routeProfile: 'old-forest', updatedAt: '2026-09-01T00:01:00.000Z',
   }, fixture).state;
+  const travelled = reduceGame(started, {
+    type: 'travel-action', action: 'press-on', updatedAt: '2026-09-01T00:01:30.000Z',
+  }, fixture).state;
   return {
-    ...started,
+    ...travelled,
     campaign: {
-      ...started.campaign,
+      ...travelled.campaign,
       bankedGold: 12,
       flags: ['kept-oath'],
       evidence: ['sealed-ledger'],
@@ -44,14 +47,14 @@ function stateAfterFinalAnchor(chapterId: ChapterId, finale: ChronicleEvent, fix
       hero: { ...started.campaign.hero, level: chapterId === 'ch08' ? 15 : 2, xp: chapterId === 'ch08' ? 14_000 : 100 },
     },
     expedition: {
-      ...started.expedition!,
+      ...travelled.expedition!,
       position: { chapterId, slot: (finale.slot ?? 1) + 1 },
       currentSceneId: finale.id,
       sceneResolution: resolvedScene(finale.id),
-      sceneVisitCounts: { ...started.expedition!.sceneVisitCounts, [finale.id]: 1 },
+      sceneVisitCounts: { ...travelled.expedition!.sceneVisitCounts, [finale.id]: 1 },
       unbankedGold: 9,
       director: {
-        ...started.expedition!.director,
+        ...travelled.expedition!.director,
         usedSceneIds: [finale.id],
         seenEventIds: [finale.id],
       },
@@ -67,8 +70,11 @@ describe('Chronicle chapter terminal transitions', () => {
     const before = stateAfterFinalAnchor('ch01', ch01Finale, fixture);
     const attempts = before.campaign.attemptCounters;
 
-    const result = reduceGame(before, {
+    const continued = reduceGame(before, {
       type: 'select-next-scene', updatedAt: '2026-09-01T00:02:00.000Z',
+    }, fixture);
+    const result = reduceGame(continued.state, {
+      type: 'travel-action', action: 'press-on', updatedAt: '2026-09-01T00:03:00.000Z',
     }, fixture);
 
     expect(result.diagnostic).toBeUndefined();
@@ -90,8 +96,11 @@ describe('Chronicle chapter terminal transitions', () => {
     const fixture = content([finale]);
     const before = stateAfterFinalAnchor('ch08', finale, fixture);
 
-    const result = reduceGame(before, {
+    const continued = reduceGame(before, {
       type: 'select-next-scene', updatedAt: '2026-09-01T00:02:00.000Z',
+    }, fixture);
+    const result = reduceGame(continued.state, {
+      type: 'travel-action', action: 'press-on', updatedAt: '2026-09-01T00:03:00.000Z',
     }, fixture);
 
     expect(result.diagnostic).toBeUndefined();

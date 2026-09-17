@@ -116,7 +116,8 @@ function victoryState(kind: EncounterDefinition['kind'] = 'regular') {
     updatedAt: '2026-08-31T12:01:00.000Z',
   }, content).state;
   const selected = reduceGame(started, {
-    type: 'select-next-scene',
+    type: 'travel-action',
+    action: 'press-on',
     updatedAt: '2026-08-31T12:02:00.000Z',
   }, content).state;
   const combat = reduceGame(selected, {
@@ -157,7 +158,7 @@ describe('rewarded battle gold', () => {
     }, content);
 
     expect(declined.diagnostic).toBeUndefined();
-    expect(declined.state.flow.screen).toBe('story');
+    expect(declined.state.flow.screen).toBe('travel');
     expect(declined.state.expedition!.pendingReward).toBeNull();
     expect(declined.state.campaign.inventory).toBe(state.campaign.inventory);
   });
