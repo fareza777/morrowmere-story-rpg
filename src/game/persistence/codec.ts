@@ -271,11 +271,19 @@ function validMerchantVisitsContent(value: ExpeditionDto, campaign: CampaignDto,
   });
 }
 
-function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, content: ContentIndex): boolean {
-  const scene = value.currentSceneId === null ? null : content.events.get(value.currentSceneId as never);
+function validExpeditionContent(value: ExpeditionDto, campaign: CampaignDto, flow: SaveStateDto['flow'], content: ContentIndex): boolean {
+  let scene = value.currentSceneId === null ? null : content.events.get(value.currentSceneId as never);
   const encounter = value.currentCombat === null ? null : content.encounters.get(value.currentCombat.encounterId as never);
   if (!validDirectorContent(value.director, content)) return false;
   if (value.currentSceneId !== null && (!scene || scene.chapterId !== value.position.chapterId)) return false;
+  // Travel clears the active scene but retains its resolved receipt for hub banking.
+  if (flow.screen === 'travel' && value.currentSceneId === null && value.sceneResolution !== null) {
+    scene = content.events.get(value.sceneResolution.eventId as never);
+    if (!scene || scene.chapterId !== value.position.chapterId || value.dialogueBeatIndex !== 0
+      || !(value.sceneVisitCounts[scene.id] >= 1)
+      || !value.director.usedSceneIds.includes(scene.id)
+      || !value.director.seenEventIds.includes(scene.id)) return false;
+  }
   if (value.sceneResolution !== null) {
     if (!scene || value.sceneResolution.eventId !== scene.id) return false;
     const legacyCheckedReceipt = value.sceneResolution.resultKind !== 'direct'
@@ -353,7 +361,7 @@ function validCheckpointCoherence(value: SaveStateDto, content: ContentIndex): b
 export function isContentBackedSaveState(value: SaveStateDto, content: ContentIndex): boolean {
   if (!isContentBackedProfile(value.profile, content) || !validCampaignCheckpointContent(value.campaign, content) || !validCampaignCheckpointContent(value.checkpoints.chapter.campaign, content) || (value.checkpoints.camp !== null && !validCampaignCheckpointContent(value.checkpoints.camp.campaign, content))) return false;
   if (value.checkpoints.camp?.campSceneId !== null && value.checkpoints.camp?.campSceneId !== undefined && !hasCatalogId(content.events as ReadonlyMap<string, unknown>, value.checkpoints.camp.campSceneId)) return false;
-  if (!validCheckpointCoherence(value, content) || (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, content))) return false;
+  if (!validCheckpointCoherence(value, content) || (value.expedition !== null && !validExpeditionContent(value.expedition, value.campaign, value.flow, content))) return false;
   const reward = value.expedition?.pendingReward;
   if (reward?.rewardOfferId !== undefined) {
     if (!value.adPacing || reward.rewardedGoldSettlement === undefined) return false;
@@ -634,7 +642,7 @@ function normalizePreDialogueV3(value: unknown): { readonly candidate: unknown; 
 }
 
 function normalizeEmptyStoryV3(value: unknown): { readonly candidate: unknown; readonly normalized: boolean } {
-  if (!record(value) || value.schemaVersion !== 3 || !record(value.flow) || value.flow.screen !== 'story' || value.flow.merchant !== null || !record(value.expedition) || value.expedition.currentSceneId !== null || value.expedition.currentCombat !== null || value.expedition.pendingReward !== null) return { candidate: value, normalized: false };
+  if (!record(value) || value.schemaVersion !== 3 || !record(value.flow) || value.flow.screen !== 'story' || value.flow.merchant !== null || !record(value.expedition) || value.expedition.currentSceneId !== null || value.expedition.sceneResolution !== null || value.expedition.currentCombat !== null || value.expedition.pendingReward !== null) return { candidate: value, normalized: false };
   return { candidate: { ...value, flow: { ...value.flow, screen: 'travel' } }, normalized: true };
 }
 

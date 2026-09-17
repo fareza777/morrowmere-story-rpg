@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useMemo, useState } from 'react';
 import { GameShell } from '../src/components/GameShell';
@@ -176,6 +176,8 @@ describe('Chronicle product integration gate', () => {
     expect(savedSlotTwo()).toMatchObject({ flow: { screen: 'camp' }, expedition: null });
     await user.click(screen.getByRole('button', { name: 'Pause' }));
     await user.click(await screen.findByRole('button', { name: 'Save & Exit' }));
+    const exitDialog = await screen.findByRole('dialog', { name: 'Save and return to the title?' });
+    await user.click(within(exitDialog).getByRole('button', { name: 'Save & Exit' }));
     await user.click(await screen.findByRole('button', { name: 'Continue slot 2' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Road Camp' })).toBeVisible());
   }, 30_000);

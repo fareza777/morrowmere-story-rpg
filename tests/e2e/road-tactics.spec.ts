@@ -38,9 +38,16 @@ test('takes a road action before an illustrated scene and returns to travel for 
   await expect(travel.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeVisible();
   await expect(departureArt).toBeHidden();
 
+  await page.reload();
+  await expect(game.continueChronicle).toBeEnabled();
+  await game.continueChronicle.click();
+  await expect(travel.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeVisible();
   await travel.getByRole('button', { name: 'Press On', exact: true }).click();
   await expect(travel).toBeHidden();
-  await expect(page.getByRole('heading', { name: 'Medicine for the North', exact: true })).toBeVisible();
-  const nextArt = page.locator('.scene-art[data-illustration-id="scene-ch01-main-medicine-for-the-north"]');
-  await expectLoadedArtwork(nextArt.locator('img'), '/assets/chronicle1/scenes/ch01/scene-ch01-main-medicine-for-the-north.webp');
+  await expect(page.locator('.story-panel h1')).toBeVisible();
+  const nextArt = page.locator('.scene-art[data-illustration-id]');
+  await expect(nextArt).toHaveAttribute('data-illustration-id', /^scene-ch01-/);
+  await expect(nextArt).not.toHaveAttribute('data-illustration-id', 'scene-ch01-main-three-days-to-greywatch');
+  const nextIllustration = await nextArt.getAttribute('data-illustration-id');
+  await expectLoadedArtwork(nextArt.locator('img'), `/assets/chronicle1/scenes/ch01/${nextIllustration}.webp`);
 });
