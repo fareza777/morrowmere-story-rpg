@@ -40,11 +40,17 @@ test('keeps the title, opening, camp, route, story, and sheets readable on a sma
   await expect(page.getByRole('heading', { name: 'Choose Your Road' })).toBeVisible();
   await page.screenshot({ path: join(output, '04-route-360x800.png') });
   await page.getByRole('button', { name: /King's Road/i }).click();
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
   await expect(page.locator('.story-panel')).toBeVisible();
 
-  const scene = page.locator('.scene-art img');
+  const scene = page.locator('.scene-art[data-illustration-id="scene-ch01-main-three-days-to-greywatch"] img');
   await expect(scene).toBeVisible();
   await expect(scene).toHaveJSProperty('complete', true);
+  await expect(scene).toHaveAttribute('src', '/assets/chronicle1/scenes/ch01/scene-ch01-main-three-days-to-greywatch.webp');
+  await expect.poll(() => scene.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   const sceneLuma = await scene.evaluate((image: HTMLImageElement) => {
     const canvas = document.createElement('canvas');
     canvas.width = 180;

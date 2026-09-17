@@ -11,7 +11,14 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   expect((titleBox?.x ?? 0) + (titleBox?.width ?? 0)).toBeLessThanOrEqual(viewport?.width ?? 360);
 
   await game.beginMageChronicle();
-  await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road Camp', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Choose a Route', exact: true }).click();
+  await page.getByRole('button', { name: /King's Road/i }).click();
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Three Days to Greywatch', exact: true })).toBeVisible();
   const shellBox = await page.locator('.game-shell').boundingBox();
   expect(shellBox?.height).toBeGreaterThanOrEqual(700);
   await page.screenshot({ path: testInfo.outputPath('morrowmere-mobile.png'), fullPage: true });
@@ -19,7 +26,7 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   await page.reload();
   await expect(game.continueChronicle).toBeEnabled();
   await game.continueChronicle.click();
-  await expect(page.getByRole('heading', { name: 'When the Black Rain Rings' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Three Days to Greywatch', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pack' }).click();
   await expect(page.getByRole('dialog', { name: 'Inventory' })).toContainText('Red Mercy');
   await page.getByRole('tab', { name: 'Equipment' }).click();

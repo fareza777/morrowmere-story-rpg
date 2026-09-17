@@ -18,6 +18,12 @@ test('sizes story art full-bleed on phones and caps it at 720 pixels on wide scr
   await page.getByRole('button', { name: 'Choose a Route' }).click();
   await page.getByRole('button', { name: /King's Road/i }).click();
 
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
+  await expect(page.locator('.story-panel')).toBeVisible();
+
   const narrow = await expectThreeByTwo(page, 320);
   expect(narrow.x).toBeCloseTo(0, 0);
 
@@ -38,6 +44,12 @@ test('keeps merchant art centered inside phone page padding', async ({ page }) =
   await game.beginMageChronicle();
   await page.getByRole('button', { name: 'Choose a Route' }).click();
   await page.getByRole('button', { name: /King's Road/i }).click();
+
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
+  await expect(page.locator('.story-panel')).toBeVisible();
 
   await page.locator('.game-shell').evaluate((shell) => shell.classList.add('merchant-screen', 'screen-page'));
   const narrow = await expectThreeByTwo(page, 288);
@@ -98,6 +110,12 @@ test('adds bright hero art to camp and route planning and animates readable stor
   expect(routeBounds!.width / routeBounds!.height).toBeCloseTo(1.5, 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.getByRole('button', { name: /King's Road/i }).click();
+
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
+  await expect(page.locator('.story-panel')).toBeVisible();
 
   const proseStyle = await page.locator('.story-prose p').first().evaluate((element) => {
     const style = window.getComputedStyle(element);

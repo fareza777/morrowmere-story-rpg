@@ -24,6 +24,10 @@ test('keeps the medieval story and labeled menus readable on a small phone', asy
 
   await page.getByRole('button', { name: 'Choose a Route' }).click();
   await page.getByRole('button', { name: /King's Road/i }).click();
+  const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+  await expect(travel).toBeVisible();
+  await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+  await expect(travel).toBeHidden();
   await expect(page.locator('.story-panel h1')).toBeVisible();
 
   await expect(page.getByRole('button', { name: 'Pack' })).toBeVisible();
@@ -59,6 +63,10 @@ test.describe('200% story reflow', () => {
     await game.beginMageChronicle();
     await page.getByRole('button', { name: 'Choose a Route' }).click();
     await page.getByRole('button', { name: /King's Road/i }).click();
+    const travel = page.getByRole('region', { name: 'Road Tactics', exact: true });
+    await expect(travel).toBeVisible();
+    await travel.getByRole('button', { name: 'Scout', exact: true }).click();
+    await expect(travel).toBeHidden();
     await expect(page.locator('.story-panel h1')).toBeVisible();
     await page.locator('.game-shell').evaluate((element) => element.style.setProperty('--text-scale', '2'));
 
