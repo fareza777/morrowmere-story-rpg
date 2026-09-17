@@ -52,7 +52,7 @@
 - Produces `TravelAction = 'scout' | 'press-on' | 'make-camp' | 'companion'`.
 - Produces `resolveTravelAction(state: GameStateV2, action: TravelAction, content: ContentIndex, updatedAt: string): GameTransition`.
 - Produces `enterTravel(state: GameStateV2, updatedAt: string): GameStateV2` for resolved scene/reward/fled transitions.
-- Consumes existing fixture factories in `tests/fixtures/game.ts`, `derivedMaxima`, `beginDirectorRun`, `selectNextScene`, `temporaryBoons`, and `heroVitals`.
+- Consumes existing fixture factories in `tests/fixtures/game.ts`, `derivedMaxima`, `beginDirectorRun`, `selectNextScene`, `temporaryBoons`, `lastTravelAction`, and `heroVitals`.
 
 - [ ] **Step 1: Write the failing reducer tests**
 

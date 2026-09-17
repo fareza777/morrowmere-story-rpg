@@ -45,7 +45,7 @@ Add `travel` to `FlowState.screen`. Travel is a stable state, not a visual alias
 
 The current scene is cleared before entering travel. The next event is selected only after a travel action. This removes the current `GameShell` auto-select behavior for an empty story scene.
 
-The existing `temporaryBoons` field is reused for one-shot road modifiers. Boons are persisted in saves, namespaced as `road:*`, and consumed atomically when the next scene is selected. No unbounded or random client-only state is introduced.
+The existing `temporaryBoons` field is reused for one-shot road modifiers. Boons are persisted in saves, namespaced as `road:*`, and consumed atomically when the next scene is selected. The expedition also persists a nullable `lastTravelAction` receipt so the travel screen can report the latest choice without inferring it from an unconsumed boon. No unbounded or random client-only state is introduced.
 
 ### 2.3 One action per road leg
 
@@ -144,6 +144,7 @@ Add invariants to the reducer and persistence checks:
 - `flow.screen === 'story'` continues to represent an active or resolved current scene;
 - `flow.screen === 'merchant'` keeps its existing hub-scene requirement;
 - `road:*` boons are strings from the known action/capability set;
+- `road:*` boons are consumed when a valid next scene is selected, while `lastTravelAction` remains as the latest travel receipt;
 - a travel action can be accepted only while `flow.screen === 'travel'`;
 - every accepted travel action produces one `travel_action_taken` domain event and either a scene or a valid terminal transition;
 - the existing health/resource, threat, and tension bounds continue to be enforced.
@@ -156,6 +157,7 @@ Recovery behavior:
 
 - old v2 saves keep their existing migration path;
 - old v3 saves with an empty expedition story state (`story` plus no current scene, no combat, no reward) normalize to `travel`;
+- old v2 saves receive the same empty-story normalization after their v2-to-v3 migration;
 - old saves with a live scene, combat, merchant, or reward keep their current screen;
 - invalid or unknown `road:*` boons are dropped with a recovery diagnostic, following the existing authored-queue sanitization pattern;
 - strict validation remains strict for malformed inventory and combat records; test fixtures are updated to current DTO shape rather than weakening the validator.

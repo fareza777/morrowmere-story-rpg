@@ -7,6 +7,11 @@ const FINAL_TITLE_HOLD_MS = 1_250;
 const CONTROLS_IDLE_MS = 3_000;
 const SHOT_CROSSFADE_MS = 700;
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && Boolean(target.closest('button, a, input, select, textarea, [role="button"]'));
+}
+
 export interface OpeningCinematicProps {
   readonly sequence: CinematicSequence;
   readonly settings: UiSettings;
@@ -105,6 +110,7 @@ export function OpeningCinematic({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (isInteractiveTarget(event.target)) return;
     if (event.key === 'Escape') {
       event.preventDefault();
       skip();

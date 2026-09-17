@@ -388,6 +388,29 @@ describe('approved Chronicle I opening sequence', () => {
     expect(audio.stop).toHaveBeenCalledOnce();
   });
 
+  it('keeps native Space activation on a focused cinematic control', async () => {
+    installManualAnimationFrame();
+    const user = userEvent.setup();
+    const audio = makeAudio();
+    render(
+      <OpeningCinematic
+        sequence={OPENING_SEQUENCE}
+        settings={SETTINGS}
+        audio={audio}
+        onComplete={() => undefined}
+      />,
+    );
+
+    await user.click(screen.getByRole('region', { name: 'Opening story' }));
+    const skip = screen.getByRole('button', { name: 'Skip opening' });
+    skip.focus();
+    fireEvent.keyDown(skip, { key: ' ', code: 'Space' });
+    fireEvent.click(skip);
+
+    expect(audio.stop).toHaveBeenCalledOnce();
+    expect(audio.pause).not.toHaveBeenCalled();
+  });
+
   it('auto-completes even when audio playback never settles', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const clock = installManualAnimationFrame();

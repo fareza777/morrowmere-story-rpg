@@ -113,6 +113,31 @@ describe('Road Tactics reducer', () => {
     expect(result.diagnostic?.code).toBe('insufficient_resource');
   });
 
+  it('rejects a failed scene selection atomically without granting repeatable recovery', () => {
+    const content = roadContent();
+    const event = content.events.get('fixture-event' as never)!;
+    (content.events as Map<never, typeof event>).set(event.id, {
+      ...event,
+      eligibility: { requiredFlags: ['never-unlocked'] },
+    });
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const before = {
+      ...started,
+      expedition: {
+        ...started.expedition!,
+        heroVitals: { health: 10, resource: 1 },
+      },
+    };
+
+    const first = reduceGame(before, { type: 'travel-action', action: 'make-camp', updatedAt }, content);
+    const second = reduceGame(first.state, { type: 'travel-action', action: 'make-camp', updatedAt }, content);
+
+    expect(first.diagnostic?.code).toBe('scene_unavailable');
+    expect(first.state).toEqual(before);
+    expect(second.diagnostic?.code).toBe('scene_unavailable');
+    expect(second.state).toEqual(before);
+  });
+
   it('rejects a travel action when a scene is still current', () => {
     const { content, state } = routeState();
     const invalidTravel = {

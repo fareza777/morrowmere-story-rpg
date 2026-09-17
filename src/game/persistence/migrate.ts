@@ -191,6 +191,7 @@ export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migr
         authoredSceneQueue: queue.map((entry) => ({ ...entry })),
         sceneVisitCounts,
         checkedAttempts,
+        lastTravelAction: null,
       },
     },
     diagnostics: removed > 0 ? [`Removed ${removed} unavailable authored scene ${removed === 1 ? 'entry' : 'entries'} while recovering the save.`] : [],

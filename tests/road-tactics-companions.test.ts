@@ -55,7 +55,8 @@ describe('Road Tactics companion moves', () => {
     expect(result.state.expedition!.director.threat).toBeGreaterThanOrEqual(0);
     expect(result.state.expedition!.director.threat).toBeLessThanOrEqual(10);
     expect(result.events.some((event) => event.domain.type === 'travel_action_taken')).toBe(true);
-    expect(result.state.expedition!.temporaryBoons).toContain(boon);
+    expect(result.state.expedition!.lastTravelAction).toBe('companion');
+    expect(result.state.expedition!.temporaryBoons).not.toContain(boon);
     expect(result.state.expedition!.director.threat - before.expedition!.director.threat).toBe(threatDelta);
     expect(result.state.expedition!.director.tension - before.expedition!.director.tension).toBe(tensionDelta);
     expect(result.state.expedition!.heroVitals.health - before.expedition!.heroVitals.health).toBe(healthDelta);

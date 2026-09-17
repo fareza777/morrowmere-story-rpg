@@ -10,6 +10,18 @@ import type { SaveStateDto } from '../src/game/persistence/schema';
 
 const updatedAt = '2026-09-17T08:00:00.000Z';
 
+function asV2Dto(encoded: NonNullable<ReturnType<typeof encodeSaveState>>) {
+  const value = structuredClone(encoded) as any;
+  value.schemaVersion = 2;
+  if (value.expedition) {
+    delete value.expedition.dialogueBeatIndex;
+    delete value.expedition.sceneVisitCounts;
+    delete value.expedition.checkedAttempts;
+    delete value.expedition.lastTravelAction;
+  }
+  return value;
+}
+
 function resolvedRoad(kind: 'direct' | 'checked' | 'automatic' = 'direct') {
   const base = makeContentIndex();
   const source = base.events.get('fixture-event' as EventId)!;
@@ -132,6 +144,46 @@ describe('Road Tactics persistence', () => {
 
     expect(recovered?.state.flow.screen).toBe('travel');
     expect(recovered?.diagnostics.join(' ')).toMatch(/travel/i);
+  });
+
+  it('recovers an empty v2 story save into travel after migration', () => {
+    const content = makeContentIndex();
+    const state = reduceGame(createCampaign({ heroClass: 'warden', seed: 7, updatedAt }, content), { type: 'start-expedition', updatedAt }, content).state;
+    const encoded = encodeSaveState({ ...state, flow: { ...state.flow, screen: 'story' } }, content);
+    if (!encoded) throw new Error('Expected an empty story save fixture.');
+
+    const recovered = decodeSaveStateWithDiagnostics(asV2Dto(encoded), content);
+
+    expect(recovered?.state.flow.screen).toBe('travel');
+    expect(recovered?.diagnostics.join(' ')).toMatch(/travel/i);
+  });
+
+  it('sanitizes unknown road boons while preserving unrelated boons and emits a recovery diagnostic', () => {
+    const { content, dto } = resolvedRoad();
+    const recovered = decodeSaveStateWithDiagnostics({
+      ...dto,
+      expedition: {
+        ...dto.expedition!,
+        temporaryBoons: ['legacy-blessing', 'road:scouted', 'road:future-capability'],
+      },
+    }, content);
+
+    expect(recovered?.state.expedition?.temporaryBoons).toEqual(['legacy-blessing', 'road:scouted']);
+    expect(recovered?.diagnostics.join(' ')).toMatch(/unknown road boon/i);
+  });
+
+  it('persists the latest road action receipt independently from consumed road boons', () => {
+    const { content, travel } = resolvedRoad();
+    const withReceipt = {
+      ...travel,
+      expedition: { ...travel.expedition!, lastTravelAction: 'scout' as const, temporaryBoons: ['legacy-blessing'] },
+    };
+
+    const encoded = encodeSaveState(withReceipt, content);
+    const decoded = encoded ? decodeSaveState(encoded, content) : null;
+
+    expect(decoded?.expedition?.lastTravelAction).toBe('scout');
+    expect(decoded?.expedition?.temporaryBoons).toEqual(['legacy-blessing']);
   });
 
   it('rejects a travel save carrying a current scene', () => {

@@ -100,6 +100,8 @@ export interface ExpeditionState {
   readonly unbankedGold: number;
   readonly unbankedLoot: readonly ItemId[];
   readonly temporaryBoons: readonly string[];
+  /** Latest road choice receipt; legacy v3 states may omit it during recovery. */
+  readonly lastTravelAction?: TravelAction | null;
   readonly merchantVisits: readonly import('../merchant').MerchantVisit[];
 }
 

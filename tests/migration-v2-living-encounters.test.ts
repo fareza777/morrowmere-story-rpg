@@ -135,6 +135,7 @@ function asV2Dto(encoded: NonNullable<ReturnType<typeof encodeSaveState>>) {
     delete value.expedition.dialogueBeatIndex;
     delete value.expedition.sceneVisitCounts;
     delete value.expedition.checkedAttempts;
+    delete value.expedition.lastTravelAction;
   }
   return value;
 }

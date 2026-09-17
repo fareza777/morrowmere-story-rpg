@@ -10,6 +10,16 @@ import type { GameStateV2, GameTransition, HeroVitals } from './types';
 
 export type TravelAction = 'scout' | 'press-on' | 'make-camp' | 'companion';
 
+const ROAD_BOON_IDS = new Set([
+  'road:scouted',
+  'road:pressed',
+  'road:rested',
+  'road:guarded',
+  'road:triaged',
+  'road:proof',
+  'road:hidden',
+]);
+
 function transition(state: GameStateV2, changed: GameStateV2, events: readonly DomainEvent[], diagnostic?: GameTransition['diagnostic']): GameTransition {
   const sequence = state.campaign.transitionCounter + 1;
   return {
@@ -27,8 +37,12 @@ function clampVitals(vitals: HeroVitals, state: GameStateV2, content: ContentInd
   };
 }
 
-function roadBoon(boons: readonly string[], boon: string): readonly string[] {
-  return boons.includes(boon) ? boons : [...boons, boon];
+function addRoadBoon(boons: readonly string[], boon: string): readonly string[] {
+  return [...boons, boon];
+}
+
+function consumeRoadBoons(boons: readonly string[]): readonly string[] {
+  return boons.filter((candidate) => !ROAD_BOON_IDS.has(candidate));
 }
 
 function enqueueAuthoredAftermaths(
@@ -136,7 +150,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   const prepared = {
     ...expedition,
     heroVitals: clampVitals(vitals, state, content),
-    temporaryBoons: roadBoon(expedition.temporaryBoons, boon!),
+    temporaryBoons: addRoadBoon(expedition.temporaryBoons, boon!),
     director: { ...expedition.director, threat: Math.max(0, Math.min(10, threat)), tension: Math.max(0, Math.min(10, tension)) },
   };
   const step = selectNextScene(prepared.director, {
@@ -154,7 +168,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   const event: DomainEvent = { type: 'travel_action_taken', action };
   if (step.kind !== 'selected') {
     if (step.terminal === 'completed') return completeTravelChapter(state, step.state, updatedAt, event);
-    return transition(state, { ...state, expedition: prepared, updatedAt }, [event], { code: 'scene_unavailable', message: step.diagnostic });
+    return { state, events: [], diagnostic: { code: 'scene_unavailable', message: step.diagnostic } };
   }
   const autoResolved = step.event.choices.length === 0 && visibleDialogueBeats(step.event.dialogue, state.campaign.flags).length === 0;
   const visitOrdinal = (prepared.sceneVisitCounts[step.sceneId] ?? 0) + 1;
@@ -172,6 +186,8 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
       outcome: step.event.narrative.at(-1) ?? step.event.title, effectSummary: [], nextSceneId: null, continueLabel: null,
     } : null,
     position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 },
+    temporaryBoons: consumeRoadBoons(prepared.temporaryBoons),
+    lastTravelAction: action,
   };
   return transition(state, {
     ...state,

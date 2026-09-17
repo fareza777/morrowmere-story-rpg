@@ -58,6 +58,22 @@ describe('Road Tactics UI', () => {
     expect(screen.getByText(/Threat -2.*Scouted/i)).toBeInTheDocument();
   });
 
+  it('uses the persisted latest action for the receipt instead of stale road boons', () => {
+    const state = routeState();
+    const withReceipt = {
+      ...state,
+      expedition: {
+        ...state.expedition!,
+        lastTravelAction: 'scout' as const,
+        temporaryBoons: ['road:pressed'],
+      },
+    };
+
+    render(<TravelPanel view={selectTravelView(withReceipt, UI_CONTENT)} onAction={vi.fn()} />);
+
+    expect(screen.getByText(/Threat reduced and safer leads favored/i)).toBeInTheDocument();
+  });
+
   it('sends one typed travel action for an available card', async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();

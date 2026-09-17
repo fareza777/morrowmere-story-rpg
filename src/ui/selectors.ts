@@ -402,17 +402,13 @@ function travelCompanion(
   };
 }
 
-function travelReceipt(boons: readonly string[]): TravelViewModel['receipt'] {
-  const boon = [...boons].reverse().find((candidate) => candidate.startsWith('road:'));
-  const summary = boon ? ({
-    'road:scouted': 'Threat reduced and safer leads favored.',
-    'road:pressed': 'The convoy pressed forward; danger is more likely.',
-    'road:rested': 'The convoy recovered, but the road grew more tense.',
-    'road:guarded': 'The convoy moved under Rukhar’s watch.',
-    'road:triaged': 'Caldus triaged the convoy before the next scene.',
-    'road:proof': 'Lyra marked the route for evidence and investigation.',
-    'road:hidden': 'Talla found a quieter hidden way.',
-  } as Readonly<Record<string, string>>)[boon] : null;
+function travelReceipt(action: TravelAction | null | undefined): TravelViewModel['receipt'] {
+  const summary = action ? ({
+    scout: 'Threat reduced and safer leads favored.',
+    'press-on': 'The convoy pressed forward; danger is more likely.',
+    'make-camp': 'The convoy recovered, but the road grew more tense.',
+    companion: 'Your companion’s road move shaped the next scene.',
+  } as Readonly<Record<TravelAction, string>>)[action] : null;
   return summary ? { label: 'Last road choice', summary } : null;
 }
 
@@ -458,7 +454,7 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
     tension: expedition.director.tension,
     companion,
     actions,
-    receipt: travelReceipt(expedition.temporaryBoons),
+    receipt: travelReceipt(expedition.lastTravelAction),
   };
 }
 
