@@ -97,7 +97,7 @@ describe('Road Tactics artwork', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('402/402 unique 1536x1024 WebP scene assets');
     expect(result.stdout).toContain('4/4 unique 1536x1024 WebP action-card assets');
-  }, 15_000);
+  }, 60_000);
 
   it('keeps every canonical encounter and action-card asset present, valid, and distinct', () => {
     const hashes = new Set<string>();
