@@ -125,7 +125,7 @@ function surfaceFor(view: ReturnType<typeof useGameSession>['view'], game: GameS
   if (!game) return 'opening';
   if (game.flow.screen === 'camp') return 'camp';
   if (game.flow.screen === 'merchant') return 'merchant';
-  return game.flow.screen;
+  return game.flow.screen === 'travel' ? 'story' : game.flow.screen;
 }
 
 function closeTopDialog(): boolean {

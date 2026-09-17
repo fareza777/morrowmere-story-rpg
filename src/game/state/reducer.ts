@@ -16,6 +16,7 @@ import { isRewardedGoldEligible, shouldShowInterstitial } from '../../native/ads
 import { deriveHeroStats, grantExperience } from '../progression';
 import { campaignPayload, cloneCampaignPayload, initialDirector } from './create';
 import { applyEffectsAtomically } from './effects';
+import { enterTravel, resolveTravelAction } from './road-tactics';
 import type {
   CampSnapshot,
   CampaignCheckpointPayload,
@@ -624,13 +625,13 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       ...state,
       expedition,
       adPacing: { ...state.adPacing, rewardedShownAtCurrentBreak: false, rewardedClaimsThisExpedition: 0 },
-      flow: { ...state.flow, screen: 'story', merchant: null },
+      flow: { ...state.flow, screen: 'travel', merchant: null },
       updatedAt: command.updatedAt,
     }, [{ type: 'notification', message: 'Expedition started.' }]);
   }
   if (command.type === 'bank-camp') {
-    if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward || state.flow.merchant) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
-    const scene = currentScene(state, content);
+    if (!state.expedition || !['story', 'travel'].includes(state.flow.screen) || state.expedition.currentCombat || state.expedition.pendingReward || state.flow.merchant) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
+    const scene = currentScene(state, content) ?? (state.expedition.sceneResolution ? content.events.get(state.expedition.sceneResolution.eventId) ?? null : null);
     if (!scene || scene.type !== 'hub' || state.expedition.sceneResolution?.eventId !== scene.id) return diagnostic(state, 'safe_hub_required', 'Secure an expedition only at a safe hub.');
     const gold = state.expedition.unbankedGold;
     const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + gold, directorMemory: directorMemory(state.expedition.director), routeSeedNonce: state.campaign.routeSeedNonce + 1 };
@@ -656,6 +657,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (state.flow.screen === 'camp' && !expedition) return commitCampMutation(state, campaign, command.updatedAt, [{ type: 'notification', message: 'Inventory updated.' }]);
     return commit(state, { ...state, campaign, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
+  if (command.type === 'travel-action') return resolveTravelAction(state, command.action, content, command.updatedAt);
   if (command.type === 'select-next-scene') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
     const pendingCombat = state.expedition.currentCombat;
@@ -670,6 +672,9 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       }, [{ type: 'notification', message: 'Battle ready.' }]);
     }
     const current = currentScene(state, content);
+    if (current && state.expedition.sceneResolution?.eventId === current.id) {
+      return commit(state, enterTravel(state, command.updatedAt), [{ type: 'notification', message: 'Road tactics ready.' }]);
+    }
     const dialogue = visibleDialogueBeats(current?.dialogue, state.campaign.flags);
     if (current && current.choices.length === 0 && dialogue?.length && state.expedition.sceneResolution?.eventId !== current.id) {
       if (state.expedition.dialogueBeatIndex < dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before continuing.');
@@ -689,7 +694,6 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
         expedition: {
           ...state.expedition,
           authoredSceneQueue: enqueueAuthoredAftermaths(state.expedition.authoredSceneQueue, current.id, null, current.followUps ?? []),
-          currentSceneId: null,
           dialogueBeatIndex: 0,
           sceneResolution,
         },
@@ -889,7 +893,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const unbankedLoot = usedItemId ? removeOneUnbanked(state.expedition.unbankedLoot, usedItemId) : state.expedition.unbankedLoot;
     if (result.combat.outcome === 'active') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat } }, updatedAt: command.updatedAt }, result.events);
     const abandonedContinuations = abandonAuthoredCombatContinuations(state.expedition.authoredSceneQueue, state.expedition.director, state.expedition.currentSceneId);
-    if (result.combat.outcome === 'fled') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: null, pendingReward: null, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    if (result.combat.outcome === 'fled') return commit(state, enterTravel({ ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: null, pendingReward: null } }, command.updatedAt), [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
     if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
     const priorVictories = state.campaign.encounterFamilyVictories[encounter.family] ?? 0;
     const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
@@ -921,7 +925,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       inventory = added.value;
       unbankedLoot = [...unbankedLoot, command.itemId];
     }
-    return commit(state, { ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt: command.updatedAt }, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
+    return commit(state, enterTravel({ ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null } }, command.updatedAt), [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
   }
   if (command.type === 'open-merchant') {
     if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward) return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');

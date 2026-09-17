@@ -11,6 +11,7 @@ export type DomainResult<T, E extends CommandDiagnostic = CommandDiagnostic> =
   | { readonly ok: false; readonly error: E };
 
 export type DomainEvent =
+  | { readonly type: 'travel_action_taken'; readonly action: 'scout' | 'press-on' | 'make-camp' | 'companion' }
   | { readonly type: 'choice_resolved'; readonly eventId: EventId; readonly choiceId: ChoiceId }
   | { readonly type: 'item_changed'; readonly itemId: ItemId; readonly quantity: number }
   | { readonly type: 'combat_started'; readonly encounterId: EncounterId }

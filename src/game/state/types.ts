@@ -8,6 +8,7 @@ import type { HeroProgress } from '../progression';
 import type { HeroClass } from '../types';
 import type { CombatAction, CombatState } from '../combat/types';
 import type { TradeIntent } from '../merchant';
+import type { TravelAction } from './road-tactics';
 
 export interface DirectorMemory {
   readonly rngState: number;
@@ -163,7 +164,7 @@ export interface AdPacingState {
 }
 
 export interface FlowState {
-  readonly screen: 'camp' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending';
+  readonly screen: 'camp' | 'travel' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending';
   readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null;
   readonly merchant: { readonly merchantId: MerchantId; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null;
 }
@@ -218,6 +219,7 @@ export type GameCommand =
   | { readonly type: 'use-item'; readonly entryId: string; readonly updatedAt: string }
   | { readonly type: 'inventory'; readonly command: Exclude<InventoryCommand, { readonly type: 'add' }>; readonly updatedAt: string }
   | { readonly type: 'select-next-scene'; readonly updatedAt: string }
+  | { readonly type: 'travel-action'; readonly action: TravelAction; readonly updatedAt: string }
   | { readonly type: 'combat-turn'; readonly commandId: string; readonly action: CombatAction; readonly updatedAt: string }
   | { readonly type: 'open-merchant'; readonly updatedAt: string }
   | { readonly type: 'close-merchant'; readonly updatedAt: string }
