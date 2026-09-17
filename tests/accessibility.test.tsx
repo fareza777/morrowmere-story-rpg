@@ -14,6 +14,15 @@ const SETTINGS: UiSettings = {
   voiceReplay: 'automatic', screenReaderAnnouncements: true,
 };
 
+function travelState() {
+  const state = makeUiGame();
+  return {
+    ...state,
+    expedition: { ...state.expedition!, currentSceneId: null, sceneResolution: null },
+    flow: { ...state.flow, screen: 'travel' as const, merchant: null },
+  };
+}
+
 describe('accessibility baseline', () => {
   it('has no serious violations on the title screen', async () => {
     render(<App />);
@@ -34,6 +43,7 @@ describe('accessibility baseline', () => {
     ['camp', makeUiGame({ screen: 'camp' })],
     ['combat', makeUiGame({ screen: 'combat', enemyCount: 3 })],
     ['merchant', makeUiGame({ screen: 'merchant' })],
+    ['travel', travelState()],
     ['defeat', makeUiGame({ screen: 'defeat' })],
   ] as const)('has no serious accessibility violation on %s', async (_name, state) => {
     render(<GameShell state={state} content={UI_CONTENT} transitionEvents={[]} dispatch={vi.fn()} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} />);

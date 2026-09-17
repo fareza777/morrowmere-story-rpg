@@ -46,6 +46,18 @@ describe('Road Tactics UI', () => {
     expect(screen.getByText(/Need 1 .* resource/i)).toBeInTheDocument();
   });
 
+  it('shows the active companion’s exact road effect rather than flavor alone', () => {
+    const state = makeUiGame({ companionId: 'mara' });
+    const travelState = {
+      ...state,
+      expedition: { ...state.expedition!, currentSceneId: null, sceneResolution: null },
+      flow: { ...state.flow, screen: 'travel' as const, merchant: null },
+    };
+    render(<TravelPanel view={selectTravelView(travelState, UI_CONTENT)} onAction={vi.fn()} />);
+
+    expect(screen.getByText(/Threat -2.*Scouted/i)).toBeInTheDocument();
+  });
+
   it('sends one typed travel action for an available card', async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();

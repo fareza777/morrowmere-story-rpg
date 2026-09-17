@@ -369,7 +369,22 @@ const TRAVEL_ART: Readonly<Record<TravelAction, { readonly src: string; readonly
   companion: { src: '/assets/chronicle1/travel/travel-road-companion.webp', alt: 'A companion directing the convoy at a fork.' },
 };
 
-function travelCompanion(state: GameStateV2, content: ContentIndex): TravelViewModel['companion'] {
+function companionRoadEffect(companionId: string, resourceLabel: HeroHudViewModel['resourceLabel']): string {
+  switch (companionId) {
+    case 'mara': return 'Threat -2 · Scouted';
+    case 'rukhar': return 'Threat -1 · Tension -1 · Guarded';
+    case 'caldus': return `Health +8 · ${resourceLabel} +1 · Triaged`;
+    case 'lyra': return 'Threat -1 · Proof';
+    case 'talla': return 'Threat -1 · Tension -1 · Hidden';
+    default: return 'No road effect available.';
+  }
+}
+
+function travelCompanion(
+  state: GameStateV2,
+  content: ContentIndex,
+  resourceLabel: HeroHudViewModel['resourceLabel'],
+): TravelViewModel['companion'] {
   const activeId = state.campaign.companions.activeCompanionId;
   const progress = activeId
     ? state.campaign.companions.records.find((record) => record.companionId === activeId)
@@ -383,6 +398,7 @@ function travelCompanion(state: GameStateV2, content: ContentIndex): TravelViewM
     name: definition.name,
     capabilityLabel: capability?.label ?? 'Road move',
     capabilityDescription: capability?.description ?? 'Uses their field experience to guide the convoy.',
+    effectPreview: companionRoadEffect(activeId, resourceLabel),
   };
 }
 
@@ -404,7 +420,7 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
   const expedition = state.expedition;
   if (!expedition) throw new Error('Travel view requires an active expedition.');
   const hero = heroHud(state, content);
-  const companion = travelCompanion(state, content);
+  const companion = travelCompanion(state, content, hero.resourceLabel);
   const scoutReason = hero.resource < 1 ? `Need 1 ${hero.resourceLabel} resource.` : null;
   const companionReason = companion ? null : 'Recruit and activate a companion at camp.';
   const actions: readonly TravelActionViewModel[] = [
@@ -427,7 +443,7 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
       available: true, unavailableReason: null,
     },
     {
-      action: 'companion', label: companion ? 'Companion Move' : 'Companion Move', cost: companion ? `${companion.name}'s road capability` : 'No active companion', risk: companion ? companion.capabilityLabel : 'Unavailable',
+      action: 'companion', label: 'Companion Move', cost: companion ? `${companion.name}'s road capability` : 'No active companion', risk: companion ? companion.effectPreview : 'Unavailable',
       effectPreview: companion ? companion.capabilityDescription : companionReason!,
       artSrc: TRAVEL_ART.companion.src, artAlt: TRAVEL_ART.companion.alt,
       available: companionReason === null, unavailableReason: companionReason,

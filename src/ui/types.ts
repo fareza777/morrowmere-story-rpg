@@ -165,6 +165,7 @@ export interface TravelViewModel {
     readonly name: string;
     readonly capabilityLabel: string;
     readonly capabilityDescription: string;
+    readonly effectPreview: string;
   } | null;
   readonly actions: readonly TravelActionViewModel[];
   readonly receipt: TravelReceiptViewModel | null;
