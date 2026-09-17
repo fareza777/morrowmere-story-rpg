@@ -55,10 +55,11 @@ function directChoice(
 function atSource(index: ContentIndex, sourceId: EventId): GameStateV2 {
   const created = createCampaign({ heroClass: 'warrior', seed: 17, updatedAt: at(0) }, index);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
+  const travelled = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, index).state;
   return {
-    ...started,
+    ...travelled,
     expedition: {
-      ...started.expedition!,
+      ...travelled.expedition!,
       position: { chapterId: 'ch01', slot: 2 },
       currentSceneId: sourceId,
       sceneResolution: null,
@@ -85,6 +86,13 @@ function queue(state: GameStateV2) {
   })?.authoredSceneQueue ?? [];
 }
 
+function selectAfterRoadAction(state: GameStateV2, index: ContentIndex, minute: number) {
+  const travelling = state.flow.screen === 'travel'
+    ? state
+    : reduceGame(state, { type: 'select-next-scene', updatedAt: at(minute) }, index).state;
+  return reduceGame(travelling, { type: 'travel-action', action: 'press-on', updatedAt: at(minute) }, index);
+}
+
 describe('authored scene queue', () => {
   it('selects a direct choice target before random eligible content', () => {
     const source = scene({ id: asEvent('source'), type: 'journey', choices: [directChoice(asEvent('choice-aftermath'))] });
@@ -93,7 +101,7 @@ describe('authored scene queue', () => {
     const index = content([source, aftermath, anchor]);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    const selected = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const selected = selectAfterRoadAction(resolved.state, index, 3);
 
     expect(resolved.diagnostic).toBeUndefined();
     expect(queue(resolved.state)).toEqual([expect.objectContaining({
@@ -115,8 +123,8 @@ describe('authored scene queue', () => {
     const index = content([source, first, second, anchor]);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    const selectedFirst = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
-    const selectedSecond = reduceGame(selectedFirst.state, { type: 'select-next-scene', updatedAt: at(4) }, index);
+    const selectedFirst = selectAfterRoadAction(resolved.state, index, 3);
+    const selectedSecond = selectAfterRoadAction(selectedFirst.state, index, 4);
 
     expect(currentSceneId(selectedFirst.state)).toBe(first.id);
     expect(currentSceneId(selectedSecond.state)).toBe(second.id);
@@ -131,7 +139,7 @@ describe('authored scene queue', () => {
     const index = content([source, locked, open, anchor]);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    const selected = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const selected = selectAfterRoadAction(resolved.state, index, 3);
 
     expect(selected.diagnostic).toBeUndefined();
     expect(currentSceneId(selected.state)).toBe(open.id);
@@ -146,7 +154,7 @@ describe('authored scene queue', () => {
     const index = content([source, distraction, anchor]);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    const selected = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const selected = selectAfterRoadAction(resolved.state, index, 3);
 
     expect(selected.diagnostic).toBeUndefined();
     expect(currentSceneId(selected.state)).toBe(anchor.id);
@@ -183,7 +191,7 @@ describe('authored scene queue', () => {
       },
     };
 
-    const selected = reduceGame(withCallback, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const selected = selectAfterRoadAction(withCallback, index, 3);
 
     expect(selected.diagnostic).toBeUndefined();
     expect(currentSceneId(selected.state)).toBe(callback.id);
@@ -209,7 +217,7 @@ describe('authored scene queue', () => {
       },
     };
 
-    const selected = reduceGame(queued, { type: 'select-next-scene', updatedAt: at(2) }, index);
+    const selected = selectAfterRoadAction(queued, index, 2);
 
     expect(selected.diagnostic).toBeUndefined();
     expect(currentSceneId(selected.state)).toBe(slotFour.id);
@@ -226,10 +234,10 @@ describe('authored scene queue', () => {
     const index = content([source, aftermath, anchor], true);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    expect(resolved.state.flow.screen).toBe('story');
+    expect(resolved.state.flow.screen).toBe('combat');
     expect(queue(resolved.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
 
-    let won = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index).state;
+    let won = resolved.state;
     expect(won.flow.screen).toBe('combat');
     for (let turn = 0; turn < 5 && won.flow.screen === 'combat'; turn += 1) {
       won = reduceGame(won, { type: 'combat-turn', commandId: `queue-win:${turn}`, action: { type: 'attack' }, updatedAt: at(4 + turn) }, index).state;
@@ -240,7 +248,7 @@ describe('authored scene queue', () => {
     if (!rewardId) throw new Error('Expected the combat reward fixture.');
 
     const claimed = reduceGame(won, { type: 'claim-rewards', rewardId, itemId: null, updatedAt: at(9) }, index);
-    const next = reduceGame(claimed.state, { type: 'select-next-scene', updatedAt: at(10) }, index);
+    const next = selectAfterRoadAction(claimed.state, index, 10);
 
     expect(claimed.diagnostic).toBeUndefined();
     expect(queue(claimed.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
@@ -257,7 +265,7 @@ describe('authored scene queue', () => {
     const index = content([source, aftermath, anchor], true);
 
     const resolved = resolveSource(atSource(index, source.id), index).state;
-    const handedOff = reduceGame(resolved, { type: 'select-next-scene', updatedAt: at(3) }, index).state;
+    const handedOff = selectAfterRoadAction(resolved, index, 3).state;
     const activeCombat = handedOff.expedition?.currentCombat?.combat;
     if (!activeCombat) throw new Error('Expected the flee fixture to enter combat.');
     const forcedEscape: GameStateV2 = {
@@ -274,7 +282,7 @@ describe('authored scene queue', () => {
     const fled = reduceGame(forcedEscape, {
       type: 'combat-turn', commandId: 'retire-fled-aftermath', action: { type: 'flee' }, updatedAt: at(4),
     }, index);
-    const next = reduceGame(fled.state, { type: 'select-next-scene', updatedAt: at(5) }, index);
+    const next = selectAfterRoadAction(fled.state, index, 5);
 
     expect(fled.state.expedition?.currentCombat).toBeNull();
     expect(queue(fled.state)).toEqual([]);
@@ -292,7 +300,7 @@ describe('authored scene queue', () => {
     const resolved = resolveSource(atSource(index, source.id), index);
     let state = resolved.state;
     for (let minute = 3; minute <= 5 && state.expedition; minute += 1) {
-      const transition = reduceGame(state, { type: 'select-next-scene', updatedAt: at(minute) }, index);
+      const transition = selectAfterRoadAction(state, index, minute);
       if (transition.diagnostic) diagnostics.push(transition.diagnostic.message);
       state = transition.state;
     }

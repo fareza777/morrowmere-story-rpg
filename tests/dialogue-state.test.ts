@@ -46,9 +46,10 @@ function content(): ContentIndex {
 function atDialogueScene(index: ContentIndex): GameStateV2 {
   const created = createCampaign({ heroClass: 'warrior', seed: 11, updatedAt: at(0) }, index);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
+  const travelled = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, index).state;
   return {
-    ...started,
-    expedition: { ...started.expedition!, currentSceneId: eventId, dialogueBeatIndex: 0, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 } },
+    ...travelled,
+    expedition: { ...travelled.expedition!, currentSceneId: eventId, dialogueBeatIndex: 0, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 } },
   } as GameStateV2;
 }
 
@@ -89,7 +90,7 @@ describe('cinematic dialogue state', () => {
 
     expect(advanced.diagnostic).toBeUndefined();
     expect(advanced.state.expedition?.dialogueBeatIndex).toBe(1);
-    expect({ ...advanced.state, updatedAt: at(1), campaign: { ...advanced.state.campaign, transitionCounter: before.campaign.transitionCounter }, expedition: { ...advanced.state.expedition!, dialogueBeatIndex: 0 } }).toEqual(before);
+    expect({ ...advanced.state, updatedAt: at(2), campaign: { ...advanced.state.campaign, transitionCounter: before.campaign.transitionCounter }, expedition: { ...advanced.state.expedition!, dialogueBeatIndex: 0 } }).toEqual(before);
     expect(advanced.state.expedition?.sceneResolution).toBeNull();
     expect(advanced.state.campaign.flags).toEqual([]);
   });
@@ -119,7 +120,7 @@ describe('cinematic dialogue state', () => {
     const index = continueOnlyContent();
     const created = createCampaign({ heroClass: 'warrior', seed: 11, updatedAt: at(0) }, index);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
-    const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: at(2) }, index).state;
+    const selected = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, index).state;
     const earlyContinue = reduceGame(selected, { type: 'select-next-scene', updatedAt: at(3) }, index);
 
     expect(selected.expedition?.currentSceneId).toBe(eventId);
@@ -141,7 +142,8 @@ describe('cinematic dialogue state', () => {
       },
     };
 
-    const completed = reduceGame(queued, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const resolved = reduceGame(queued, { type: 'select-next-scene', updatedAt: at(3) }, index);
+    const completed = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt: at(3) }, index);
 
     expect(completed.diagnostic).toBeUndefined();
     expect(completed.state.expedition).toMatchObject({ currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: { eventId, choiceId: null, resultKind: 'direct' } });

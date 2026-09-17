@@ -54,22 +54,44 @@ function currentSceneFixture(event: ChronicleEvent, state: GameStateV2): GameSta
   };
 }
 
+function takeRoadAction(state: GameStateV2, content: ContentIndex, minute: number): GameStateV2 {
+  return reduceGame(state, {
+    type: 'travel-action', action: 'press-on',
+    updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:00.000Z`,
+  }, content).state;
+}
+
 function selectAndResolve(state: GameStateV2, minute: number): { readonly state: GameStateV2; readonly sceneId: string } {
-  const selected = reduceGame(state, {
-    type: 'select-next-scene',
+  const travelling = state.flow.screen === 'travel'
+    ? state
+    : reduceGame(state, {
+      type: 'select-next-scene',
+      updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:00.000Z`,
+    }, CHRONICLE1_CONTENT).state;
+  const selected = reduceGame(travelling, {
+    type: 'travel-action', action: 'press-on',
     updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:00.000Z`,
   }, CHRONICLE1_CONTENT);
   expect(selected.diagnostic).toBeUndefined();
   const sceneId = currentSceneId(selected.state);
   if (!sceneId) throw new Error('Expected a selected Chronicle scene.');
   const event = CHRONICLE1_CONTENT.events.get(sceneId)!;
+  let prepared = selected.state;
+  let dialogue = selectCurrentScene(prepared, CHRONICLE1_CONTENT)?.dialogue;
+  while (dialogue && !dialogue.isFinal) {
+    prepared = reduceGame(prepared, {
+      type: 'advance-dialogue', eventId: event.id,
+      updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:30.000Z`,
+    }, CHRONICLE1_CONTENT).state;
+    dialogue = selectCurrentScene(prepared, CHRONICLE1_CONTENT)?.dialogue;
+  }
   const choice = event.choices.find((candidate) => choiceIsAvailable(
     candidate,
-    selected.state.campaign.flags,
-    selected.state.expedition?.position,
+    prepared.campaign.flags,
+    prepared.expedition?.position,
   ));
-  if (!choice) return { state: selected.state, sceneId };
-  const resolved = reduceGame(selected.state, {
+  if (!choice) return { state: prepared, sceneId };
+  const resolved = reduceGame(prepared, {
     type: 'resolve-choice',
     eventId: event.id,
     choiceId: choice.id,
@@ -127,7 +149,7 @@ describe('Chronicle travel flow across sparse route slots', () => {
     const unavailableContent = { ...CHRONICLE1_CONTENT, events: new Map([[unavailableEvent.id, unavailableEvent]]) };
     const unavailableBase = startOldForest();
     const unavailableState = currentSceneFixture(unavailableEvent, {
-      ...unavailableBase,
+      ...takeRoadAction(unavailableBase, unavailableContent, 2),
       campaign: { ...unavailableBase.campaign, bankedGold: 5 },
     });
 
@@ -150,7 +172,8 @@ describe('Chronicle travel flow across sparse route slots', () => {
     const checkContent = { ...CHRONICLE1_CONTENT, events: new Map([[checkEvent.id, checkEvent]]) };
     for (const flags of [[], ['rope-secured']] as const) {
       const base = startOldForest();
-      const state = currentSceneFixture(checkEvent, { ...base, campaign: { ...base.campaign, flags } });
+      const travelled = takeRoadAction(base, checkContent, 3);
+      const state = currentSceneFixture(checkEvent, { ...travelled, campaign: { ...travelled.campaign, flags } });
       const shownChance = selectCurrentScene(state, checkContent)!.choices[0]!.check!.chance;
       const resolved = reduceGame(state, { type: 'resolve-choice', eventId: checkEvent.id, choiceId: checkChoice.id, updatedAt: '2026-09-01T00:04:00.000Z' }, checkContent);
       expect(resolved.state.expedition?.checkedAttempts[0]?.chance).toBe(shownChance);
@@ -158,11 +181,9 @@ describe('Chronicle travel flow across sparse route slots', () => {
   });
 
   it('uses the nearest future route-compatible scene when the current slot has no unique candidate', () => {
-    const usedSceneIds = [
-      'ch01-main-three-days-to-greywatch',
-      'ch01-journey-jorys-waxed-tube',
-      'ch01-companion-mara-measures-the-road',
-    ].map(asEventId);
+    const usedSceneIds = [...CHRONICLE1_CONTENT.events.values()]
+      .filter((event) => event.chapterId === 'ch01' && event.id !== asEventId('ch01-hub-first-night-camp'))
+      .map((event) => event.id);
     const step = selectNextScene({
       ...initialDirector(17),
       usedSceneIds,
@@ -178,8 +199,8 @@ describe('Chronicle travel flow across sparse route slots', () => {
     expect(step.kind).toBe('selected');
     if (step.kind !== 'selected') throw new Error(step.diagnostic);
     expect(step.sceneId).toBe('ch01-hub-first-night-camp');
-    expect(step.event.slot).toBe(5);
-    expect(step.selectedAt).toEqual({ chapterId: 'ch01', slot: 5 });
+    expect(step.event.slot).toBe(8);
+    expect(step.selectedAt).toEqual({ chapterId: 'ch01', slot: 8 });
   });
 
   it('does not replay an unused optional scene after the road has moved beyond its slot', () => {
@@ -246,13 +267,13 @@ describe('Chronicle travel flow across sparse route slots', () => {
 
     expect(selected).toEqual([
       'ch01-main-three-days-to-greywatch',
-      'ch01-journey-jorys-waxed-tube',
-      'ch01-companion-mara-measures-the-road',
-      'ch01-hub-first-night-camp',
+      'ch01-living-bent-axle-setup',
+      'ch01-living-bent-axle-work',
+      'ch01-living-bent-axle-aftermath',
     ]);
-    expect(state.expedition?.position).toEqual({ chapterId: 'ch01', slot: 6 });
+    expect(state.expedition?.position).toEqual({ chapterId: 'ch01', slot: 5 });
 
     const afterCamp = selectAndResolve(state, 10);
-    expect(afterCamp.sceneId).toBe('ch01-main-medicine-for-the-north');
+    expect(afterCamp.sceneId).toBe('ch01-combat-ditch-road-cutters');
   });
 });

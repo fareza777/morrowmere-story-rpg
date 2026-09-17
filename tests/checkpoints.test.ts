@@ -79,14 +79,30 @@ const orchestrationContent: ContentIndex = {
 function enterCombat(state: GameStateV2, updatedAt: string, testContent: ContentIndex = orchestrationContent): GameStateV2 {
   const selected = state.expedition?.currentSceneId
     ? state
-    : reduceGame(state, { type: 'select-next-scene', updatedAt }, testContent).state;
+    : reduceGame(state, { type: 'travel-action', action: 'press-on', updatedAt }, testContent).state;
   return reduceGame(selected, {
     type: 'resolve-choice', eventId: sceneId('route-scene'), choiceId: 'fight' as never, updatedAt,
   }, testContent).state;
 }
 
 function arriveAtCamp(state: GameStateV2, updatedAt: string): GameStateV2 {
-  return reduceGame(state, { type: 'select-next-scene', updatedAt }, content).state;
+  const selected = reduceGame(state, { type: 'travel-action', action: 'press-on', updatedAt }, content).state;
+  return reduceGame(selected, { type: 'select-next-scene', updatedAt }, content).state;
+}
+
+function travelToScene(state: GameStateV2, eventId: EventId, testContent: ContentIndex, updatedAt: string): GameStateV2 {
+  const readyToTravel = state.flow.screen === 'travel'
+    ? state
+    : reduceGame(state, { type: 'select-next-scene', updatedAt }, testContent).state;
+  const travelled = reduceGame(readyToTravel, { type: 'travel-action', action: 'press-on', updatedAt }, testContent).state;
+  return {
+    ...travelled,
+    expedition: {
+      ...travelled.expedition!, currentSceneId: eventId, sceneResolution: null,
+      sceneVisitCounts: { ...travelled.expedition!.sceneVisitCounts, [eventId]: 1 },
+    },
+    flow: { ...travelled.flow, screen: 'story' },
+  };
 }
 
 describe('campaign checkpoints', () => {
@@ -226,18 +242,20 @@ describe('campaign checkpoints', () => {
       { type: 'item', operation: 'grant', itemId: itemId('warrior-blade'), quantity: 1, destination: 'unbanked-loot' },
     ], completionContent);
     if (!granted.ok) throw new Error('Expected the unbanked item reward to apply.');
+    const finaleScene = travelToScene(started, finale.id, completionContent, '2026-08-31T00:00:45.000Z');
     const before = {
-      ...started,
+      ...finaleScene,
       campaign: granted.value.campaign,
       expedition: {
-        ...granted.value.expedition!,
+        ...finaleScene.expedition!,
         position: { chapterId: 'ch01' as const, slot: 3 }, currentSceneId: finale.id,
         sceneResolution: resolvedScene(finale.id), sceneVisitCounts: { [finale.id]: 1 },
         director: { ...started.expedition!.director, usedSceneIds: [finale.id], seenEventIds: [finale.id] },
       },
     };
 
-    const completed = reduceGame(before, { type: 'select-next-scene', updatedAt: '2026-08-31T00:01:00.000Z' }, completionContent);
+    const readyToComplete = reduceGame(before, { type: 'select-next-scene', updatedAt: '2026-08-31T00:01:00.000Z' }, completionContent).state;
+    const completed = reduceGame(readyToComplete, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T00:01:00.000Z' }, completionContent);
 
     expect(completed.diagnostic).toBeUndefined();
     expect(completed.state.expedition).toBeNull();
@@ -282,10 +300,13 @@ describe('campaign checkpoints', () => {
   it('sequences committed events and exposes the current scene without catalog data in snapshots', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 9, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
     const state = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:00:30.000Z' }, content).state;
-    const result = reduceGame(state, { type: 'select-next-scene', updatedAt: '2026-08-31T00:01:00.000Z' }, content);
+    const result = reduceGame(state, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T00:01:00.000Z' }, content);
 
     expect(currentScene(result.state, content)?.id).toBe(sceneId('camp-scene'));
-    expect(result.events).toEqual([{ domain: { type: 'notification', message: 'Scene ready.' }, eventId: '2:0', sequence: 2 }]);
+    expect(result.events).toEqual([
+      { domain: { type: 'travel_action_taken', action: 'press-on' }, eventId: '2:0', sequence: 2 },
+      { domain: { type: 'notification', message: 'Scene ready.' }, eventId: '2:1', sequence: 2 },
+    ]);
     expect(JSON.stringify(result.state.checkpoints)).not.toContain('Safe for now.');
   });
 
@@ -316,11 +337,12 @@ describe('campaign checkpoints', () => {
   it('orchestrates director selection, combat turns, and merchant trades through V2 commands', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
-    const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
+    const selected = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
     const combat = enterCombat(selected, '2026-08-31T00:03:00.000Z');
     const turned = reduceGame(combat, { type: 'combat-turn', commandId: 'orchestration-attack', action: { type: 'attack' }, updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent).state;
     const traversable = { ...turned, expedition: { ...turned.expedition!, currentCombat: null, unbankedGold: 20 }, flow: { ...turned.flow, screen: 'story' as const } };
-    const merchantScene = reduceGame(traversable, { type: 'select-next-scene', updatedAt: '2026-08-31T00:04:30.000Z' }, orchestrationContent).state;
+    const travelledToMerchant = travelToScene(traversable, sceneId('merchant-scene'), orchestrationContent, '2026-08-31T00:04:30.000Z');
+    const merchantScene = { ...travelledToMerchant, expedition: { ...travelledToMerchant.expedition!, sceneResolution: resolvedScene(sceneId('merchant-scene')) } };
     const opened = reduceGame(merchantScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:04:45.000Z' }, orchestrationContent).state;
     const stockEntryId = opened.expedition!.merchantVisits[0]!.stock[0]!.id;
     const traded = reduceGame(opened, { type: 'trade', intent: { type: 'buy', stockEntryId }, updatedAt: '2026-08-31T00:05:00.000Z' }, orchestrationContent).state;
@@ -357,10 +379,11 @@ describe('campaign checkpoints', () => {
     const combatRejected = reduceGame(combatInput, { type: 'trade', intent: { type: 'buy', stockEntryId: 'forged' }, updatedAt: '2026-08-31T00:02:10.000Z' }, orchestrationContent);
     const defeatInput = { ...arbitraryInput, flow: { ...arbitraryInput.flow, screen: 'defeat' as const } };
     const defeatRejected = reduceGame(defeatInput, { type: 'trade', intent: { type: 'buy', stockEntryId: 'forged' }, updatedAt: '2026-08-31T00:02:20.000Z' }, orchestrationContent);
+    const merchantScene = travelToScene(started, sceneId('merchant-scene'), orchestrationContent, '2026-08-31T00:02:30.000Z');
     const atMerchant = {
-      ...started,
+      ...merchantScene,
       expedition: {
-        ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
+        ...merchantScene.expedition!,
         sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 }, unbankedGold: 20,
       },
     };
@@ -405,7 +428,8 @@ describe('campaign checkpoints', () => {
   it('shares merchant stock across authored scenes in the same restock namespace', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
-    const firstScene = { ...started, expedition: { ...started.expedition!, currentSceneId: sceneId('merchant-scene'), sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 }, unbankedGold: 20 } };
+    const firstMerchantScene = travelToScene(started, sceneId('merchant-scene'), orchestrationContent, '2026-08-31T00:01:30.000Z');
+    const firstScene = { ...firstMerchantScene, expedition: { ...firstMerchantScene.expedition!, currentSceneId: sceneId('merchant-scene'), sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 }, unbankedGold: 20 } };
     const openedFirst = reduceGame(firstScene, { type: 'open-merchant', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
     const firstKey = openedFirst.flow.merchant!.restockKey;
     const bought = reduceGame(openedFirst, { type: 'trade', intent: { type: 'buy', stockEntryId: openedFirst.expedition!.merchantVisits[0]!.stock[0]!.id }, updatedAt: '2026-08-31T00:03:00.000Z' }, orchestrationContent).state;
@@ -426,7 +450,7 @@ describe('campaign checkpoints', () => {
   it('keeps director memory across defeat and begins the next run with the saved cooldowns', () => {
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, orchestrationContent);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, orchestrationContent).state;
-    const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
+    const selected = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T00:02:00.000Z' }, orchestrationContent).state;
     const camp = returnToCampAfterDefeat({ ...selected, expedition: { ...selected.expedition!, unbankedGold: 1 }, flow: { ...selected.flow, screen: 'defeat' } }, orchestrationContent, '2026-08-31T00:03:00.000Z');
     const next = reduceGame(camp, { type: 'start-expedition', updatedAt: '2026-08-31T00:04:00.000Z' }, orchestrationContent).state;
 
@@ -477,15 +501,16 @@ describe('campaign checkpoints', () => {
       ...started.checkpoints.camp!.campaign.inventory,
       pack: [{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 2 }],
     };
+    const merchantState = travelToScene(started, sceneId('merchant-scene'), orchestrationContent, '2026-08-31T00:01:30.000Z');
     const atMerchant: GameStateV2 = {
-      ...started,
+      ...merchantState,
       campaign: { ...started.campaign, inventory: liveInventory },
       checkpoints: {
         ...started.checkpoints,
         camp: { ...started.checkpoints.camp!, campaign: { ...started.checkpoints.camp!.campaign, inventory: securedInventory } },
       },
       expedition: {
-        ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
+        ...merchantState.expedition!, currentSceneId: sceneId('merchant-scene'),
         sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 },
         // One item is truly unsecured; the second marker deliberately models stale persisted data.
         unbankedLoot: [itemId('potion-red'), itemId('potion-red')],
@@ -510,8 +535,9 @@ describe('campaign checkpoints', () => {
       ...started.checkpoints.camp!.campaign.inventory,
       pack: [{ id: 'pack-stack-potion-red', itemId: itemId('potion-red'), quantity: 1 }],
     };
+    const merchantState = travelToScene(started, sceneId('merchant-scene'), orchestrationContent, '2026-08-31T00:01:30.000Z');
     const atMerchant: GameStateV2 = {
-      ...started,
+      ...merchantState,
       campaign: {
         ...started.campaign,
         inventory: {
@@ -524,7 +550,7 @@ describe('campaign checkpoints', () => {
         camp: { ...started.checkpoints.camp!, campaign: { ...started.checkpoints.camp!.campaign, inventory: securedInventory } },
       },
       expedition: {
-        ...started.expedition!, currentSceneId: sceneId('merchant-scene'),
+        ...merchantState.expedition!, currentSceneId: sceneId('merchant-scene'),
         sceneResolution: resolvedScene(sceneId('merchant-scene')), sceneVisitCounts: { 'merchant-scene': 1 },
         unbankedLoot: [itemId('potion-red')],
       },
@@ -554,7 +580,7 @@ describe('campaign checkpoints', () => {
     const tollContent: ContentIndex = { ...orchestrationContent, events: new Map([...orchestrationContent.events, [tollScene.id, tollScene]]) };
     const created = createCampaign({ heroClass: 'warrior', seed: 2, updatedAt: '2026-08-31T00:00:00.000Z' }, tollContent);
     const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T00:01:00.000Z' }, tollContent).state;
-    const atToll: GameStateV2 = { ...started, expedition: { ...started.expedition!, currentSceneId: tollScene.id, sceneResolution: null } };
+    const atToll: GameStateV2 = travelToScene(started, tollScene.id, tollContent, '2026-08-31T00:01:30.000Z');
     const paid = reduceGame(atToll, { type: 'resolve-choice', eventId: tollScene.id, choiceId: 'pay-toll' as never, updatedAt: '2026-08-31T00:02:00.000Z' }, tollContent).state;
     const defeated = returnToCampAfterDefeat({ ...paid, flow: { ...paid.flow, screen: 'defeat' } }, tollContent, '2026-08-31T00:03:00.000Z');
 
