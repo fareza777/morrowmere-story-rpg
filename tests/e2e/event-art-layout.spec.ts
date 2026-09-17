@@ -89,10 +89,13 @@ test('adds bright hero art to camp and route planning and animates readable stor
   await game.beginMageChronicle();
 
   const campArt = page.locator('.camp-screen .screen-hero');
+  await expect(campArt).toBeVisible();
   await expect(campArt.locator('img')).toHaveAttribute('src', '/assets/chronicle1/hubs/road-camp-morning.webp');
   const campBounds = await campArt.boundingBox();
   expect(campBounds).not.toBeNull();
-  expect(campBounds!.width).toBeCloseTo(288, 0);
+  // Below 340px, .screen-page uses 0.75rem (12px) gutters.
+  expect(campBounds!.width).toBeCloseTo(296, 0);
+  expect(campBounds!.x).toBeCloseTo(12, 0);
   expect(campBounds!.width / campBounds!.height).toBeCloseTo(1.5, 1);
 
   await page.setViewportSize({ width: 900, height: 900 });
@@ -103,10 +106,12 @@ test('adds bright hero art to camp and route planning and animates readable stor
 
   await page.getByRole('button', { name: 'Choose a Route' }).click();
   const routeArt = page.locator('.route-screen .screen-hero');
+  await expect(routeArt).toBeVisible();
   await expect(routeArt.locator('img')).toHaveAttribute('src', '/assets/chronicle1/hubs/three-roads-crossroads.webp');
   const routeBounds = await routeArt.boundingBox();
   expect(routeBounds).not.toBeNull();
-  expect(routeBounds!.width).toBeCloseTo(288, 0);
+  expect(routeBounds!.width).toBeCloseTo(296, 0);
+  expect(routeBounds!.x).toBeCloseTo(12, 0);
   expect(routeBounds!.width / routeBounds!.height).toBeCloseTo(1.5, 1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await page.getByRole('button', { name: /King's Road/i }).click();

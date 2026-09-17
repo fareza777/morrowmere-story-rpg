@@ -28,7 +28,10 @@ test('plays and resumes a portrait Mage chronicle', async ({ page }, testInfo) =
   await game.continueChronicle.click();
   await expect(page.getByRole('heading', { name: 'Three Days to Greywatch', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pack' }).click();
-  await expect(page.getByRole('dialog', { name: 'Inventory' })).toContainText('Red Mercy');
+  const inventory = page.getByRole('dialog', { name: 'Inventory' });
+  await expect(inventory).toBeVisible();
+  await expect(inventory.getByText('The pack is empty.', { exact: true })).toBeVisible();
+  await expect(inventory.getByText('0 / 24 slots', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Equipment' }).click();
   await expect(page.getByLabel('Equipped items')).toContainText('WeaponEmpty');
 });
