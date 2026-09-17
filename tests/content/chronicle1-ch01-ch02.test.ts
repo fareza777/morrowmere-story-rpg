@@ -64,17 +64,17 @@ describe.each([
   {
     chapterId: 'ch01',
     scenes: CH01_SCENES,
-    quotas: { main: 7, companion: 8, journey: 63, combat: 14, hub: 3 },
+    quotas: { main: 7, companion: 8, journey: 67, combat: 14, hub: 3 },
     anchors: CH01_ANCHORS,
-    journey: { travel: 19, investigation: 22, 'side-quest': 8, dungeon: 4, 'moral-choice': 10 },
+    journey: { travel: 20, investigation: 23, 'side-quest': 9, dungeon: 4, 'moral-choice': 11 },
     companionIds: ['mara', 'mara', 'mara', 'mara', 'talla', 'mara', 'talla'] as const,
   },
   {
     chapterId: 'ch02',
     scenes: CH02_SCENES,
-    quotas: { main: 7, companion: 7, journey: 19, combat: 6, hub: 3 },
+    quotas: { main: 7, companion: 7, journey: 24, combat: 6, hub: 3 },
     anchors: CH02_ANCHORS,
-    journey: { travel: 6, investigation: 5, 'side-quest': 3, dungeon: 2, 'moral-choice': 3 },
+    journey: { travel: 7, investigation: 7, 'side-quest': 3, dungeon: 3, 'moral-choice': 4 },
     companionIds: ['caldus', 'lyra', 'mara', 'mara', 'mara', 'talla'] as const,
   },
 ] as const)('$chapterId opening catalog', ({ chapterId, scenes, quotas, anchors, journey, companionIds }) => {

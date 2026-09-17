@@ -25,6 +25,7 @@ export interface Chronicle1SceneArtContract {
   readonly title: string;
   readonly chapterId: ChapterId;
   readonly type: ChronicleEventType;
+  readonly alt?: string;
 }
 
 export interface Chronicle1ItemIconContract {
@@ -138,6 +139,25 @@ export function voiceCuesForScene(sceneId: EventId): readonly ChronicleVoiceCue[
 
 const RANK_BANDS = ['1-2', '3-5', '6-8', '9-10'] as const;
 
+const ROAD_ART_ALT: Readonly<Record<string, string>> = deepFreeze({
+  'ch01-road-gloamwood-needle-briar': 'Medicine wagons caught in black thorn vines beneath green forest light.',
+  'ch01-road-gloamwood-riverless-altar': 'Wet footprints lead across a dry riverbed to an altar bearing a hidden water sigil.',
+  'ch01-road-gloamwood-hound-chant': 'Moonlit hounds circle a convoy beneath dark trees while a bell keeper crouches beside a collared hound.',
+  'ch01-road-gloamwood-hidden-beggar': 'A masked courier shelters beneath colossal roots while riders watch from a distant ridge.',
+  'ch02-road-drowned-silent-oars': 'Ghostly oars move across a flooded road without boats or visible boatmen.',
+  'ch02-road-drowned-ink-warden': 'An ink-black armored sentinel stands in rain beside a drowned milestone.',
+  'ch02-road-drowned-watchtower-debt': 'Ledger pages hang from a broken watchtower above a convoy waiting at the flooded toll road.',
+  'ch02-road-drowned-corpse-lantern': 'A figure woven from river corpses carries a cold lantern through reeds beside a floating coffin lid.',
+  'ch02-road-drowned-basin-warden': 'A copper-and-mud guardian blocks the dry walkway through a rusted floodgate chamber.',
+  'ch05-road-embervault-ash-priestess': 'A soot-covered priestess guards a forbidden corridor beside an ember-lit shrine.',
+  'ch05-road-embervault-cinder-drill': 'Soldiers drill beside a forge as sparks illuminate orders concealed behind a roster.',
+  'ch05-road-embervault-scorch-festival': 'Masked dancers surround festival braziers while ambushers move an oil barrel toward the crowded exit.',
+  'ch05-road-embervault-ore-bone-road': 'Pale ore carts cross a road lined with old ribs and warning stakes.',
+  'ch08-road-crownless-sigil-court': 'Floating seals hang above banners and a glowing floor sigil in a ruined court.',
+  'ch08-road-crownless-iron-chime': 'A giant iron bell vibrates without being struck in a windless keep corridor.',
+  'ch08-road-crownless-barnacle-pit': 'Prisoners signal through bars below the barnacle-covered walls of a flooded pit beneath Crownless Keep.',
+});
+
 /** Stable, non-secret media queue. Shipped paths and generation prompts live elsewhere. */
 export const CHRONICLE1_MEDIA_CONTRACT = deepFreeze({
   scenes: SCENES.map((scene): Chronicle1SceneArtContract => ({
@@ -146,6 +166,7 @@ export const CHRONICLE1_MEDIA_CONTRACT = deepFreeze({
     title: scene.title,
     chapterId: scene.chapterId,
     type: scene.type,
+    ...(ROAD_ART_ALT[scene.id] ? { alt: ROAD_ART_ALT[scene.id] } : {}),
   })),
   itemIcons: CHRONICLE1_NEW_ITEMS.map((item): Chronicle1ItemIconContract => ({
     id: item.iconId,

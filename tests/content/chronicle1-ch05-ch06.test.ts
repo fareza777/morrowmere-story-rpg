@@ -73,29 +73,33 @@ describe.each([
   {
     id: 'ch05',
     scenes: CH05_SCENES,
+    total: 47,
+    journeyCount: 21,
     anchors: CH05_ANCHORS,
-    journey: { travel: 4, investigation: 3, 'side-quest': 3, dungeon: 5, 'moral-choice': 2 },
+    journey: { travel: 5, investigation: 4, 'side-quest': 4, dungeon: 5, 'moral-choice': 3 },
     owners: ['caldus', 'caldus', 'caldus', 'caldus', 'lyra', 'lyra', 'lyra', 'mara', 'talla', 'faction:border-council'],
   },
   {
     id: 'ch06',
     scenes: CH06_SCENES,
+    total: 43,
+    journeyCount: 17,
     anchors: CH06_ANCHORS,
     journey: { travel: 5, investigation: 3, 'side-quest': 3, dungeon: 2, 'moral-choice': 4 },
     owners: ['caldus', 'caldus', 'caldus', 'caldus', 'lyra', 'mara', 'rukhar', 'talla', 'faction:greywatch', 'faction:greywatch'],
   },
-] as const)('$id authored catalog', ({ id, scenes, anchors, journey, owners }) => {
-  it('contains the locked 43-scene quota and one-based slots', () => {
-    expect(countTypes(scenes)).toEqual({ main: 7, companion: 10, journey: 17, combat: 6, hub: 3 });
-    expect(scenes.map((scene) => scene.slot)).toEqual(Array.from({ length: 43 }, (_, index) => index + 1));
-    expect(new Set(scenes.map((scene) => scene.id)).size).toBe(43);
+] as const)('$id authored catalog', ({ id, scenes, anchors, journey, owners, total, journeyCount }) => {
+  it('contains the approved scene quota and one-based slots', () => {
+    expect(countTypes(scenes)).toEqual({ main: 7, companion: 10, journey: journeyCount, combat: 6, hub: 3 });
+    expect(scenes.map((scene) => scene.slot)).toEqual(Array.from({ length: total }, (_, index) => index + 1));
+    expect(new Set(scenes.map((scene) => scene.id)).size).toBe(total);
   });
 
   it('keeps canonical anchors and concrete unique art', () => {
     const main = scenes.filter((scene) => scene.type === 'main');
     expect(main.map((scene) => scene.id)).toEqual(anchors);
     expect(main.map((scene) => scene.anchorOrder)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-    expect(new Set(scenes.map((scene) => scene.illustrationId)).size).toBe(43);
+    expect(new Set(scenes.map((scene) => scene.illustrationId)).size).toBe(total);
     for (const scene of scenes) {
       expect(scene.chapterId).toBe(id);
       expect(scene.illustrationId).toBe(`scene-${scene.id}`);
@@ -117,7 +121,7 @@ it('attributes the conspiracy only after the ledger and symmetric weapons', () =
   const weapons = CH05_SCENES.find((scene) => scene.id === 'ch05-main-weapons-for-both-armies');
   const naming = CH05_SCENES.find((scene) => scene.id === 'ch05-main-the-name-severin-voss');
   const escape = CH05_SCENES.find((scene) => scene.id === 'ch05-main-escape-through-the-cinder-shaft');
-  expect([ledger?.slot, weapons?.slot, naming?.slot, escape?.slot]).toEqual([20, 27, 34, 43]);
+  expect([ledger?.slot, weapons?.slot, naming?.slot, escape?.slot]).toEqual([22, 30, 37, 47]);
 
   const copyBeforeNaming = CH05_SCENES
     .filter((scene) => scene.slot < (naming?.slot ?? 0))

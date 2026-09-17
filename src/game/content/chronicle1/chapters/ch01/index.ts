@@ -10,10 +10,16 @@ import { CH01_LIVING_TOLLHOUSE } from './living-tollhouse';
 import { CH01_LIVING_GREYWATCH_APPROACH } from './living-greywatch-approach';
 import { CH01_LIVING_ROAD_ODDITIES } from './living-road-oddities';
 import { CH01_LIVING_SWORD_AND_WARD } from './living-sword-and-ward';
+import { ROAD_TACTICS_SCENES } from './road-tactics';
+import { withRoadSlots } from '../../road-slots';
+
+export { ROAD_TACTICS_SCENES };
 
 export { CH01_COMBAT, CH01_COMPANION, CH01_HUB, CH01_JOURNEY, CH01_MAIN, CH01_LIVING_AMBUSH, CH01_LIVING_DEPARTURE, CH01_LIVING_GREYWATCH_APPROACH, CH01_LIVING_MARA, CH01_LIVING_ROAD_ODDITIES, CH01_LIVING_SWORD_AND_WARD, CH01_LIVING_TOLLHOUSE };
 
 export const CH01_SCENES = Object.freeze(
   [...CH01_MAIN, ...CH01_COMPANION, ...CH01_JOURNEY, ...CH01_COMBAT, ...CH01_HUB, ...CH01_LIVING_DEPARTURE, ...CH01_LIVING_MARA, ...CH01_LIVING_TOLLHOUSE, ...CH01_LIVING_AMBUSH, ...CH01_LIVING_GREYWATCH_APPROACH, ...CH01_LIVING_ROAD_ODDITIES, ...CH01_LIVING_SWORD_AND_WARD]
+    .map(withRoadSlots)
+    .concat(ROAD_TACTICS_SCENES)
     .sort((left, right) => left.slot - right.slot),
 );

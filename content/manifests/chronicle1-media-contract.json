@@ -667,6 +667,38 @@
       "type": "main"
     },
     {
+      "id": "scene-ch01-road-gloamwood-hidden-beggar",
+      "sceneId": "ch01-road-gloamwood-hidden-beggar",
+      "title": "The Beggar Beneath the Root",
+      "chapterId": "ch01",
+      "type": "journey",
+      "alt": "A masked courier shelters beneath colossal roots while riders watch from a distant ridge."
+    },
+    {
+      "id": "scene-ch01-road-gloamwood-hound-chant",
+      "sceneId": "ch01-road-gloamwood-hound-chant",
+      "title": "Hound Chant",
+      "chapterId": "ch01",
+      "type": "journey",
+      "alt": "Moonlit hounds circle a convoy beneath dark trees while a bell keeper crouches beside a collared hound."
+    },
+    {
+      "id": "scene-ch01-road-gloamwood-needle-briar",
+      "sceneId": "ch01-road-gloamwood-needle-briar",
+      "title": "Needle Briar",
+      "chapterId": "ch01",
+      "type": "journey",
+      "alt": "Medicine wagons caught in black thorn vines beneath green forest light."
+    },
+    {
+      "id": "scene-ch01-road-gloamwood-riverless-altar",
+      "sceneId": "ch01-road-gloamwood-riverless-altar",
+      "title": "The Riverless Altar",
+      "chapterId": "ch01",
+      "type": "journey",
+      "alt": "Wet footprints lead across a dry riverbed to an altar bearing a hidden water sigil."
+    },
+    {
       "id": "scene-ch02-combat-blades-in-the-council-passage",
       "sceneId": "ch02-combat-blades-in-the-council-passage",
       "title": "Blades in the Council Passage",
@@ -959,6 +991,46 @@
       "title": "Warning Before Dawn",
       "chapterId": "ch02",
       "type": "main"
+    },
+    {
+      "id": "scene-ch02-road-drowned-basin-warden",
+      "sceneId": "ch02-road-drowned-basin-warden",
+      "title": "The Basin Warden",
+      "chapterId": "ch02",
+      "type": "journey",
+      "alt": "A copper-and-mud guardian blocks the dry walkway through a rusted floodgate chamber."
+    },
+    {
+      "id": "scene-ch02-road-drowned-corpse-lantern",
+      "sceneId": "ch02-road-drowned-corpse-lantern",
+      "title": "Corpse Lantern",
+      "chapterId": "ch02",
+      "type": "journey",
+      "alt": "A figure woven from river corpses carries a cold lantern through reeds beside a floating coffin lid."
+    },
+    {
+      "id": "scene-ch02-road-drowned-ink-warden",
+      "sceneId": "ch02-road-drowned-ink-warden",
+      "title": "The Ink Warden",
+      "chapterId": "ch02",
+      "type": "journey",
+      "alt": "An ink-black armored sentinel stands in rain beside a drowned milestone."
+    },
+    {
+      "id": "scene-ch02-road-drowned-silent-oars",
+      "sceneId": "ch02-road-drowned-silent-oars",
+      "title": "Silent Oars",
+      "chapterId": "ch02",
+      "type": "journey",
+      "alt": "Ghostly oars move across a flooded road without boats or visible boatmen."
+    },
+    {
+      "id": "scene-ch02-road-drowned-watchtower-debt",
+      "sceneId": "ch02-road-drowned-watchtower-debt",
+      "title": "Watchtower Debt",
+      "chapterId": "ch02",
+      "type": "journey",
+      "alt": "Ledger pages hang from a broken watchtower above a convoy waiting at the flooded toll road."
     },
     {
       "id": "scene-ch03-combat-arrows-in-the-flooded-orchard",
@@ -1857,6 +1929,38 @@
       "type": "main"
     },
     {
+      "id": "scene-ch05-road-embervault-ash-priestess",
+      "sceneId": "ch05-road-embervault-ash-priestess",
+      "title": "Ash Priestess",
+      "chapterId": "ch05",
+      "type": "journey",
+      "alt": "A soot-covered priestess guards a forbidden corridor beside an ember-lit shrine."
+    },
+    {
+      "id": "scene-ch05-road-embervault-cinder-drill",
+      "sceneId": "ch05-road-embervault-cinder-drill",
+      "title": "Cinder Drill",
+      "chapterId": "ch05",
+      "type": "journey",
+      "alt": "Soldiers drill beside a forge as sparks illuminate orders concealed behind a roster."
+    },
+    {
+      "id": "scene-ch05-road-embervault-ore-bone-road",
+      "sceneId": "ch05-road-embervault-ore-bone-road",
+      "title": "Ore on the Bone Road",
+      "chapterId": "ch05",
+      "type": "journey",
+      "alt": "Pale ore carts cross a road lined with old ribs and warning stakes."
+    },
+    {
+      "id": "scene-ch05-road-embervault-scorch-festival",
+      "sceneId": "ch05-road-embervault-scorch-festival",
+      "title": "Scorch Festival",
+      "chapterId": "ch05",
+      "type": "journey",
+      "alt": "Masked dancers surround festival braziers while ambushers move an oil barrel toward the crowded exit."
+    },
+    {
       "id": "scene-ch06-combat-jailers-under-the-chapel",
       "sceneId": "ch06-combat-jailers-under-the-chapel",
       "title": "Jailers Under the Chapel",
@@ -2702,6 +2806,30 @@
       "title": "Who Keeps the Crownless Keep",
       "chapterId": "ch08",
       "type": "main"
+    },
+    {
+      "id": "scene-ch08-road-crownless-barnacle-pit",
+      "sceneId": "ch08-road-crownless-barnacle-pit",
+      "title": "The Barnacle Pit",
+      "chapterId": "ch08",
+      "type": "journey",
+      "alt": "Prisoners signal through bars below the barnacle-covered walls of a flooded pit beneath Crownless Keep."
+    },
+    {
+      "id": "scene-ch08-road-crownless-iron-chime",
+      "sceneId": "ch08-road-crownless-iron-chime",
+      "title": "Iron Chime",
+      "chapterId": "ch08",
+      "type": "journey",
+      "alt": "A giant iron bell vibrates without being struck in a windless keep corridor."
+    },
+    {
+      "id": "scene-ch08-road-crownless-sigil-court",
+      "sceneId": "ch08-road-crownless-sigil-court",
+      "title": "The Sigil Court",
+      "chapterId": "ch08",
+      "type": "journey",
+      "alt": "Floating seals hang above banners and a glowing floor sigil in a ruined court."
     }
   ],
   "itemIcons": [

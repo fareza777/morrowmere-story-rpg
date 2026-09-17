@@ -89,9 +89,9 @@ describe.each([
   {
     id: 'ch08',
     scenes: CH08_SCENES,
-    quotas: { main: 7, companion: 7, journey: 15, combat: 6, hub: 3 },
+    quotas: { main: 7, companion: 7, journey: 18, combat: 6, hub: 3 },
     anchors: CH08_ANCHORS,
-    journey: { travel: 6, investigation: 3, 'side-quest': 3, dungeon: 1, 'moral-choice': 2 },
+    journey: { travel: 7, investigation: 4, 'side-quest': 4, dungeon: 1, 'moral-choice': 2 },
     owners: ['talla', 'talla', 'talla', 'caldus', 'lyra', 'lyra', 'lyra'],
   },
 ] as const)('$id finale catalog', ({ id, scenes, quotas, anchors, journey, owners }) => {
@@ -205,7 +205,7 @@ it('reveals the cipher letter only after conflict resolution and custody', () =>
   const letter = CH08_SCENES.findIndex((scene) => scene.id === 'ch08-main-the-letter-in-cipher');
   expect(letter).toBeGreaterThan(resolution);
   expect(letter).toBeGreaterThan(custodian);
-  expect(CH08_SCENES[letter]?.slot).toBe(38);
+  expect(CH08_SCENES[letter]?.slot).toBe(41);
 
   const copy = CH08_SCENES[letter]!.narrative.join(' ');
   expect(copy.toLowerCase()).toContain('the first fracture');
