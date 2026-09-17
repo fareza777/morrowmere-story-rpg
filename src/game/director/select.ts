@@ -134,10 +134,28 @@ function candidatesAtPosition(
   state: DirectorState,
   context: JourneyDirectorContext,
   content: ContentIndex,
+  authoredSceneQueue: readonly AuthoredSceneQueueEntry[],
 ): ChronicleEvent[] {
-  return eligibleScenes(state, context, content).filter((event) =>
+  // Only explicit action affinities can bring a road scene forward. Never cross
+  // an unconsumed anchor, required continuation, or required callback deadline.
+  const requiredIds = new Set(authoredSceneQueue
+    .filter((entry) => entry.requirementMode === 'required').map((entry) => entry.sceneId));
+  const futureRoadBefore = context.roadBias === undefined ? context.position.slot : Math.min(
+    ...[...content.events.values()]
+      .filter((event) => event.chapterId === context.position.chapterId
+        && event.slot !== undefined && event.slot > context.position.slot
+        && (requiredIds.has(event.id) || (event.type === 'main'
+          && !state.usedSceneIds.includes(event.id) && !state.seenEventIds.includes(event.id))))
+      .map((event) => event.slot!),
+    ...state.pendingCallbacks
+      .filter((callback) => callback.status === 'pending' && callback.required
+        && callback.deadline.chapterId === context.position.chapterId
+        && callback.deadline.slot > context.position.slot)
+      .map((callback) => callback.deadline.slot),
+  );
+  return eligibleScenes(state, context, content, futureRoadBefore).filter((event) =>
     event.slot === undefined
-      || event.slot === context.position.slot
+      || event.slot >= context.position.slot
       // A due anchor is never abandoned if a callback occupied its authored slot.
       || event.type === 'main');
 }
@@ -254,7 +272,7 @@ export function selectNextScene(
     return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.', queuePick.queue);
   }
   let selectedContext = context;
-  let picked = pickCandidate(candidatesAtPosition(state, context, content), queuePick.event, callback, state, context, content, random, queuePick.diagnostics.length > 0);
+  let picked = pickCandidate(candidatesAtPosition(state, context, content, queuePick.queue), queuePick.event, callback, state, context, content, random, queuePick.diagnostics.length > 0);
   if (!picked) {
     // Authored slots are chronology markers, not a promise that every route has a scene at every number.
     // Include callback deadlines even when no ordinary scene is authored there.
@@ -268,7 +286,7 @@ export function selectNextScene(
       if (!queuePick.event && dueRequiredCallback(state, futureContext) && !futureCallback) {
         return terminalStep(state, 'precondition', 'A required story callback cannot be delivered before its deadline.', queuePick.queue);
       }
-      const futureEligible = candidatesAtPosition(state, futureContext, content);
+      const futureEligible = candidatesAtPosition(state, futureContext, content, queuePick.queue);
       picked = pickCandidate(futureEligible, queuePick.event, futureCallback, state, futureContext, content, random, queuePick.diagnostics.length > 0);
       if (picked) {
         selectedContext = futureContext;

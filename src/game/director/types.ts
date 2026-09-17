@@ -55,7 +55,7 @@ export interface JourneyDirectorContext {
   readonly bankedGold?: number;
   readonly unbankedGold?: number;
   readonly inventory?: InventoryState;
-  /** One-leg travel preference; it only affects weights among paced candidates. */
+  /** One-leg preference: weights paced candidates and opens matching journeys up to the next required story boundary. */
   readonly roadBias?: RoadBias;
 }
 

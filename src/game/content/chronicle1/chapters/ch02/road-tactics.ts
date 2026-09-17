@@ -10,6 +10,7 @@ const COMMON = {
 export const ROAD_TACTICS_SCENES = Object.freeze([
   defineScene({
     ...COMMON, id: 'ch02-road-drowned-silent-oars', slot: 5,
+    roadAffinities: ['scout', 'talla'],
     journeySubtype: 'travel', family: 'road-silent-oars', pacing: 'quiet',
     illustrationId: 'scene-ch02-road-drowned-silent-oars', title: 'Silent Oars',
     narrative: [
@@ -28,6 +29,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch02-road-drowned-ink-warden', slot: 12,
+    roadAffinities: ['scout', 'lyra'],
     journeySubtype: 'investigation', family: 'road-ink-warden', pacing: 'quiet',
     illustrationId: 'scene-ch02-road-drowned-ink-warden', title: 'The Ink Warden',
     narrative: [
@@ -46,6 +48,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch02-road-drowned-watchtower-debt', slot: 23,
+    roadAffinities: ['press-on', 'rukhar'],
     journeySubtype: 'moral-choice', family: 'road-watchtower-debt', pacing: 'danger',
     illustrationId: 'scene-ch02-road-drowned-watchtower-debt', title: 'Watchtower Debt',
     narrative: [
@@ -64,6 +67,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch02-road-drowned-corpse-lantern', slot: 33,
+    roadAffinities: ['make-camp', 'caldus'],
     journeySubtype: 'investigation', family: 'road-corpse-lantern', pacing: 'recovery',
     eligibility: { ...COMMON.eligibility, routes: ['old-forest', 'ruined-pass'] },
     illustrationId: 'scene-ch02-road-drowned-corpse-lantern', title: 'Corpse Lantern',
@@ -83,6 +87,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch02-road-drowned-basin-warden', slot: 41,
+    roadAffinities: ['press-on', 'rukhar'],
     journeySubtype: 'dungeon', family: 'road-basin-warden', pacing: 'danger',
     illustrationId: 'scene-ch02-road-drowned-basin-warden', title: 'The Basin Warden',
     narrative: [

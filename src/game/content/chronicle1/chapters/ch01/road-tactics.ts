@@ -9,6 +9,7 @@ const COMMON = {
 export const ROAD_TACTICS_SCENES = Object.freeze([
   defineScene({
     ...COMMON, id: 'ch01-road-gloamwood-needle-briar', slot: 7,
+    roadAffinities: ['press-on', 'rukhar'],
     journeySubtype: 'travel', family: 'road-needle-briar', pacing: 'danger',
     illustrationId: 'scene-ch01-road-gloamwood-needle-briar', title: 'Needle Briar',
     narrative: [
@@ -27,6 +28,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch01-road-gloamwood-riverless-altar', slot: 26,
+    roadAffinities: ['scout', 'lyra'],
     journeySubtype: 'investigation', family: 'road-riverless-altar', pacing: 'quiet',
     eligibility: { ...COMMON.eligibility, routes: ['old-forest', 'ruined-pass'] },
     illustrationId: 'scene-ch01-road-gloamwood-riverless-altar', title: 'The Riverless Altar',
@@ -46,6 +48,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch01-road-gloamwood-hound-chant', slot: 58,
+    roadAffinities: ['press-on', 'rukhar'],
     journeySubtype: 'moral-choice', family: 'road-hound-chant', pacing: 'danger',
     illustrationId: 'scene-ch01-road-gloamwood-hound-chant', title: 'Hound Chant',
     narrative: [
@@ -64,6 +67,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch01-road-gloamwood-hidden-beggar', slot: 88,
+    roadAffinities: ['make-camp', 'caldus', 'talla'],
     journeySubtype: 'side-quest', family: 'road-hidden-beggar', pacing: 'recovery',
     illustrationId: 'scene-ch01-road-gloamwood-hidden-beggar', title: 'The Beggar Beneath the Root',
     narrative: [

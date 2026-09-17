@@ -120,6 +120,7 @@ export function eligibleScenes(
   state: DirectorState,
   context: JourneyDirectorContext,
   content: ContentIndex,
+  futureRoadBefore = context.position.slot,
 ): ChronicleEvent[] {
   const used = new Set<EventId>(state.usedSceneIds);
   const reservedCallbacks = new Set(
@@ -140,7 +141,9 @@ export function eligibleScenes(
   } satisfies ChoiceAvailabilityContext;
   return [...content.events.values()]
     .filter((event) => event.chapterId === context.position.chapterId)
-    .filter((event) => event.slot === undefined || event.slot <= context.position.slot)
+    .filter((event) => event.slot === undefined || event.slot <= context.position.slot
+      || (event.type === 'journey' && event.slot < futureRoadBefore
+        && context.roadBias !== undefined && event.roadAffinities?.includes(context.roadBias)))
     .filter((event) => !used.has(event.id))
     .filter((event) => !event.oneShot || !state.seenEventIds.includes(event.id))
     .filter((event) => !reservedCallbacks.has(event.id))

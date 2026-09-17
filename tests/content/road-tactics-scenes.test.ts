@@ -7,6 +7,8 @@ import {
 } from '../../src/game/content/chronicle1';
 import { chronicle1ChoiceEffects } from '../../src/game/content/schema';
 import { validateContent } from '../../src/game/content/validate';
+import type { ChoiceId } from '../../src/game/domain/ids';
+import { createCampaign, reduceGame } from '../../src/game/state';
 
 const ROAD_SCENES = [
   ['ch01-road-gloamwood-needle-briar', 7],
@@ -49,6 +51,9 @@ describe('Road Tactics authored scenes', () => {
     expect(slot).toBeLessThan(anchors.at(-1)!.slot);
     expect(scene.eligibility.routes?.length).toBeGreaterThan(0);
     expect(scene.pacing).toBeDefined();
+    expect(scene.roadAffinities?.length ?? 0).toBeGreaterThan(0);
+    expect(CHRONICLE1_MEDIA_CONTRACT.scenes.find((art) => art.sceneId === id)?.alt?.trim().length)
+      .toBeGreaterThan(0);
     expect(scene.choices.some((choice) => choice.check !== undefined)).toBe(true);
     // An ungated, noncombat choice remains usable when carried gold and items are exhausted.
     expect(scene.choices.some((choice) => !choice.check && !choice.requirements?.length
@@ -78,5 +83,51 @@ describe('Road Tactics authored scenes', () => {
       .find((choice) => choice.id === 'ch01-choice-accept-tallas-secret-bargain')!;
     expect(chronicle1ChoiceEffects(bargain).find((effect) => effect.type === 'callback'))
       .toMatchObject({ promise: { deadline: { chapterId: 'ch02', slot: 35 } } });
+  });
+
+  it.each([
+    ['ch01-road-gloamwood-needle-briar', 'ch01-road-needle-cut',
+      { health: 30, resource: 6, threat: 3, xp: 12, loot: [] },
+      { health: 27, resource: 5, threat: 5, xp: 0, loot: [] }],
+    ['ch02-road-drowned-silent-oars', 'ch02-road-oars-cross',
+      { health: 30, resource: 6, threat: 4, xp: 0, loot: ['consumable-field-bandage'] },
+      { health: 30, resource: 4, threat: 5, xp: 0, loot: [] }],
+  ] as const)('resolves only the selected checked branch of %s at runtime', (id, choiceId, success, failure) => {
+    const scene = CHRONICLE1_SCENES.find((candidate) => candidate.id === id)!;
+    const choice = scene.choices.find((candidate) => candidate.id === choiceId)!;
+    const found = new Set<string>();
+    // Exercise real deterministic rolls without replacing the authored check or mocking RNG.
+    for (let seed = 1; seed <= 64 && found.size < 2; seed += 1) {
+      const created = createCampaign({ heroClass: 'warrior', seed, updatedAt: '2026-09-17T00:00:00Z' }, CHRONICLE1_CONTENT);
+      const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-09-17T00:01:00Z' }, CHRONICLE1_CONTENT).state;
+      const initial = {
+        ...started,
+        campaign: { ...started.campaign, chapterId: scene.chapterId },
+        flow: { ...started.flow, screen: 'story' as const },
+        expedition: { ...started.expedition!, currentSceneId: scene.id,
+          position: { chapterId: scene.chapterId, slot: scene.slot },
+          sceneVisitCounts: { [scene.id]: 1 }, heroVitals: { health: 30, resource: 6 },
+          director: { ...started.expedition!.director, threat: 5 },
+        },
+      };
+      const command = { type: 'resolve-choice' as const, eventId: scene.id, choiceId: choiceId as ChoiceId, updatedAt: '2026-09-17T00:02:00Z' };
+      const result = reduceGame(initial, command, CHRONICLE1_CONTENT);
+      expect(result.diagnostic).toBeUndefined();
+      const resolution = result.state.expedition!.sceneResolution!;
+      const branch = resolution.resultKind.endsWith('success') ? 'success' : 'failure';
+      found.add(branch);
+      const expected = branch === 'success' ? success : failure;
+      expect(resolution.outcome).toBe(choice.check![branch].outcome);
+      expect(resolution.outcome).not.toBe(choice.check![branch === 'success' ? 'failure' : 'success'].outcome);
+      expect(result.state.expedition!.heroVitals).toEqual({ health: expected.health, resource: expected.resource });
+      expect(result.state.expedition!.director.threat).toBe(expected.threat);
+      expect(result.state.campaign.hero.xp).toBe(expected.xp);
+      expect(result.state.expedition!.unbankedLoot).toEqual(expected.loot);
+      expect(result.state.expedition!.currentCombat).toBeNull();
+      const duplicate = reduceGame(result.state, command, CHRONICLE1_CONTENT);
+      expect(duplicate.diagnostic?.code).toBe('choice_resolved');
+      expect(duplicate.state).toBe(result.state);
+    }
+    expect([...found].sort()).toEqual(['failure', 'success']);
   });
 });

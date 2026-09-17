@@ -9,6 +9,7 @@ const COMMON = {
 export const ROAD_TACTICS_SCENES = Object.freeze([
   defineScene({
     ...COMMON, id: 'ch05-road-embervault-ash-priestess', slot: 20,
+    roadAffinities: ['make-camp', 'caldus'],
     journeySubtype: 'side-quest', family: 'road-ash-priestess', pacing: 'recovery',
     illustrationId: 'scene-ch05-road-embervault-ash-priestess', title: 'Ash Priestess',
     narrative: [
@@ -27,6 +28,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch05-road-embervault-cinder-drill', slot: 15,
+    roadAffinities: ['scout', 'mara', 'lyra'],
     journeySubtype: 'investigation', family: 'road-cinder-drill', pacing: 'quiet',
     illustrationId: 'scene-ch05-road-embervault-cinder-drill', title: 'Cinder Drill',
     narrative: [
@@ -45,6 +47,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch05-road-embervault-scorch-festival', slot: 26,
+    roadAffinities: ['press-on', 'rukhar'],
     journeySubtype: 'moral-choice', family: 'road-scorch-festival', pacing: 'danger',
     illustrationId: 'scene-ch05-road-embervault-scorch-festival', title: 'Scorch Festival',
     narrative: [
@@ -63,6 +66,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch05-road-embervault-ore-bone-road', slot: 40,
+    roadAffinities: ['press-on', 'talla'],
     journeySubtype: 'travel', family: 'road-ore-bone-road', pacing: 'danger',
     eligibility: { ...COMMON.eligibility, routes: ['kings-road', 'ruined-pass'] },
     illustrationId: 'scene-ch05-road-embervault-ore-bone-road', title: 'Ore on the Bone Road',

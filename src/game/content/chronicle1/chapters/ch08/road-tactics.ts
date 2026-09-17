@@ -9,6 +9,7 @@ const COMMON = {
 export const ROAD_TACTICS_SCENES = Object.freeze([
   defineScene({
     ...COMMON, id: 'ch08-road-crownless-sigil-court', slot: 5,
+    roadAffinities: ['scout', 'lyra'],
     journeySubtype: 'investigation', family: 'road-sigil-court', pacing: 'quiet',
     illustrationId: 'scene-ch08-road-crownless-sigil-court', title: 'The Sigil Court',
     narrative: [
@@ -27,6 +28,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch08-road-crownless-iron-chime', slot: 18,
+    roadAffinities: ['press-on', 'mara'],
     journeySubtype: 'travel', family: 'road-iron-chime', pacing: 'danger',
     illustrationId: 'scene-ch08-road-crownless-iron-chime', title: 'Iron Chime',
     narrative: [
@@ -45,6 +47,7 @@ export const ROAD_TACTICS_SCENES = Object.freeze([
   }),
   defineScene({
     ...COMMON, id: 'ch08-road-crownless-barnacle-pit', slot: 26,
+    roadAffinities: ['press-on', 'caldus', 'talla'],
     journeySubtype: 'side-quest', family: 'road-barnacle-pit', pacing: 'danger',
     illustrationId: 'scene-ch08-road-crownless-barnacle-pit', title: 'The Barnacle Pit',
     narrative: [

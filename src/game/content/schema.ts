@@ -1,5 +1,5 @@
 import type { GameEffect } from "../domain/effects";
-import type { RouteProfileId } from "../director/types";
+import type { RoadBias, RouteProfileId } from "../director/types";
 import type {
   CallbackId,
   ChapterId,
@@ -141,6 +141,8 @@ export interface ChronicleEvent {
   readonly anchorOrder?: number;
   readonly weight?: number;
   readonly pacing?: EventPacing;
+  /** Matching road actions may draw this journey forward within the next story boundary. */
+  readonly roadAffinities?: readonly RoadBias[];
   readonly threatChange?: number;
   readonly tensionChange?: number;
   readonly illustrationId: string;
@@ -445,6 +447,7 @@ export interface Chronicle1EventSource {
   readonly anchorOrder?: number;
   readonly weight: number;
   readonly pacing?: EventPacing;
+  readonly roadAffinities?: readonly RoadBias[];
   readonly threatChange?: number;
   readonly tensionChange?: number;
   readonly journeySubtype?: JourneySubtype;
