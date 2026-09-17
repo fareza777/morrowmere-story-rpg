@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CHRONICLE1_ENCOUNTERS } from '../../src/game/content/chronicle1/enemies';
 
-describe('Chapter 1 living encounter packets 1 through 9', () => {
-  it('adds the exact 27 early-road scenes and their two new encounters', () => {
+describe('Chapter 1 living encounter packets 1 through 18', () => {
+  it('adds the exact 54 early-road scenes and their two new encounters', () => {
     const living = CH01_SCENES.filter((scene) => scene.id.startsWith('ch01-living-'));
-    expect(living).toHaveLength(27);
-    expect(CH01_SCENES).toHaveLength(68);
+    expect(living).toHaveLength(54);
+    expect(CH01_SCENES).toHaveLength(99);
     expect(CHRONICLE1_ENCOUNTERS.filter((encounter) => encounter.id.startsWith('enc-ch01-'))).toContainEqual(
       expect.objectContaining({ id: 'enc-ch01-verge-signalers', reward: expect.objectContaining({ xp: 34, gold: 16 }) }),
     );

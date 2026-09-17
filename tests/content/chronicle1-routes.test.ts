@@ -269,7 +269,7 @@ describe('Chronicle I route audit', () => {
     })));
   });
 
-  it('selects the first authored anchor from a fresh runtime expedition', () => {
+  it('selects the first authored anchor after a real travel action', () => {
     const created = createCampaign({
       heroClass: 'warrior',
       seed: 17,
@@ -284,7 +284,8 @@ describe('Chronicle I route audit', () => {
 
     expect(started.state.expedition?.position.slot).toBe(1);
     const selected = reduceGame(started.state, {
-      type: 'select-next-scene',
+      type: 'travel-action',
+      action: 'press-on',
       updatedAt: '2026-08-31T00:02:00.000Z',
     }, CHRONICLE1_CONTENT);
 
