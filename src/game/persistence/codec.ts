@@ -633,6 +633,11 @@ function normalizePreDialogueV3(value: unknown): { readonly candidate: unknown; 
   return { candidate: { ...value, expedition: { ...value.expedition, dialogueBeatIndex: 0 } }, normalized: true };
 }
 
+function normalizeEmptyStoryV3(value: unknown): { readonly candidate: unknown; readonly normalized: boolean } {
+  if (!record(value) || value.schemaVersion !== 3 || !record(value.flow) || value.flow.screen !== 'story' || value.flow.merchant !== null || !record(value.expedition) || value.expedition.currentSceneId !== null || value.expedition.currentCombat !== null || value.expedition.pendingReward !== null) return { candidate: value, normalized: false };
+  return { candidate: { ...value, flow: { ...value.flow, screen: 'travel' } }, normalized: true };
+}
+
 export interface DecodedSaveState {
   readonly state: GameStateV2;
   readonly diagnostics: readonly string[];
@@ -641,8 +646,9 @@ export interface DecodedSaveState {
 
 export function decodeSaveStateWithDiagnostics(value: unknown, content: ContentIndex): DecodedSaveState | null {
   const migrated = isSaveStateV2Dto(value) ? migrateSaveV2(value, content) : null;
-  const normalized = migrated ? { candidate: migrated.state, normalized: false } : normalizePreDialogueV3(value);
-  const candidate = normalized.candidate;
+  const preDialogue = migrated ? { candidate: migrated.state, normalized: false } : normalizePreDialogueV3(value);
+  const emptyStory = migrated ? { candidate: preDialogue.candidate, normalized: false } : normalizeEmptyStoryV3(preDialogue.candidate);
+  const candidate = emptyStory.candidate;
   if (!isSaveStateDto(candidate)) return null;
   const validQueue = candidate.expedition?.authoredSceneQueue.filter((entry) => content.events.has(entry.sceneId as never)) ?? [];
   const removed = (candidate.expedition?.authoredSceneQueue.length ?? 0) - validQueue.length;
@@ -656,7 +662,7 @@ export function decodeSaveStateWithDiagnostics(value: unknown, content: ContentI
   const expedition = decodedExpedition?.expedition ?? null;
   const adPacing = sanitized.adPacing ?? initialAdPacingState();
   const state: GameStateV2 = { schemaVersion: 3, profile: decodeProfile(sanitized.profile), campaign, expedition, adPacing: { ...adPacing, claimedRewardOfferIds: [...adPacing.claimedRewardOfferIds] }, checkpoints: { chapter: { campaign: decodeCampaignCheckpoint(sanitized.checkpoints.chapter.campaign), enteredAt: sanitized.checkpoints.chapter.enteredAt }, camp: sanitized.checkpoints.camp === null ? null : { campaign: decodeCampaignCheckpoint(sanitized.checkpoints.camp.campaign), campSceneId: sanitized.checkpoints.camp.campSceneId as never, savedAt: sanitized.checkpoints.camp.savedAt } }, flow: { screen: sanitized.flow.screen, overlay: sanitized.flow.overlay, merchant: sanitized.flow.merchant === null ? null : { merchantId: sanitized.flow.merchant.merchantId as never, restockKey: sanitized.flow.merchant.restockKey, returnScreen: sanitized.flow.merchant.returnScreen } }, updatedAt: sanitized.updatedAt };
-  const diagnostics = [...(migrated?.diagnostics ?? []), ...(normalized.normalized ? ['Restored dialogue progress at the first beat for this v3 save.'] : []), ...(decodedExpedition?.dialogueRecovered ? ['Adjusted dialogue progress to the current scene.'] : []), ...(removed > 0 && !migrated ? [`Removed ${removed} unavailable authored scene ${removed === 1 ? 'entry' : 'entries'} while recovering the save.`] : [])];
+  const diagnostics = [...(migrated?.diagnostics ?? []), ...(preDialogue.normalized ? ['Restored dialogue progress at the first beat for this v3 save.'] : []), ...(emptyStory.normalized ? ['Restored an empty story save to travel.'] : []), ...(decodedExpedition?.dialogueRecovered ? ['Adjusted dialogue progress to the current scene.'] : []), ...(removed > 0 && !migrated ? [`Removed ${removed} unavailable authored scene ${removed === 1 ? 'entry' : 'entries'} while recovering the save.`] : [])];
   return { state, diagnostics, migrated: Boolean(migrated) };
 }
 

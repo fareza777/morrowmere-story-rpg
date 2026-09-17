@@ -25,6 +25,7 @@ class MemoryStorage implements Storage {
 const content = makeContentIndex();
 const state = () => createCampaign({ heroClass: 'mage', name: 'Aster', seed: 99, updatedAt: '2026-08-31T00:00:00.000Z' }, content);
 const persistedExpeditionDefaults = {
+  dialogueBeatIndex: 0,
   sceneResolution: null,
   authoredSceneQueue: [],
   sceneVisitCounts: {},
@@ -126,7 +127,7 @@ function legacyRewardFixture() {
 
   const created = createCampaign({ heroClass: 'warrior', name: 'Mira', seed: 2, updatedAt: '2026-08-31T12:00:00.000Z' }, localContent);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T12:01:00.000Z' }, localContent).state;
-  const selected = reduceGame(started, { type: 'select-next-scene', updatedAt: '2026-08-31T12:02:00.000Z' }, localContent).state;
+  const selected = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T12:02:00.000Z' }, localContent).state;
   const combat = reduceGame(selected, { type: 'resolve-choice', eventId: 'legacy-reward-fight' as never, choiceId: 'legacy-fight-choice' as never, updatedAt: '2026-08-31T12:03:00.000Z' }, localContent).state;
   const won = reduceGame(combat, { type: 'combat-turn', commandId: 'legacy-victory', action: { type: 'attack' }, updatedAt: '2026-08-31T12:04:00.000Z' }, localContent).state;
   if (won.flow.screen !== 'reward' || !won.expedition?.pendingReward) throw new Error('Expected a legacy reward fixture.');

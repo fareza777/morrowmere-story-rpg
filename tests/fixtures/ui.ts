@@ -314,7 +314,7 @@ export function makeUiGame(options: UiGameOptions = {}): GameStateV2 {
     enemyIntents,
     intentText: enemyIntents[0]!.text,
   };
-  const currentSceneId = screen === 'merchant' ? MERCHANT_EVENT.id : STORY_EVENT.id;
+  const currentSceneId = screen === 'merchant' ? MERCHANT_EVENT.id : screen === 'travel' ? null : STORY_EVENT.id;
   const visit = {
     merchantId: ROAD_TRADER.id,
     restockKey: 'ch01-road-trader',

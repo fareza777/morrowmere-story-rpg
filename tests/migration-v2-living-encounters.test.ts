@@ -124,6 +124,7 @@ function atScene(sceneId: EventId, content: ContentIndex) {
       director: { ...started.expedition!.director, usedSceneIds: [sceneId], seenEventIds: [sceneId] },
       position: { chapterId: 'ch01' as const, slot: 2 },
     },
+    flow: { ...started.flow, screen: 'story' as const },
   };
 }
 
@@ -131,6 +132,7 @@ function asV2Dto(encoded: NonNullable<ReturnType<typeof encodeSaveState>>) {
   const value = structuredClone(encoded) as any;
   value.schemaVersion = 2;
   if (value.expedition) {
+    delete value.expedition.dialogueBeatIndex;
     delete value.expedition.sceneVisitCounts;
     delete value.expedition.checkedAttempts;
   }
@@ -299,7 +301,7 @@ describe('schema-v2 living encounter migration', () => {
       { type: 'start-expedition', updatedAt: at(1) },
       content,
     ).state;
-    const firstScene = reduceGame(started, { type: 'select-next-scene', updatedAt: at(2) }, content).state;
+    const firstScene = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, content).state;
     const first = reduceGame(firstScene, {
       type: 'resolve-choice', eventId: checked.id, choiceId: asChoice('test-the-lock'), updatedAt: at(3),
     }, content).state;
@@ -309,8 +311,9 @@ describe('schema-v2 living encounter migration', () => {
         ...first.expedition!, currentSceneId: null, sceneResolution: null,
         director: { ...first.expedition!.director, usedSceneIds: [] },
       },
+      flow: { ...first.flow, screen: 'travel' as const },
     };
-    const secondScene = reduceGame(readyToRevisit, { type: 'select-next-scene', updatedAt: at(4) }, content).state;
+    const secondScene = reduceGame(readyToRevisit, { type: 'travel-action', action: 'press-on', updatedAt: at(4) }, content).state;
     const second = reduceGame(secondScene, {
       type: 'resolve-choice', eventId: checked.id, choiceId: asChoice('test-the-lock'), updatedAt: at(5),
     }, content).state;
