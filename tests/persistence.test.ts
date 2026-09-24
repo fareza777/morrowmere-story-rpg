@@ -41,11 +41,11 @@ describe('local persistence', () => {
     expect(loadGame(3)).toEqual({ ok: false, reason: 'empty' });
   });
 
-  it('encodes current campaign saves as schema v3', () => {
+  it('encodes current campaign saves as schema v4', () => {
     const content = makeContentIndex();
     const state = createCampaign({ heroClass: 'warden', seed: 12, updatedAt: '2026-09-01T00:00:00.000Z' }, content);
 
-    expect(encodeSaveState(state, content)?.schemaVersion).toBe(3);
-    expect(state.schemaVersion).toBe(3);
+    expect(encodeSaveState(state, content)?.schemaVersion).toBe(4);
+    expect(state.schemaVersion).toBe(4);
   });
 });

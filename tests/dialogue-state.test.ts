@@ -111,7 +111,10 @@ describe('cinematic dialogue state', () => {
     const index = content();
     const encoded = encodeSaveState(atDialogueScene(index), index)!;
     const legacyV3 = JSON.parse(JSON.stringify(encoded)) as { expedition: Record<string, unknown> };
+    (legacyV3 as any).schemaVersion = 3;
     delete legacyV3.expedition.dialogueBeatIndex;
+    delete legacyV3.expedition.dungeonRun;
+    delete legacyV3.expedition.pendingRouteJunctionId;
 
     expect(decodeSaveState(legacyV3, index)?.expedition?.dialogueBeatIndex).toBe(0);
   });

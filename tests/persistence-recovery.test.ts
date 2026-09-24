@@ -131,8 +131,44 @@ function legacyRewardFixture() {
   const combat = reduceGame(selected, { type: 'resolve-choice', eventId: 'legacy-reward-fight' as never, choiceId: 'legacy-fight-choice' as never, updatedAt: '2026-08-31T12:03:00.000Z' }, localContent).state;
   const won = reduceGame(combat, { type: 'combat-turn', commandId: 'legacy-victory', action: { type: 'attack' }, updatedAt: '2026-08-31T12:04:00.000Z' }, localContent).state;
   if (won.flow.screen !== 'reward' || !won.expedition?.pendingReward) throw new Error('Expected a legacy reward fixture.');
-  return { content: localContent, state: won };
+  return { content: localContent, state: won, combat };
 }
+
+function signedV3(slot: 1 | 2 | 3, state: unknown): string {
+  const unsigned = { schemaVersion: 3, slot, savedAt: '2026-08-31T12:04:00.000Z', state };
+  return JSON.stringify({ ...unsigned, checksum: checksumFor(unsigned) });
+}
+
+describe('v3 envelope migration', () => {
+  it('resumes story, combat, reward, and merchant at the saved screen and rewrites v4', () => {
+    const merchant = catalogState();
+    const reward = legacyRewardFixture();
+    const story = { ...merchant.value, flow: { ...merchant.value.flow, screen: 'story' as const, merchant: null } };
+    for (const [screen, game, index] of [
+      ['story', story, merchant.content],
+      ['merchant', merchant.value, merchant.content],
+      ['combat', reward.combat, reward.content],
+      ['reward', reward.state, reward.content],
+    ] as const) {
+      const encoded = encodeSaveState(game, index);
+      if (!encoded?.expedition) throw new Error(`Expected ${screen} fixture`);
+      const legacy = structuredClone(encoded) as any;
+      legacy.schemaVersion = 3;
+      delete legacy.expedition.dungeonRun;
+      delete legacy.expedition.pendingRouteJunctionId;
+      const storage = new MemoryStorage();
+      storage.setItem(saveActiveKey(1), signedV3(1, legacy));
+      const loaded = createSaveRepository(storage, () => '2026-08-31T12:05:00.000Z', index).loadSlot(1);
+      expect(loaded).toMatchObject({ ok: true, source: 'migrated', state: { flow: { screen }, expedition: { dungeonRun: null, pendingRouteJunctionId: null } } });
+      if (!loaded.ok) continue;
+      expect(loaded.state.campaign.inventory).toEqual(game.campaign.inventory);
+      expect(loaded.state.expedition?.pendingReward).toEqual(game.expedition?.pendingReward);
+      expect(loaded.state.expedition?.unbankedGold).toBe(game.expedition?.unbankedGold);
+      expect(loaded.state.expedition?.position).toEqual(game.expedition?.position);
+      expect(JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}').schemaVersion).toBe(4);
+    }
+  });
+});
 
 describe('V2 save recovery', () => {
   it('isolates all three slots and returns an English summary', () => {

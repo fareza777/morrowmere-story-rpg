@@ -81,18 +81,18 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       const backup = backupDecoded?.state ?? null;
       if (backupRaw !== null && !backup) { const key = archive(slot, 'backup', backupRaw); if (key) recoveryKeys.push(key); }
       if (active && activeEnvelope) {
-        const recovered = activeEnvelope.schemaVersion === 2 || (activeDecoded?.diagnostics.length ?? 0) > 0;
+        const recovered = activeEnvelope.schemaVersion < 4 || (activeDecoded?.diagnostics.length ?? 0) > 0;
         if (recovered) this.saveSlot(slot, active);
         return {
           ok: true,
           state: active,
-          source: activeEnvelope.schemaVersion === 2 ? 'migrated' : 'active',
+          source: activeEnvelope.schemaVersion < 4 ? 'migrated' : 'active',
           summary: summary(activeEnvelope),
           ...(recovered ? { notice: activeDecoded?.diagnostics.join(' ') || 'Your save was upgraded to the current format.' } : {}),
         };
       }
       if (backup && backupEnvelope) {
-        const recovered = backupEnvelope.schemaVersion === 2 || (backupDecoded?.diagnostics.length ?? 0) > 0;
+        const recovered = backupEnvelope.schemaVersion < 4 || (backupDecoded?.diagnostics.length ?? 0) > 0;
         try {
           if (recovered) this.saveSlot(slot, backup);
           else storage.setItem(saveActiveKey(slot), backupRaw!);
@@ -127,7 +127,7 @@ export function createSaveRepository(storage: Storage, clock: () => string, cont
       const target = createSaveEnvelope(slot, encoded, clock());
       const written = saveEnvelope(slot, target);
       if (!written.ok) return { ok: false, reason: 'corrupt', error: written.error };
-      return { ok: true, state, source: incoming?.schemaVersion === 2 ? 'migrated' : 'active', summary: summary(target), ...(decoded && decoded.diagnostics.length > 0 ? { notice: decoded.diagnostics.join(' ') } : {}) };
+      return { ok: true, state, source: incoming.schemaVersion < 4 ? 'migrated' : 'active', summary: summary(target), ...(decoded && decoded.diagnostics.length > 0 ? { notice: decoded.diagnostics.join(' ') } : {}) };
     },
     saveProfile(profile) {
       if (!isProfileState(profile) || !isContentBackedProfile(profile, content)) return { ok: false, error: 'Invalid profile.' };

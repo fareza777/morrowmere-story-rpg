@@ -2,6 +2,7 @@ import type { AdPacingState, ProfileState } from '../state/types';
 import { PACK_CAPACITY } from '../inventory';
 import { isTalentForClass, LEVEL_CAP } from '../progression';
 import { checksumFor } from './checksum';
+import type { DungeonRunState } from '../dungeon/types';
 
 export interface InventoryEntryDto { readonly id: string; readonly itemId: string; readonly quantity: number; }
 export interface InventoryDto { readonly pack: readonly InventoryEntryDto[]; readonly stash: readonly InventoryEntryDto[]; readonly questItems: readonly string[]; readonly equipment: { readonly weapon: string | null; readonly armor: string | null; readonly charms: readonly string[] }; }
@@ -49,14 +50,17 @@ export interface AuthoredSceneQueueEntryDto { readonly sceneId: string; readonly
 export type TravelActionDto = 'scout' | 'press-on' | 'make-camp' | 'companion';
 interface ExpeditionBaseDto { readonly routeProfile: 'kings-road' | 'old-forest' | 'ruined-pass'; readonly routeSeed: number; readonly director: DirectorDto; readonly position: { readonly chapterId: string; readonly slot: number }; readonly currentSceneId: string | null; readonly authoredSceneQueue: readonly AuthoredSceneQueueEntryDto[]; readonly heroVitals: { readonly health: number; readonly resource: number }; readonly currentCombat: { readonly encounterId: string; readonly combat: CombatDto | null } | null; readonly pendingReward: PendingBattleRewardDto | null; readonly unbankedGold: number; readonly unbankedLoot: readonly string[]; readonly temporaryBoons: readonly string[]; readonly merchantVisits: readonly MerchantVisitDto[]; }
 export interface ExpeditionV2Dto extends Omit<ExpeditionBaseDto, 'authoredSceneQueue'> { readonly sceneResolution: LegacySceneResolutionDto | null; readonly authoredSceneQueue?: readonly AuthoredSceneQueueEntryDto[]; }
-export interface ExpeditionDto extends ExpeditionBaseDto { readonly dialogueBeatIndex: number; readonly sceneResolution: SceneResolutionDto | null; readonly sceneVisitCounts: Readonly<Record<string, number>>; readonly checkedAttempts: readonly CheckedAttemptDto[]; readonly lastTravelAction: TravelActionDto | null; }
+export interface ExpeditionV3Dto extends ExpeditionBaseDto { readonly dialogueBeatIndex: number; readonly sceneResolution: SceneResolutionDto | null; readonly sceneVisitCounts: Readonly<Record<string, number>>; readonly checkedAttempts: readonly CheckedAttemptDto[]; readonly lastTravelAction: TravelActionDto | null; }
+export interface ExpeditionDto extends ExpeditionV3Dto { readonly dungeonRun: DungeonRunState | null; readonly pendingRouteJunctionId: string | null; }
 interface SaveStateBaseDto { readonly profile: ProfileDto; readonly campaign: CampaignDto; readonly adPacing?: AdPacingState; readonly checkpoints: { readonly chapter: { readonly campaign: CampaignCheckpointDto; readonly enteredAt: string }; readonly camp: { readonly campaign: CampaignCheckpointDto; readonly campSceneId: string | null; readonly savedAt: string } | null }; readonly flow: { readonly screen: 'camp' | 'travel' | 'story' | 'combat' | 'reward' | 'merchant' | 'defeat' | 'ending'; readonly overlay: 'inventory' | 'chronicle' | 'bestiary' | 'settings' | null; readonly merchant: { readonly merchantId: string; readonly restockKey: string; readonly returnScreen: 'camp' | 'story' } | null }; readonly updatedAt: string; }
 export interface SaveStateV2Dto extends SaveStateBaseDto { readonly schemaVersion: 2; readonly expedition: ExpeditionV2Dto | null; }
-export interface SaveStateDto extends SaveStateBaseDto { readonly schemaVersion: 3; readonly expedition: ExpeditionDto | null; }
+export interface SaveStateV3Dto extends SaveStateBaseDto { readonly schemaVersion: 3; readonly expedition: ExpeditionV3Dto | null; }
+export interface SaveStateDto extends SaveStateBaseDto { readonly schemaVersion: 4; readonly expedition: ExpeditionDto | null; }
 
 export interface SaveEnvelopeV2 { readonly schemaVersion: 2; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateV2Dto; readonly checksum: string; }
-export interface SaveEnvelopeV3 { readonly schemaVersion: 3; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
-export type SaveEnvelope = SaveEnvelopeV2 | SaveEnvelopeV3;
+export interface SaveEnvelopeV3 { readonly schemaVersion: 3; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateV3Dto; readonly checksum: string; }
+export interface SaveEnvelopeV4 { readonly schemaVersion: 4; readonly slot: SaveSlot; readonly savedAt: string; readonly state: SaveStateDto; readonly checksum: string; }
+export type SaveEnvelope = SaveEnvelopeV2 | SaveEnvelopeV3 | SaveEnvelopeV4;
 export interface ProfileEnvelope { readonly schemaVersion: 2; readonly savedAt: string; readonly profile: ProfileDto; readonly checksum: string; }
 
 const chapterIds = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'] as const;
@@ -234,7 +238,7 @@ function validCheckedAttempt(value: unknown): value is CheckedAttemptDto {
     && number(value.chance, 0, true) && value.chance <= 100 && number(value.roll, 1, true) && value.roll <= 100
     && typeof value.resultKind === 'string' && ['critical-success', 'success', 'failure', 'critical-failure'].includes(value.resultKind);
 }
-function validExpedition(value: unknown): value is ExpeditionDto {
+function validExpeditionV3(value: unknown): value is ExpeditionV3Dto {
   const keys = [...expeditionBaseKeys, 'dialogueBeatIndex', 'sceneVisitCounts', 'checkedAttempts'];
   const currentKeys = [...keys, 'lastTravelAction'];
   if ((!exact(value, keys) && !exact(value, currentKeys)) || !validExpeditionBase(value, value.sceneResolution === null || isSceneResolutionDto(value.sceneResolution))) return false;
@@ -251,14 +255,28 @@ function validExpedition(value: unknown): value is ExpeditionDto {
   }
   return true;
 }
+function validDungeonRun(value: unknown): value is DungeonRunState {
+  return exact(value, ['dungeonId', 'seed', 'currentNodeId', 'depth', 'visitedNodeIds', 'resolvedNodeIds'])
+    && nonEmptyString(value.dungeonId) && number(value.seed, 0, true)
+    && nonEmptyString(value.currentNodeId) && number(value.depth, 0, true)
+    && uniqueStrings(value.visitedNodeIds) && uniqueStrings(value.resolvedNodeIds);
+}
+function validExpedition(value: unknown): value is ExpeditionDto {
+  if (!record(value)) return false;
+  const { dungeonRun, pendingRouteJunctionId, ...v3 } = value;
+  return Object.hasOwn(value, 'dungeonRun') && Object.hasOwn(value, 'pendingRouteJunctionId')
+    && validExpeditionV3(v3) && (dungeonRun === null || validDungeonRun(dungeonRun))
+    && idOrNull(pendingRouteJunctionId);
+}
 function validCheckpoints(value: unknown): boolean { return exact(value, ['chapter', 'camp']) && exact(value.chapter, ['campaign', 'enteredAt']) && validCampaignCheckpoint(value.chapter.campaign) && typeof value.chapter.enteredAt === 'string' && (value.camp === null || (exact(value.camp, ['campaign', 'campSceneId', 'savedAt']) && validCampaignCheckpoint(value.camp.campaign) && idOrNull(value.camp.campSceneId) && typeof value.camp.savedAt === 'string')); }
 function validFlow(value: unknown): boolean { return exact(value, ['screen', 'overlay', 'merchant']) && typeof value.screen === 'string' && flowScreens.has(value.screen) && (value.overlay === null || (typeof value.overlay === 'string' && overlays.has(value.overlay))) && (value.merchant === null || (exact(value.merchant, ['merchantId', 'restockKey', 'returnScreen']) && nonEmptyString(value.merchant.merchantId) && nonEmptyString(value.merchant.restockKey) && (value.merchant.returnScreen === 'camp' || value.merchant.returnScreen === 'story'))); }
 
 function validAdPacing(value: unknown): boolean { return exact(value, ['lastInterstitialAt', 'expeditionBreaksSinceInterstitial', 'rewardedShownAtCurrentBreak', 'claimedRewardOfferIds', 'rewardedClaimsThisExpedition']) && (value.lastInterstitialAt === null || (typeof value.lastInterstitialAt === 'string' && Number.isFinite(Date.parse(value.lastInterstitialAt)))) && number(value.expeditionBreaksSinceInterstitial, 0, true) && typeof value.rewardedShownAtCurrentBreak === 'boolean' && uniqueStrings(value.claimedRewardOfferIds) && number(value.rewardedClaimsThisExpedition, 0, true) && value.rewardedClaimsThisExpedition <= 3; }
 function validSaveRoot(value: unknown): value is Record<string, unknown> { return isJsonCompatible(value) && (exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'checkpoints', 'flow', 'updatedAt']) || (exact(value, ['schemaVersion', 'profile', 'campaign', 'expedition', 'adPacing', 'checkpoints', 'flow', 'updatedAt']) && validAdPacing(value.adPacing))) && isProfileDto(value.profile) && validCampaign(value.campaign) && validCheckpoints(value.checkpoints) && validFlow(value.flow) && typeof value.updatedAt === 'string'; }
 export function isSaveStateV2Dto(value: unknown): value is SaveStateV2Dto { return validSaveRoot(value) && value.schemaVersion === 2 && (value.expedition === null || validExpeditionV2(value.expedition)); }
-export function isSaveStateDto(value: unknown): value is SaveStateDto { return validSaveRoot(value) && value.schemaVersion === 3 && (value.expedition === null || validExpedition(value.expedition)); }
-export function createSaveEnvelope(slot: SaveSlot, state: SaveStateDto, savedAt: string): SaveEnvelopeV3 { const unsigned = { schemaVersion: 3 as const, slot, savedAt, state }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
+export function isSaveStateV3Dto(value: unknown): value is SaveStateV3Dto { return validSaveRoot(value) && value.schemaVersion === 3 && (value.expedition === null || validExpeditionV3(value.expedition)); }
+export function isSaveStateDto(value: unknown): value is SaveStateDto { return validSaveRoot(value) && value.schemaVersion === 4 && (value.expedition === null || validExpedition(value.expedition)); }
+export function createSaveEnvelope(slot: SaveSlot, state: SaveStateDto, savedAt: string): SaveEnvelopeV4 { const unsigned = { schemaVersion: 4 as const, slot, savedAt, state }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
 export function createProfileEnvelope(profile: ProfileState, savedAt: string): ProfileEnvelope { const unsigned = { schemaVersion: 2 as const, savedAt, profile }; return { ...unsigned, checksum: checksumFor(unsigned) }; }
-export function isSaveEnvelope(value: unknown): value is SaveEnvelope { if (!exact(value, ['schemaVersion', 'slot', 'savedAt', 'state', 'checksum']) || (value.schemaVersion !== 2 && value.schemaVersion !== 3) || !slots.has(value.slot as number) || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || (value.schemaVersion === 2 ? !isSaveStateV2Dto(value.state) : !isSaveStateDto(value.state))) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }
+export function isSaveEnvelope(value: unknown): value is SaveEnvelope { if (!exact(value, ['schemaVersion', 'slot', 'savedAt', 'state', 'checksum']) || ![2, 3, 4].includes(value.schemaVersion as number) || !slots.has(value.slot as number) || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || (value.schemaVersion === 2 ? !isSaveStateV2Dto(value.state) : value.schemaVersion === 3 ? !isSaveStateV3Dto(value.state) : !isSaveStateDto(value.state))) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }
 export function isProfileEnvelope(value: unknown): value is ProfileEnvelope { if (!exact(value, ['schemaVersion', 'savedAt', 'profile', 'checksum']) || value.schemaVersion !== 2 || typeof value.savedAt !== 'string' || typeof value.checksum !== 'string' || !isProfileDto(value.profile)) return false; const { checksum: _checksum, ...unsigned } = value; return checksumFor(unsigned) === value.checksum; }

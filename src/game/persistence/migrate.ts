@@ -132,7 +132,7 @@ function normalizedCheckedValues(
 export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migration | null {
   if (!isSaveStateV2Dto(value)) return null;
   const legacy = value as SaveStateV2Dto;
-  if (legacy.expedition === null) return { state: { ...legacy, schemaVersion: 3, expedition: null }, diagnostics: [] };
+  if (legacy.expedition === null) return { state: { ...legacy, schemaVersion: 4, expedition: null }, diagnostics: [] };
   const legacyQueue = legacy.expedition.authoredSceneQueue ?? [];
   const queue = legacyQueue.filter((entry) => content.events.has(entry.sceneId as never));
   const removed = legacyQueue.length - queue.length;
@@ -183,7 +183,7 @@ export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migr
   return {
     state: {
       ...legacy,
-      schemaVersion: 3,
+      schemaVersion: 4,
       expedition: {
         ...legacy.expedition,
         dialogueBeatIndex: 0,
@@ -192,6 +192,8 @@ export function migrateSaveV2(value: unknown, content: ContentIndex): SaveV2Migr
         sceneVisitCounts,
         checkedAttempts,
         lastTravelAction: null,
+        dungeonRun: null,
+        pendingRouteJunctionId: null,
       },
     },
     diagnostics: removed > 0 ? [`Removed ${removed} unavailable authored scene ${removed === 1 ? 'entry' : 'entries'} while recovering the save.`] : [],

@@ -9,6 +9,7 @@ import type { HeroClass } from '../types';
 import type { CombatAction, CombatState } from '../combat/types';
 import type { TradeIntent } from '../merchant';
 import type { TravelAction } from './road-tactics';
+import type { DungeonRunState } from '../dungeon/types';
 
 export interface DirectorMemory {
   readonly rngState: number;
@@ -84,6 +85,8 @@ export interface CampSnapshot {
 
 /** Saved runtime state is IDs/progress only; immutable catalogs stay in ContentIndex. */
 export interface ExpeditionState {
+  readonly dungeonRun: DungeonRunState | null;
+  readonly pendingRouteJunctionId: string | null;
   readonly routeProfile: RouteProfileId;
   readonly routeSeed: number;
   readonly director: DirectorState;
@@ -172,7 +175,7 @@ export interface FlowState {
 }
 
 export interface GameStateV3 {
-  readonly schemaVersion: 3;
+  readonly schemaVersion: 4;
   readonly profile: ProfileState;
   readonly campaign: CampaignState;
   readonly expedition: ExpeditionState | null;

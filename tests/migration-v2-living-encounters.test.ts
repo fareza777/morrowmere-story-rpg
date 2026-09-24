@@ -136,6 +136,8 @@ function asV2Dto(encoded: NonNullable<ReturnType<typeof encodeSaveState>>) {
     delete value.expedition.sceneVisitCounts;
     delete value.expedition.checkedAttempts;
     delete value.expedition.lastTravelAction;
+    delete value.expedition.dungeonRun;
+    delete value.expedition.pendingRouteJunctionId;
   }
   return value;
 }
@@ -146,7 +148,7 @@ function signedV2(slot: 1 | 2 | 3, state: unknown, savedAt = at(9)) {
 }
 
 describe('schema-v2 living encounter migration', () => {
-  it('preserves campaign, expedition, combat, and pending reward progress in schema v3', () => {
+  it('preserves campaign, expedition, combat, and pending reward progress in schema v4', () => {
     const content = fixtureContent();
     const staged = atScene(asEvent('migration-fight'), content);
     const fighting = reduceGame(staged, { type: 'resolve-choice', eventId: asEvent('migration-fight'), choiceId: asChoice('fight'), updatedAt: at(2) }, content).state;
@@ -160,7 +162,7 @@ describe('schema-v2 living encounter migration', () => {
 
     expect(migrated).not.toBeNull();
     expect(migrated).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       campaign: {
         heroName: 'Mira', chapterId: 'ch01', hero: { level: 2, xp: 70 }, bankedGold: 37,
         flags: ['old-flag'], evidence: ['old-evidence'],
@@ -369,6 +371,6 @@ describe('schema-v2 living encounter migration', () => {
       ok: true, source: 'migrated', notice: expect.stringMatching(/removed 1 unavailable authored scene/i),
       state: { expedition: { authoredSceneQueue: [{ sceneId: 'migration-aftermath' }] } },
     });
-    expect(JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}').schemaVersion).toBe(3);
+    expect(JSON.parse(storage.getItem(saveActiveKey(1)) ?? '{}').schemaVersion).toBe(4);
   });
 });

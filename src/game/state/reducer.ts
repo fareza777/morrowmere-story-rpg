@@ -619,7 +619,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       position: { chapterId: state.campaign.chapterId, slot: 1 }, currentSceneId: null, dialogueBeatIndex: 0, sceneResolution: null,
       authoredSceneQueue: [], sceneVisitCounts: {}, checkedAttempts: [],
       heroVitals: { health: stats.maxHealth, resource: stats.maxFocus }, currentCombat: null, pendingReward: null,
-      unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], lastTravelAction: null, merchantVisits: [],
+      unbankedGold: 0, unbankedLoot: [], temporaryBoons: [], lastTravelAction: null, merchantVisits: [], dungeonRun: null, pendingRouteJunctionId: null,
     } as const;
     return commit(state, {
       ...state,
