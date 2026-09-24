@@ -74,6 +74,16 @@ Later chapters may have longer delves too if their own story and pacing warrant 
 - Vary standard encounters by enemy composition, intent patterns, arena context, and reward. Use elites and the boss as deliberate peaks, with recovery or a lower-intensity room between peaks where pacing allows.
 - Keep authored main-quest outcomes authoritative. Generated route content can add opportunities and consequences but must not overwrite established campaign decisions.
 
+## Tactical battle experience and battlefield art
+
+The current battle system already has seeded attack rolls, enemy intent telegraphs, target selection, guard, class techniques, consumables, companion support, enemy roles, and boss phases. Keep those foundations and make the decisions legible and consequential instead of replacing them with a click-to-attack loop.
+
+- Before an attack is committed, show the selected target's actual estimated hit chance, critical chance, likely damage range, and meaningful risks such as parry, block, or a graze. This preview must use the same rules and modifiers as the real resolver, including class/stats, weapon/effects, target defense, statuses, and miss-streak protection. Do not display misleading odds.
+- Enemy intent remains visible before the player's turn. Show a concise incoming-threat forecast and how guarding or the selected defense changes expected damage. Make the tradeoff explicit: attack/technique may end a threat sooner, guard absorbs the announced pressure, and a consumable spends the turn while restoring or changing resources.
+- Encounters should reward target priority, guarding against telegraphed heavy attacks, using class techniques/items at the right time, and reacting to enemy roles. Tune regular encounters to take several meaningful decisions (normally about 4–7 player actions for a developed party), elites longer, and bosses through distinct phases/mechanics. Do not create difficulty by inflating health alone; early tutorial fights can be shorter when they teach one clear mechanic.
+- Every unique encounter receives a dedicated generated battlefield illustration that shows its actual enemy group in a grounded, attractive location—not just floating/pasted enemy portraits, a blank arena, or the existing character portrait placed behind the UI. Battle art is selected by encounter identity, while the existing enemy portraits remain available for target/status cards. The illustration and battle setup should agree on the location, faction, enemy appearance, lighting, and encounter stakes.
+- Preserve deterministic seeded resolution and clear telegraphs. The probability preview is descriptive; the seed still decides the actual roll when the action is taken.
+
 ## Save and recovery behavior
 
 Persist the dungeon seed, selected/visited route nodes, current room and combat, resolved encounter IDs, dungeon depth, pending choice/outcome, and unsecured rewards. Saving and loading in a room, in combat, or at a junction must resume at that exact point without replaying a fight or awarding loot twice.
@@ -82,14 +92,15 @@ Existing saves must continue to load without losing their current campaign posit
 
 ## Art batch and art direction
 
-Create **at least 53 distinct, scene-specific images** for the first overhaul wave, with a final inventory sized to the actual room count (expected range: 53–67):
+Create **at least 110 distinct, scene-specific images** for the first overhaul wave, before counting battle scenes for newly added dungeon encounters (expected range: 110–124):
 
 - 16 replacements for the Road Tactics event illustrations that currently clash with Chronicle I's art direction.
 - 3–5 unique illustrations for each of the seven compact dungeon sequences in Chapters 1–4 and 6–8 (21–35 total), covering their actual entrance, signature exploration/hazard, and combat or payoff moments. Add images for additional visually distinct rooms where the scene inventory calls for them.
 - 12 new Embervault dungeon room illustrations, covering the entrance/deep-shaft descent, distinct room and hazard scenes, elite moments, boss confrontation, and extraction.
+- 57 dedicated battle-stage illustrations, one for each currently registered encounter, showing that encounter's enemies together in an appropriate location. Every additional encounter authored for the chapter dungeons receives its own matching battle-stage illustration as well.
 - 4 route-node illustrations to make story/event, battle, rest/supply, and dungeon/elite choices visually distinct on the route board.
 
-The count assumes 3–5 unique images per compact chapter delve, 12 for the long Chapter 5 expedition, 16 Road Tactics replacements, and 4 shared route-node illustrations. Each used scene receives art that depicts that scene; do not reuse one room image for unrelated events. Chapter-specific environments and composition must vary so the illustrations reinforce—not flatten—the distinct pacing and identity of each delve.
+The 110–124 count is the sum of 16 Road Tactics replacements, 21–35 compact-dungeon images, 12 Embervault room images, 57 battle-stage images, and 4 route-node images. It excludes any new battle scenes needed for newly authored dungeon encounters. Each used scene receives art that depicts that scene; do not reuse one battle image for unrelated encounter identities or one room image for unrelated events. Chapter-specific environments and composition must vary so the illustrations reinforce—not flatten—the distinct pacing and identity of each delve.
 
 All images follow the approved Morrowmere look: bright, readable painterly gouache/storybook fantasy; parchment, limestone, burgundy, dusty blue, forest green, and restrained brass; strong focal silhouettes and open shadows. Dungeon scenes may use forge, lantern, or magical light, but remain readable and stylistically consistent with the rest of the game. Prompts must depict the actual scene and vary camera, composition, characters, and focal point. Do not use generic dark-fantasy grading, crushed blacks, noisy/grainy overlays, embedded text/UI, or literal crystal/glass motifs unless the source scene specifically calls for them.
 
@@ -109,7 +120,8 @@ Retain the user's current DialoguePanel progress and the user-authored Living De
 6. Route/menu cadence and option count vary with story and prior decisions; the dungeon is not a repeated default option after each event.
 7. No encounter or reward resolves twice in one run, and battle transitions do not hide or erase choice outcomes.
 8. Saving/loading at all dungeon phases resumes safely, and pre-overhaul saves remain loadable.
-9. The initial art wave contains at least 53 unique mapped assets (expected 53–67) in the established bright painterly style, with no accidental duplicate composition and no violation of the project's package-size limit.
+9. Every currently registered encounter has its own generated battlefield illustration with its actual enemies in a matching location; every newly authored dungeon encounter gets one too.
+10. The initial art wave contains at least 110 unique mapped assets (expected 110–124 before dungeon encounters are added) in the established bright painterly style, with no accidental duplicate composition and no violation of the project's package-size limit.
 
 ## Out of scope for this first overhaul
 
