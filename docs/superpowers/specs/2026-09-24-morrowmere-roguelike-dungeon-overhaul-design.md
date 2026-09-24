@@ -104,7 +104,7 @@ The 110–124 count is the sum of 16 Road Tactics replacements, 21–35 compact-
 
 All images follow the approved Morrowmere look: bright, readable painterly gouache/storybook fantasy; parchment, limestone, burgundy, dusty blue, forest green, and restrained brass; strong focal silhouettes and open shadows. Dungeon scenes may use forge, lantern, or magical light, but remain readable and stylistically consistent with the rest of the game. Prompts must depict the actual scene and vary camera, composition, characters, and focal point. Do not use generic dark-fantasy grading, crushed blacks, noisy/grainy overlays, embedded text/UI, or literal crystal/glass motifs unless the source scene specifically calls for them.
 
-Use approved in-game art as visual references when generating the batch. Review the complete set together for consistency and accidental near-duplicates before integration. Follow each asset's existing aspect-ratio, crop, format, size, attribution, and manifest conventions; keep the Android package-size limit intact. This batch does not imply replacing every illustration in the campaign.
+Study approved in-game art first and turn its palette, brushwork, and lighting into a concise written style anchor for new prompts; each new image must still depict its own scene rather than copy an existing composition. Review the complete set together for consistency and accidental near-duplicates before integration. Follow each asset's existing aspect-ratio, crop, format, size, attribution, and manifest conventions; keep the Android package-size limit intact. This batch does not imply replacing every illustration in the campaign.
 
 ## Protecting in-progress user changes
 
