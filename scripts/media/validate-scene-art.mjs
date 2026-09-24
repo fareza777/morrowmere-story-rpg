@@ -4,12 +4,14 @@ import { relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
 const EXPECTED_SCENE_COUNT = 403;
+const EXPECTED_BATTLEFIELD_COUNT = 24;
 const EXPECTED_WIDTH = 1536;
 const EXPECTED_HEIGHT = 1024;
 const MIN_FILE_BYTES = 32 * 1024;
 
 const root = resolve(import.meta.dirname, '../..');
 const sceneArtRoot = resolve(root, 'public/assets/chronicle1/scenes');
+const battlefieldArtRoot = resolve(root, 'public/assets/chronicle1/battles');
 const ACTION_ART_PATHS = [
   'public/assets/chronicle1/travel/travel-road-scout.webp',
   'public/assets/chronicle1/travel/travel-road-press-on.webp',
@@ -100,7 +102,7 @@ const readWebpDimensions = (buffer) => {
   throw new Error('no VP8X, VP8, or VP8L image chunk was found');
 };
 
-const loadScenes = async () => {
+const loadChronicleArtCatalog = async () => {
   const server = await createServer({
     root,
     appType: 'custom',
@@ -108,15 +110,19 @@ const loadScenes = async () => {
     server: { middlewareMode: true },
   });
   try {
-    const content = await server.ssrLoadModule('/src/game/content/chronicle1/index.ts');
-    return content.CHRONICLE1_SCENES;
+    const chronicle = await server.ssrLoadModule('/src/game/content/chronicle1/index.ts');
+    return {
+      scenes: chronicle.CHRONICLE1_SCENES,
+      dungeons: chronicle.CHRONICLE1_DUNGEONS,
+      encounters: chronicle.CHRONICLE1_CONTENT.encounters,
+    };
   } finally {
     await server.close();
   }
 };
 
 const main = async () => {
-  const scenes = await loadScenes();
+  const { scenes, dungeons, encounters } = await loadChronicleArtCatalog();
   if (!Array.isArray(scenes)) {
     throw new Error('CHRONICLE1_SCENES did not export an array');
   }
@@ -144,6 +150,7 @@ const main = async () => {
   const assetsByHash = new Map();
   let validSceneAssetCount = 0;
   let validActionAssetCount = 0;
+  let validBattlefieldAssetCount = 0;
 
   const validateAsset = async (assetPath) => {
     const displayPath = toProjectPath(assetPath);
@@ -202,6 +209,55 @@ const main = async () => {
     if (await validateAsset(resolve(root, actionPath))) validActionAssetCount += 1;
   }
 
+  const dungeonEncounterIds = [
+    ...new Set(
+      dungeons.flatMap((dungeon) =>
+        dungeon.nodes.flatMap((node) => [
+          ...(node.encounterId ? [node.encounterId] : []),
+          ...(node.encounterVariants ?? []),
+        ]),
+      ),
+    ),
+  ];
+  if (dungeonEncounterIds.length !== EXPECTED_BATTLEFIELD_COUNT) {
+    errors.push(
+      `expected ${EXPECTED_BATTLEFIELD_COUNT} distinct dungeon encounters, found ${dungeonEncounterIds.length}`,
+    );
+  }
+
+  const battlefieldArtIds = new Set();
+  for (const encounterId of dungeonEncounterIds) {
+    const encounter = encounters.get(encounterId);
+    if (!encounter) {
+      errors.push(`dungeon encounter "${encounterId}" has no Chronicle encounter definition`);
+      continue;
+    }
+
+    const { battlefieldArtId, battlefieldArtAlt } = encounter;
+    if (
+      typeof battlefieldArtId !== 'string' ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(battlefieldArtId)
+    ) {
+      errors.push(`dungeon encounter "${encounterId}" has a missing or unsafe battlefield art id`);
+      continue;
+    }
+    if (battlefieldArtId !== encounterId) {
+      errors.push(
+        `dungeon encounter "${encounterId}" must use its encounter-derived battlefield art id`,
+      );
+    }
+    if (typeof battlefieldArtAlt !== 'string' || battlefieldArtAlt.trim().length < 20 || !battlefieldArtAlt.endsWith('.')) {
+      errors.push(`dungeon encounter "${encounterId}" has missing or undescriptive battlefield alt text`);
+    }
+    if (battlefieldArtIds.has(battlefieldArtId)) {
+      errors.push(`battlefield art id "${battlefieldArtId}" is used by multiple dungeon encounters`);
+    }
+    battlefieldArtIds.add(battlefieldArtId);
+
+    const assetPath = resolve(battlefieldArtRoot, `${battlefieldArtId}.webp`);
+    if (await validateAsset(assetPath)) validBattlefieldAssetCount += 1;
+  }
+
   for (const [hash, paths] of assetsByHash) {
     if (paths.length > 1) {
       errors.push(`duplicate artwork SHA-256 ${hash.slice(0, 12)}: ${paths.join(', ')}`);
@@ -209,7 +265,7 @@ const main = async () => {
   }
 
   if (errors.length > 0) {
-    console.error(`Scene-art validation failed (${errors.length} issue${errors.length === 1 ? '' : 's'}):`);
+    console.error(`Chronicle art validation failed (${errors.length} issue${errors.length === 1 ? '' : 's'}):`);
     for (const error of errors) {
       console.error(`- ${error}`);
     }
@@ -218,7 +274,7 @@ const main = async () => {
   }
 
   console.log(
-    `Scene-art validation passed: ${validSceneAssetCount}/${EXPECTED_SCENE_COUNT} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP scene assets and ${validActionAssetCount}/${ACTION_ART_PATHS.length} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP action-card assets (${assetsByHash.size} distinct SHA-256 hashes).`,
+    `Chronicle art validation passed: ${validSceneAssetCount}/${EXPECTED_SCENE_COUNT} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP scene assets, ${validActionAssetCount}/${ACTION_ART_PATHS.length} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP action-card assets, and ${validBattlefieldAssetCount}/${EXPECTED_BATTLEFIELD_COUNT} unique ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT} WebP battlefield assets (${assetsByHash.size} distinct SHA-256 hashes).`,
   );
 };
 

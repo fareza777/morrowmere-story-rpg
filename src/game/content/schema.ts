@@ -173,6 +173,8 @@ export interface EncounterDefinition {
   readonly kind: "regular" | "lieutenant" | "boss";
   readonly enemyIds: readonly EnemyId[];
   readonly bossEnemyId?: EnemyId;
+  readonly battlefieldArtId?: string;
+  readonly battlefieldArtAlt?: string;
   readonly reward: {
     readonly xp: number;
     readonly gold: number;
