@@ -80,6 +80,52 @@ describe('Road Tactics reducer', () => {
     expect(repeated.state.expedition?.pendingRouteJunctionId).toBeNull();
   });
 
+  it('defers a junction while a future-slot authored continuation remains queued', () => {
+    const content = roadContent();
+    const base = content.events.get('fixture-event' as EventId)!;
+    const blocked = 'fixture-locked-follow-up' as EventId;
+    const later = 'fixture-later-follow-up' as EventId;
+    (content.events as Map<EventId, typeof base>).set(base.id, { ...base, type: 'journey', slot: 1 });
+    (content.events as Map<EventId, typeof base>).set(blocked, {
+      ...base, id: blocked, type: 'journey', slot: 3, family: 'blocked-follow-up',
+      eligibility: { requiredFlags: ['future-key'] }, choices: [], followUps: [],
+    });
+    (content.events as Map<EventId, typeof base>).set(later, {
+      ...base, id: later, type: 'journey', slot: 5, family: 'later-follow-up',
+      eligibility: {}, choices: [], followUps: [],
+    });
+    (content.routeJunctions as Map<string, unknown>).set('deferred-fork', {
+      id: 'deferred-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 1 }, afterEventId: base.id,
+      options: [
+        { id: 'take-follow-up', label: 'Follow the lead', detail: '', consequence: '', kind: 'story', destination: { kind: 'scene', sceneId: later } },
+        { id: 'leave-follow-up', label: 'Leave the road', detail: '', consequence: '', kind: 'story', destination: { kind: 'scene', sceneId: blocked } },
+      ],
+    });
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const resolved: GameStateV2 = {
+      ...started,
+      expedition: {
+        ...started.expedition!,
+        position: { chapterId: 'ch01', slot: 1 },
+        currentSceneId: base.id,
+        sceneResolution: { eventId: base.id, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: 'The lead remains unresolved.', effectSummary: [], nextSceneId: null, continueLabel: null },
+        authoredSceneQueue: [
+          { sceneId: blocked, sourceSceneId: base.id, requirementMode: 'required' },
+          { sceneId: later, sourceSceneId: base.id, requirementMode: 'optional' },
+        ],
+        director: { ...started.expedition!.director, usedSceneIds: [base.id], seenEventIds: [base.id] },
+      },
+      flow: { ...started.flow, screen: 'story' },
+    };
+
+    const result = reduceGame(resolved, { type: 'select-next-scene', updatedAt }, content);
+
+    expect(result.diagnostic).toBeUndefined();
+    expect(result.state.flow.screen).toBe('travel');
+    expect(result.state.expedition?.pendingRouteJunctionId).toBeNull();
+    expect(result.state.expedition?.authoredSceneQueue.map((entry) => entry.sceneId)).toContain(later);
+  });
+
   it('rejects a forged route option without changing state', () => {
     const { content, state } = routeState();
     const result = reduceGame(state, { type: 'select-route', junctionId: 'fork', optionId: 'forged', updatedAt }, content);

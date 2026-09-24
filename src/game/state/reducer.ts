@@ -811,6 +811,17 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
           const prepared = { ...state, expedition: { ...state.expedition, director: step.state, authoredSceneQueue: step.authoredSceneQueue, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } } };
           return commit(state, authoredScene(prepared, step.sceneId, content, command.updatedAt), [{ type: 'notification', message: 'Scene ready.' }]);
         }
+        if (step.authoredSceneQueue.length > 0) {
+          if (step.kind === 'selected' && (step.reason === 'callback' || step.reason === 'anchor')) {
+            const prepared = { ...state, expedition: { ...state.expedition, director: step.state, authoredSceneQueue: step.authoredSceneQueue, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } } };
+            return commit(state, authoredScene(prepared, step.sceneId, content, command.updatedAt), [
+              ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []),
+              { type: 'notification', message: 'Scene ready.' },
+            ]);
+          }
+          const deferred = { ...state, expedition: { ...state.expedition, authoredSceneQueue: step.authoredSceneQueue } };
+          return commit(state, enterTravel(deferred, command.updatedAt), [{ type: 'notification', message: 'Road tactics ready.' }]);
+        }
       }
       const junction = [...(content.routeJunctions?.values() ?? [])].find((entry) => entry.chapterId === state.campaign.chapterId && !state.campaign.flags.includes(resolvedJunctionFlag(entry.id)) && authoredDescendant(content, entry.afterEventId, current.id) && state.expedition!.director.seenEventIds.includes(entry.afterEventId));
       if (junction) {
