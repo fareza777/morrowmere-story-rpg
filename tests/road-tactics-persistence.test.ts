@@ -104,6 +104,16 @@ describe('Road Tactics persistence', () => {
     for (const invalid of [{ ...run, dungeonId: 'missing' }, { ...run, currentNodeId: 'missing' }, { ...run, depth: -1 }, { ...run, visitedNodeIds: [1] }, { ...run, resolvedNodeIds: [1] }]) {
       expect(decodeSaveState({ ...encoded, expedition: { ...encoded.expedition!, dungeonRun: invalid } }, content)).toBeNull();
     }
+    for (const invalid of [
+      { ...run, dungeonId: '' }, { ...run, seed: -1 }, { ...run, currentNodeId: '' }, { ...run, depth: -1 },
+      { ...run, visitedNodeIds: null }, { ...run, resolvedNodeIds: null },
+      { ...run, visitedNodeIds: ['entry', 'entry'] }, { ...run, resolvedNodeIds: [1] },
+      { ...run, extra: true },
+    ]) {
+      const malformed = { ...state, expedition: { ...state.expedition, dungeonRun: invalid } };
+      expect(() => encodeSaveState(malformed as never, content)).not.toThrow();
+      expect(encodeSaveState(malformed as never, content)).toBeNull();
+    }
   });
   it.each(['direct', 'checked', 'automatic'] as const)('autosaves and resumes a reducer-produced %s receipt in travel', (kind) => {
     const { content, travel, dto } = resolvedRoad(kind);

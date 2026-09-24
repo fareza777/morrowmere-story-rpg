@@ -255,7 +255,7 @@ function validExpeditionV3(value: unknown): value is ExpeditionV3Dto {
   }
   return true;
 }
-function validDungeonRun(value: unknown): value is DungeonRunState {
+export function validDungeonRun(value: unknown): value is DungeonRunState {
   return exact(value, ['dungeonId', 'seed', 'currentNodeId', 'depth', 'visitedNodeIds', 'resolvedNodeIds'])
     && nonEmptyString(value.dungeonId) && number(value.seed, 0, true)
     && nonEmptyString(value.currentNodeId) && number(value.depth, 0, true)
