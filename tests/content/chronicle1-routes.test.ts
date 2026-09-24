@@ -317,7 +317,7 @@ describe('Chronicle I route audit', () => {
 });
 
 describe('authored dungeon and junction validation', () => {
-  const terminal = { id: 'end', kind: 'exit' as const, exitKind: 'complete' as const, exits: [] };
+  const terminal = { id: 'end', kind: 'exit' as const, exitKind: 'complete' as const, sceneId: 'fixture-event' as never, exits: [] };
   const dungeon: DungeonDefinition = {
     id: 'fixture-dungeon', chapterId: 'ch01', startNodeId: 'start', exitNodeIds: ['end'],
     nodes: [
@@ -347,6 +347,11 @@ describe('authored dungeon and junction validation', () => {
 
   it('accepts a reachable terminal and two valid junction destinations', () => {
     expect(issuesFor()).toEqual([]);
+  });
+
+  it('requires every terminal exit to resolve to an authored scene in its chapter', () => {
+    expect(issuesFor({ ...dungeon, nodes: [dungeon.nodes[0]!, { ...terminal, sceneId: undefined }] })).toContain('invalid_dungeon_exit');
+    expect(issuesFor({ ...dungeon, nodes: [dungeon.nodes[0]!, { ...terminal, sceneId: 'missing-exit-scene' as never }] })).toContain('missing_dungeon_scene');
   });
 
   it('rejects an exit to an unknown node', () => {

@@ -212,13 +212,13 @@ function dungeonIssues(definition: DungeonDefinition, index: ContentIndex): Cont
     if (combat ? (Boolean(node.sceneId) || Number(Boolean(node.encounterId)) + Number(Boolean(node.encounterVariants?.length)) !== 1)
       : encounterIds.length > 0) report('invalid_dungeon_node', `Invalid encounter shape at ${node.id}`);
     if (node.kind === 'scene' && !node.sceneId) report('invalid_dungeon_node', `Scene ${node.id} has no scene ID`);
-    if (node.sceneId && node.kind !== 'scene' && node.kind !== 'hazard') report('invalid_dungeon_node', `Unexpected scene at ${node.id}`);
+    if (node.sceneId && node.kind !== 'scene' && node.kind !== 'hazard' && node.kind !== 'exit') report('invalid_dungeon_node', `Unexpected scene at ${node.id}`);
     if (node.sceneId && (!index.events.has(node.sceneId) || index.events.get(node.sceneId)?.chapterId !== definition.chapterId)) report('missing_dungeon_scene', `Invalid scene ${node.sceneId}`);
     for (const encounterId of encounterIds) {
       if (!index.encounters.has(encounterId)) report('missing_encounter', `Missing dungeon encounter ${encounterId}`);
     }
     if (node.kind === 'exit') {
-      if (!node.exitKind || !EXIT_KINDS.has(node.exitKind) || node.exits.length || node.sceneId || encounterIds.length || node.rewardVariants?.length) report('invalid_dungeon_exit', `Invalid terminal ${node.id}`);
+      if (!node.exitKind || !EXIT_KINDS.has(node.exitKind) || node.exits.length || !node.sceneId || encounterIds.length || node.rewardVariants?.length) report('invalid_dungeon_exit', `Invalid terminal ${node.id}`);
     } else if (node.exitKind) report('invalid_dungeon_exit', `Nonterminal ${node.id} has exit kind`);
     if (node.rewardVariants && !['cache', 'rest'].includes(node.kind)) report('invalid_dungeon_node', `Unexpected reward at ${node.id}`);
     for (const reward of node.rewardVariants ?? []) {
