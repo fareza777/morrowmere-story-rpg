@@ -1,6 +1,7 @@
 import { buildCompanionCombatSnapshot, loyaltyTier } from '../game/companions';
 import { activeCheckModifiers, calculateCheckChance } from '../game/checks';
 import type { CombatState, EnemyCombatant } from '../game/combat/types';
+import { heroAttackProfile, previewAttack } from '../game/combat/preview';
 import {
   chronicleChoiceEffects,
   isChronicleCheckedChoice,
@@ -705,6 +706,22 @@ export function selectCombatView(state: GameStateV2, content: ContentIndex): Com
     .filter((enemy) => enemy.health > 0)
     .map((enemy) => combatEnemy(enemy, combat, content))
     .filter((enemy): enemy is EnemyCombatViewModel => enemy !== null);
+    const attackProfile = heroAttackProfile(combat.player, { type: 'attack' });
+    const attackForecasts = Object.fromEntries(combat.enemies
+      .filter((enemy) => enemy.health > 0)
+      .map((target) => {
+        const forecast = previewAttack({
+          attacker: combat.player,
+          target,
+          ...attackProfile,
+          missedAttacks: combat.missedAttacks,
+        });
+        return [target.id, {
+          targetId: target.id,
+          outcomeChances: forecast.outcomeChances,
+          damageRange: forecast.damageRange,
+        }];
+      }));
   const companionDefinition = combat.companion
     ? content.companions.get(combat.companion.companionId)
     : undefined;
@@ -732,6 +749,7 @@ export function selectCombatView(state: GameStateV2, content: ContentIndex): Com
     companion,
     enemies,
     selectedTargetId: enemies[0]?.id ?? '',
+      attackForecasts,
     actions: combatActions(state, content),
     log: [...combat.log],
   };

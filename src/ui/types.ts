@@ -1,5 +1,6 @@
 import type { ContentIndex } from '../game/content/schema';
 import type { DomainEvent } from '../game/domain/result';
+import type { AttackOutcome } from '../game/domain/combat';
 import type { RouteProfileId } from '../game/director/types';
 import type { GameCommand, GameStateV2 } from '../game/state/types';
 import type { TravelAction } from '../game/state/road-tactics';
@@ -280,11 +281,18 @@ export interface CombatActionViewModel {
   readonly turnCostLabel: string | null;
 }
 
+export interface AttackForecastViewModel {
+  readonly targetId: string;
+  readonly outcomeChances: Readonly<Record<AttackOutcome, number>>;
+  readonly damageRange: { readonly min: number; readonly max: number };
+}
+
 export interface CombatViewModel {
   readonly hero: HeroHudViewModel;
   readonly companion: CompanionCombatViewModel | null;
   readonly enemies: readonly EnemyCombatViewModel[];
   readonly selectedTargetId: string;
+  readonly attackForecasts: Readonly<Record<string, AttackForecastViewModel>>;
   readonly actions: readonly CombatActionViewModel[];
   readonly log: readonly string[];
 }

@@ -11,6 +11,20 @@ import {
 } from '../src/ui/selectors';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 import type { RouteJunctionDefinition } from '../src/game/dungeon/types';
+import { heroAttackProfile, previewAttack } from '../src/game/combat/preview';
+import type { CombatState } from '../src/game/combat/types';
+import type { GameStateV2 } from '../src/game/state/types';
+
+function stateWithCombat(combat: CombatState): GameStateV2 {
+  const state = makeUiGame({ screen: 'combat', enemyCount: 3 });
+  return {
+    ...state,
+    expedition: {
+      ...state.expedition!,
+      currentCombat: { ...state.expedition!.currentCombat!, combat },
+    },
+  };
+}
 
 describe('Chronicle I UI selectors', () => {
   it('projects exact eligible junction options with authored consequences and art', () => {
@@ -77,6 +91,82 @@ describe('Chronicle I UI selectors', () => {
     ]);
     expect(view?.enemies.every((enemy) => enemy.intent.label.length > 0)).toBe(true);
     expect(view?.enemies.every((enemy) => enemy.intent.description.length > 0)).toBe(true);
+  });
+
+  it('projects each living target forecast from the canonical attack preview without mutating combat', () => {
+    const state = makeUiGame({ screen: 'combat', enemyCount: 3 });
+    const before = state.expedition!.currentCombat!.combat!;
+    const target = before.enemies[0]!;
+    const profile = heroAttackProfile(before.player, { type: 'attack' });
+    const expected = previewAttack({
+      attacker: before.player,
+      target,
+      ...profile,
+      missedAttacks: before.missedAttacks,
+    });
+
+    const view = selectCombatView(state, UI_CONTENT)!;
+
+    expect(view.attackForecasts[target.id]).toEqual({
+      targetId: target.id,
+      outcomeChances: expected.outcomeChances,
+      damageRange: expected.damageRange,
+    });
+    expect(Object.keys(view.attackForecasts)).toEqual(before.enemies.filter((enemy) => enemy.health > 0).map((enemy) => enemy.id));
+    expect(state.expedition!.currentCombat!.combat).toBe(before);
+    expect(state.expedition!.currentCombat!.combat!.rngState).toBe(before.rngState);
+  });
+
+  it('uses the selected target’s guarding, block, and evasion values in its forecast', () => {
+    const base = makeUiGame({ screen: 'combat', enemyCount: 3 }).expedition!.currentCombat!.combat!;
+    const target = { ...base.enemies[0]!, guarding: true, blockChance: 45, evasion: 30, parryChance: 0 };
+    const combat = { ...base, enemies: [target, ...base.enemies.slice(1)], enemy: target };
+    const state = stateWithCombat(combat);
+    const profile = heroAttackProfile(combat.player, { type: 'attack' });
+    const expected = previewAttack({ attacker: combat.player, target, ...profile, missedAttacks: combat.missedAttacks });
+
+    const forecast = selectCombatView(state, UI_CONTENT)!.attackForecasts[target.id]!;
+
+    expect(forecast.outcomeChances).toEqual(expected.outcomeChances);
+    expect(forecast.outcomeChances.blocked).toBeGreaterThan(0);
+    expect(forecast.outcomeChances.glancing).toBeGreaterThan(0);
+    expect(state.expedition!.currentCombat!.combat).toBe(combat);
+    expect(combat.rngState).toBe(base.rngState);
+  });
+
+  it('forecasts blindness as a certain miss even when the miss streak would force a glance', () => {
+    const base = makeUiGame({ screen: 'combat', enemyCount: 3 }).expedition!.currentCombat!.combat!;
+    const player = { ...base.player, statuses: [{ id: 'blind', label: 'Blind', duration: 1, potency: 1 }] };
+    const combat = { ...base, player, missedAttacks: 2 };
+    const state = stateWithCombat(combat);
+    const target = combat.enemies[0]!;
+    const profile = heroAttackProfile(player, { type: 'attack' });
+    const expected = previewAttack({ attacker: player, target, ...profile, missedAttacks: combat.missedAttacks });
+
+    const forecast = selectCombatView(state, UI_CONTENT)!.attackForecasts[target.id]!;
+
+    expect(forecast.outcomeChances).toEqual(expected.outcomeChances);
+    expect(forecast.outcomeChances.miss).toBe(100);
+    expect(forecast.damageRange).toEqual({ min: 0, max: 0 });
+    expect(state.expedition!.currentCombat!.combat).toBe(combat);
+    expect(combat.rngState).toBe(base.rngState);
+  });
+
+  it('forecasts the next non-blinded attack as a guaranteed glance after two misses', () => {
+    const base = makeUiGame({ screen: 'combat', enemyCount: 3 }).expedition!.currentCombat!.combat!;
+    const target = { ...base.enemies[0]!, guarding: false, blockChance: 0, evasion: 0, parryChance: 0 };
+    const combat = { ...base, enemies: [target, ...base.enemies.slice(1)], enemy: target, missedAttacks: 2 };
+    const state = stateWithCombat(combat);
+    const profile = heroAttackProfile(combat.player, { type: 'attack' });
+    const expected = previewAttack({ attacker: combat.player, target, ...profile, missedAttacks: combat.missedAttacks });
+
+    const forecast = selectCombatView(state, UI_CONTENT)!.attackForecasts[target.id]!;
+
+    expect(forecast.outcomeChances).toEqual(expected.outcomeChances);
+    expect(forecast.outcomeChances.glancing).toBe(100);
+    expect(forecast.damageRange.min).toBeGreaterThan(0);
+    expect(state.expedition!.currentCombat!.combat).toBe(combat);
+    expect(combat.rngState).toBe(base.rngState);
   });
 
   it('counts item stacks but excludes equipment and quest items from 24 field slots', () => {

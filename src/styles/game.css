@@ -146,6 +146,15 @@
 .intent-panel { border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 0.8rem; background: var(--ink-1); }
 .intent-panel strong { color: var(--accent-strong); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .intent-panel p { margin: 0.35rem 0 0; color: var(--paper-1); line-height: 1.5; }
+.attack-forecast { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.45rem 0.8rem; margin-block: 0.75rem; padding: 0.75rem; border: 1px solid var(--line-strong); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--ink-1); }
+.attack-forecast header { min-inline-size: 0; }
+.attack-forecast h2, .attack-forecast header p, .attack-forecast-damage { margin: 0; }
+.attack-forecast h2 { color: var(--accent-strong); font-size: 0.98rem; }
+.attack-forecast header p { margin-block-start: 0.2rem; color: var(--paper-2); font-size: 0.82rem; }
+.attack-forecast ul { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.attack-forecast li { display: flex; gap: 0.35rem; padding: 0.28rem 0.45rem; border: 1px solid var(--line); border-radius: 999px; color: var(--paper-1); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.attack-forecast li strong { color: var(--paper-0); }
+.attack-forecast-damage { align-self: center; color: var(--paper-1); font-size: 0.82rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .combat-log { min-block-size: 3.5rem; padding-block: 0.8rem; color: var(--paper-2); font-size: 0.88rem; line-height: 1.5; }
 .combat-log p { margin-block-end: 0.18rem; }
 .combat-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }

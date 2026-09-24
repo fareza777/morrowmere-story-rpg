@@ -6,6 +6,56 @@ import { selectCombatView, selectInventoryView } from '../src/ui/selectors';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 
 describe('group combat interface', () => {
+  it('updates the live forecast for the selected enemy without stealing focus or hiding battle actions', async () => {
+    const user = userEvent.setup();
+    const state = makeUiGame({ screen: 'combat', enemyCount: 3 });
+    const view = selectCombatView(state, UI_CONTENT)!;
+    render(<CombatPanel view={view} inventory={selectInventoryView(state, UI_CONTENT)} transitionEvents={[]} onAction={vi.fn()} />);
+
+    const forecast = screen.getByRole('region', { name: 'Attack forecast' });
+    expect(forecast).toHaveAttribute('aria-live', 'polite');
+    expect(forecast).toHaveTextContent('Ash Goblin Guard');
+    const targetButton = screen.getByRole('button', { name: 'Target Ditch Raider' });
+    await user.click(targetButton);
+
+    expect(forecast).toHaveTextContent('Ditch Raider');
+    expect(targetButton).toHaveFocus();
+    expect(screen.getByText(view.enemies[1]!.intent.description)).toBeVisible();
+    for (const label of ['Attack', 'Guard', 'Technique', 'Consumable', 'Flee']) {
+      expect(screen.getByRole('button', { name: new RegExp(`^${label}`, 'i') })).toBeVisible();
+    }
+    expect(screen.getByRole('button', { name: /^Companion/i })).toBeVisible();
+  });
+
+  it('hides zero-probability outcomes and preserves tiny chances and zero damage', () => {
+    const state = makeUiGame({ screen: 'combat' });
+    const base = selectCombatView(state, UI_CONTENT)!;
+    const enemy = base.enemies[0]!;
+    const forecast = base.attackForecasts[enemy.id]!;
+    const view = {
+      ...base,
+      attackForecasts: {
+        ...base.attackForecasts,
+        [enemy.id]: {
+          ...forecast,
+          outcomeChances: { miss: 0, glancing: 0.04, hit: 99.96, critical: 0, blocked: 0, parried: 0 },
+          damageRange: { min: 0, max: 0 },
+        },
+      },
+    };
+    render(<CombatPanel view={view} inventory={selectInventoryView(state, UI_CONTENT)} transitionEvents={[]} onAction={vi.fn()} />);
+
+    const region = screen.getByRole('region', { name: 'Attack forecast' });
+    expect(region).toHaveTextContent('Glancing hit');
+    expect(region).toHaveTextContent('<0.1%');
+    expect(region).toHaveTextContent('Damage: 0');
+    expect(region).not.toHaveTextContent('Miss');
+    expect(region).not.toHaveTextContent('Critical hit');
+    expect(region).not.toHaveTextContent('Blocked');
+    expect(region).not.toHaveTextContent('Parried');
+    expect(region).not.toHaveTextContent('0.0%');
+  });
+
   it('targets one of three enemies and issues a companion command', async () => {
     const user = userEvent.setup();
     const state = makeUiGame({ screen: 'combat', enemyCount: 3, companionId: 'mara', stackedPotions: 2 });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CombatAction } from '../game/combat/types';
 import type { DomainEvent } from '../game/domain/result';
 import type { CombatViewModel, InventoryViewModel } from '../ui/types';
+import { AttackForecast } from './AttackForecast';
 import { CombatActionBar } from './CombatActionBar';
 import { EnemyParty } from './EnemyParty';
 
@@ -22,10 +23,13 @@ export function CombatPanel({ view, inventory, transitionEvents, onAction }: Com
     return attack?.type === 'attack_resolved' ? `is-${attack.outcome}` : null;
   }, [transitionEvents]);
   const consumables = inventory.pack.filter((item) => item.usable && item.entryId !== null);
+  const selectedTarget = view.enemies.find((enemy) => enemy.id === selectedTargetId);
+  const attackForecast = selectedTarget ? view.attackForecasts[selectedTarget.id] : undefined;
   return (
     <section className="combat-panel" aria-labelledby="battle-title">
       <header className="combat-heading"><p className="eyebrow">Battle</p><h1 id="battle-title">Choose your target</h1><p>Enemy intent is announced before your action.</p></header>
       <EnemyParty enemies={view.enemies} selectedTargetId={selectedTargetId} onTarget={setSelectedTargetId} feedbackClass={feedbackClass} />
+      {selectedTarget && attackForecast && <AttackForecast target={selectedTarget} forecast={attackForecast} />}
       <div className="combat-log" aria-live="polite">
         {view.log.slice(-4).map((entry, index) => <p key={`${index}-${entry}`}>{entry}</p>)}
       </div>

@@ -1,7 +1,8 @@
 import type { DungeonDefinition } from '../../dungeon/types';
+import type { AuthoredContent } from './authored-content';
 
 /** Compact authored delves reuse the chapter's existing illustrated scenes and encounters. */
-export const CHRONICLE1_DUNGEONS: readonly DungeonDefinition[] = [
+const AUTHORED_CHRONICLE1_DUNGEONS = [
   {
     id: 'ch01-tollhouse-culvert', chapterId: 'ch01', startNodeId: 'ch01-cellar-stair', exitNodeIds: ['ch01-orchard-emergence'],
     nodes: [
@@ -231,4 +232,6 @@ export const CHRONICLE1_DUNGEONS: readonly DungeonDefinition[] = [
       { id: 'ch08-engine-control-exit', kind: 'exit', exitKind: 'complete', sceneId: 'ch08-combat-the-coronation-engine', exits: [] },
     ],
   },
-];
+] satisfies readonly AuthoredContent<DungeonDefinition>[];
+
+export const CHRONICLE1_DUNGEONS = AUTHORED_CHRONICLE1_DUNGEONS as unknown as readonly DungeonDefinition[];

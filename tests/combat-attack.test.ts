@@ -197,6 +197,23 @@ describe('pure attack previews', () => {
     expect(preview.chanceToDamage).toBe(64);
   });
 
+  it('preserves nonzero per-outcome probabilities below one tenth of a percent', () => {
+    const preview = previewAttack({
+      attacker: previewHero({ attackAccuracy: 1, criticalChance: 1 }),
+      target: previewEnemy({ guarding: true, parryChance: 1, blockChance: 1, evasion: 1 }),
+      power: 12,
+      kind: 'physical',
+    });
+
+    expect(preview.outcomeChances).toMatchObject({
+      parried: 0.01,
+      blocked: 0.0099,
+      glancing: 0.009801,
+      critical: 0.00970299,
+    });
+    expect(preview.outcomeChances.blocked).toBeGreaterThan(0);
+  });
+
   it('matches sorcery damage bounds against ward rather than armor', () => {
     const preview = previewAttack({
       attacker: previewHero({ attackAccuracy: 100, criticalChance: 0 }),

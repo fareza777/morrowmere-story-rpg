@@ -2,6 +2,7 @@ import type { ChronicleRouteDefinition } from '../schema';
 import type { RouteJunctionDefinition } from '../../dungeon/types';
 import type { RouteOption } from '../../director/types';
 import { deepFreeze } from './builders';
+import type { AuthoredContent } from './authored-content';
 
 export const ROUTE_IDS = deepFreeze([
   'kings-road',
@@ -61,7 +62,7 @@ export const CHRONICLE1_ROUTE_OPTIONS = deepFreeze(
 );
 
 /** Junctions interrupt the story only where the party has a concrete route decision. */
-export const CHRONICLE1_ROUTE_JUNCTIONS: readonly RouteJunctionDefinition[] = [
+const AUTHORED_CHRONICLE1_ROUTE_JUNCTIONS = [
   {
     id: 'ch01-tollhouse-crossroads', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 43 }, afterEventId: 'ch01-living-smoke-verge-aftermath',
     options: [
@@ -120,4 +121,6 @@ export const CHRONICLE1_ROUTE_JUNCTIONS: readonly RouteJunctionDefinition[] = [
       { id: 'ch08-infiltrate-the-service-galleries', label: 'Infiltrate the service galleries', detail: 'The command platform’s pressure schedule runs beneath the grain ledger office.', consequence: 'Fight into the control rooms, then choose a quick extraction or a deeper push for the engine records.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch08-engine-service-galleries' } },
     ],
   },
-];
+] satisfies readonly AuthoredContent<RouteJunctionDefinition>[];
+
+export const CHRONICLE1_ROUTE_JUNCTIONS = AUTHORED_CHRONICLE1_ROUTE_JUNCTIONS as unknown as readonly RouteJunctionDefinition[];
