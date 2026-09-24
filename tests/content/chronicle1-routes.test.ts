@@ -15,7 +15,7 @@ import { scenePacing } from '../../src/game/director/pacing';
 import { createCampaign } from '../../src/game/state/create';
 import { applyEffectsAtomically, type EffectState } from '../../src/game/state/effects';
 import { currentSceneId, reduceGame } from '../../src/game/state/reducer';
-import { validateContent } from '../../src/game/content/validate';
+import { assembleAuthoredRouteCatalogs, validateContent } from '../../src/game/content/validate';
 import type { DungeonDefinition, RouteJunctionDefinition } from '../../src/game/dungeon/types';
 import { makeContentIndex } from '../fixtures/game';
 
@@ -337,6 +337,14 @@ describe('authored dungeon and junction validation', () => {
     return validateContent({ ...fixture, dungeons: new Map([[graph.id, graph]]), routeJunctions: new Map([[fork.id, fork]]) }).map((issue) => issue.code);
   };
 
+  it('rejects duplicate dungeon IDs before source content becomes a map', () => {
+    expect(() => assembleAuthoredRouteCatalogs([dungeon, { ...dungeon }], [junction])).toThrow(/duplicate_dungeon_id.*fixture-dungeon/);
+  });
+
+  it('rejects duplicate junction IDs before source content becomes a map', () => {
+    expect(() => assembleAuthoredRouteCatalogs([dungeon], [junction, { ...junction }])).toThrow(/duplicate_route_junction_id.*fixture-junction/);
+  });
+
   it('accepts a reachable terminal and two valid junction destinations', () => {
     expect(issuesFor()).toEqual([]);
   });
@@ -391,6 +399,15 @@ describe('authored dungeon and junction validation', () => {
 
   it('rejects a junction whose options all lead to the same destination', () => {
     expect(issuesFor(dungeon, { ...junction, options: [junction.options[0]!, { ...junction.options[1]!, destination: junction.options[0]!.destination }] })).toContain('indistinct_route_junction');
+  });
+
+  it('rejects mutually exclusive destinations that never form a real choice', () => {
+    const exclusive = { ...junction, options: [
+      { ...junction.options[0]!, requiredFlags: ['key'] },
+      { ...junction.options[1]!, excludedFlags: ['key'] },
+    ] };
+    expect(issuesFor(dungeon, exclusive)).toContain('indistinct_route_junction');
+    expect(issuesFor(dungeon, exclusive)).not.toContain('empty_route_junction');
   });
 
   it('rejects a junction referencing an unknown scene or dungeon', () => {

@@ -5,7 +5,7 @@ import {
   type Chronicle1Event,
   type ContentIndex,
 } from '../schema';
-import { validateChroniclePlayability } from '../validate';
+import { assembleAuthoredRouteCatalogs, validateChroniclePlayability } from '../validate';
 import { deepFreeze } from './builders';
 import { CH01_SCENES } from './chapters/ch01';
 import { CH02_SCENES } from './chapters/ch02';
@@ -268,6 +268,8 @@ export const CHRONICLE1_AUDIO_IDS: ReadonlySet<string> = new Set([
  */
 const RUNTIME_SCENE_INDEX = CHRONICLE1_SCENE_INDEX as unknown as ContentIndex['events'];
 
+const AUTHORED_ROUTE_CATALOGS = assembleAuthoredRouteCatalogs(CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS);
+
 export const CHRONICLE1_CONTENT: ContentIndex = Object.freeze({
   events: RUNTIME_SCENE_INDEX,
   items: CHRONICLE1_ITEM_INDEX,
@@ -275,8 +277,7 @@ export const CHRONICLE1_CONTENT: ContentIndex = Object.freeze({
   encounters: CHRONICLE1_ENCOUNTER_INDEX,
   companions: CHRONICLE1_COMPANION_INDEX,
   merchants: CHRONICLE1_MERCHANT_INDEX,
-  dungeons: new Map(CHRONICLE1_DUNGEONS.map((dungeon) => [dungeon.id, dungeon] as const)),
-  routeJunctions: new Map(CHRONICLE1_ROUTE_JUNCTIONS.map((junction) => [junction.id, junction] as const)),
+  ...AUTHORED_ROUTE_CATALOGS,
   artIds: CHRONICLE1_ART_IDS,
   audioIds: CHRONICLE1_AUDIO_IDS,
 });

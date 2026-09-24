@@ -118,6 +118,27 @@ function duplicateIssues<T extends { readonly id: string }>(
   return issues;
 }
 
+/** Source IDs must be checked before Map construction can overwrite a duplicate. */
+export function assembleAuthoredRouteCatalogs(
+  dungeons: readonly DungeonDefinition[],
+  junctions: readonly RouteJunctionDefinition[],
+): {
+  readonly dungeons: ReadonlyMap<string, DungeonDefinition>;
+  readonly routeJunctions: ReadonlyMap<string, RouteJunctionDefinition>;
+} {
+  const issues = [
+    ...duplicateIssues(dungeons, 'duplicate_dungeon_id'),
+    ...duplicateIssues(junctions, 'duplicate_route_junction_id'),
+  ];
+  if (issues.length) {
+    throw new Error(`Invalid authored route source IDs:\n${issues.map((issue) => `${issue.code}: ${issue.message}`).join('\n')}`);
+  }
+  return {
+    dungeons: new Map(dungeons.map((dungeon) => [dungeon.id, dungeon] as const)),
+    routeJunctions: new Map(junctions.map((junction) => [junction.id, junction] as const)),
+  };
+}
+
 function effectIssues(effect: GameEffect, index: ContentIndex): ContentIssue[] {
   if (effect.type === 'item') {
     const item = index.items.get(effect.itemId);
@@ -248,29 +269,35 @@ function junctionIssues(junction: RouteJunctionDefinition, index: ContentIndex):
   if (!CHAPTER_IDS.has(junction.chapterId) || junction.position.chapterId !== junction.chapterId || !Number.isSafeInteger(junction.position.slot) || junction.position.slot < 1) report('invalid_route_junction', 'Invalid chapter or position');
   if (!index.events.has(junction.afterEventId) || index.events.get(junction.afterEventId)?.chapterId !== junction.chapterId) report('missing_route_scene', `Invalid activation scene ${junction.afterEventId}`);
   issues.push(...duplicateIssues(junction.options, 'duplicate_route_option_id'));
-  const destinations = new Set<string>();
   for (const option of junction.options) {
     if (option.destination.kind === 'scene') {
-      destinations.add(`scene:${option.destination.sceneId}`);
       if (!index.events.has(option.destination.sceneId) || index.events.get(option.destination.sceneId)?.chapterId !== junction.chapterId) report('missing_route_scene', `Invalid destination ${option.destination.sceneId}`);
     } else {
-      destinations.add(`dungeon:${option.destination.dungeonId}`);
       if (!index.dungeons?.has(option.destination.dungeonId) || index.dungeons.get(option.destination.dungeonId)?.chapterId !== junction.chapterId) report('missing_route_dungeon', `Invalid destination ${option.destination.dungeonId}`);
     }
     if (option.requiredFlags?.some((flag) => option.excludedFlags?.includes(flag))) report('invalid_route_junction', `Contradictory gate on ${option.id}`);
     for (const effect of option.effects ?? []) issues.push(...effectIssues(effect, index));
   }
-  if (destinations.size < 2) report('indistinct_route_junction', 'Fewer than two distinct destinations');
   const gates = [...new Set(junction.options.flatMap((option) => [...(option.requiredFlags ?? []), ...(option.excludedFlags ?? [])]))];
-  const hasEmptyProfile = (at: number, flags: Set<string>): boolean => {
-    if (at === gates.length) return availableRouteOptions(junction, flags).length === 0;
-    if (hasEmptyProfile(at + 1, flags)) return true;
+  let hasEmptyProfile = false;
+  let hasChoiceProfile = false;
+  const inspectProfiles = (at: number, flags: Set<string>): void => {
+    if (at === gates.length) {
+      const eligible = availableRouteOptions(junction, flags);
+      if (!eligible.length) hasEmptyProfile = true;
+      const destinations = new Set(eligible.map((option) => option.destination.kind === 'scene'
+        ? `scene:${option.destination.sceneId}` : `dungeon:${option.destination.dungeonId}`));
+      if (destinations.size >= 2) hasChoiceProfile = true;
+      return;
+    }
+    inspectProfiles(at + 1, flags);
     flags.add(gates[at]!);
-    const empty = hasEmptyProfile(at + 1, flags);
+    inspectProfiles(at + 1, flags);
     flags.delete(gates[at]!);
-    return empty;
   };
-  if (hasEmptyProfile(0, new Set())) report('empty_route_junction', 'A flag profile has no eligible option');
+  inspectProfiles(0, new Set());
+  if (hasEmptyProfile) report('empty_route_junction', 'A flag profile has no eligible option');
+  if (!hasChoiceProfile) report('indistinct_route_junction', 'No flag profile offers two distinct destinations');
   return issues;
 }
 
