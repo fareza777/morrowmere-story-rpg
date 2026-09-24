@@ -5,18 +5,20 @@ interface TravelPanelProps {
   readonly view: TravelViewModel;
   readonly onAction: (action: TravelAction) => void;
   readonly onRoute: (optionId: string) => void;
+  readonly onEmergencyRetreat: () => void;
 }
 
-export function TravelPanel({ view, onAction, onRoute }: TravelPanelProps) {
+export function TravelPanel({ view, onAction, onRoute, onEmergencyRetreat }: TravelPanelProps) {
   const isDeparture = view.mode === 'departure';
-  const title = isDeparture ? 'Road Tactics' : view.mode === 'dungeon' ? 'Choose a Passage' : 'Choose a Route';
+  const isRecovery = view.mode === 'recovery';
+  const title = isDeparture ? 'Road Tactics' : isRecovery ? 'Emergency Retreat' : view.mode === 'dungeon' ? 'Choose a Passage' : 'Choose a Route';
   return (
     <main className="game-main">
       <section className="travel-panel" aria-labelledby="travel-title">
         <header className="travel-heading">
           <p className="eyebrow">{view.chapterLabel} · {view.legLabel}</p>
           <h1 id="travel-title">{title}</h1>
-          <p>{isDeparture ? `${view.routeLabel} lies ahead. Choose one way to take the next leg.` : view.mode === 'dungeon' ? 'The way through this place is yours to choose.' : 'The road divides here. Weigh what each path may cost.'}</p>
+          <p>{isDeparture ? `${view.routeLabel} lies ahead. Choose one way to take the next leg.` : isRecovery ? 'Every passage is sealed. Retreat to the road and end this delve.' : view.mode === 'dungeon' ? 'The way through this place is yours to choose.' : 'The road divides here. Weigh what each path may cost.'}</p>
         </header>
 
         <dl className="travel-meters" aria-label="Road conditions">
@@ -33,7 +35,11 @@ export function TravelPanel({ view, onAction, onRoute }: TravelPanelProps) {
 
         {isDeparture && view.receipt && <aside className="travel-receipt" aria-label="Last road choice"><strong>{view.receipt.label}</strong><span>{view.receipt.summary}</span></aside>}
 
-        {isDeparture ? <div className="travel-actions" aria-label="Road actions">
+        {isRecovery ? <aside className="travel-recovery" aria-label="Emergency retreat consequences">
+          <h2>The way out is lost.</h2>
+          <p>Retreat now to secure half your unbanked gold. The remaining gold is lost; loose loot stays unsecured.</p>
+          <button type="button" onClick={onEmergencyRetreat}>Emergency Retreat</button>
+        </aside> : isDeparture ? <div className="travel-actions" aria-label="Road actions">
           {view.actions.map((action) => {
             const reasonId = action.unavailableReason ? `travel-action-${action.action}-reason` : undefined;
             return (

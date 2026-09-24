@@ -189,6 +189,11 @@
 .travel-option-copy small { color: var(--accent-strong); font-weight: 700; line-height: 1.4; }
 .travel-option button { inline-size: calc(100% - 1.8rem); min-block-size: 48px; margin: 0 0.9rem 0.9rem; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--ink-0); color: var(--paper-0); font: inherit; font-weight: 800; text-align: center; }
 .travel-option button:hover, .travel-option button:focus-visible { border-color: var(--accent); background: #f9eedb; outline-offset: 3px; }
+.travel-recovery { display: grid; gap: 0.65rem; max-inline-size: 44rem; padding: 1rem; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--ink-1); }
+.travel-recovery h2, .travel-recovery p { margin: 0; }
+.travel-recovery p { color: var(--paper-1); line-height: 1.5; }
+.travel-recovery button { min-block-size: 48px; padding: 0.7rem 1rem; border: 1px solid var(--danger); border-radius: 9px; background: var(--ink-0); color: var(--paper-0); font: inherit; font-weight: 800; }
+.travel-recovery button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 .sheet-backdrop { position: fixed; z-index: var(--layer-overlay); inset: 0; padding-inline: var(--safe-left) var(--safe-right); padding-block-end: var(--ad-banner-inset); display: flex; align-items: end; justify-content: center; background: rgb(45 31 19 / 0.5); }
 .sheet { inline-size: min(100%, 900px); max-block-size: min(92dvh, 820px); border: 1px solid var(--line-strong); border-block-end: 0; border-radius: 18px 18px 0 0; background: var(--ink-1); box-shadow: var(--shadow); overflow: hidden; }

@@ -81,6 +81,69 @@ describe('Road Tactics reducer', () => {
     expect(next.state.campaign.flags).toContain('route:junction:closed-fork:resolved');
   });
 
+  it('leaves a one-option chapter junction pending until the player confirms it', () => {
+    const { content, state } = routeState();
+    const base = content.events.get('fixture-event' as EventId)!;
+    (content.routeJunctions as Map<string, unknown>).set('single-fork', {
+      id: 'single-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 1 }, afterEventId: base.id,
+      options: [{ id: 'take-pass', label: 'Take the pass', detail: 'Climb the exposed ridge.', consequence: 'Gain 8 unbanked gold.', kind: 'story', destination: { kind: 'scene', sceneId: base.id }, effects: [{ type: 'gold', scope: 'unbanked', amount: 8 }] }],
+    });
+    const resolved: GameStateV2 = { ...state, expedition: {
+      ...state.expedition!, currentSceneId: base.id, sceneResolution: { eventId: base.id, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: 'The road divides.', effectSummary: [], nextSceneId: null, continueLabel: null },
+      sceneVisitCounts: { [base.id]: 1 }, director: { ...state.expedition!.director, seenEventIds: [base.id] },
+    }, flow: { ...state.flow, screen: 'story' } };
+    const junction = reduceGame(resolved, { type: 'select-next-scene', updatedAt }, content);
+    expect(junction.diagnostic).toBeUndefined();
+    expect(junction.state.flow.screen).toBe('travel');
+    expect(junction.state.expedition?.pendingRouteJunctionId).toBe('single-fork');
+    expect(junction.state.expedition?.unbankedGold).toBe(state.expedition?.unbankedGold);
+
+    const chosen = reduceGame(junction.state, { type: 'select-route', junctionId: 'single-fork', optionId: 'take-pass', updatedAt }, content);
+    expect(chosen.diagnostic).toBeUndefined();
+    expect(chosen.state.expedition?.unbankedGold).toBe((state.expedition?.unbankedGold ?? 0) + 8);
+  });
+
+  it('offers emergency retreat only at a resolved dead-end and settles half gold while retaining loose loot', () => {
+    const content = roadContent();
+    const roomId = 'sealed-room' as EventId;
+    const base = content.events.get('fixture-event' as EventId)!;
+    (content.events as Map<EventId, typeof base>).set(roomId, { ...base, id: roomId, family: 'sealed-room', choices: [] });
+    (content.dungeons as Map<string, unknown>).set('sealed-run', { id: 'sealed-run', chapterId: 'ch01', startNodeId: 'sealed-room', exitNodeIds: ['escape', 'already-visited'], nodes: [
+      { id: 'sealed-room', kind: 'scene', sceneId: roomId, exits: [
+        { id: 'locked-escape', targetNodeId: 'escape', label: 'Open the gate', detail: 'Requires the iron seal.', requiredFlags: ['iron-seal'] },
+        { id: 'loop-back', targetNodeId: 'already-visited', label: 'Backtrack', detail: 'A passage already explored.' },
+      ] },
+      { id: 'escape', kind: 'exit', exitKind: 'retreat', sceneId: roomId, exits: [] },
+      { id: 'already-visited', kind: 'hazard', exits: [] },
+    ] });
+    const { state: started } = routeState();
+    const deadEnd: GameStateV2 = { ...started, expedition: {
+      ...started.expedition!, dungeonRun: { dungeonId: 'sealed-run', seed: 8, currentNodeId: 'sealed-room', depth: 1, visitedNodeIds: ['sealed-room', 'already-visited'], resolvedNodeIds: [] },
+      currentSceneId: roomId, sceneResolution: { eventId: roomId, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: 'The gate has no handle.', effectSummary: [], nextSceneId: null, continueLabel: null },
+      unbankedGold: 9, unbankedLoot: ['potion-red' as never],
+    }, flow: { ...started.flow, screen: 'story' } };
+
+    const reached = reduceGame(deadEnd, { type: 'select-next-scene', updatedAt }, content);
+    expect(reached.diagnostic).toBeUndefined();
+    expect(reached.state.flow.screen).toBe('travel');
+    expect(reached.state.expedition?.dungeonRun?.resolvedNodeIds).toContain('sealed-room');
+
+    const unresolved = reduceGame({ ...reached.state, expedition: { ...reached.state.expedition!, dungeonRun: { ...reached.state.expedition!.dungeonRun!, resolvedNodeIds: [] } } }, { type: 'emergency-retreat-dungeon', updatedAt }, content);
+    expect(unresolved.diagnostic?.code).toBe('retreat_unavailable');
+    const flagOpened = reduceGame({ ...reached.state, campaign: { ...reached.state.campaign, flags: [...reached.state.campaign.flags, 'iron-seal'] }, expedition: { ...reached.state.expedition!, dungeonRun: { ...reached.state.expedition!.dungeonRun!, visitedNodeIds: ['sealed-room'] } } }, { type: 'emergency-retreat-dungeon', updatedAt }, content);
+    expect(flagOpened.diagnostic?.code).toBe('retreat_unavailable');
+    expect(flagOpened.state.expedition?.dungeonRun).not.toBeNull();
+
+    const retreated = reduceGame(reached.state, { type: 'emergency-retreat-dungeon', updatedAt }, content);
+    expect(retreated.diagnostic).toBeUndefined();
+    expect(retreated.state.flow.screen).toBe('travel');
+    expect(retreated.state.expedition?.dungeonRun).toBeNull();
+    expect(retreated.state.campaign.bankedGold - reached.state.campaign.bankedGold).toBe(4);
+    expect(retreated.state.expedition?.unbankedGold).toBe(0);
+    expect(retreated.state.expedition?.unbankedLoot).toEqual(['potion-red']);
+    expect(retreated.events.some(({ domain }) => domain.type === 'notification' && domain.message.includes('Retreat secured 4 of 9'))).toBe(true);
+  });
+
   it('keeps an authored choice and aftermath continuous until its junction', () => {
     const content = roadContent();
     const base = content.events.get('fixture-event' as EventId)!;

@@ -441,14 +441,14 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
   const run = expedition.dungeonRun;
   const dungeon = run ? content.dungeons?.get(run.dungeonId) : undefined;
   const junction = expedition.pendingRouteJunctionId ? content.routeJunctions?.get(expedition.pendingRouteJunctionId) : undefined;
-  const mode: TravelViewModel['mode'] = run ? 'dungeon' : expedition.pendingRouteJunctionId ? 'junction'
+  const routeMode: TravelViewModel['mode'] = run ? 'dungeon' : expedition.pendingRouteJunctionId ? 'junction'
     : !expedition.lastTravelAction && Object.keys(expedition.sceneVisitCounts).length === 0 ? 'departure' : 'continuation';
-  const options: readonly RouteOptionViewModel[] = mode === 'junction' && junction
+  const options: readonly RouteOptionViewModel[] = routeMode === 'junction' && junction
     ? availableRouteOptions(junction, flags).map((option) => ({
       id: option.id, label: option.label, detail: option.detail, consequence: option.consequence,
       kind: option.kind, artSrc: ROUTE_ART[option.kind].src, artAlt: ROUTE_ART[option.kind].alt,
     }))
-    : mode === 'dungeon' && dungeon && run
+    : routeMode === 'dungeon' && dungeon && run
       ? availableDungeonExits(dungeon, run.currentNodeId, flags, run.visitedNodeIds).map((exit) => {
         const target = dungeon.nodes.find((node) => node.id === exit.targetNodeId);
         const kind = dungeonRouteKind(target);
@@ -457,6 +457,8 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
         return { id: exit.id, label: exit.label, detail: exit.detail, consequence, kind,
           artSrc: ROUTE_ART[kind].src, artAlt: ROUTE_ART[kind].alt };
       }) : [];
+  const mode: TravelViewModel['mode'] = routeMode === 'dungeon' && run
+    && run.resolvedNodeIds.includes(run.currentNodeId) && options.length === 0 ? 'recovery' : routeMode;
   const companion = travelCompanion(state, content, hero.resourceLabel);
   const scoutReason = hero.resource < 1 ? `Need 1 ${hero.resourceLabel} resource.` : null;
   const companionReason = companion ? null : 'Recruit and activate a companion at camp.';

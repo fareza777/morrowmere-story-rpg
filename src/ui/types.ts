@@ -79,7 +79,7 @@ export interface GameShellProps {
   readonly state: GameStateV2;
   readonly content: ContentIndex;
   readonly transitionEvents: readonly DomainEvent[];
-  readonly dispatch: (command: GameCommand) => void;
+  readonly dispatch: (command: GameCommand) => boolean | void;
   readonly onSaveAndExit: () => void;
   readonly onMainMenu: () => void;
   readonly onReplayOpening: () => void;
@@ -165,7 +165,7 @@ export interface RouteOptionViewModel {
 }
 
 export interface TravelViewModel {
-  readonly mode: 'departure' | 'junction' | 'dungeon' | 'continuation';
+  readonly mode: 'departure' | 'junction' | 'dungeon' | 'recovery' | 'continuation';
   readonly junctionId: string | null;
   readonly options: readonly RouteOptionViewModel[];
   readonly routeLabel: string;

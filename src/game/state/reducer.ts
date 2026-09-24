@@ -618,7 +618,9 @@ function advanceDungeon(state: GameStateV2, content: ContentIndex, updatedAt: st
     const entered = dungeonNode(resolved, dungeon, target, content, updatedAt);
     return entered.diagnostic ? diagnostic(state, entered.diagnostic.code, entered.diagnostic.message) : entered;
   }
-  if (exits.length === 0) return diagnostic(state, 'exit_unavailable', 'No dungeon exit is available.');
+  if (exits.length === 0) return commit(state, enterTravel({ ...resolved, expedition: { ...resolved.expedition!, sceneResolution: null } }, updatedAt), [
+    { type: 'notification', message: 'No passage is available. Emergency retreat is the only way back to the road.' },
+  ]);
   return commit(state, enterTravel({ ...resolved, expedition: { ...resolved.expedition!, sceneResolution: null } }, updatedAt), [{ type: 'notification', message: 'Choose a dungeon passage.' }]);
 }
 
@@ -753,6 +755,21 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     return commit(state, { ...state, campaign, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
   if (command.type === 'travel-action') return resolveTravelAction(state, command.action, content, command.updatedAt);
+  if (command.type === 'emergency-retreat-dungeon') {
+    const expedition = state.expedition;
+    const run = expedition?.dungeonRun;
+    const dungeon = run ? content.dungeons?.get(run.dungeonId) : undefined;
+    const node = dungeon && run ? dungeon.nodes.find((entry) => entry.id === run.currentNodeId) : undefined;
+    const activeAndResolved = Boolean(expedition && run && node && state.flow.screen === 'travel'
+      && expedition.currentSceneId === null && !expedition.currentCombat && !expedition.pendingReward && !state.flow.merchant
+      && run.resolvedNodeIds.includes(node!.id));
+    const noEligiblePassages = Boolean(dungeon && node && run
+      && availableDungeonExits(dungeon, node.id, new Set(state.campaign.flags), run.visitedNodeIds).length === 0);
+    if (!activeAndResolved || !noEligiblePassages || !node || !expedition) {
+      return diagnostic(state, 'retreat_unavailable', 'Emergency retreat is available only after resolving a dungeon room with no eligible passages.');
+    }
+    return finishDungeonExit(state, { ...node, kind: 'exit', exitKind: 'retreat' }, command.updatedAt);
+  }
   if (command.type === 'continue-journey') {
     const pendingId = state.expedition?.pendingRouteJunctionId;
     if (pendingId) {
@@ -839,7 +856,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       if (junction) {
         const options = availableRouteOptions(junction, new Set(state.campaign.flags));
         const pending = enterTravel({ ...state, expedition: { ...state.expedition, pendingRouteJunctionId: junction.id } }, command.updatedAt);
-        if (options.length === 1) return reduceGame(pending, { type: 'select-route', junctionId: junction.id, optionId: options[0]!.id, updatedAt: command.updatedAt }, content);
+        if (options.length === 0) return reduceGame(pending, { type: 'continue-journey', updatedAt: command.updatedAt }, content);
         return commit(state, pending, [{ type: 'notification', message: 'Choose your route.' }]);
       }
       return commit(state, enterTravel(state, command.updatedAt), [{ type: 'notification', message: 'Road tactics ready.' }]);

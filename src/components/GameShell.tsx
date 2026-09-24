@@ -40,6 +40,7 @@ type UndatedGameCommand = GameCommand extends infer Command
     ? Omit<Command, 'updatedAt'>
     : never
   : never;
+type AutoTravelCommand = Extract<UndatedGameCommand, { readonly type: 'continue-journey' | 'select-route' }>;
 
 interface GameShellProps extends BaseGameShellProps {
   readonly settings: UiSettings;
@@ -101,6 +102,7 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const [tutorialsSkipped, setTutorialsSkipped] = useState(() => savedTutorialState().skipped);
   const [tutorialsSeen, setTutorialsSeen] = useState<ReadonlySet<TutorialKind>>(() => new Set(savedTutorialState().seen));
   const [voiceRevealSettledKey, setVoiceRevealSettledKey] = useState<string | null>(null);
+  const [autoTravelFailedKey, setAutoTravelFailedKey] = useState<string | null>(null);
   const commandSequence = useRef(0);
   const autoTravelKey = useRef<string | null>(null);
   const camp = useMemo(() => selectCampView(state, content), [content, state]);
@@ -109,18 +111,26 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   const inventory = useMemo(() => selectInventoryView(state, content), [content, state]);
   const journal = useMemo(() => selectJournalView(state, content), [content, state]);
   const travel = useMemo(() => state.flow.screen === 'travel' ? selectTravelView(state, content) : null, [content, state]);
-  useEffect(() => {
-    if (state.flow.screen !== 'travel' || !travel) return;
-    const key = `${state.campaign.transitionCounter}:${travel.mode}:${travel.junctionId ?? ''}:${travel.options.map((option) => option.id).join(',')}`;
-    if (autoTravelKey.current === key) return;
-    if (travel.mode === 'continuation' || (travel.mode === 'junction' && travel.options.length === 0)) {
-      autoTravelKey.current = key;
-      dispatch({ type: 'continue-journey', updatedAt: now() });
-    } else if ((travel.mode === 'junction' || travel.mode === 'dungeon') && travel.options.length === 1 && travel.junctionId) {
-      autoTravelKey.current = key;
-      dispatch({ type: 'select-route', junctionId: travel.junctionId, optionId: travel.options[0]!.id, updatedAt: now() });
+  const autoTravelCommand = useMemo<AutoTravelCommand | null>(() => {
+    if (!travel) return null;
+    if (travel.mode === 'continuation' || travel.mode === 'junction' && travel.options.length === 0) return { type: 'continue-journey' };
+    if (travel.mode === 'dungeon' && travel.options.length === 1 && travel.junctionId) {
+      return { type: 'select-route', junctionId: travel.junctionId, optionId: travel.options[0]!.id };
     }
-  }, [dispatch, now, state.flow.screen, travel]);
+    return null;
+  }, [travel]);
+  const autoTravelKeyValue = travel
+    ? `${state.campaign.transitionCounter}:${travel.mode}:${travel.junctionId ?? ''}:${travel.options.map((option) => option.id).join(',')}`
+    : null;
+  const tryAutoTravel = useCallback((key: string, command: AutoTravelCommand) => {
+    autoTravelKey.current = key;
+    const accepted = dispatch({ ...command, updatedAt: now() } as GameCommand);
+    setAutoTravelFailedKey((previous) => accepted === false ? key : previous === key ? null : previous);
+  }, [dispatch, now]);
+  useEffect(() => {
+    if (state.flow.screen !== 'travel' || !autoTravelCommand || !autoTravelKeyValue || autoTravelKey.current === autoTravelKeyValue) return;
+    tryAutoTravel(autoTravelKeyValue, autoTravelCommand);
+  }, [autoTravelCommand, autoTravelKeyValue, state.flow.screen, tryAutoTravel]);
   const rawScene = state.expedition?.currentSceneId ? content.events.get(state.expedition.currentSceneId) : undefined;
   const coreSceneResolved = Boolean(
     rawScene
@@ -237,9 +247,14 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   } else if (state.flow.screen === 'camp') {
     body = <CampScreen view={camp} onChooseRoute={() => setChoosingRoute(true)} onOpenInventory={() => setOverlay('inventory')} onOpenJournal={() => setOverlay('journal')} onOpenCompanions={() => setOverlay('companions')} />;
   } else if (state.flow.screen === 'travel' && travel) {
-    body = travel.mode === 'continuation' || (travel.mode === 'junction' || travel.mode === 'dungeon') && travel.options.length < 2
-      ? <main className="loading-screen" aria-live="polite"><p>Continuing the journey…</p></main>
-      : <TravelPanel view={travel} onAction={(action: TravelAction) => issue({ type: 'travel-action', action })} onRoute={(optionId) => { if (travel.junctionId) issue({ type: 'select-route', junctionId: travel.junctionId, optionId }); }} />;
+    body = travel.mode === 'continuation' || travel.mode === 'junction' && travel.options.length === 0
+      ? <main className="loading-screen" aria-live="polite"><p>Continuing the journey…</p>{autoTravelFailedKey === autoTravelKeyValue && autoTravelCommand && <button className="button button-primary" type="button" onClick={() => tryAutoTravel(autoTravelKeyValue!, autoTravelCommand)}>Retry continue</button>}</main>
+      : travel.mode === 'dungeon' && travel.options.length === 1
+        ? <main className="loading-screen" aria-live="polite"><p>Continuing through the passage…</p>{autoTravelFailedKey === autoTravelKeyValue && autoTravelCommand && <button className="button button-primary" type="button" onClick={() => tryAutoTravel(autoTravelKeyValue!, autoTravelCommand)}>Retry passage</button>}</main>
+        : <TravelPanel view={travel}
+          onAction={(action: TravelAction) => issue({ type: 'travel-action', action })}
+          onRoute={(optionId) => { if (travel.junctionId) issue({ type: 'select-route', junctionId: travel.junctionId, optionId }); }}
+          onEmergencyRetreat={() => issue({ type: 'emergency-retreat-dungeon' })} />;
   } else if (state.flow.screen === 'story' && displayedScene) {
     const environmentId = dialogueBeat?.environmentIllustrationId ?? displayedScene.illustrationId;
     body = <><SceneArt key={`story-art-${displayedScene.id}-${environmentId}`} illustrationId={environmentId} alt={displayedScene.illustrationAlt} />{currentTutorial === 'choice' && <TutorialCallout kind="choice" onDismiss={() => dismissTutorial('choice')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main">{dialogueBeat && !displayedScene.resolved ? <DialoguePanel beat={dialogueBeat} reducedMotion={settings.reducedMotion} onAdvance={() => issue({ type: 'advance-dialogue', eventId: displayedScene.id as EventId })} onRevealVoiced={() => setVoiceRevealSettledKey(voiceRevealKey)} voiceRevealPending={voiceRevealPending} responses={displayedScene.choices.length > 0 ? <ChoiceList choices={displayedScene.choices} onChoose={(choiceId) => issue({ type: 'resolve-choice', eventId: displayedScene.id as EventId, choiceId: choiceId as ChoiceId })} /> : <button className="button button-primary" type="button" onClick={() => issue({ type: 'select-next-scene' })}>Continue</button>} /> : <StoryPanel key={`story-${displayedScene.id}`} view={displayedScene} onChoose={(choiceId) => issue({ type: 'resolve-choice', eventId: displayedScene.id as EventId, choiceId: choiceId as ChoiceId })} onContinue={() => issue({ type: 'select-next-scene' })} onNarrate={storyAudio && voicedScene && settings.voiceVolume > 0 ? () => { void storyAudio.narrateScene(voicedScene.sceneId!); } : undefined} extraActions={hubActions} />}</main></>;

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GameShell } from '../src/components/GameShell';
 import { TravelPanel } from '../src/components/TravelPanel';
+import { reduceGame } from '../src/game/state/reducer';
 import { selectTravelView } from '../src/ui/selectors';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
 import type { RouteJunctionDefinition, DungeonDefinition } from '../src/game/dungeon/types';
@@ -69,11 +70,28 @@ describe('Road Tactics UI', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'select-route', junctionId: junction.id, optionId: 'culvert', updatedAt: '2026-09-01T00:00:00.000Z' });
   });
 
+  it('waits for confirmation at a one-option chapter junction', async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const state = routeState();
+    const single = { ...junction, options: [junction.options[0]!] };
+    const content = { ...UI_CONTENT, routeJunctions: new Map([[single.id, single]]) };
+    const atFork = { ...state, expedition: { ...state.expedition!, pendingRouteJunctionId: single.id } };
+    render(<GameShell state={atFork} content={content} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+
+    expect(screen.getByRole('button', { name: 'Follow the hedge' })).toBeVisible();
+    expect(screen.getByText('Spend daylight; avoid a fight.')).toBeVisible();
+    expect(dispatch).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Follow the hedge' }));
+    expect(dispatch).toHaveBeenCalledOnce();
+    expect(dispatch).toHaveBeenCalledWith({ type: 'select-route', junctionId: single.id, optionId: 'hedge', updatedAt: '2026-09-01T00:00:00.000Z' });
+  });
+
   it('shows a third junction choice only when its exact flag is present', () => {
     const state = routeState();
     const content = { ...UI_CONTENT, routeJunctions: new Map([[junction.id, junction]]) };
     const atFork = { ...state, campaign: { ...state.campaign, flags: [...state.campaign.flags, 'mara-marked-path'] }, expedition: { ...state.expedition!, pendingRouteJunctionId: junction.id } };
-    render(<TravelPanel view={selectTravelView(atFork, content)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(atFork, content)} onAction={vi.fn()} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
     expect(screen.getAllByRole('article')).toHaveLength(3);
     expect(screen.getByRole('button', { name: 'Use the hidden path' })).toBeVisible();
   });
@@ -82,7 +100,7 @@ describe('Road Tactics UI', () => {
     const state = routeState();
     const content = { ...UI_CONTENT, dungeons: new Map([[dungeon.id, dungeon]]) };
     const inCellar = { ...state, expedition: { ...state.expedition!, dungeonRun: { dungeonId: dungeon.id, seed: 7, currentNodeId: 'cellar-entry', depth: 1, visitedNodeIds: ['cellar-entry'], resolvedNodeIds: ['cellar-entry'] } } };
-    render(<TravelPanel view={selectTravelView(inCellar, content)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(inCellar, content)} onAction={vi.fn()} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Follow the lanterns' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Cross the flooded stones' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Press On' })).not.toBeInTheDocument();
@@ -100,6 +118,27 @@ describe('Road Tactics UI', () => {
     render(<GameShell state={inCellar} content={content} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
     expect(screen.queryByRole('region', { name: 'Choose a Passage' })).not.toBeInTheDocument();
     expect(dispatch).toHaveBeenCalledWith({ type: 'select-route', junctionId: 'cellar-entry', optionId: 'safe-passage', updatedAt: '2026-09-01T00:00:00.000Z' });
+    const accepted = reduceGame(inCellar, { type: 'select-route', junctionId: 'cellar-entry', optionId: 'safe-passage', updatedAt: '2026-09-01T00:00:00.000Z' }, content);
+    expect(accepted.diagnostic).toBeUndefined();
+    expect(accepted.state.expedition?.dungeonRun?.currentNodeId).toBe('safe-exit');
+    expect(accepted.state.flow.screen).toBe('story');
+  });
+
+  it('shows an emergency-retreat recovery action with its reward loss explained at a dungeon dead-end', async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const state = routeState();
+    const deadEndDungeon: DungeonDefinition = { id: 'dead-end', chapterId: 'ch01', startNodeId: 'sealed-room', exitNodeIds: [], nodes: [
+      { id: 'sealed-room', kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'], exits: [] },
+    ] };
+    const content = { ...UI_CONTENT, dungeons: new Map([[deadEndDungeon.id, deadEndDungeon]]) };
+    const deadEnd = { ...state, expedition: { ...state.expedition!, dungeonRun: { dungeonId: deadEndDungeon.id, seed: 7, currentNodeId: 'sealed-room', depth: 1, visitedNodeIds: ['sealed-room'], resolvedNodeIds: ['sealed-room'] } } };
+    expect(selectTravelView(deadEnd, content).mode).toBe('recovery');
+    render(<GameShell state={deadEnd} content={content} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+    expect(screen.getByRole('button', { name: /Emergency Retreat/i })).toBeVisible();
+    expect(screen.getByText(/secure half.*unbanked gold.*loose loot stays unsecured/i)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Emergency Retreat' }));
+    expect(dispatch).toHaveBeenCalledWith({ type: 'emergency-retreat-dungeon', updatedAt: '2026-09-01T00:00:00.000Z' });
   });
 
   it('continues a later road leg with zero route options without showing an empty panel', () => {
@@ -111,8 +150,20 @@ describe('Road Tactics UI', () => {
     expect(screen.queryByRole('button', { name: 'Scout' })).not.toBeInTheDocument();
     expect(dispatch).toHaveBeenCalledWith({ type: 'continue-journey', updatedAt: '2026-09-01T00:00:00.000Z' });
   });
+
+  it('shows an explicit retry when automatic continuation is rejected and retries only on request', async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const state = routeState();
+    const laterLeg = { ...state, expedition: { ...state.expedition!, lastTravelAction: 'scout' as const, sceneVisitCounts: { 'ui-story-event': 1 } } };
+    render(<GameShell state={laterLeg} content={UI_CONTENT} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+    const retry = await screen.findByRole('button', { name: 'Retry continue' });
+    expect(dispatch).toHaveBeenCalledOnce();
+    await user.click(retry);
+    expect(dispatch).toHaveBeenCalledTimes(2);
+  });
   it('renders four road actions with art, costs, and effect previews', () => {
-    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /Scout/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Press On/i })).toBeInTheDocument();
@@ -122,7 +173,7 @@ describe('Road Tactics UI', () => {
   });
 
   it('explains why scout is disabled at zero resource', () => {
-    render(<TravelPanel view={selectTravelView(routeState({ resource: 0 }), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(routeState({ resource: 0 }), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /Scout/i })).toBeDisabled();
     expect(screen.getByText(/Need 1 .* resource/i)).toBeInTheDocument();
@@ -135,7 +186,7 @@ describe('Road Tactics UI', () => {
       expedition: { ...state.expedition!, currentSceneId: null, sceneResolution: null, sceneVisitCounts: {} },
       flow: { ...state.flow, screen: 'travel' as const, merchant: null },
     };
-    render(<TravelPanel view={selectTravelView(travelState, UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(travelState, UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
 
     expect(screen.getByText(/Threat -2.*Scouted/i)).toBeInTheDocument();
   });
@@ -158,7 +209,7 @@ describe('Road Tactics UI', () => {
   it('sends one typed travel action for an available card', async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();
-    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={onAction} onRoute={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={onAction} onRoute={vi.fn()} onEmergencyRetreat={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: /Press On/i }));
     expect(onAction).toHaveBeenCalledOnce();
