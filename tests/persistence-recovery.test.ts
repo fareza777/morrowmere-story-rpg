@@ -128,7 +128,9 @@ function legacyRewardFixture() {
   const created = createCampaign({ heroClass: 'warrior', name: 'Mira', seed: 2, updatedAt: '2026-08-31T12:00:00.000Z' }, localContent);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: '2026-08-31T12:01:00.000Z' }, localContent).state;
   const selected = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: '2026-08-31T12:02:00.000Z' }, localContent).state;
-  const combat = reduceGame(selected, { type: 'resolve-choice', eventId: 'legacy-reward-fight' as never, choiceId: 'legacy-fight-choice' as never, updatedAt: '2026-08-31T12:03:00.000Z' }, localContent).state;
+  const outcome = reduceGame(selected, { type: 'resolve-choice', eventId: 'legacy-reward-fight' as never, choiceId: 'legacy-fight-choice' as never, updatedAt: '2026-08-31T12:03:00.000Z' }, localContent).state;
+  if (outcome.flow.screen !== 'story' || outcome.expedition?.sceneResolution?.outcome !== 'The patrol attacks.') throw new Error('Expected a visible battle choice outcome.');
+  const combat = reduceGame(outcome, { type: 'select-next-scene', updatedAt: '2026-08-31T12:03:30.000Z' }, localContent).state;
   const won = reduceGame(combat, { type: 'combat-turn', commandId: 'legacy-victory', action: { type: 'attack' }, updatedAt: '2026-08-31T12:04:00.000Z' }, localContent).state;
   if (won.flow.screen !== 'reward' || !won.expedition?.pendingReward) throw new Error('Expected a legacy reward fixture.');
   return { content: localContent, state: won, combat };

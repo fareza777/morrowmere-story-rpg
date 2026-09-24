@@ -224,6 +224,7 @@ export type GameCommand =
   | { readonly type: 'use-item'; readonly entryId: string; readonly updatedAt: string }
   | { readonly type: 'inventory'; readonly command: Exclude<InventoryCommand, { readonly type: 'add' }>; readonly updatedAt: string }
   | { readonly type: 'select-next-scene'; readonly updatedAt: string }
+  | { readonly type: 'select-route'; readonly junctionId: string; readonly optionId: string; readonly updatedAt: string }
   | { readonly type: 'travel-action'; readonly action: TravelAction; readonly updatedAt: string }
   | { readonly type: 'combat-turn'; readonly commandId: string; readonly action: CombatAction; readonly updatedAt: string }
   | { readonly type: 'open-merchant'; readonly updatedAt: string }

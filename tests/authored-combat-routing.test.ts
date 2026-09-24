@@ -68,7 +68,10 @@ describe('authored combat scene routing', () => {
     const result = reduceGame(before, { type: 'resolve-choice', eventId: scene!.id, choiceId: choice.id, updatedAt }, CHRONICLE1_CONTENT);
 
     expect(result.diagnostic).toBeUndefined();
-    expect(result.state.flow.screen).toBe('combat');
+    expect(result.state.flow.screen).toBe('story');
+    expect(result.state.expedition?.sceneResolution?.outcome).toBeTruthy();
+    const advanced = reduceGame(result.state, { type: 'select-next-scene', updatedAt }, CHRONICLE1_CONTENT);
+    expect(advanced.state.flow.screen).toBe('combat');
     expect(result.state.expedition?.currentCombat?.encounterId).toBe(scene!.encounterId);
     expect(result.state.campaign.flags).toContain('combat-ch01-ditch-formation');
   });
@@ -84,8 +87,29 @@ describe('authored combat scene routing', () => {
         type: 'resolve-choice', eventId: scene.id, choiceId: choice!.id as ChoiceId, updatedAt,
       }, CHRONICLE1_CONTENT);
       expect(result.diagnostic, scene.id).toBeUndefined();
-      expect(result.state.flow.screen, scene.id).toBe('combat');
+      expect(result.state.flow.screen, scene.id).toBe('story');
+      const advanced = reduceGame(result.state, { type: 'select-next-scene', updatedAt }, CHRONICLE1_CONTENT);
+      expect(advanced.state.flow.screen, scene.id).toBe('combat');
       expect(result.state.expedition?.currentCombat?.encounterId, scene.id).toBe(scene.encounterId);
     }
+  });
+
+  it('uses an authored retreat after fleeing a dungeon fight', () => {
+    const scene = [...CHRONICLE1_CONTENT.events.values()].find((event) => event.type === 'combat' && event.encounterId && event.choices.length > 0)!;
+    const retreatScene = { ...scene, id: 'flee-exit-scene' as EventId, type: 'journey' as const, family: 'flee-exit', choices: [], dialogue: [] };
+    const content = { ...CHRONICLE1_CONTENT, events: new Map([...CHRONICLE1_CONTENT.events, [retreatScene.id, retreatScene] as const]), dungeons: new Map([['flee-run', { id: 'flee-run', chapterId: 'ch01' as const, startNodeId: 'fight', exitNodeIds: ['retreat'], nodes: [
+      { id: 'fight', kind: 'combat' as const, encounterId: scene.encounterId, exits: [{ id: 'withdraw', targetNodeId: 'retreat', label: 'Withdraw', detail: 'Secure half the unbanked gold.' }] },
+      { id: 'retreat', kind: 'exit' as const, exitKind: 'retreat' as const, sceneId: retreatScene.id, exits: [] },
+    ] }]]) };
+    const resolved = reduceGame(stateAtCombatScene(scene.id), { type: 'resolve-choice', eventId: scene.id, choiceId: scene.choices[0]!.id, updatedAt }, content).state;
+    const battle = reduceGame(resolved, { type: 'select-next-scene', updatedAt }, content).state;
+    const before: GameStateV2 = { ...battle, expedition: { ...battle.expedition!, dungeonRun: { dungeonId: 'flee-run', seed: 4, currentNodeId: 'fight', depth: 1, visitedNodeIds: ['fight'], resolvedNodeIds: [] }, unbankedGold: 9, currentCombat: { ...battle.expedition!.currentCombat!, combat: { ...battle.expedition!.currentCombat!.combat!, rngState: 9 } } } };
+    const fled = reduceGame(before, { type: 'combat-turn', commandId: 'flee-1', action: { type: 'flee' }, updatedAt }, content);
+    expect(fled.state.expedition?.dungeonRun?.currentNodeId).toBe('retreat');
+    expect(fled.state.expedition?.currentSceneId).toBe(retreatScene.id);
+    const exited = reduceGame(fled.state, { type: 'select-next-scene', updatedAt }, content);
+    expect(exited.state.expedition?.dungeonRun).toBeNull();
+    expect(exited.state.campaign.bankedGold - before.campaign.bankedGold).toBe(4);
+    expect(exited.state.flow.screen).toBe('travel');
   });
 });

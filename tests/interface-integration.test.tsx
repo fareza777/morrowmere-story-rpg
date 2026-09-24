@@ -160,6 +160,9 @@ describe('Chronicle product integration gate', () => {
     expect(await screen.findByRole('heading', { name: 'Road Tactics' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Press On', exact: true }));
     await user.click(await screen.findByRole('button', { name: 'Hold the road' }));
+    expect(savedSlotTwo().flow.screen).toBe('story');
+    expect(savedSlotTwo().expedition?.sceneResolution?.outcome).toBe('Steel answers from the ditch.');
+    await user.click(await screen.findByRole('button', { name: 'Continue' }));
     expect(savedSlotTwo().flow.screen).toBe('combat');
     await user.click(await screen.findByRole('button', { name: /Target Ditch Raider/i }));
     await user.click(screen.getByRole('button', { name: 'Guard' }));

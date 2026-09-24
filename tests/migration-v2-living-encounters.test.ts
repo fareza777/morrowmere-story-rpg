@@ -151,7 +151,10 @@ describe('schema-v2 living encounter migration', () => {
   it('preserves campaign, expedition, combat, and pending reward progress in schema v4', () => {
     const content = fixtureContent();
     const staged = atScene(asEvent('migration-fight'), content);
-    const fighting = reduceGame(staged, { type: 'resolve-choice', eventId: asEvent('migration-fight'), choiceId: asChoice('fight'), updatedAt: at(2) }, content).state;
+    const outcome = reduceGame(staged, { type: 'resolve-choice', eventId: asEvent('migration-fight'), choiceId: asChoice('fight'), updatedAt: at(2) }, content).state;
+    expect(outcome.flow.screen).toBe('story');
+    const fighting = reduceGame(outcome, { type: 'select-next-scene', updatedAt: at(2) }, content).state;
+    expect(fighting.flow.screen).toBe('combat');
     const won = reduceGame(fighting, { type: 'combat-turn', commandId: 'migration-win', action: { type: 'attack' }, updatedAt: at(3) }, content).state;
     const encoded = encodeSaveState(won, content);
     if (!encoded) throw new Error('Expected a valid v2 fixture.');

@@ -17,6 +17,8 @@ import { deriveHeroStats, grantExperience } from '../progression';
 import { campaignPayload, cloneCampaignPayload, initialDirector } from './create';
 import { applyEffectsAtomically } from './effects';
 import { enterTravel, resolveTravelAction } from './road-tactics';
+import { availableDungeonExits, availableRouteOptions, resolveDungeonEncounter, resolveDungeonReward } from '../dungeon/routes';
+import type { DungeonDefinition, DungeonNode, DungeonRunState } from '../dungeon/types';
 import type {
   CampSnapshot,
   CampaignCheckpointPayload,
@@ -527,6 +529,99 @@ function abandonAuthoredCombatContinuations(
   };
 }
 
+function authoredDescendant(content: ContentIndex, ancestor: EventId, descendant: EventId): boolean {
+  const seen = new Set<EventId>();
+  const pending = [ancestor];
+  while (pending.length) {
+    const id = pending.pop()!;
+    if (id === descendant) return true;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const scene = content.events.get(id);
+    if (scene) pending.push(...(scene.followUps ?? []), ...scene.choices.flatMap((choice) =>
+      isChronicleCheckedChoice(choice)
+        ? [choice.check.success, choice.check.failure, choice.check.criticalSuccess, choice.check.criticalFailure].flatMap((branch) => branch?.nextSceneId ? [branch.nextSceneId] : [])
+        : choice.nextSceneId ? [choice.nextSceneId] : []));
+  }
+  return false;
+}
+
+function resolvedJunctionFlag(junctionId: string): string { return `route:junction:${junctionId}:resolved`; }
+
+function authoredScene(state: GameStateV2, sceneId: EventId, content: ContentIndex, updatedAt: string): GameStateV2 {
+  const scene = content.events.get(sceneId)!;
+  const expedition = state.expedition!;
+  const autoResolved = scene.choices.length === 0 && visibleDialogueBeats(scene.dialogue, state.campaign.flags).length === 0;
+  const director = {
+    ...expedition.director,
+    usedSceneIds: expedition.director.usedSceneIds.includes(sceneId) ? expedition.director.usedSceneIds : [...expedition.director.usedSceneIds, sceneId],
+    seenEventIds: expedition.director.seenEventIds.includes(sceneId) ? expedition.director.seenEventIds : [...expedition.director.seenEventIds, sceneId],
+  };
+  return { ...state, campaign: { ...state.campaign, directorMemory: directorMemory(director) }, expedition: {
+    ...expedition, director, currentSceneId: sceneId, dialogueBeatIndex: 0,
+    sceneVisitCounts: { ...expedition.sceneVisitCounts, [sceneId]: (expedition.sceneVisitCounts[sceneId] ?? 0) + 1 },
+    sceneResolution: autoResolved ? { eventId: sceneId, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: scene.narrative.at(-1) ?? scene.title, effectSummary: [], nextSceneId: null, continueLabel: null } : null,
+    authoredSceneQueue: autoResolved ? enqueueAuthoredAftermaths(expedition.authoredSceneQueue, sceneId, null, scene.followUps ?? []) : expedition.authoredSceneQueue,
+  }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt };
+}
+
+function dungeonNode(state: GameStateV2, dungeon: DungeonDefinition, node: DungeonNode, content: ContentIndex, updatedAt: string): GameTransition {
+  const run = state.expedition!.dungeonRun!;
+  if (run.visitedNodeIds.includes(node.id)) return diagnostic(state, 'node_resolved', 'That dungeon room was already visited.');
+  const entered: DungeonRunState = { ...run, currentNodeId: node.id, depth: run.depth + 1, visitedNodeIds: [...run.visitedNodeIds, node.id] };
+  let next: GameStateV2 = { ...state, expedition: { ...state.expedition!, dungeonRun: entered, pendingRouteJunctionId: null, currentSceneId: null, sceneResolution: null, currentCombat: null, pendingReward: null }, flow: { ...state.flow, screen: 'story', merchant: null }, updatedAt };
+  if (node.sceneId) {
+    if (!content.events.has(node.sceneId)) return diagnostic(state, 'invalid_scene', 'That dungeon scene is unavailable.');
+    next = authoredScene(next, node.sceneId, content, updatedAt);
+  } else if (node.encounterId || node.encounterVariants?.length) {
+    const encounterId = resolveDungeonEncounter(node, run.seed);
+    if (!encounterId || !content.encounters.has(encounterId)) return diagnostic(state, 'invalid_encounter', 'That dungeon encounter is unavailable.');
+    const combat = beginCombat(next, encounterId, content);
+    if (!combat) return diagnostic(state, 'invalid_encounter', 'That dungeon encounter cannot be started.');
+    next = { ...next, expedition: { ...next.expedition!, currentCombat: { encounterId, combat } }, flow: { ...next.flow, screen: 'combat' } };
+  } else {
+    const reward = resolveDungeonReward(node, run.seed);
+    if (reward) {
+      const applied = applyEffectsAtomically(next, reward.effects, content);
+      if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
+      next = { ...next, campaign: applied.value.campaign, expedition: applied.value.expedition };
+    }
+    return advanceDungeon(next, content, updatedAt);
+  }
+  return commit(state, next, [{ type: 'notification', message: `${dungeon.id}: ${node.id}` }]);
+}
+
+function finishDungeonExit(state: GameStateV2, node: DungeonNode, updatedAt: string): GameTransition {
+  const expedition = state.expedition!;
+  const gold = expedition.unbankedGold;
+  const secured = node.exitKind === 'retreat' ? Math.floor(gold * 0.5) : gold;
+  const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + secured };
+  const camp = state.checkpoints.camp;
+  const checkpoints = camp ? { ...state.checkpoints, camp: { ...camp, campaign: cloneCampaignPayload({ ...camp.campaign, bankedGold: camp.campaign.bankedGold + secured, inventory: node.exitKind === 'retreat' ? camp.campaign.inventory : campaign.inventory }) } } : state.checkpoints;
+  const next = enterTravel({ ...state, campaign, checkpoints, expedition: { ...expedition, dungeonRun: null, unbankedGold: 0, unbankedLoot: node.exitKind === 'retreat' ? expedition.unbankedLoot : [], sceneResolution: null, pendingRouteJunctionId: null } }, updatedAt);
+  return commit(state, next, [{ type: 'notification', message: node.exitKind === 'retreat' ? `Retreat secured ${secured} of ${gold} unbanked gold.` : `Extraction secured ${secured} unbanked gold.` }]);
+}
+
+function advanceDungeon(state: GameStateV2, content: ContentIndex, updatedAt: string): GameTransition {
+  const expedition = state.expedition!;
+  const run = expedition.dungeonRun!;
+  const dungeon = content.dungeons?.get(run.dungeonId);
+  const node = dungeon?.nodes.find((entry) => entry.id === run.currentNodeId);
+  if (!dungeon || !node) return diagnostic(state, 'invalid_dungeon', 'That dungeon room is unavailable.');
+  if (run.resolvedNodeIds.includes(node.id)) return diagnostic(state, 'node_resolved', 'That dungeon room was already resolved.');
+  if (node.sceneId && expedition.sceneResolution?.eventId !== node.sceneId) return diagnostic(state, 'scene_unresolved', 'Finish this dungeon scene first.');
+  const resolved: GameStateV2 = { ...state, expedition: { ...expedition, dungeonRun: { ...run, resolvedNodeIds: [...run.resolvedNodeIds, node.id] } } };
+  if (node.exitKind) return finishDungeonExit(resolved, node, updatedAt);
+  const exits = availableDungeonExits(dungeon, node.id, new Set(state.campaign.flags), run.visitedNodeIds);
+  if (exits.length === 1) {
+    const target = dungeon.nodes.find((entry) => entry.id === exits[0]!.targetNodeId)!;
+    const entered = dungeonNode(resolved, dungeon, target, content, updatedAt);
+    return entered.diagnostic ? diagnostic(state, entered.diagnostic.code, entered.diagnostic.message) : entered;
+  }
+  if (exits.length === 0) return diagnostic(state, 'exit_unavailable', 'No dungeon exit is available.');
+  return commit(state, enterTravel({ ...resolved, expedition: { ...resolved.expedition!, sceneResolution: null } }, updatedAt), [{ type: 'notification', message: 'Choose a dungeon passage.' }]);
+}
+
 function commitCampMutation(state: GameStateV2, campaign: GameStateV2['campaign'], updatedAt: string, events: readonly DomainEvent[]): GameTransition {
   const provisional = { ...state, campaign, updatedAt };
   const campSceneId = state.checkpoints.camp?.campSceneId ?? null;
@@ -658,6 +753,42 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     return commit(state, { ...state, campaign, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
   if (command.type === 'travel-action') return resolveTravelAction(state, command.action, content, command.updatedAt);
+  if (command.type === 'select-route') {
+    const expedition = state.expedition;
+    if (!expedition || state.flow.screen !== 'travel' || expedition.currentCombat || expedition.pendingReward || expedition.currentSceneId) return diagnostic(state, 'route_required', 'Choose a route at an active junction.');
+    if (expedition.dungeonRun) {
+      const dungeon = content.dungeons?.get(expedition.dungeonRun.dungeonId);
+      const node = dungeon?.nodes.find((entry) => entry.id === expedition.dungeonRun!.currentNodeId);
+      if (!dungeon || !node || !expedition.dungeonRun.resolvedNodeIds.includes(node.id) || command.junctionId !== node.id) return diagnostic(state, 'route_required', 'That dungeon junction is no longer active.');
+      const exits = availableDungeonExits(dungeon, node.id, new Set(state.campaign.flags), expedition.dungeonRun.visitedNodeIds);
+      const exit = exits.length > 1 ? exits.find((entry) => entry.id === command.optionId) : null;
+      const target = dungeon.nodes.find((entry) => entry.id === exit?.targetNodeId);
+      if (!exit || !target) return diagnostic(state, 'invalid_route', 'That dungeon passage is unavailable.');
+      const entered = dungeonNode(state, dungeon, target, content, command.updatedAt);
+      return entered.diagnostic ? diagnostic(state, entered.diagnostic.code, entered.diagnostic.message) : entered;
+    }
+    if (expedition.pendingRouteJunctionId !== command.junctionId) return diagnostic(state, 'route_required', 'That route junction is no longer active.');
+    const junction = content.routeJunctions?.get(command.junctionId);
+    const option = junction && availableRouteOptions(junction, new Set(state.campaign.flags)).find((entry) => entry.id === command.optionId);
+    if (!option) return diagnostic(state, 'invalid_route', 'That route option is unavailable.');
+    const applied = applyEffectsAtomically(state, option.effects ?? [], content);
+    if (!applied.ok) return diagnostic(state, applied.error.code, applied.error.message);
+    const bankedDelta = applied.value.campaign.bankedGold - state.campaign.bankedGold;
+    const camp = state.checkpoints.camp;
+    const checkpoints = camp && bankedDelta !== 0 ? { ...state.checkpoints, camp: { ...camp, campaign: cloneCampaignPayload({ ...camp.campaign, bankedGold: camp.campaign.bankedGold + bankedDelta }) } } : state.checkpoints;
+    const prepared: GameStateV2 = { ...state, campaign: { ...applied.value.campaign, flags: [...new Set([...applied.value.campaign.flags, resolvedJunctionFlag(junction.id)])] }, expedition: { ...applied.value.expedition!, pendingRouteJunctionId: null }, checkpoints };
+    if (option.destination.kind === 'scene') {
+      const scene = content.events.get(option.destination.sceneId);
+      if (!scene) return diagnostic(state, 'invalid_scene', 'That route scene is unavailable.');
+      return commit(state, authoredScene(prepared, scene.id, content, command.updatedAt), applied.value.events);
+    }
+    const dungeon = content.dungeons?.get(option.destination.dungeonId);
+    const start = dungeon?.nodes.find((entry) => entry.id === dungeon.startNodeId);
+    if (!dungeon || !start) return diagnostic(state, 'invalid_dungeon', 'That dungeon is unavailable.');
+    const seeded = { ...prepared, expedition: { ...prepared.expedition!, dungeonRun: { dungeonId: dungeon.id, seed: prepared.expedition!.routeSeed, currentNodeId: start.id, depth: 0, visitedNodeIds: [], resolvedNodeIds: [] } } };
+    const entered = dungeonNode(seeded, dungeon, start, content, command.updatedAt);
+    return entered.diagnostic ? diagnostic(state, entered.diagnostic.code, entered.diagnostic.message) : entered;
+  }
   if (command.type === 'select-next-scene') {
     if (!state.expedition || state.flow.screen !== 'story') return diagnostic(state, 'story_required', 'Select the next scene while travelling.');
     const pendingCombat = state.expedition.currentCombat;
@@ -673,8 +804,24 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     }
     const current = currentScene(state, content);
     if (current && state.expedition.sceneResolution?.eventId === current.id) {
+      if (state.expedition.dungeonRun) return advanceDungeon(state, content, command.updatedAt);
+      if (state.expedition.authoredSceneQueue.length) {
+        const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile, bankedGold: state.campaign.bankedGold, unbankedGold: state.expedition.unbankedGold, inventory: state.campaign.inventory }, content, state.expedition.authoredSceneQueue);
+        if (step.kind === 'selected' && step.reason === 'authored') {
+          const prepared = { ...state, expedition: { ...state.expedition, director: step.state, authoredSceneQueue: step.authoredSceneQueue, position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 } } };
+          return commit(state, authoredScene(prepared, step.sceneId, content, command.updatedAt), [{ type: 'notification', message: 'Scene ready.' }]);
+        }
+      }
+      const junction = [...(content.routeJunctions?.values() ?? [])].find((entry) => entry.chapterId === state.campaign.chapterId && !state.campaign.flags.includes(resolvedJunctionFlag(entry.id)) && authoredDescendant(content, entry.afterEventId, current.id) && state.expedition!.director.seenEventIds.includes(entry.afterEventId));
+      if (junction) {
+        const options = availableRouteOptions(junction, new Set(state.campaign.flags));
+        const pending = enterTravel({ ...state, expedition: { ...state.expedition, pendingRouteJunctionId: junction.id } }, command.updatedAt);
+        if (options.length === 1) return reduceGame(pending, { type: 'select-route', junctionId: junction.id, optionId: options[0]!.id, updatedAt: command.updatedAt }, content);
+        return commit(state, pending, [{ type: 'notification', message: 'Choose your route.' }]);
+      }
       return commit(state, enterTravel(state, command.updatedAt), [{ type: 'notification', message: 'Road tactics ready.' }]);
     }
+    if (state.expedition.dungeonRun && !current) return advanceDungeon(state, content, command.updatedAt);
     const dialogue = visibleDialogueBeats(current?.dialogue, state.campaign.flags);
     if (current && current.choices.length === 0 && dialogue?.length && state.expedition.sceneResolution?.eventId !== current.id) {
       if (state.expedition.dialogueBeatIndex < dialogue.length - 1) return diagnostic(state, 'dialogue_incomplete', 'Finish the dialogue before continuing.');
@@ -859,10 +1006,8 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     }
     if (expedition.currentCombat && !expedition.currentCombat.combat) {
       const temporary = { ...state, campaign: applied.value.campaign, expedition };
-      const combat = beginCombat(temporary, expedition.currentCombat.encounterId, content);
-      if (!combat) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
-      expedition = { ...expedition, currentCombat: { ...expedition.currentCombat, combat } };
-      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, flow: { ...state.flow, screen: 'combat', merchant: null }, updatedAt: command.updatedAt }, events);
+      if (!beginCombat(temporary, expedition.currentCombat.encounterId, content)) return diagnostic(state, 'invalid_encounter', 'That encounter cannot be started.');
+      return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
     }
     return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
   }
@@ -893,7 +1038,25 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const unbankedLoot = usedItemId ? removeOneUnbanked(state.expedition.unbankedLoot, usedItemId) : state.expedition.unbankedLoot;
     if (result.combat.outcome === 'active') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, currentCombat: { encounterId, combat: result.combat } }, updatedAt: command.updatedAt }, result.events);
     const abandonedContinuations = abandonAuthoredCombatContinuations(state.expedition.authoredSceneQueue, state.expedition.director, state.expedition.currentSceneId);
-    if (result.combat.outcome === 'fled') return commit(state, enterTravel({ ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: null, pendingReward: null } }, command.updatedAt), [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    if (result.combat.outcome === 'fled') {
+      const escaped: GameStateV2 = { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: null, pendingReward: null } };
+      if (state.expedition.dungeonRun) {
+        const run = state.expedition.dungeonRun;
+        const dungeon = content.dungeons?.get(run.dungeonId);
+        const current = dungeon?.nodes.find((node) => node.id === run.currentNodeId);
+        const retreat = dungeon && current ? availableDungeonExits(dungeon, current.id, new Set(state.campaign.flags), run.visitedNodeIds)
+          .map((exit) => dungeon.nodes.find((node) => node.id === exit.targetNodeId))
+          .find((node) => node?.exitKind === 'retreat') : null;
+        if (dungeon && current && retreat) {
+          const resolved: GameStateV2 = { ...escaped, expedition: { ...escaped.expedition!, dungeonRun: { ...run, resolvedNodeIds: [...run.resolvedNodeIds, current.id] } } };
+          const entered = dungeonNode(resolved, dungeon, retreat, content, command.updatedAt);
+          if (entered.diagnostic) return diagnostic(state, entered.diagnostic.code, entered.diagnostic.message);
+          return commit(state, entered.state, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }, ...entered.events.map((event) => event.domain)]);
+        }
+        return commit(state, { ...escaped, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }, { type: 'notification', message: 'No authored retreat is available; return to camp to recover.' }]);
+      }
+      return commit(state, enterTravel(escaped, command.updatedAt), [...result.events, { type: 'combat_ended', encounterId, outcome: 'fled' }]);
+    }
     if (result.combat.outcome === 'defeat') return commit(state, { ...state, campaign: { ...state.campaign, inventory: result.inventory }, expedition: { ...state.expedition, heroVitals, unbankedLoot, director: abandonedContinuations.director, authoredSceneQueue: abandonedContinuations.queue, currentCombat: { encounterId, combat: result.combat }, pendingReward: null }, flow: { ...state.flow, screen: 'defeat', merchant: null }, updatedAt: command.updatedAt }, [...result.events, { type: 'combat_ended', encounterId, outcome: 'defeat' }]);
     const priorVictories = state.campaign.encounterFamilyVictories[encounter.family] ?? 0;
     const xp = grantExperience(state.campaign.hero, { amount: encounter.reward.xp, chapterId: state.campaign.chapterId, source: 'combat', priorEncounterVictories: priorVictories });
@@ -925,7 +1088,20 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       inventory = added.value;
       unbankedLoot = [...unbankedLoot, command.itemId];
     }
-    return commit(state, enterTravel({ ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null } }, command.updatedAt), [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
+    const claimed = { ...state, campaign: { ...state.campaign, inventory }, expedition: { ...state.expedition, unbankedLoot, pendingReward: null, currentCombat: null } };
+    if (state.expedition.dungeonRun) {
+      const dungeon = content.dungeons?.get(state.expedition.dungeonRun.dungeonId);
+      const node = dungeon?.nodes.find((entry) => entry.id === state.expedition!.dungeonRun!.currentNodeId);
+      if (!node || resolveDungeonEncounter(node, state.expedition.dungeonRun.seed) !== receipt.encounterId || state.expedition.dungeonRun.resolvedNodeIds.includes(node.id)) return diagnostic(state, 'node_resolved', 'That dungeon encounter cannot be rewarded again.');
+      const advance = advanceDungeon(claimed, content, command.updatedAt);
+      return advance.diagnostic ? diagnostic(state, advance.diagnostic.code, advance.diagnostic.message) : commit(state, advance.state, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }, ...advance.events.map((event) => event.domain)]);
+    }
+    if (claimed.expedition.currentSceneId && claimed.expedition.sceneResolution?.eventId === claimed.expedition.currentSceneId) {
+      const continued = reduceGame({ ...claimed, flow: { ...claimed.flow, screen: 'story' } }, { type: 'select-next-scene', updatedAt: command.updatedAt }, content);
+      if (continued.diagnostic) return diagnostic(state, continued.diagnostic.code, continued.diagnostic.message);
+      return commit(state, continued.state, [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }, ...continued.events.map((event) => event.domain)]);
+    }
+    return commit(state, enterTravel(claimed, command.updatedAt), [{ type: 'battle_reward_claimed', rewardId: receipt.rewardId, itemId: command.itemId }]);
   }
   if (command.type === 'open-merchant') {
     if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat || state.expedition.pendingReward) return diagnostic(state, 'merchant_required', 'Open a merchant only from an authorized hub.');

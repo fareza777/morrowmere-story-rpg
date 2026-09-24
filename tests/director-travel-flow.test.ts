@@ -62,16 +62,17 @@ function takeRoadAction(state: GameStateV2, content: ContentIndex, minute: numbe
 }
 
 function selectAndResolve(state: GameStateV2, minute: number): { readonly state: GameStateV2; readonly sceneId: string } {
-  const travelling = state.flow.screen === 'travel'
-    ? state
+  const advanced = state.flow.screen === 'travel'
+    ? { state, diagnostic: undefined }
     : reduceGame(state, {
       type: 'select-next-scene',
       updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:00.000Z`,
-    }, CHRONICLE1_CONTENT).state;
-  const selected = reduceGame(travelling, {
+    }, CHRONICLE1_CONTENT);
+  expect(advanced.diagnostic).toBeUndefined();
+  const selected = advanced.state.flow.screen === 'travel' ? reduceGame(advanced.state, {
     type: 'travel-action', action: 'press-on',
     updatedAt: `2026-09-01T00:${minute.toString().padStart(2, '0')}:00.000Z`,
-  }, CHRONICLE1_CONTENT);
+  }, CHRONICLE1_CONTENT) : advanced;
   expect(selected.diagnostic).toBeUndefined();
   const sceneId = currentSceneId(selected.state);
   if (!sceneId) throw new Error('Expected a selected Chronicle scene.');

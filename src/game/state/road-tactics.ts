@@ -108,7 +108,7 @@ function companionEffect(companionId: string, vitals: HeroVitals) {
 
 export function resolveTravelAction(state: GameStateV2, action: TravelAction, content: ContentIndex, updatedAt: string): GameTransition {
   const expedition = state.expedition;
-  if (!expedition || state.flow.screen !== 'travel' || expedition.currentSceneId !== null || expedition.currentCombat || expedition.pendingReward || state.flow.merchant) {
+  if (!expedition || state.flow.screen !== 'travel' || expedition.currentSceneId !== null || expedition.currentCombat || expedition.pendingReward || state.flow.merchant || expedition.pendingRouteJunctionId || expedition.dungeonRun) {
     return { state, events: [], diagnostic: { code: 'travel_required', message: 'Choose a road tactic while travelling.' } };
   }
 

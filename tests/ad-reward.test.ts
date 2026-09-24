@@ -120,12 +120,16 @@ function victoryState(kind: EncounterDefinition['kind'] = 'regular') {
     action: 'press-on',
     updatedAt: '2026-08-31T12:02:00.000Z',
   }, content).state;
-  const combat = reduceGame(selected, {
+  const resolved = reduceGame(selected, {
     type: 'resolve-choice',
     eventId: EVENT_ID,
     choiceId: CHOICE_ID,
     updatedAt: '2026-08-31T12:03:00.000Z',
   }, content).state;
+  if (resolved.flow.screen !== 'story' || resolved.expedition?.sceneResolution?.outcome !== 'The patrol attacks.') {
+    throw new Error('The authored battle outcome must be visible before combat.');
+  }
+  const combat = reduceGame(resolved, { type: 'select-next-scene', updatedAt: '2026-08-31T12:03:30.000Z' }, content).state;
   const won = reduceGame(combat, {
     type: 'combat-turn',
     commandId: `victory-${kind}`,

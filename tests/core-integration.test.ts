@@ -147,6 +147,8 @@ describe('Chronicle I public core integration', () => {
 
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground'), updatedAt: at(5) }, content);
     expect(state.expedition?.sceneResolution).toMatchObject({ eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground') });
+    expect(state.flow.screen).toBe('story');
+    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(5) }, content);
     expect(state.expedition?.currentCombat?.combat?.player.name).toBe('Aster Vale');
     expect(state.expedition?.currentCombat?.combat?.enemies).toHaveLength(2);
     const firstEnemy = state.expedition!.currentCombat!.combat!.enemies[0]!.id;
@@ -226,6 +228,8 @@ describe('Chronicle I public core integration', () => {
     expect(currentSceneId(state)).toBeNull();
     state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(33) }, content);
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('losing-fight'), choiceId: asChoice('face-raider'), updatedAt: at(34) }, content);
+    expect(state.flow.screen).toBe('story');
+    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(34) }, content);
     for (let turn = 0; turn < 4 && state.flow.screen === 'combat'; turn += 1) {
       state = dispatch(state, { type: 'combat-turn', commandId: `lose:${turn}`, action: { type: 'guard' }, updatedAt: at(35 + turn) }, content);
     }
@@ -247,6 +251,8 @@ describe('Chronicle I public core integration', () => {
     state = dispatch(state, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt: at(1) }, content);
     state = dispatch(state, { type: 'travel-action', action: 'press-on', updatedAt: at(2) }, content);
     state = dispatch(state, { type: 'resolve-choice', eventId: asEvent('road-fight'), choiceId: asChoice('stand-ground'), updatedAt: at(3) }, content);
+    expect(state.flow.screen).toBe('story');
+    state = dispatch(state, { type: 'select-next-scene', updatedAt: at(3) }, content);
     state = dispatch(state, { type: 'combat-turn', commandId: 'flee:1', action: { type: 'flee' }, updatedAt: at(4) }, content);
     expect(state.flow.screen).toBe('travel');
     expect(currentSceneId(state)).toBeNull();

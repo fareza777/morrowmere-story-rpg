@@ -128,7 +128,7 @@ function atScene(eventId: EventId, index: ContentIndex): GameStateV2 {
   const created = createCampaign({ heroClass: 'warrior', seed: 1, updatedAt: at(0) }, index);
   const started = reduceGame(created, { type: 'start-expedition', updatedAt: at(1) }, index).state;
   const travelled = reduceGame(started, { type: 'travel-action', action: 'press-on', updatedAt: at(1) }, index).state;
-  return { ...travelled, expedition: { ...travelled.expedition!, currentSceneId: eventId, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 } } };
+  return { ...travelled, expedition: { ...travelled.expedition!, currentSceneId: eventId, sceneResolution: null, sceneVisitCounts: { [eventId]: 1 }, director: { ...travelled.expedition!.director, usedSceneIds: [eventId], seenEventIds: [eventId] } } };
 }
 
 describe('narrative choice resolution', () => {
@@ -173,21 +173,25 @@ describe('narrative choice resolution', () => {
     });
     expect(result.state.campaign.flags).toContain('bog-ambush');
     expect(result.state.campaign.flags).not.toContain('unexpected-bog-success');
-    expect(result.state.flow.screen).toBe('combat');
+    expect(result.state.flow.screen).toBe('story');
     expect(result.state.expedition?.currentCombat?.encounterId).toBe(asEncounter('bog-raiders'));
-    expect(result.state.expedition?.currentCombat?.combat?.outcome).toBe('active');
+    expect(result.state.expedition?.currentCombat?.combat).toBeNull();
 
     const encoded = encodeSaveState(result.state, index);
     const decoded = encoded ? decodeSaveState(encoded, index) : null;
-    expect(decoded?.flow.screen).toBe('combat');
-    expect(decoded?.expedition?.currentCombat?.combat?.outcome).toBe('active');
+    expect(decoded?.flow.screen).toBe('story');
+    expect(decoded?.expedition?.sceneResolution?.outcome).toBe('Raiders rise from the waterline.');
 
-    const activeCombat = result.state.expedition!.currentCombat!.combat!;
+    const entered = reduceGame(decoded!, { type: 'select-next-scene', updatedAt: at(3) }, index).state;
+    expect(entered.flow.screen).toBe('combat');
+    expect(entered.expedition?.currentCombat?.combat?.outcome).toBe('active');
+
+    const activeCombat = entered.expedition!.currentCombat!.combat!;
     const fleeing = {
-      ...result.state,
+      ...entered,
       expedition: {
-        ...result.state.expedition!,
-        currentCombat: { ...result.state.expedition!.currentCombat!, combat: { ...activeCombat, player: { ...activeCombat.player, cunning: 99 } } },
+        ...entered.expedition!,
+        currentCombat: { ...entered.expedition!.currentCombat!, combat: { ...activeCombat, player: { ...activeCombat.player, cunning: 99 } } },
       },
     };
     const fled = reduceGame(fleeing, { type: 'combat-turn', commandId: 'flee-from-setup', action: { type: 'flee' }, updatedAt: at(4) }, index);
@@ -200,22 +204,20 @@ describe('narrative choice resolution', () => {
     expect(fled.state.expedition?.authoredSceneQueue).toEqual([]);
 
     const rewarded = {
-      ...result.state,
+      ...entered,
       expedition: {
-        ...result.state.expedition!,
-        currentCombat: { ...result.state.expedition!.currentCombat!, combat: { ...activeCombat, outcome: 'victory' as const } },
+        ...entered.expedition!,
+        currentCombat: { ...entered.expedition!.currentCombat!, combat: { ...activeCombat, outcome: 'victory' as const } },
         pendingReward: { rewardId: 'bog-raider-reward', rewardOfferId: 'reward:1:bog-raider-reward', encounterId: asEncounter('bog-raiders'), itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: false, rewardedGoldSettlement: 'ineligible' as const },
       },
-      flow: { ...result.state.flow, screen: 'reward' as const },
+      flow: { ...entered.flow, screen: 'reward' as const },
     };
+    expect(rewarded.expedition.director.usedSceneIds).not.toContain(asEvent('success-aftermath'));
     const claimed = reduceGame(rewarded, { type: 'claim-rewards', rewardId: 'bog-raider-reward', itemId: null, updatedAt: at(5) }, index);
-    expect(claimed.state.flow.screen).toBe('travel');
+    expect(claimed.state.flow.screen).toBe('story');
     expect(claimed.state.expedition?.currentCombat).toBeNull();
-    expect(claimed.state.expedition?.currentSceneId).toBeNull();
-    expect(claimed.state.expedition?.sceneResolution).toMatchObject({
-      eventId: asEvent('checked-failure'), choiceId: asChoice('resolve-failure'), resultKind: 'failure',
-    });
-    expect(claimed.state.expedition?.authoredSceneQueue.map((entry) => entry.sceneId)).toEqual([asEvent('success-aftermath')]);
+    expect(claimed.state.expedition?.currentSceneId).toBe(asEvent('success-aftermath'));
+    expect(claimed.state.expedition?.authoredSceneQueue).toEqual([]);
   });
 
   it('records direct choices as non-random resolutions', () => {

@@ -87,10 +87,12 @@ function queue(state: GameStateV2) {
 }
 
 function selectAfterRoadAction(state: GameStateV2, index: ContentIndex, minute: number) {
-  const travelling = state.flow.screen === 'travel'
-    ? state
-    : reduceGame(state, { type: 'select-next-scene', updatedAt: at(minute) }, index).state;
-  return reduceGame(travelling, { type: 'travel-action', action: 'press-on', updatedAt: at(minute) }, index);
+  if (state.flow.screen === 'story') {
+    const advanced = reduceGame(state, { type: 'select-next-scene', updatedAt: at(minute) }, index);
+    if (advanced.diagnostic || advanced.state.flow.screen !== 'travel') return advanced;
+    return reduceGame(advanced.state, { type: 'travel-action', action: 'press-on', updatedAt: at(minute) }, index);
+  }
+  return reduceGame(state, { type: 'travel-action', action: 'press-on', updatedAt: at(minute) }, index);
 }
 
 describe('authored scene queue', () => {
@@ -234,10 +236,10 @@ describe('authored scene queue', () => {
     const index = content([source, aftermath, anchor], true);
 
     const resolved = resolveSource(atSource(index, source.id), index);
-    expect(resolved.state.flow.screen).toBe('combat');
+    expect(resolved.state.flow.screen).toBe('story');
     expect(queue(resolved.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
 
-    let won = resolved.state;
+    let won = selectAfterRoadAction(resolved.state, index, 3).state;
     expect(won.flow.screen).toBe('combat');
     for (let turn = 0; turn < 5 && won.flow.screen === 'combat'; turn += 1) {
       won = reduceGame(won, { type: 'combat-turn', commandId: `queue-win:${turn}`, action: { type: 'attack' }, updatedAt: at(4 + turn) }, index).state;
@@ -248,11 +250,11 @@ describe('authored scene queue', () => {
     if (!rewardId) throw new Error('Expected the combat reward fixture.');
 
     const claimed = reduceGame(won, { type: 'claim-rewards', rewardId, itemId: null, updatedAt: at(9) }, index);
-    const next = selectAfterRoadAction(claimed.state, index, 10);
 
     expect(claimed.diagnostic).toBeUndefined();
-    expect(queue(claimed.state).map((entry) => entry.sceneId)).toEqual([aftermath.id]);
-    expect(currentSceneId(next.state)).toBe(aftermath.id);
+    expect(queue(claimed.state)).toEqual([]);
+    expect(claimed.state.flow.screen).toBe('story');
+    expect(currentSceneId(claimed.state)).toBe(aftermath.id);
   });
 
   it('retires an abandoned combat aftermath when the hero flees', () => {

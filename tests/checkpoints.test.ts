@@ -80,9 +80,12 @@ function enterCombat(state: GameStateV2, updatedAt: string, testContent: Content
   const selected = state.expedition?.currentSceneId
     ? state
     : reduceGame(state, { type: 'travel-action', action: 'press-on', updatedAt }, testContent).state;
-  return reduceGame(selected, {
+  const resolved = reduceGame(selected, {
     type: 'resolve-choice', eventId: sceneId('route-scene'), choiceId: 'fight' as never, updatedAt,
   }, testContent).state;
+  expect(resolved.flow.screen).toBe('story');
+  expect(resolved.expedition?.sceneResolution?.outcome).toBe('Steel clears the road.');
+  return reduceGame(resolved, { type: 'select-next-scene', updatedAt }, testContent).state;
 }
 
 function arriveAtCamp(state: GameStateV2, updatedAt: string): GameStateV2 {

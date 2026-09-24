@@ -3,6 +3,9 @@ import { createCampaign } from '../src/game/state/create';
 import { reduceGame } from '../src/game/state/reducer';
 import type { GameStateV2 } from '../src/game/state/types';
 import { makeContentIndex } from './fixtures/game';
+import type { EventId } from '../src/game/domain/ids';
+import { encodeSaveState, decodeSaveState } from '../src/game/persistence/codec';
+import { validateContent } from '../src/game/content/validate';
 
 const updatedAt = '2026-09-17T08:00:00.000Z';
 
@@ -45,6 +48,153 @@ function routeState(overrides: Partial<GameStateV2> = {}) {
 }
 
 describe('Road Tactics reducer', () => {
+  it('keeps an authored choice and aftermath continuous until its junction', () => {
+    const content = roadContent();
+    const base = content.events.get('fixture-event' as EventId)!;
+    const aftermathId = 'fixture-aftermath' as EventId;
+    (content.events as Map<EventId, typeof base>).set(base.id, { ...base, type: 'main', choices: [{ id: 'take-path' as never, label: 'Take the path', detail: '', outcome: 'The path opens.', effects: [{ type: 'flag', flagId: 'path-open', operation: 'add' }], nextSceneId: aftermathId }] });
+    (content.events as Map<EventId, typeof base>).set(aftermathId, { ...base, id: aftermathId, family: 'aftermath', eligibility: { requiredFlags: ['path-open'] }, choices: [] });
+    (content.routeJunctions as Map<string, unknown>).set('fork', { id: 'fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 1 }, afterEventId: base.id, options: [
+      { id: 'left', label: 'Left', detail: '', consequence: '', kind: 'story', destination: { kind: 'scene', sceneId: aftermathId }, effects: [{ type: 'gold', scope: 'unbanked', amount: 3 }] },
+      { id: 'right', label: 'Right', detail: '', consequence: '', kind: 'story', destination: { kind: 'scene', sceneId: aftermathId } },
+    ] });
+    const start = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const scene: GameStateV2 = { ...start, expedition: { ...start.expedition!, currentSceneId: base.id, sceneVisitCounts: { [base.id]: 1 }, director: { ...start.expedition!.director, usedSceneIds: [base.id], seenEventIds: [base.id] } }, flow: { ...start.flow, screen: 'story' } };
+    const choice = reduceGame(scene, { type: 'resolve-choice', eventId: base.id, choiceId: 'take-path' as never, updatedAt }, content).state;
+    expect(choice.flow.screen).toBe('story');
+    expect(choice.expedition?.sceneResolution?.outcome).toBe('The path opens.');
+    const next = reduceGame(choice, { type: 'select-next-scene', updatedAt }, content).state;
+    expect(next.flow.screen).toBe('story');
+    expect(next.expedition?.currentSceneId).toBe(aftermathId);
+    expect(next.expedition?.pendingRouteJunctionId).toBeNull();
+    const junction = reduceGame(next, { type: 'select-next-scene', updatedAt }, content).state;
+    expect(junction.flow.screen).toBe('travel');
+    expect(junction.expedition?.pendingRouteJunctionId).toBe('fork');
+    const selected = reduceGame(junction, { type: 'select-route', junctionId: 'fork', optionId: 'left', updatedAt }, content);
+    expect(selected.diagnostic).toBeUndefined();
+    expect(selected.state.expedition?.unbankedGold - junction.expedition!.unbankedGold).toBe(3);
+    const stale = reduceGame(selected.state, { type: 'select-route', junctionId: 'fork', optionId: 'left', updatedAt }, content);
+    expect(stale.state).toBe(selected.state);
+    expect(stale.diagnostic?.code).toBe('route_required');
+    const repeated = reduceGame(selected.state, { type: 'select-next-scene', updatedAt }, content);
+    expect(repeated.state.expedition?.pendingRouteJunctionId).toBeNull();
+  });
+
+  it('rejects a forged route option without changing state', () => {
+    const { content, state } = routeState();
+    const result = reduceGame(state, { type: 'select-route', junctionId: 'fork', optionId: 'forged', updatedAt }, content);
+    expect(result.state).toBe(state);
+    expect(result.diagnostic).toBeDefined();
+  });
+
+  it('claims a dungeon victory once and resumes its terminal scene after saving', () => {
+    const content = roadContent();
+    const exitId = 'fixture-exit' as EventId;
+    const base = content.events.get('fixture-event' as EventId)!;
+    (content.events as Map<EventId, typeof base>).set(exitId, { ...base, id: exitId, type: 'journey', family: 'exit', choices: [] });
+    (content.encounters as Map<string, unknown>).set('fixture-fight', { id: 'fixture-fight', family: 'fixture', kind: 'regular', enemyIds: [], reward: { xp: 0, gold: 10, itemChoices: [] } });
+    (content.dungeons as Map<string, unknown>).set('fixture-dungeon', { id: 'fixture-dungeon', chapterId: 'ch01', startNodeId: 'fight', exitNodeIds: ['leave'], nodes: [
+      { id: 'fight', kind: 'combat', encounterId: 'fixture-fight', exits: [{ id: 'leave-now', targetNodeId: 'leave', label: 'Leave', detail: 'Bank the surviving rewards.' }] },
+      { id: 'leave', kind: 'exit', exitKind: 'extract', sceneId: exitId, exits: [] },
+    ] });
+    expect(validateContent(content)).toEqual([]);
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const reward: GameStateV2 = { ...started, expedition: { ...started.expedition!, dungeonRun: { dungeonId: 'fixture-dungeon', seed: 7, currentNodeId: 'fight', depth: 1, visitedNodeIds: ['fight'], resolvedNodeIds: [] }, currentCombat: null, pendingReward: { rewardId: 'fixture-reward', rewardOfferId: 'fixture-offer', encounterId: 'fixture-fight' as never, itemChoices: [], baseGold: 10, grantedXp: 0, adEligible: false, rewardedGoldSettlement: 'ineligible' }, unbankedGold: 10 }, flow: { ...started.flow, screen: 'reward' } };
+    const claimed = reduceGame(reward, { type: 'claim-rewards', rewardId: 'fixture-reward', itemId: null, updatedAt }, content);
+    expect(claimed.diagnostic).toBeUndefined();
+    expect(claimed.state.flow.screen).toBe('story');
+    expect(claimed.state.expedition?.dungeonRun?.currentNodeId).toBe('leave');
+    expect(claimed.state.expedition?.dungeonRun?.resolvedNodeIds).toEqual(['fight']);
+    const again = reduceGame(claimed.state, { type: 'claim-rewards', rewardId: 'fixture-reward', itemId: null, updatedAt }, content);
+    expect(again.state).toBe(claimed.state);
+    expect(again.diagnostic?.code).toBe('reward_required');
+    const saved = encodeSaveState(claimed.state, content);
+    expect(saved).not.toBeNull();
+    const resumed = decodeSaveState(saved!, content);
+    expect(resumed?.expedition?.currentSceneId).toBe(exitId);
+    expect(resumed?.expedition?.sceneResolution?.outcome).toBe(base.narrative.at(-1));
+    const exited = reduceGame(resumed!, { type: 'select-next-scene', updatedAt }, content);
+    expect(exited.state.expedition?.dungeonRun).toBeNull();
+    expect(exited.state.campaign.bankedGold - claimed.state.campaign.bankedGold).toBe(10);
+    expect(exited.state.expedition?.unbankedGold).toBe(0);
+    expect(exited.state.checkpoints.camp?.campaign.bankedGold).toBe(exited.state.campaign.bankedGold);
+  });
+
+  it('auto-resolves a single passage and secures half the unbanked gold on retreat', () => {
+    const content = roadContent();
+    const base = content.events.get('fixture-event' as EventId)!;
+    const retreatSceneId = 'retreat-scene' as EventId;
+    (content.events as Map<EventId, typeof base>).set(retreatSceneId, { ...base, id: retreatSceneId, family: 'retreat', narrative: ['You carry half the loose gold home.'], choices: [] });
+    (content.dungeons as Map<string, unknown>).set('short-run', { id: 'short-run', chapterId: 'ch01', startNodeId: 'cache', exitNodeIds: ['retreat'], nodes: [
+      { id: 'cache', kind: 'cache', exits: [{ id: 'back', targetNodeId: 'retreat', label: 'Retreat', detail: 'Secure half the unbanked gold.' }] },
+      { id: 'retreat', kind: 'exit', exitKind: 'retreat', sceneId: retreatSceneId, exits: [] },
+    ] });
+    expect(validateContent(content)).toEqual([]);
+    (content.routeJunctions as Map<string, unknown>).set('short-fork', { id: 'short-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 1 }, afterEventId: 'fixture-event', options: [
+      { id: 'enter', label: 'Enter', detail: '', consequence: '', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'short-run' }, effects: [{ type: 'gold', scope: 'unbanked', amount: 11 }] },
+    ] });
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const pending: GameStateV2 = { ...started, expedition: { ...started.expedition!, pendingRouteJunctionId: 'short-fork' } };
+    const selected = reduceGame(pending, { type: 'select-route', junctionId: 'short-fork', optionId: 'enter', updatedAt }, content);
+    expect(selected.diagnostic).toBeUndefined();
+    expect(selected.state.expedition?.dungeonRun?.currentNodeId).toBe('retreat');
+    expect(selected.state.expedition?.currentSceneId).toBe(retreatSceneId);
+    expect(selected.state.expedition?.sceneResolution?.outcome).toBe('You carry half the loose gold home.');
+    const saved = encodeSaveState(selected.state, content);
+    expect(saved).not.toBeNull();
+    const resumed = decodeSaveState(saved!, content);
+    expect(resumed?.expedition?.dungeonRun?.currentNodeId).toBe('retreat');
+    const exited = reduceGame(resumed!, { type: 'select-next-scene', updatedAt }, content);
+    expect(exited.state.expedition?.dungeonRun).toBeNull();
+    expect(exited.state.campaign.bankedGold - pending.campaign.bankedGold).toBe(5);
+    expect(exited.state.checkpoints.camp?.campaign.bankedGold).toBe(exited.state.campaign.bankedGold);
+    expect(exited.state.expedition?.unbankedGold).toBe(0);
+    expect(exited.state.flow.screen).toBe('travel');
+  });
+
+  it('claims an authored battle reward into its queued aftermath', () => {
+    const content = roadContent();
+    const base = content.events.get('fixture-event' as EventId)!;
+    const after = 'battle-aftermath' as EventId;
+    (content.events as Map<EventId, typeof base>).set(after, { ...base, id: after, family: 'aftermath', choices: [] });
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const reward: GameStateV2 = { ...started, expedition: { ...started.expedition!, currentSceneId: base.id, sceneVisitCounts: { [base.id]: 1 }, director: { ...started.expedition!.director, usedSceneIds: [base.id], seenEventIds: [base.id] }, sceneResolution: { eventId: base.id, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: 'Won.', effectSummary: [], nextSceneId: null, continueLabel: null }, authoredSceneQueue: [{ sceneId: after, sourceSceneId: base.id, requirementMode: 'required' }], pendingReward: { rewardId: 'battle', rewardOfferId: 'offer', encounterId: 'fight' as never, itemChoices: [], baseGold: 0, grantedXp: 0, adEligible: false, rewardedGoldSettlement: 'ineligible' } }, flow: { ...started.flow, screen: 'reward' } };
+    const claimed = reduceGame(reward, { type: 'claim-rewards', rewardId: 'battle', itemId: null, updatedAt }, content);
+    expect(claimed.state.flow.screen).toBe('story');
+    expect(claimed.state.expedition?.currentSceneId).toBe(after);
+  });
+
+  it('persists a dungeon branch and rejects an exit that was not offered', () => {
+    const content = roadContent();
+    const base = content.events.get('fixture-event' as EventId)!;
+    const left = 'left-exit' as EventId;
+    const right = 'right-exit' as EventId;
+    (content.events as Map<EventId, typeof base>).set(left, { ...base, id: left, family: 'left-exit', choices: [] });
+    (content.events as Map<EventId, typeof base>).set(right, { ...base, id: right, family: 'right-exit', choices: [] });
+    (content.dungeons as Map<string, unknown>).set('branch-run', { id: 'branch-run', chapterId: 'ch01', startNodeId: 'fork', exitNodeIds: ['left', 'right'], nodes: [
+      { id: 'fork', kind: 'scene', sceneId: base.id, exits: [
+        { id: 'take-left', targetNodeId: 'left', label: 'Left', detail: 'Take shelter.' },
+        { id: 'take-right', targetNodeId: 'right', label: 'Right', detail: 'Press onward.' },
+      ] },
+      { id: 'left', kind: 'exit', exitKind: 'retreat', sceneId: left, exits: [] },
+      { id: 'right', kind: 'exit', exitKind: 'extract', sceneId: right, exits: [] },
+    ] });
+    expect(validateContent(content)).toEqual([]);
+    const started = reduceGame(campState(content), { type: 'start-expedition', updatedAt }, content).state;
+    const atFork: GameStateV2 = { ...started, expedition: { ...started.expedition!, dungeonRun: { dungeonId: 'branch-run', seed: 2, currentNodeId: 'fork', depth: 1, visitedNodeIds: ['fork'], resolvedNodeIds: [] }, currentSceneId: base.id, sceneVisitCounts: { [base.id]: 1 }, director: { ...started.expedition!.director, usedSceneIds: [base.id], seenEventIds: [base.id] }, sceneResolution: { eventId: base.id, choiceId: null, resultKind: 'direct', chance: null, roll: null, outcome: 'A fork.', effectSummary: [], nextSceneId: null, continueLabel: null } }, flow: { ...started.flow, screen: 'story' } };
+    const branch = reduceGame(atFork, { type: 'select-next-scene', updatedAt }, content).state;
+    expect(branch.flow.screen).toBe('travel');
+    expect(branch.expedition?.dungeonRun?.resolvedNodeIds).toEqual(['fork']);
+    const saved = encodeSaveState(branch, content);
+    expect(saved).not.toBeNull();
+    const resumed = decodeSaveState(saved!, content)!;
+    const forged = reduceGame(resumed, { type: 'select-route', junctionId: 'fork', optionId: 'forged', updatedAt }, content);
+    expect(forged.state).toBe(resumed);
+    expect(forged.diagnostic?.code).toBe('invalid_route');
+    const chosen = reduceGame(resumed, { type: 'select-route', junctionId: 'fork', optionId: 'take-right', updatedAt }, content);
+    expect(chosen.state.expedition?.currentSceneId).toBe(right);
+    expect(chosen.state.expedition?.dungeonRun?.currentNodeId).toBe('right');
+  });
   it('starts a route in travel before selecting a scene', () => {
     const content = roadContent();
     const started = reduceGame(campState(content), {
