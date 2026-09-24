@@ -66,23 +66,32 @@ it('connects each early delve to an authored terminal with distinct cadence and 
   expect(new Set(earlyOptionCounts).size).toBeGreaterThan(1);
 });
 
-it('activates each early junction from a resolved story event and enters its authored dungeon', () => {
-  const earlyJunctions = CHRONICLE1_ROUTE_JUNCTIONS.filter((junction) => ['ch01', 'ch02', 'ch03', 'ch04'].includes(junction.chapterId));
-  const terminalByChapter = new Map([
+it('activates each chapter junction from a resolved story event and enters its authored dungeon', () => {
+  const chapterJunctions = CHRONICLE1_ROUTE_JUNCTIONS.filter((junction) => ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'].includes(junction.chapterId));
+  const nextMainAnchorByChapter = new Map([
     ['ch01', 'ch01-main-the-first-arrow'],
     ['ch02', 'ch02-main-the-hidden-depot'],
     ['ch03', 'ch03-main-the-attack-with-two-banners'],
     ['ch04', 'ch04-main-before-the-first-charge'],
+    ['ch05', 'ch05-main-forge-behind-the-wall'],
+    ['ch06', 'ch06-main-the-siege-begins'],
+    ['ch07', 'ch07-main-voss-last-champion'],
+    ['ch08', 'ch08-main-the-marshal-and-the-banner'],
+  ]);
+  const exitSceneByChapter = new Map([
+    ...nextMainAnchorByChapter,
+    ['ch07', 'ch07-combat-the-counterweight-house'],
+    ['ch08', 'ch08-combat-the-coronation-engine'],
   ]);
 
-  for (const junction of earlyJunctions) {
+  for (const junction of chapterJunctions) {
     const updatedAt = '2026-09-24T00:00:00.000Z';
     const created = createCampaign({ heroClass: 'warden', seed: 17, chapterId: junction.chapterId, updatedAt }, CHRONICLE1_CONTENT);
     const started = reduceGame(created, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt }, CHRONICLE1_CONTENT).state;
     const mainAnchors = [...CHRONICLE1_CONTENT.events.values()]
       .filter((event) => event.chapterId === junction.chapterId && event.type === 'main')
       .sort((left, right) => (left.anchorOrder ?? 0) - (right.anchorOrder ?? 0));
-    const terminalOrder = mainAnchors.find((event) => event.id === terminalByChapter.get(junction.chapterId))?.anchorOrder;
+    const terminalOrder = mainAnchors.find((event) => event.id === nextMainAnchorByChapter.get(junction.chapterId))?.anchorOrder;
     expect(terminalOrder, junction.id).toBeDefined();
     const priorAnchors = mainAnchors.filter((event) => (event.anchorOrder ?? 0) < terminalOrder!).map((event) => event.id);
     const seenEventIds = [...new Set([...priorAnchors, junction.afterEventId])];
@@ -117,9 +126,46 @@ it('activates each early junction from a resolved story event and enters its aut
     const start = dungeon.nodes.find((node) => node.id === dungeon.startNodeId)!;
     expect(selected.diagnostic, junction.id).toBeUndefined();
     expect(selected.state.expedition?.dungeonRun?.dungeonId, junction.id).toBe(dungeon.id);
-    expect(selected.state.expedition?.currentSceneId, junction.id).toBe(start.sceneId);
+    if (start.sceneId) expect(selected.state.expedition?.currentSceneId, junction.id).toBe(start.sceneId);
+    else expect(selected.state.expedition?.currentCombat?.encounterId, junction.id).toBeDefined();
     expect(dungeon.nodes.find((node) => dungeon.exitNodeIds.includes(node.id))?.sceneId, junction.id)
-      .toBe(terminalByChapter.get(junction.chapterId));
+      .toBe(exitSceneByChapter.get(junction.chapterId));
+  }
+});
+
+it('covers all eight campaign chapters with a reachable, consequential dungeon route', () => {
+  const chapters = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'];
+  const terminalScenes = new Map([
+    ['ch01', 'ch01-main-the-first-arrow'], ['ch02', 'ch02-main-the-hidden-depot'],
+    ['ch03', 'ch03-main-the-attack-with-two-banners'], ['ch04', 'ch04-main-before-the-first-charge'],
+    ['ch05', 'ch05-main-forge-behind-the-wall'], ['ch06', 'ch06-main-the-siege-begins'],
+    ['ch07', 'ch07-combat-the-counterweight-house'], ['ch08', 'ch08-combat-the-coronation-engine'],
+  ]);
+  expect([...new Set(CHRONICLE1_DUNGEONS.map((dungeon) => dungeon.chapterId))].sort()).toEqual(chapters);
+
+  for (const chapterId of chapters) {
+    const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.chapterId === chapterId)!;
+    const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.chapterId === chapterId);
+    expect(junction, `${chapterId} junction`).toBeDefined();
+    expect(junction!.options.some((option) => option.kind === 'story')).toBe(true);
+    expect(junction!.options.some((option) => option.destination.kind === 'dungeon' && option.destination.dungeonId === dungeon.id)).toBe(true);
+
+    const nodes = new Map(dungeon.nodes.map((node) => [node.id, node]));
+    const reachableExits = new Set<string>();
+    const visit = (id: string, route: Set<string>): void => {
+      const node = nodes.get(id);
+      expect(node, `${dungeon.id}/${id} missing`).toBeDefined();
+      expect(route.has(id), `${dungeon.id}/${id} cycles`).toBe(false);
+      if (node!.kind === 'exit') {
+        reachableExits.add(id);
+        return;
+      }
+      expect(node!.exits.length, `${dungeon.id}/${id} strands the run`).toBeGreaterThan(0);
+      for (const edge of node!.exits) visit(edge.targetNodeId, new Set([...route, id]));
+    };
+    visit(dungeon.startNodeId, new Set());
+    expect(reachableExits).toEqual(new Set(dungeon.exitNodeIds));
+    expect(dungeon.nodes.some((node) => node.kind === 'exit' && node.exitKind !== 'retreat' && node.sceneId === terminalScenes.get(chapterId))).toBe(true);
   }
 });
 

@@ -7,6 +7,7 @@ import {
   KEEP_CUSTODIAN_FLAGS,
 } from '../../src/game/content/chronicle1/chapters/ch08';
 import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
+import { CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS } from '../../src/game/content/chronicle1';
 
 const CH07_ANCHORS = [
   'ch07-main-council-before-the-march',
@@ -163,6 +164,58 @@ it('lets Voss make his strongest argument before every confrontation outcome', (
   expect(addedFlags(peaceful)).toEqual(expect.arrayContaining(['voss-exposed', 'war-mechanism-dismantled', 'border-war-stopped']));
   expect(addedFlags(forceful)).toEqual(expect.arrayContaining(['voss-exposed', 'war-mechanism-dismantled', 'border-war-stopped', 'forceful-settlement']));
   expect(addedFlags(failed)).toEqual(expect.arrayContaining(['war-mechanism-dismantled', 'open-war', 'failed-accountability']));
+});
+
+it('gives Chapters 6–8 distinct short dungeon graphs and mechanics', () => {
+  const lateDungeons = CHRONICLE1_DUNGEONS.filter((dungeon) => ['ch06', 'ch07', 'ch08'].includes(dungeon.chapterId));
+  expect(lateDungeons.map((dungeon) => dungeon.chapterId).sort()).toEqual(['ch06', 'ch07', 'ch08']);
+
+  const pathKindSignatures = new Set<string>();
+  for (const dungeon of lateDungeons) {
+    const nodes = new Map(dungeon.nodes.map((node) => [node.id, node]));
+    const paths: (typeof dungeon.nodes[number])[][] = [];
+    const visit = (id: string, route: Set<string>, path: (typeof dungeon.nodes[number])[]): void => {
+      const node = nodes.get(id);
+      expect(node, `${dungeon.id}/${id} missing`).toBeDefined();
+      expect(route.has(id), `${dungeon.id}/${id} cycles`).toBe(false);
+      const nextPath = [...path, node!];
+      if (node!.kind === 'exit') {
+        paths.push(nextPath);
+        return;
+      }
+      expect(node!.exits.length, `${dungeon.id}/${id} strands the run`).toBeGreaterThan(0);
+      for (const edge of node!.exits) visit(edge.targetNodeId, new Set([...route, id]), nextPath);
+    };
+    visit(dungeon.startNodeId, new Set(), []);
+    expect(paths.length, dungeon.id).toBeGreaterThan(0);
+    for (const path of paths) {
+      expect(path.length, `${dungeon.id} room count`).toBeGreaterThanOrEqual(3);
+      expect(path.length, `${dungeon.id} room count`).toBeLessThanOrEqual(8);
+      expect(path.some((node) => ['combat', 'elite', 'boss'].includes(node.kind)), `${dungeon.id} has no fight`).toBe(true);
+      const encounters = path.flatMap((node) => node.encounterId ? [node.encounterId] : []);
+      expect(new Set(encounters).size, `${dungeon.id} repeats an encounter`).toBe(encounters.length);
+    }
+    pathKindSignatures.add([...new Set(paths.map((path) => path.map((node) => node.kind).join('>')))].sort().join('|'));
+
+    const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.chapterId === dungeon.chapterId);
+    expect(junction, `${dungeon.id} has no story junction`).toBeDefined();
+    expect(junction!.options.some((option) => option.kind === 'story')).toBe(true);
+    expect(junction!.options.some((option) => option.destination.kind === 'dungeon' && option.destination.dungeonId === dungeon.id)).toBe(true);
+  }
+  expect(pathKindSignatures.size).toBe(3);
+
+  const chapel = lateDungeons.find((dungeon) => dungeon.chapterId === 'ch06')!;
+  expect(chapel.nodes.some((node) => node.kind === 'hazard')).toBe(true);
+  expect(chapel.nodes.some((node) => node.kind === 'rest')).toBe(true);
+  expect(chapel.nodes.some((node) => node.kind === 'elite')).toBe(true);
+
+  const keep = lateDungeons.find((dungeon) => dungeon.chapterId === 'ch07')!;
+  expect(keep.nodes.some((node) => node.kind === 'cache' && node.rewardVariants?.some((reward) => reward.effects.some((effect) => effect.type === 'evidence')))).toBe(true);
+  expect(keep.nodes.some((node) => node.kind === 'hazard')).toBe(true);
+
+  const engine = lateDungeons.find((dungeon) => dungeon.chapterId === 'ch08')!;
+  expect(engine.nodes.some((node) => node.kind === 'exit' && node.exitKind === 'extract')).toBe(true);
+  expect(engine.nodes.some((node) => node.kind === 'exit' && node.exitKind === 'complete')).toBe(true);
 });
 
 it('selects one eligible custodian only after Voss is resolved', () => {

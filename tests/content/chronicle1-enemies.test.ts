@@ -125,7 +125,7 @@ describe('Chronicle I enemy catalog', () => {
 });
 
 describe('Chronicle I encounter catalog', () => {
-  it('keeps scene encounters mapped and adds thirteen underworks-only encounter variants', () => {
+  it('keeps scene encounters mapped and adds nineteen dungeon-only encounter variants', () => {
     const sceneEncounterIds = [...new Set(CHRONICLE1_SCENES.flatMap((scene) => [
       ...(scene.encounterId ? [scene.encounterId] : []),
       ...scene.choices.flatMap((choice) => [
@@ -135,7 +135,7 @@ describe('Chronicle I encounter catalog', () => {
     ]))].sort();
 
     expect(sceneEncounterIds).toHaveLength(57);
-    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(70);
+    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(76);
     const underworksEncounterIds = [
       'enc-ch05-cinder-heart-regulator',
       'enc-ch05-cinder-troll-elite',
@@ -150,6 +150,12 @@ describe('Chronicle I encounter catalog', () => {
       'enc-ch05-vault-gargoyle-elite',
       'enc-ch05-worker-cage-patrol-a',
       'enc-ch05-worker-cage-patrol-b',
+      'enc-ch06-bell-loft-sentinel',
+      'enc-ch06-ossuary-bell-jailers',
+      'enc-ch07-aqueduct-crossbow-patrol',
+      'enc-ch07-compact-archive-wardens',
+      'enc-ch08-engine-gallery-watch',
+      'enc-ch08-regulator-control-crew',
     ];
     expect(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id).sort()).toEqual([...sceneEncounterIds, ...underworksEncounterIds].sort());
   });

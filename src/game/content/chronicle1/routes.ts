@@ -99,4 +99,25 @@ export const CHRONICLE1_ROUTE_JUNCTIONS: readonly RouteJunctionDefinition[] = [
       { id: 'ch05-descend-into-the-underworks', label: 'Descend into the Embervault underworks', detail: 'Dessa spots a chain-lift key among the shift records; a sealed pressure network lies below the cages and runs toward the forge.', consequence: 'Choose your passage through a long delve with two recovery routes, branch-specific patrols, two elite sentinels, and a pressure-engine boss; retreat remains possible.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch05-embervault-underworks' } },
     ],
   },
+  {
+    id: 'ch06-chapel-undercroft-route', chapterId: 'ch06', position: { chapterId: 'ch06', slot: 20 }, afterEventId: 'ch06-main-hostages-under-the-chapel',
+    options: [
+      { id: 'ch06-return-to-the-siege-line', label: 'Return to the siege line', detail: 'The hostages are accounted for; join Greywatch’s defenders before the west wall comes under pressure.', consequence: 'Continue the siege story without searching the chapel undercroft for its bell crew and supplies.', kind: 'story', destination: { kind: 'scene', sceneId: 'ch06-main-the-siege-begins' } },
+      { id: 'ch06-enter-the-chapel-undercroft', label: 'Search the chapel undercroft', detail: 'The ossuary wire leads to a guarded cell stair and a second route through the bell loft.', consequence: 'Rescue the trapped novice, choose how to hold the wounded stair, and face the signal sentinel before rejoining the siege.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch06-chapel-undercroft-holdout' } },
+    ],
+  },
+  {
+    id: 'ch07-aqueduct-archive-route', chapterId: 'ch07', position: { chapterId: 'ch07', slot: 27 }, afterEventId: 'ch07-main-the-crownless-gate',
+    options: [
+      { id: 'ch07-follow-the-ridge-road', label: 'Follow the ridge road', detail: 'Stay with the column on the upper approach and continue to the counterweight house.', consequence: 'Pass the aqueduct without risking the crossbows or slowing to recover the patrol record.', kind: 'story', destination: { kind: 'scene', sceneId: 'ch07-combat-the-counterweight-house' } },
+      { id: 'ch07-enter-the-aqueduct-archive', label: 'Enter the dry aqueduct', detail: 'The old channel reaches a compact archive under the keep’s east ridge.', consequence: 'Choose a fast exposed crossing or a slower evidence route, then fight the archive wardens before returning to the column.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch07-aqueduct-compact-archive' } },
+    ],
+  },
+  {
+    id: 'ch08-engine-gallery-route', chapterId: 'ch08', position: { chapterId: 'ch08', slot: 18 }, afterEventId: 'ch08-main-voss-offers-order',
+    options: [
+      { id: 'ch08-audit-and-leave-the-engine', label: 'Audit the grain promises', detail: 'Keep the evidence with the party and leave the engine crew for the confrontation in the hall.', consequence: 'Continue toward Voss’s final terms without entering the guarded service galleries.', kind: 'story', destination: { kind: 'scene', sceneId: 'ch08-journey-audit-voss-grain-promises' } },
+      { id: 'ch08-infiltrate-the-service-galleries', label: 'Infiltrate the service galleries', detail: 'The command platform’s pressure schedule runs beneath the grain ledger office.', consequence: 'Fight into the control rooms, then choose a quick extraction or a deeper push for the engine records.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch08-engine-service-galleries' } },
+    ],
+  },
 ];

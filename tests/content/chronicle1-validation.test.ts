@@ -43,7 +43,7 @@ describe('Chronicle I production content index', () => {
     expect(CHRONICLE1_CONTENT.events.size).toBe(403);
     expect(CHRONICLE1_CONTENT.items.size).toBe(166);
     expect(CHRONICLE1_CONTENT.enemies.size).toBe(226);
-    expect(CHRONICLE1_CONTENT.encounters.size).toBe(70);
+    expect(CHRONICLE1_CONTENT.encounters.size).toBe(76);
     expect(CHRONICLE1_CONTENT.companions.size).toBe(5);
     expect(CHRONICLE1_CONTENT.merchants.size).toBe(6);
     expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);

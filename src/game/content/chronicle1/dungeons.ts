@@ -140,4 +140,95 @@ export const CHRONICLE1_DUNGEONS: readonly DungeonDefinition[] = [
       { id: 'ch05-underworks-retreat-from-quench', kind: 'exit', exitKind: 'retreat', sceneId: 'ch05-journey-the-underworks-retreat', exits: [] },
     ],
   },
+  {
+    id: 'ch06-chapel-undercroft-holdout', chapterId: 'ch06', startNodeId: 'ch06-ossuary-entry',
+    exitNodeIds: ['ch06-chapel-holdout-return'],
+    nodes: [
+      { id: 'ch06-ossuary-entry', kind: 'scene', sceneId: 'ch06-journey-the-chapel-ossuary', exits: [
+        { id: 'ch06-cut-through-the-cell-stair', targetNodeId: 'ch06-ossuary-bell-jailers', label: 'Break through the cell stair', detail: 'Reach the hostage keys quickly, but the bell keepers have a clear line down the narrow steps.' },
+        { id: 'ch06-climb-to-the-novice', targetNodeId: 'ch06-novice-bell-loft', label: 'Reach the trapped novice first', detail: 'Use the archive roof to bring a frightened bell novice down before the defenders regroup.' },
+      ] },
+      { id: 'ch06-ossuary-bell-jailers', kind: 'combat', encounterId: 'enc-ch06-ossuary-bell-jailers', exits: [
+        { id: 'ch06-hold-the-undercroft', targetNodeId: 'ch06-undercroft-holdout', label: 'Hold the undercroft passage', detail: 'Keep the rescued witnesses behind the cracked arch while the siege line shifts above.' },
+      ] },
+      { id: 'ch06-novice-bell-loft', kind: 'scene', sceneId: 'ch06-journey-the-novice-in-the-bell-loft', exits: [
+        { id: 'ch06-bring-the-novice-to-the-holdout', targetNodeId: 'ch06-undercroft-holdout', label: 'Bring the novice to the holdout', detail: 'Guide her down the archive stair before the bell crew can signal another patrol.' },
+      ] },
+      { id: 'ch06-undercroft-holdout', kind: 'hazard', exits: [
+        { id: 'ch06-stabilize-the-wounded-stair', targetNodeId: 'ch06-undercroft-recovery', label: 'Stabilize the wounded stair', detail: 'Spend a few minutes treating the rescued before the next push reaches the chapel door.' },
+        { id: 'ch06-barricade-the-service-arch', targetNodeId: 'ch06-service-arch-supplies', label: 'Barricade the service arch', detail: 'Take the stored brace kit and keep moving, leaving no time for a full recovery.' },
+      ] },
+      { id: 'ch06-undercroft-recovery', kind: 'rest', rewardVariants: [
+        { id: 'ch06-chapel-bandages', effects: [{ type: 'vitals', health: 7 }, { type: 'flag', operation: 'add', flagId: 'chapel-wounded-stabilized' }] },
+        { id: 'ch06-chapel-water-and-wraps', effects: [{ type: 'vitals', health: 4, resource: 2 }, { type: 'flag', operation: 'add', flagId: 'chapel-wounded-stabilized' }] },
+      ], exits: [
+        { id: 'ch06-stand-against-the-bell-sentinel', targetNodeId: 'ch06-bell-loft-sentinel', label: 'Stand against the bell sentinel', detail: 'The last signal guard is already moving toward the hostage stair.' },
+      ] },
+      { id: 'ch06-service-arch-supplies', kind: 'cache', rewardVariants: [
+        { id: 'ch06-chapel-brace-kit', effects: [{ type: 'gold', scope: 'unbanked', amount: 12 }, { type: 'vitals', resource: 2 }, { type: 'flag', operation: 'add', flagId: 'chapel-service-arch-braced' }] },
+      ], exits: [
+        { id: 'ch06-press-past-the-sentinel', targetNodeId: 'ch06-bell-loft-sentinel', label: 'Press past the sentinel', detail: 'Carry the brace kit into the bell stair and stop the next alarm before it reaches the west wall.' },
+      ] },
+      { id: 'ch06-bell-loft-sentinel', kind: 'elite', encounterId: 'enc-ch06-bell-loft-sentinel', exits: [
+        { id: 'ch06-return-with-the-hostages', targetNodeId: 'ch06-chapel-holdout-return', label: 'Return to the siege line', detail: 'Bring the rescued people and the undercroft report back to Greywatch’s defenders.' },
+      ] },
+      { id: 'ch06-chapel-holdout-return', kind: 'exit', exitKind: 'complete', sceneId: 'ch06-main-the-siege-begins', exits: [] },
+    ],
+  },
+  {
+    id: 'ch07-aqueduct-compact-archive', chapterId: 'ch07', startNodeId: 'ch07-keep-ridge-entry',
+    exitNodeIds: ['ch07-return-to-the-crownless-gate'],
+    nodes: [
+      { id: 'ch07-keep-ridge-entry', kind: 'scene', sceneId: 'ch07-journey-beneath-the-keep-ridge', exits: [
+        { id: 'ch07-read-the-waterline', targetNodeId: 'ch07-aqueduct-route-choice', label: 'Read the waterline', detail: 'The dry channel reaches an archive stair, but the upper crossing and lower sluice demand different risks.' },
+      ] },
+      { id: 'ch07-aqueduct-route-choice', kind: 'hazard', exits: [
+        { id: 'ch07-cross-the-upper-aqueduct', targetNodeId: 'ch07-aqueduct-crossbow-watch', label: 'Cross the upper aqueduct', detail: 'Move quickly over the open channel and fight the keep patrol before it can close the archive stair.' },
+        { id: 'ch07-lower-the-silt-sluice', targetNodeId: 'ch07-aqueduct-ledger-cache', label: 'Lower the silt sluice', detail: 'Take longer to quiet the water, avoid the first patrol, and search its abandoned watch ledger.' },
+      ] },
+      { id: 'ch07-aqueduct-crossbow-watch', kind: 'combat', encounterId: 'enc-ch07-aqueduct-crossbow-patrol', exits: [
+        { id: 'ch07-reach-the-compact-wardens-fast', targetNodeId: 'ch07-compact-archive-wardens', label: 'Reach the compact wardens', detail: 'The open route saved time, but the archive sentries heard the fight above.' },
+      ] },
+      { id: 'ch07-aqueduct-ledger-cache', kind: 'cache', rewardVariants: [
+        { id: 'ch07-copy-the-duplicate-watch-roll', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'keep-duplicate-patrol-roll' }, { type: 'flag', operation: 'add', flagId: 'aqueduct-watch-roll-copied' }, { type: 'threat', amount: -1 }] },
+        { id: 'ch07-recover-the-keep-patrol-sketch', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'keep-patrol-sketch' }, { type: 'flag', operation: 'add', flagId: 'aqueduct-watch-roll-copied' }] },
+      ], exits: [
+        { id: 'ch07-enter-the-compact-archive-slowly', targetNodeId: 'ch07-compact-archive-wardens', label: 'Enter the compact archive', detail: 'The recovered patrol record reveals the guard rotation, though the silt route cost precious minutes.' },
+      ] },
+      { id: 'ch07-compact-archive-wardens', kind: 'elite', encounterId: 'enc-ch07-compact-archive-wardens', exits: [
+        { id: 'ch07-rejoin-at-the-crownless-gate', targetNodeId: 'ch07-return-to-the-crownless-gate', label: 'Rejoin the column', detail: 'Bring the records or the remaining patrol detail back to the gate approach.' },
+      ] },
+      { id: 'ch07-return-to-the-crownless-gate', kind: 'exit', exitKind: 'complete', sceneId: 'ch07-combat-the-counterweight-house', exits: [] },
+    ],
+  },
+  {
+    id: 'ch08-engine-service-galleries', chapterId: 'ch08', startNodeId: 'ch08-audit-voss-promises',
+    exitNodeIds: ['ch08-service-gallery-extract', 'ch08-engine-control-exit'],
+    nodes: [
+      { id: 'ch08-audit-voss-promises', kind: 'scene', sceneId: 'ch08-journey-audit-voss-grain-promises', exits: [
+        { id: 'ch08-slip-into-the-service-gallery', targetNodeId: 'ch08-engine-gallery-watch', label: 'Slip into the service gallery', detail: 'Follow the grain ledger below the command platform, where the engine crew still guards its pressure controls.' },
+      ] },
+      { id: 'ch08-engine-gallery-watch', kind: 'combat', encounterId: 'enc-ch08-engine-gallery-watch', exits: [
+        { id: 'ch08-reach-the-control-fork', targetNodeId: 'ch08-control-gallery-fork', label: 'Reach the control fork', detail: 'The guards are down, but the service stair and deeper control room are both still open.' },
+      ] },
+      { id: 'ch08-control-gallery-fork', kind: 'hazard', exits: [
+        { id: 'ch08-extract-by-the-service-stair', targetNodeId: 'ch08-service-gallery-extract', label: 'Extract by the service stair', detail: 'Leave before the platform locks down; the engine remains active and its control ledger stays below.' },
+        { id: 'ch08-push-to-the-regulator-room', targetNodeId: 'ch08-regulator-control-crew', label: 'Push to the regulator room', detail: 'Risk one more guard line to copy the engine controls before the final confrontation.' },
+      ] },
+      { id: 'ch08-regulator-control-crew', kind: 'combat', encounterId: 'enc-ch08-regulator-control-crew', exits: [
+        { id: 'ch08-copy-the-pressure-ledger', targetNodeId: 'ch08-pressure-ledger-cache', label: 'Copy the pressure ledger', detail: 'Secure the brake sequence while the remaining platform guard tries to restart the press.' },
+      ] },
+      { id: 'ch08-pressure-ledger-cache', kind: 'cache', rewardVariants: [
+        { id: 'ch08-seal-the-engine-control-copy', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'saved-voss-dispatches' }, { type: 'flag', operation: 'add', flagId: 'engine-pressure-schematic-copied' }] },
+        { id: 'ch08-copy-the-brake-order', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'private-ledger-receiving-line' }, { type: 'flag', operation: 'add', flagId: 'engine-pressure-schematic-copied' }, { type: 'threat', amount: -1 }] },
+      ], exits: [
+        { id: 'ch08-withdraw-under-the-platform', targetNodeId: 'ch08-under-platform-withdrawal', label: 'Withdraw under the platform', detail: 'Use the service cutout to return with the copied sequence before the hall doors close.' },
+      ] },
+      { id: 'ch08-under-platform-withdrawal', kind: 'scene', sceneId: 'ch08-journey-beneath-the-command-platform', exits: [
+        { id: 'ch08-return-with-the-control-ledger', targetNodeId: 'ch08-engine-control-exit', label: 'Return with the control ledger', detail: 'The engine crew has lost its pressure schedule; the final confrontation can begin on your terms.' },
+      ] },
+      { id: 'ch08-service-gallery-extract', kind: 'exit', exitKind: 'extract', sceneId: 'ch08-combat-the-coronation-engine', exits: [] },
+      { id: 'ch08-engine-control-exit', kind: 'exit', exitKind: 'complete', sceneId: 'ch08-combat-the-coronation-engine', exits: [] },
+    ],
+  },
 ];
