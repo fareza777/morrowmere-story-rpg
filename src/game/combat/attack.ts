@@ -19,13 +19,13 @@ export interface AttackResolution {
   readonly rngState: number;
 }
 
-function attackAccuracy(attacker: HeroCombatant | EnemyCombatant): number {
+export function attackAccuracy(attacker: HeroCombatant | EnemyCombatant): number {
   return 'attackAccuracy' in attacker && attacker.attackAccuracy !== undefined
     ? attacker.attackAccuracy
     : 'role' in attacker ? 91 : Math.max(4, Math.min(95, 82 + attacker.cunning));
 }
 
-function critChance(attacker: HeroCombatant | EnemyCombatant): number {
+export function critChance(attacker: HeroCombatant | EnemyCombatant): number {
   return 'criticalChance' in attacker && attacker.criticalChance !== undefined
     ? attacker.criticalChance
     : 'role' in attacker ? 9 : Math.max(0, Math.min(30, 8 + attacker.cunning));
