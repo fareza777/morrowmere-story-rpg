@@ -1,4 +1,5 @@
 import type { ChronicleRouteDefinition } from '../schema';
+import type { RouteJunctionDefinition } from '../../dungeon/types';
 import type { RouteOption } from '../../director/types';
 import { deepFreeze } from './builders';
 
@@ -58,3 +59,6 @@ export const adaptChronicleRoute = toRouteOption;
 export const CHRONICLE1_ROUTE_OPTIONS = deepFreeze(
   CHRONICLE1_ROUTES.map(toRouteOption),
 );
+
+/** Intentional story junctions are authored alongside the chapter dungeons. */
+export const CHRONICLE1_ROUTE_JUNCTIONS: readonly RouteJunctionDefinition[] = [];

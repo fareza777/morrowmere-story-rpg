@@ -1,4 +1,5 @@
 import type { GameEffect } from "../domain/effects";
+import type { DungeonDefinition, RouteJunctionDefinition } from '../dungeon/types';
 import type { RoadBias, RouteProfileId } from "../director/types";
 import type {
   CallbackId,
@@ -568,6 +569,9 @@ export interface ContentIndex {
   readonly encounters: ReadonlyMap<EncounterId, EncounterDefinition>;
   readonly companions: ReadonlyMap<CompanionId, CompanionDefinition>;
   readonly merchants: ReadonlyMap<MerchantId, MerchantDefinition>;
+  /** Optional for legacy in-memory catalogs assembled before authored routes. */
+  readonly dungeons?: ReadonlyMap<string, DungeonDefinition>;
+  readonly routeJunctions?: ReadonlyMap<string, RouteJunctionDefinition>;
   readonly artIds: ReadonlySet<string>;
   readonly audioIds: ReadonlySet<string>;
 }

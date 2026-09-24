@@ -39,6 +39,8 @@ export function makeContentIndex(options: ContentIndexOptions = {}): ContentInde
     encounters: new Map(),
     companions: new Map(),
     merchants: new Map(),
+    dungeons: new Map(),
+    routeJunctions: new Map(),
     artIds: new Set(['fixture-art']),
     audioIds: new Set(),
   };

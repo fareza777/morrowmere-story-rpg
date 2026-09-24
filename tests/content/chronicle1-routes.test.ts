@@ -15,6 +15,9 @@ import { scenePacing } from '../../src/game/director/pacing';
 import { createCampaign } from '../../src/game/state/create';
 import { applyEffectsAtomically, type EffectState } from '../../src/game/state/effects';
 import { currentSceneId, reduceGame } from '../../src/game/state/reducer';
+import { validateContent } from '../../src/game/content/validate';
+import type { DungeonDefinition, RouteJunctionDefinition } from '../../src/game/dungeon/types';
+import { makeContentIndex } from '../fixtures/game';
 
 const ROUTES: readonly RouteProfileId[] = ['kings-road', 'old-forest', 'ruined-pass'];
 const initialState = (seed: number): DirectorState => ({
@@ -310,5 +313,94 @@ describe('Chronicle I route audit', () => {
     }
 
     expect(signatures.size).toBeGreaterThanOrEqual(6);
+  });
+});
+
+describe('authored dungeon and junction validation', () => {
+  const terminal = { id: 'end', kind: 'exit' as const, exitKind: 'complete' as const, exits: [] };
+  const dungeon: DungeonDefinition = {
+    id: 'fixture-dungeon', chapterId: 'ch01', startNodeId: 'start', exitNodeIds: ['end'],
+    nodes: [
+      { id: 'start', kind: 'scene', sceneId: 'fixture-event' as never, exits: [{ id: 'finish', targetNodeId: 'end', label: 'Leave', detail: 'Go home.' }] },
+      terminal,
+    ],
+  };
+  const junction: RouteJunctionDefinition = {
+    id: 'fixture-junction', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 2 }, afterEventId: 'fixture-event' as never,
+    options: [
+      { id: 'scene', kind: 'story', label: 'Stay', detail: 'Stay here.', consequence: 'You wait.', destination: { kind: 'scene', sceneId: 'fixture-event' as never } },
+      { id: 'dungeon', kind: 'dungeon', label: 'Explore', detail: 'Enter.', consequence: 'Find a way through.', destination: { kind: 'dungeon', dungeonId: 'fixture-dungeon' } },
+    ],
+  };
+  const issuesFor = (graph: DungeonDefinition = dungeon, fork: RouteJunctionDefinition = junction) => {
+    const fixture = makeContentIndex();
+    return validateContent({ ...fixture, dungeons: new Map([[graph.id, graph]]), routeJunctions: new Map([[fork.id, fork]]) }).map((issue) => issue.code);
+  };
+
+  it('accepts a reachable terminal and two valid junction destinations', () => {
+    expect(issuesFor()).toEqual([]);
+  });
+
+  it('rejects an exit to an unknown node', () => {
+    expect(issuesFor({ ...dungeon, nodes: [{ ...dungeon.nodes[0]!, exits: [{ id: 'lost', targetNodeId: 'unknown', label: 'Lost', detail: 'Nowhere.' }] }, terminal] })).toContain('missing_dungeon_destination');
+  });
+
+  it('rejects a terminal that cannot be reached from the start', () => {
+    expect(issuesFor({ ...dungeon, nodes: [{ ...dungeon.nodes[0]!, exits: [] }, terminal] })).toContain('unreachable_dungeon_exit');
+  });
+
+  it('rejects a terminal behind contradictory path gates', () => {
+    const blocked: DungeonDefinition = { ...dungeon, nodes: [
+      { id: 'start', kind: 'scene', sceneId: 'fixture-event' as never, exits: [{ id: 'key', targetNodeId: 'middle', label: 'Key', detail: 'Use key.', requiredFlags: ['key'] }] },
+      { id: 'middle', kind: 'rest', exits: [{ id: 'no-key', targetNodeId: 'end', label: 'Door', detail: 'Enter.', excludedFlags: ['key'] }] },
+      terminal,
+    ] };
+    expect(issuesFor(blocked)).toContain('unreachable_dungeon_exit');
+  });
+
+  it('rejects invalid encounter, scene, and terminal node shapes', () => {
+    expect(issuesFor({ ...dungeon, nodes: [
+      { id: 'start', kind: 'combat', sceneId: 'fixture-event' as never, exits: dungeon.nodes[0]!.exits },
+      { ...terminal, exitKind: undefined, exits: [{ id: 'loop', targetNodeId: 'start', label: 'Loop', detail: 'Return.' }] },
+    ] })).toEqual(expect.arrayContaining(['invalid_dungeon_node', 'invalid_dungeon_exit']));
+  });
+
+  it('rejects unknown referenced encounters and reward items', () => {
+    expect(issuesFor({ ...dungeon, nodes: [
+      { id: 'start', kind: 'combat', encounterId: 'unknown' as never, exits: dungeon.nodes[0]!.exits }, terminal,
+    ] })).toContain('missing_encounter');
+    expect(issuesFor({ ...dungeon, nodes: [
+      { id: 'start', kind: 'cache', rewardVariants: [{ id: 'item', effects: [{ type: 'item', operation: 'grant', itemId: 'unknown' as never, quantity: 1 }] }], exits: dungeon.nodes[0]!.exits }, terminal,
+    ] })).toContain('missing_item');
+  });
+
+  it('rejects a reachable path that can repeat an encounter through variants', () => {
+    const fight = (id: string, target: string) => ({ id, kind: 'combat' as const, encounterVariants: ['same' as never, `${id}-other` as never], exits: [{ id: `to-${target}`, targetNodeId: target, label: 'Continue', detail: 'Advance.' }] });
+    expect(issuesFor({ ...dungeon, nodes: [fight('a', 'b'), fight('b', 'end'), terminal], startNodeId: 'a' })).toContain('repeated_dungeon_encounter');
+  });
+
+  it('rejects duplicate node, exit, and reward IDs', () => {
+    const duplicate = { ...dungeon.nodes[0]!, exits: [dungeon.nodes[0]!.exits[0]!, dungeon.nodes[0]!.exits[0]!] };
+    expect(issuesFor({ ...dungeon, nodes: [duplicate, duplicate, terminal] })).toEqual(expect.arrayContaining(['duplicate_dungeon_node_id', 'duplicate_dungeon_exit_id']));
+    expect(issuesFor({ ...dungeon, nodes: [{ id: 'start', kind: 'cache', rewardVariants: [{ id: 'same', effects: [] }, { id: 'same', effects: [] }], exits: [dungeon.nodes[0]!.exits[0]!] }, terminal] })).toContain('duplicate_dungeon_reward_id');
+  });
+
+  it('rejects an impossible junction flag profile with no eligible options', () => {
+    expect(issuesFor(dungeon, { ...junction, options: junction.options.map((option) => ({ ...option, requiredFlags: ['key'] })) })).toContain('empty_route_junction');
+  });
+
+  it('rejects a junction whose options all lead to the same destination', () => {
+    expect(issuesFor(dungeon, { ...junction, options: [junction.options[0]!, { ...junction.options[1]!, destination: junction.options[0]!.destination }] })).toContain('indistinct_route_junction');
+  });
+
+  it('rejects a junction referencing an unknown scene or dungeon', () => {
+    expect(issuesFor(dungeon, { ...junction, options: [
+      { ...junction.options[0]!, destination: { kind: 'scene', sceneId: 'missing' as never } },
+      { ...junction.options[1]!, destination: { kind: 'dungeon', dungeonId: 'missing' } },
+    ] })).toEqual(expect.arrayContaining(['missing_route_scene', 'missing_route_dungeon']));
+  });
+
+  it('rejects duplicate option IDs and a mismatched junction position', () => {
+    expect(issuesFor(dungeon, { ...junction, position: { chapterId: 'ch02', slot: 0 }, options: [junction.options[0]!, { ...junction.options[1]!, id: junction.options[0]!.id }] })).toEqual(expect.arrayContaining(['duplicate_route_option_id', 'invalid_route_junction']));
   });
 });

@@ -16,6 +16,7 @@ import { CH06_SCENES } from './chapters/ch06';
 import { CH07_SCENES } from './chapters/ch07';
 import { CH08_SCENES } from './chapters/ch08';
 import { CHRONICLE1_COMPANIONS } from './companions';
+import { CHRONICLE1_DUNGEONS } from './dungeons';
 import { CHRONICLE1, MAIN_ANCHOR_IDS } from './chronicle';
 import {
   CHRONICLE1_ENCOUNTERS,
@@ -41,7 +42,7 @@ import {
   CHRONICLE1_MERCHANTS,
   resolveMerchantStock,
 } from './merchants';
-import { CHRONICLE1_ROUTES } from './routes';
+import { CHRONICLE1_ROUTES, CHRONICLE1_ROUTE_JUNCTIONS } from './routes';
 
 const ENGLISH_LETTER = /[A-Za-z]/;
 const PROMPT_LIKE_COPY = /\b(?:generate|continue the story|AI response)\b/i;
@@ -274,6 +275,8 @@ export const CHRONICLE1_CONTENT: ContentIndex = Object.freeze({
   encounters: CHRONICLE1_ENCOUNTER_INDEX,
   companions: CHRONICLE1_COMPANION_INDEX,
   merchants: CHRONICLE1_MERCHANT_INDEX,
+  dungeons: new Map(CHRONICLE1_DUNGEONS.map((dungeon) => [dungeon.id, dungeon] as const)),
+  routeJunctions: new Map(CHRONICLE1_ROUTE_JUNCTIONS.map((junction) => [junction.id, junction] as const)),
   artIds: CHRONICLE1_ART_IDS,
   audioIds: CHRONICLE1_AUDIO_IDS,
 });
@@ -281,6 +284,7 @@ export const CHRONICLE1_CONTENT: ContentIndex = Object.freeze({
 export {
   CHRONICLE1,
   CHRONICLE1_COMPANIONS,
+  CHRONICLE1_DUNGEONS,
   CHRONICLE1_ENCOUNTERS,
   CHRONICLE1_ENDINGS,
   CHRONICLE1_ENEMIES,
@@ -291,6 +295,7 @@ export {
   CHRONICLE1_MERCHANTS,
   CHRONICLE1_NEW_ITEMS,
   CHRONICLE1_ROUTES,
+  CHRONICLE1_ROUTE_JUNCTIONS,
   CHRONICLE1_VOICE_CUES,
   MAIN_ANCHOR_IDS,
   resolveChronicle1Ending,

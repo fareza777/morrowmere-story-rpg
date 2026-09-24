@@ -1,4 +1,6 @@
 import type { GameEffect } from '../domain/effects';
+import type { DungeonDefinition, RouteJunctionDefinition } from '../dungeon/types';
+import { availableRouteOptions } from '../dungeon/routes';
 import type {
   Chronicle1CompanionDefinition,
   Chronicle1Choice,
@@ -30,6 +32,25 @@ export type ContentIssueCode =
   | 'duplicate_companion_id'
   | 'duplicate_merchant_id'
   | 'duplicate_choice_id'
+  | 'duplicate_dungeon_id'
+  | 'duplicate_dungeon_node_id'
+  | 'duplicate_dungeon_exit_id'
+  | 'duplicate_dungeon_reward_id'
+  | 'duplicate_route_junction_id'
+  | 'duplicate_route_option_id'
+  | 'invalid_dungeon_chapter'
+  | 'invalid_dungeon_node'
+  | 'invalid_dungeon_exit'
+  | 'missing_dungeon_start'
+  | 'missing_dungeon_destination'
+  | 'missing_dungeon_scene'
+  | 'unreachable_dungeon_exit'
+  | 'repeated_dungeon_encounter'
+  | 'invalid_route_junction'
+  | 'empty_route_junction'
+  | 'indistinct_route_junction'
+  | 'missing_route_scene'
+  | 'missing_route_dungeon'
   | 'missing_art'
   | 'missing_audio'
   | 'missing_item'
@@ -151,6 +172,108 @@ function walkDialogueBeats(
   event.dialogue?.forEach(visit);
 }
 
+const CHAPTER_IDS = new Set(['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08']);
+const COMBAT_NODE_KINDS = new Set(['combat', 'elite', 'boss']);
+const EXIT_KINDS = new Set(['complete', 'extract', 'retreat']);
+
+function dungeonIssues(definition: DungeonDefinition, index: ContentIndex): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  const report = (code: ContentIssueCode, message: string): void => { issues.push({ code, message: `${definition.id}: ${message}` }); };
+  if (!CHAPTER_IDS.has(definition.chapterId)) report('invalid_dungeon_chapter', `Unknown chapter ${definition.chapterId}`);
+  issues.push(...duplicateIssues(definition.nodes, 'duplicate_dungeon_node_id'));
+  const nodes = new Map(definition.nodes.map((node) => [node.id, node] as const));
+  if (!nodes.has(definition.startNodeId)) report('missing_dungeon_start', `Missing start ${definition.startNodeId}`);
+  const exitIds = new Set<string>();
+  const rewardIds = new Set<string>();
+  for (const node of definition.nodes) {
+    const combat = COMBAT_NODE_KINDS.has(node.kind);
+    const encounterIds = [node.encounterId, ...(node.encounterVariants ?? [])].filter((id): id is NonNullable<typeof id> => id !== undefined);
+    if (combat ? (Boolean(node.sceneId) || Number(Boolean(node.encounterId)) + Number(Boolean(node.encounterVariants?.length)) !== 1)
+      : encounterIds.length > 0) report('invalid_dungeon_node', `Invalid encounter shape at ${node.id}`);
+    if (node.kind === 'scene' && !node.sceneId) report('invalid_dungeon_node', `Scene ${node.id} has no scene ID`);
+    if (node.sceneId && node.kind !== 'scene' && node.kind !== 'hazard') report('invalid_dungeon_node', `Unexpected scene at ${node.id}`);
+    if (node.sceneId && (!index.events.has(node.sceneId) || index.events.get(node.sceneId)?.chapterId !== definition.chapterId)) report('missing_dungeon_scene', `Invalid scene ${node.sceneId}`);
+    for (const encounterId of encounterIds) {
+      if (!index.encounters.has(encounterId)) report('missing_encounter', `Missing dungeon encounter ${encounterId}`);
+    }
+    if (node.kind === 'exit') {
+      if (!node.exitKind || !EXIT_KINDS.has(node.exitKind) || node.exits.length || node.sceneId || encounterIds.length || node.rewardVariants?.length) report('invalid_dungeon_exit', `Invalid terminal ${node.id}`);
+    } else if (node.exitKind) report('invalid_dungeon_exit', `Nonterminal ${node.id} has exit kind`);
+    if (node.rewardVariants && !['cache', 'rest'].includes(node.kind)) report('invalid_dungeon_node', `Unexpected reward at ${node.id}`);
+    for (const reward of node.rewardVariants ?? []) {
+      if (rewardIds.has(reward.id)) report('duplicate_dungeon_reward_id', `Duplicate reward ${reward.id}`);
+      rewardIds.add(reward.id);
+      for (const effect of reward.effects) issues.push(...effectIssues(effect, index));
+    }
+    for (const exit of node.exits) {
+      if (exitIds.has(exit.id)) report('duplicate_dungeon_exit_id', `Duplicate exit ${exit.id}`);
+      exitIds.add(exit.id);
+      if (!nodes.has(exit.targetNodeId)) report('missing_dungeon_destination', `Exit ${exit.id} points to ${exit.targetNodeId}`);
+      if (exit.requiredFlags?.some((flag) => exit.excludedFlags?.includes(flag))) report('invalid_dungeon_exit', `Contradictory gate on ${exit.id}`);
+    }
+  }
+  if (!definition.exitNodeIds.length || !definition.nodes.some((node) => node.kind === 'exit')) report('invalid_dungeon_exit', 'No terminal exit');
+  for (const exitId of definition.exitNodeIds) {
+    if (nodes.get(exitId)?.kind !== 'exit') report('invalid_dungeon_exit', `Declared exit ${exitId} is missing or nonterminal`);
+  }
+  if (new Set(definition.exitNodeIds).size !== definition.exitNodeIds.length) report('duplicate_dungeon_exit_id', 'Duplicate declared exit');
+
+  const reachable = new Set<string>();
+  let repeatedEncounter = false;
+  const walk = (nodeId: string, visited: ReadonlySet<string>, encountered: ReadonlySet<string>, required: ReadonlySet<string>, excluded: ReadonlySet<string>): void => {
+    const node = nodes.get(nodeId);
+    if (!node || visited.has(nodeId)) return;
+    reachable.add(nodeId);
+    const pool = [node.encounterId, ...(node.encounterVariants ?? [])].filter((id): id is NonNullable<typeof id> => id !== undefined);
+    if (pool.some((id) => encountered.has(id))) repeatedEncounter = true;
+    const nextEncountered = new Set([...encountered, ...pool]);
+    const nextVisited = new Set([...visited, nodeId]);
+    for (const edge of node.exits) {
+      if ((edge.requiredFlags ?? []).some((flag) => excluded.has(flag)) || (edge.excludedFlags ?? []).some((flag) => required.has(flag))) continue;
+      walk(edge.targetNodeId, nextVisited, nextEncountered,
+        new Set([...required, ...(edge.requiredFlags ?? [])]), new Set([...excluded, ...(edge.excludedFlags ?? [])]));
+    }
+  };
+  walk(definition.startNodeId, new Set(), new Set(), new Set(), new Set());
+  if (repeatedEncounter) report('repeated_dungeon_encounter', 'A reachable path can schedule an encounter twice');
+  for (const exitId of definition.exitNodeIds) {
+    if (!reachable.has(exitId)) report('unreachable_dungeon_exit', `Unreachable terminal ${exitId}`);
+  }
+  return issues;
+}
+
+function junctionIssues(junction: RouteJunctionDefinition, index: ContentIndex): ContentIssue[] {
+  const issues: ContentIssue[] = [];
+  const report = (code: ContentIssueCode, message: string): void => { issues.push({ code, message: `${junction.id}: ${message}` }); };
+  if (!CHAPTER_IDS.has(junction.chapterId) || junction.position.chapterId !== junction.chapterId || !Number.isSafeInteger(junction.position.slot) || junction.position.slot < 1) report('invalid_route_junction', 'Invalid chapter or position');
+  if (!index.events.has(junction.afterEventId) || index.events.get(junction.afterEventId)?.chapterId !== junction.chapterId) report('missing_route_scene', `Invalid activation scene ${junction.afterEventId}`);
+  issues.push(...duplicateIssues(junction.options, 'duplicate_route_option_id'));
+  const destinations = new Set<string>();
+  for (const option of junction.options) {
+    if (option.destination.kind === 'scene') {
+      destinations.add(`scene:${option.destination.sceneId}`);
+      if (!index.events.has(option.destination.sceneId) || index.events.get(option.destination.sceneId)?.chapterId !== junction.chapterId) report('missing_route_scene', `Invalid destination ${option.destination.sceneId}`);
+    } else {
+      destinations.add(`dungeon:${option.destination.dungeonId}`);
+      if (!index.dungeons?.has(option.destination.dungeonId) || index.dungeons.get(option.destination.dungeonId)?.chapterId !== junction.chapterId) report('missing_route_dungeon', `Invalid destination ${option.destination.dungeonId}`);
+    }
+    if (option.requiredFlags?.some((flag) => option.excludedFlags?.includes(flag))) report('invalid_route_junction', `Contradictory gate on ${option.id}`);
+    for (const effect of option.effects ?? []) issues.push(...effectIssues(effect, index));
+  }
+  if (destinations.size < 2) report('indistinct_route_junction', 'Fewer than two distinct destinations');
+  const gates = [...new Set(junction.options.flatMap((option) => [...(option.requiredFlags ?? []), ...(option.excludedFlags ?? [])]))];
+  const hasEmptyProfile = (at: number, flags: Set<string>): boolean => {
+    if (at === gates.length) return availableRouteOptions(junction, flags).length === 0;
+    if (hasEmptyProfile(at + 1, flags)) return true;
+    flags.add(gates[at]!);
+    const empty = hasEmptyProfile(at + 1, flags);
+    flags.delete(gates[at]!);
+    return empty;
+  };
+  if (hasEmptyProfile(0, new Set())) report('empty_route_junction', 'A flag profile has no eligible option');
+  return issues;
+}
+
 export function validateContent(index: ContentIndex): ContentIssue[] {
   const issues = [
     ...duplicateIssues(index.events.values(), 'duplicate_event_id'),
@@ -159,7 +282,12 @@ export function validateContent(index: ContentIndex): ContentIssue[] {
     ...duplicateIssues(index.encounters.values(), 'duplicate_encounter_id'),
     ...duplicateIssues(index.companions.values(), 'duplicate_companion_id'),
     ...duplicateIssues(index.merchants.values(), 'duplicate_merchant_id'),
+    ...duplicateIssues(index.dungeons?.values() ?? [], 'duplicate_dungeon_id'),
+    ...duplicateIssues(index.routeJunctions?.values() ?? [], 'duplicate_route_junction_id'),
   ];
+
+  for (const dungeon of index.dungeons?.values() ?? []) issues.push(...dungeonIssues(dungeon, index));
+  for (const junction of index.routeJunctions?.values() ?? []) issues.push(...junctionIssues(junction, index));
 
   for (const event of index.events.values()) {
     if (!index.artIds.has(event.illustrationId)) {
