@@ -18,6 +18,7 @@ export const BOSS_IDS = deepFreeze([
   'boss-redwater-provocateur',
   'boss-kargan-war-chief',
   'boss-embervault-forgemaster',
+  'boss-embervault-cinder-heart-regulator',
   'boss-royal-armory-golem',
   'boss-siege-engineer-malrec',
   'boss-black-banner-commander',
@@ -236,6 +237,20 @@ const BOSS_SPECS: readonly BossSpec[] = [
       phase('hadrik-quenched-hammer', 'The Quenched Hammer', 50, 'He plunges the hammer head into water and raises it through a clear cloud of steam.', 'Leave the marked center lane or guard the descending blow, then punish the long recovery.', { heavy: 4, strike: 3 }),
     ],
     antiCheese: { trigger: 'The player waits outside the hot lane while repeatedly using ranged attacks.', response: 'Hadrik closes the ledger door one step instead of reflecting or nullifying damage.', counterplay: 'Disable the channel, rush the lever, or accept one guarded crossing before the door seals.' },
+  },
+  {
+    id: 'boss-embervault-cinder-heart-regulator', name: 'Cinder-Heart Regulator', level: 10, species: 'construct',
+    region: 'embervault', role: 'specialist', threatCost: 15, uniqueTrait: 'Pressure Relay',
+    intentWeights: { guard: 2, heavy: 3, strike: 2 }, rewardTags: ['ore', 'relic'],
+    description: 'A human-built pressure engine armored in slag plates and left to guard the mine’s sealed underworks.',
+    battlefieldRule: 'The regulator marks one steam lane at a time and exposes a relay while it resets its pressure.',
+    statusInteractions: [interaction('staggered', 'exploits', 'A stagger during a vent cycle exposes the pressure relay and stops the next lane sweep.')],
+    phases: [
+      phase('regulator-cross-press', 'Cross-Press Cycle', 100, 'The regulator vents from one marked floor channel and winds its counterweight through the center rail.', 'Step off the marked channel or guard the rail sweep, then strike the exposed drive while pressure resets.', { guard: 2, heavy: 3, strike: 2 }),
+      phase('regulator-overpressure', 'Overpressure Release', 50, 'Its cracked core flashes white as both shutters begin closing around the nearest open valve.', 'Jam one named shutter or stagger the relay before the pressure wave reaches the platform.', { heavy: 3, strike: 2, hex: 2 }),
+    ],
+    antiCheese: { trigger: 'The party repeats attacks from one safe corner while leaving the active valves untouched.', response: 'The regulator advances one clearly marked shutter instead of gaining damage or ignoring defenses.', counterplay: 'Contest the active valve, interrupt its relay during the pressure reset, or move to the announced safe lane.' },
+    healthBonus: 8, armorBonus: 1,
   },
   {
     id: 'boss-royal-armory-golem', name: 'Royal Armory Golem', level: 10, species: 'construct',

@@ -1866,6 +1866,13 @@
       "type": "journey"
     },
     {
+      "id": "scene-ch05-journey-the-underworks-retreat",
+      "sceneId": "ch05-journey-the-underworks-retreat",
+      "title": "A Controlled Retreat",
+      "chapterId": "ch05",
+      "type": "journey"
+    },
+    {
       "id": "scene-ch05-journey-the-ventilation-gallery",
       "sceneId": "ch05-journey-the-ventilation-gallery",
       "title": "The Ventilation Gallery",
@@ -4107,6 +4114,11 @@
       "id": "enemy-portrait-boss-crownless-gate-warden",
       "enemyId": "boss-crownless-gate-warden",
       "name": "Crownless Gate Warden"
+    },
+    {
+      "id": "enemy-portrait-boss-embervault-cinder-heart-regulator",
+      "enemyId": "boss-embervault-cinder-heart-regulator",
+      "name": "Cinder-Heart Regulator"
     },
     {
       "id": "enemy-portrait-boss-embervault-forgemaster",

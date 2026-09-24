@@ -188,4 +188,18 @@ export const CH05_JOURNEY = Object.freeze([
       { id: 'ch05-choice-use-the-damaged-coal-lift', label: 'Use the damaged coal lift', detail: 'Move witnesses quickly, but risk the brake failing with people above the furnace exhaust.', effects: [{ type: 'flag', operation: 'add', flagId: 'coal-lift-used-for-escape' }, { type: 'threat', amount: -1 }], outcome: 'The lift shudders up the shaft and stops hard at the surface landing without losing its load.' },
     ],
   }),
+  defineScene({
+    id: 'ch05-journey-the-underworks-retreat', chapterId: 'ch05', region: 'embervault', slot: 44,
+    type: 'journey', journeySubtype: 'dungeon', family: 'underworks-retreat', weight: 10, pacing: 'recovery',
+    illustrationId: 'scene-ch05-journey-the-underworks-retreat', title: 'A Controlled Retreat',
+    narrative: [
+      'The ore lift catches before its brake gives way. The party reaches the upper service stair alive, but the regulator vault and its deeper records remain sealed below.',
+      'Jory can carry the copied shift docket back to the evidence case, or Dessa can use the remaining time to lead the injured miners out ahead of the next patrol.',
+    ],
+    eligibility: { routes: ['kings-road', 'old-forest', 'ruined-pass'], minLevel: 8, maxLevel: 10 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true, followUps: [], callbackPromises: [],
+    choices: [
+      { id: 'ch05-choice-secure-the-underworks-docket', label: 'Secure the shift docket', detail: 'Keep a compact record of the lower patrol routes, but leave the injured workers to Dessa’s slower escort.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'embervault-ledger-copy' }, { type: 'flag', operation: 'add', flagId: 'underworks-retreated-with-docket' }], outcome: 'Jory dries the stamped docket over the lift housing and seals it before the party returns to the forge road.' },
+      { id: 'ch05-choice-escort-the-injured-miners', label: 'Escort the injured miners', detail: 'Spend time and strength getting the hurt shift workers out first, leaving the docket behind in the sealed level.', effects: [{ type: 'vitals', health: -2 }, { type: 'faction', factionId: 'border-council', amount: 2 }, { type: 'flag', operation: 'add', flagId: 'underworks-retreated-with-workers' }], outcome: 'Dessa moves the injured miners through the lift one at a time while the patrol searches the empty cages below.' },
+    ],
+  }),
 ]);

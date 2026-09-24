@@ -88,14 +88,14 @@ describe('Road Tactics artwork', () => {
     expect(dimensions).not.toEqual(EXPECTED_DIMENSIONS);
   });
 
-  it('accepts the 402-scene Chronicle contract and four canonical action-card assets', () => {
+  it('accepts the 403-scene Chronicle contract and four canonical action-card assets', () => {
     const result = spawnSync(process.execPath, ['scripts/media/validate-scene-art.mjs'], {
       cwd: root,
       encoding: 'utf8',
     });
 
     expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout).toContain('402/402 unique 1536x1024 WebP scene assets');
+    expect(result.stdout).toContain('403/403 unique 1536x1024 WebP scene assets');
     expect(result.stdout).toContain('4/4 unique 1536x1024 WebP action-card assets');
   }, 60_000);
 

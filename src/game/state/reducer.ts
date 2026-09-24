@@ -591,14 +591,18 @@ function dungeonNode(state: GameStateV2, dungeon: DungeonDefinition, node: Dunge
   return commit(state, next, [{ type: 'notification', message: `${dungeon.id}: ${node.id}` }]);
 }
 
-function finishDungeonExit(state: GameStateV2, node: DungeonNode, updatedAt: string): GameTransition {
+function finishDungeonExit(state: GameStateV2, node: DungeonNode, content: ContentIndex, updatedAt: string): GameTransition {
   const expedition = state.expedition!;
   const gold = expedition.unbankedGold;
   const secured = node.exitKind === 'retreat' ? Math.floor(gold * 0.5) : gold;
+  const exitScene = node.sceneId ? content.events.get(node.sceneId) : undefined;
+  const position = node.exitKind !== 'retreat' && exitScene?.slot !== undefined
+    ? { ...expedition.position, slot: Math.max(expedition.position.slot, exitScene.slot + 1) }
+    : expedition.position;
   const campaign = { ...state.campaign, bankedGold: state.campaign.bankedGold + secured };
   const camp = state.checkpoints.camp;
   const checkpoints = camp ? { ...state.checkpoints, camp: { ...camp, campaign: cloneCampaignPayload({ ...camp.campaign, bankedGold: camp.campaign.bankedGold + secured, inventory: node.exitKind === 'retreat' ? camp.campaign.inventory : campaign.inventory }) } } : state.checkpoints;
-  const next = enterTravel({ ...state, campaign, checkpoints, expedition: { ...expedition, dungeonRun: null, unbankedGold: 0, unbankedLoot: node.exitKind === 'retreat' ? expedition.unbankedLoot : [], sceneResolution: null, pendingRouteJunctionId: null } }, updatedAt);
+  const next = enterTravel({ ...state, campaign, checkpoints, expedition: { ...expedition, position, dungeonRun: null, unbankedGold: 0, unbankedLoot: node.exitKind === 'retreat' ? expedition.unbankedLoot : [], sceneResolution: null, pendingRouteJunctionId: null } }, updatedAt);
   return commit(state, next, [{ type: 'notification', message: node.exitKind === 'retreat' ? `Retreat secured ${secured} of ${gold} unbanked gold.` : `Extraction secured ${secured} unbanked gold.` }]);
 }
 
@@ -611,7 +615,7 @@ function advanceDungeon(state: GameStateV2, content: ContentIndex, updatedAt: st
   if (run.resolvedNodeIds.includes(node.id)) return diagnostic(state, 'node_resolved', 'That dungeon room was already resolved.');
   if (node.sceneId && expedition.sceneResolution?.eventId !== node.sceneId) return diagnostic(state, 'scene_unresolved', 'Finish this dungeon scene first.');
   const resolved: GameStateV2 = { ...state, expedition: { ...expedition, dungeonRun: { ...run, resolvedNodeIds: [...run.resolvedNodeIds, node.id] } } };
-  if (node.exitKind) return finishDungeonExit(resolved, node, updatedAt);
+  if (node.exitKind) return finishDungeonExit(resolved, node, content, updatedAt);
   const exits = availableDungeonExits(dungeon, node.id, new Set(state.campaign.flags), run.visitedNodeIds);
   if (exits.length === 1) {
     const target = dungeon.nodes.find((entry) => entry.id === exits[0]!.targetNodeId)!;
@@ -768,7 +772,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     if (!activeAndResolved || !noEligiblePassages || !node || !expedition) {
       return diagnostic(state, 'retreat_unavailable', 'Emergency retreat is available only after resolving a dungeon room with no eligible passages.');
     }
-    return finishDungeonExit(state, { ...node, kind: 'exit', exitKind: 'retreat' }, command.updatedAt);
+    return finishDungeonExit(state, { ...node, kind: 'exit', exitKind: 'retreat' }, content, command.updatedAt);
   }
   if (command.type === 'continue-journey') {
     const pendingId = state.expedition?.pendingRouteJunctionId;

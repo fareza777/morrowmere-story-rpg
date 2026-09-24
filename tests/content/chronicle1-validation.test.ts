@@ -40,10 +40,10 @@ function expectSortedById(entries: readonly { readonly id: string }[]): void {
 
 describe('Chronicle I production content index', () => {
   it('assembles every authored catalog into one valid runtime index', () => {
-    expect(CHRONICLE1_CONTENT.events.size).toBe(402);
+    expect(CHRONICLE1_CONTENT.events.size).toBe(403);
     expect(CHRONICLE1_CONTENT.items.size).toBe(166);
-    expect(CHRONICLE1_CONTENT.enemies.size).toBe(225);
-    expect(CHRONICLE1_CONTENT.encounters.size).toBe(57);
+    expect(CHRONICLE1_CONTENT.enemies.size).toBe(226);
+    expect(CHRONICLE1_CONTENT.encounters.size).toBe(70);
     expect(CHRONICLE1_CONTENT.companions.size).toBe(5);
     expect(CHRONICLE1_CONTENT.merchants.size).toBe(6);
     expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
@@ -101,10 +101,10 @@ describe('Chronicle I production content index', () => {
   });
 
   it('publishes the complete non-secret media contract and ending catalogs', () => {
-    expect(CHRONICLE1_MEDIA_CONTRACT.scenes).toHaveLength(402);
+    expect(CHRONICLE1_MEDIA_CONTRACT.scenes).toHaveLength(403);
     expect(CHRONICLE1_MEDIA_CONTRACT.itemIcons).toHaveLength(106);
     expect(CHRONICLE1_MEDIA_CONTRACT.enemyPortraits).toHaveLength(84);
-    expect(CHRONICLE1_MEDIA_CONTRACT.bosses).toHaveLength(15);
+    expect(CHRONICLE1_MEDIA_CONTRACT.bosses).toHaveLength(16);
     expect(CHRONICLE1_MEDIA_CONTRACT.voiceCues).toHaveLength(24);
 
     expect(Object.fromEntries(
@@ -195,10 +195,10 @@ describe('Chronicle I media manifest exporter', () => {
       'voiceCues',
     ]);
     expect(manifest.version).toBe(1);
-    expect(manifest.scenes).toHaveLength(402);
+    expect(manifest.scenes).toHaveLength(403);
     expect(manifest.itemIcons).toHaveLength(106);
     expect(manifest.enemyPortraits).toHaveLength(84);
-    expect(manifest.bosses).toHaveLength(15);
+    expect(manifest.bosses).toHaveLength(16);
     expect(manifest.voiceCues).toHaveLength(24);
     for (const group of [
       manifest.scenes,

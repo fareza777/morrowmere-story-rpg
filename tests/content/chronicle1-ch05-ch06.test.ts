@@ -73,10 +73,10 @@ describe.each([
   {
     id: 'ch05',
     scenes: CH05_SCENES,
-    total: 47,
-    journeyCount: 21,
+    total: 48,
+    journeyCount: 22,
     anchors: CH05_ANCHORS,
-    journey: { travel: 5, investigation: 4, 'side-quest': 4, dungeon: 5, 'moral-choice': 3 },
+    journey: { travel: 5, investigation: 4, 'side-quest': 4, dungeon: 6, 'moral-choice': 3 },
     owners: ['caldus', 'caldus', 'caldus', 'caldus', 'lyra', 'lyra', 'lyra', 'mara', 'talla', 'faction:border-council'],
   },
   {

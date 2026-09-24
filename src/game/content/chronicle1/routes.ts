@@ -92,4 +92,11 @@ export const CHRONICLE1_ROUTE_JUNCTIONS: readonly RouteJunctionDefinition[] = [
       { id: 'ch04-use-sluice-rubbing', label: 'Use the archive sluice rubbing', detail: 'The altered gear marks from the flooded toll archive reveal which drain wheel opens the warehouse tunnel.', consequence: 'Enter the same delve with the water route already mapped and less risk of an ambush.', kind: 'shortcut', destination: { kind: 'dungeon', dungeonId: 'ch04-mill-drains-warehouse' }, requiredFlags: ['archive-sluice-tampering-recorded'], effects: [{ type: 'threat', amount: -1 }] },
     ],
   },
+  {
+    id: 'ch05-embervault-descent', chapterId: 'ch05', position: { chapterId: 'ch05', slot: 8 }, afterEventId: 'ch05-main-the-missing-shift',
+    options: [
+      { id: 'ch05-take-the-ore-cart-descent', label: 'Take the ore-cart descent', detail: 'Ride the mine’s marked brake cart toward the lower workshops and stay on the direct route to the forge.', consequence: 'Reach the next story beat without spending strength in the sealed pressure works.', kind: 'story', destination: { kind: 'scene', sceneId: 'ch05-journey-the-ore-cart-descent' } },
+      { id: 'ch05-descend-into-the-underworks', label: 'Descend into the Embervault underworks', detail: 'Dessa spots a chain-lift key among the shift records; a sealed pressure network lies below the cages and runs toward the forge.', consequence: 'Choose your passage through a long delve with two recovery routes, branch-specific patrols, two elite sentinels, and a pressure-engine boss; retreat remains possible.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch05-embervault-underworks' } },
+    ],
+  },
 ];

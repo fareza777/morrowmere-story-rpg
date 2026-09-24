@@ -26,6 +26,7 @@ const EXPECTED_BOSS_IDS = [
   'boss-redwater-provocateur',
   'boss-kargan-war-chief',
   'boss-embervault-forgemaster',
+  'boss-embervault-cinder-heart-regulator',
   'boss-royal-armory-golem',
   'boss-siege-engineer-malrec',
   'boss-black-banner-commander',
@@ -96,13 +97,13 @@ describe('Chronicle I enemy catalog', () => {
     }
   });
 
-  it('authors the exact fifteen bosses with readable phases, reactions, and dedicated portraits', () => {
+  it('authors the exact sixteen bosses with readable phases, reactions, and dedicated portraits', () => {
     expect(BOSS_IDS).toEqual(EXPECTED_BOSS_IDS);
-    expect(CHRONICLE1_BOSSES).toHaveLength(15);
-    expect(BOSS_PORTRAIT_IDS).toHaveLength(15);
-    expect(new Set(BOSS_PORTRAIT_IDS).size).toBe(15);
-    expect(CHRONICLE1_ENEMIES).toHaveLength(225);
-    expect(new Set(CHRONICLE1_ENEMIES.map((enemy) => enemy.id)).size).toBe(225);
+    expect(CHRONICLE1_BOSSES).toHaveLength(16);
+    expect(BOSS_PORTRAIT_IDS).toHaveLength(16);
+    expect(new Set(BOSS_PORTRAIT_IDS).size).toBe(16);
+    expect(CHRONICLE1_ENEMIES).toHaveLength(226);
+    expect(new Set(CHRONICLE1_ENEMIES.map((enemy) => enemy.id)).size).toBe(226);
 
     for (const boss of CHRONICLE1_BOSSES) {
       expect(boss.isBoss, boss.id).toBe(true);
@@ -124,7 +125,7 @@ describe('Chronicle I enemy catalog', () => {
 });
 
 describe('Chronicle I encounter catalog', () => {
-  it('maps all fifty-seven encounter definitions to a direct or choice-driven scene branch', () => {
+  it('keeps scene encounters mapped and adds thirteen underworks-only encounter variants', () => {
     const sceneEncounterIds = [...new Set(CHRONICLE1_SCENES.flatMap((scene) => [
       ...(scene.encounterId ? [scene.encounterId] : []),
       ...scene.choices.flatMap((choice) => [
@@ -134,8 +135,23 @@ describe('Chronicle I encounter catalog', () => {
     ]))].sort();
 
     expect(sceneEncounterIds).toHaveLength(57);
-    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(57);
-    expect(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id).sort()).toEqual(sceneEncounterIds);
+    expect(CHRONICLE1_ENCOUNTERS).toHaveLength(70);
+    const underworksEncounterIds = [
+      'enc-ch05-cinder-heart-regulator',
+      'enc-ch05-cinder-troll-elite',
+      'enc-ch05-ledger-gallery-watch-a',
+      'enc-ch05-ledger-gallery-watch-b',
+      'enc-ch05-quench-corridor-team-a',
+      'enc-ch05-quench-corridor-team-b',
+      'enc-ch05-smelter-rail-patrol-a',
+      'enc-ch05-smelter-rail-patrol-b',
+      'enc-ch05-underworks-lift-watch-a',
+      'enc-ch05-underworks-lift-watch-b',
+      'enc-ch05-vault-gargoyle-elite',
+      'enc-ch05-worker-cage-patrol-a',
+      'enc-ch05-worker-cage-patrol-b',
+    ];
+    expect(CHRONICLE1_ENCOUNTERS.map((encounter) => encounter.id).sort()).toEqual([...sceneEncounterIds, ...underworksEncounterIds].sort());
   });
 
   it('resolves every direct and choice-driven scene encounter reference', () => {
