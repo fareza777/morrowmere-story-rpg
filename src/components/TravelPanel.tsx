@@ -4,16 +4,19 @@ import type { TravelViewModel } from '../ui/types';
 interface TravelPanelProps {
   readonly view: TravelViewModel;
   readonly onAction: (action: TravelAction) => void;
+  readonly onRoute: (optionId: string) => void;
 }
 
-export function TravelPanel({ view, onAction }: TravelPanelProps) {
+export function TravelPanel({ view, onAction, onRoute }: TravelPanelProps) {
+  const isDeparture = view.mode === 'departure';
+  const title = isDeparture ? 'Road Tactics' : view.mode === 'dungeon' ? 'Choose a Passage' : 'Choose a Route';
   return (
     <main className="game-main">
       <section className="travel-panel" aria-labelledby="travel-title">
         <header className="travel-heading">
           <p className="eyebrow">{view.chapterLabel} · {view.legLabel}</p>
-          <h1 id="travel-title">Road Tactics</h1>
-          <p>{view.routeLabel} lies ahead. Choose one way to take the next leg.</p>
+          <h1 id="travel-title">{title}</h1>
+          <p>{isDeparture ? `${view.routeLabel} lies ahead. Choose one way to take the next leg.` : view.mode === 'dungeon' ? 'The way through this place is yours to choose.' : 'The road divides here. Weigh what each path may cost.'}</p>
         </header>
 
         <dl className="travel-meters" aria-label="Road conditions">
@@ -23,14 +26,14 @@ export function TravelPanel({ view, onAction }: TravelPanelProps) {
           <div><dt>Tension</dt><dd>{view.tension}<small>Higher tension presses the road forward.</small></dd></div>
         </dl>
 
-        <aside className="travel-companion" aria-label="Active companion">
+        {isDeparture && <aside className="travel-companion" aria-label="Active companion">
           <strong>{view.companion?.name ?? 'No active companion'}</strong>
           <span>{view.companion ? `${view.companion.capabilityLabel}: ${view.companion.capabilityDescription}` : 'Recruit and activate a companion at camp to unlock their road move.'}</span>
-        </aside>
+        </aside>}
 
-        {view.receipt && <aside className="travel-receipt" aria-label="Last road choice"><strong>{view.receipt.label}</strong><span>{view.receipt.summary}</span></aside>}
+        {isDeparture && view.receipt && <aside className="travel-receipt" aria-label="Last road choice"><strong>{view.receipt.label}</strong><span>{view.receipt.summary}</span></aside>}
 
-        <div className="travel-actions" aria-label="Road actions">
+        {isDeparture ? <div className="travel-actions" aria-label="Road actions">
           {view.actions.map((action) => {
             const reasonId = action.unavailableReason ? `travel-action-${action.action}-reason` : undefined;
             return (
@@ -49,7 +52,19 @@ export function TravelPanel({ view, onAction }: TravelPanelProps) {
               </article>
             );
           })}
-        </div>
+        </div> : <div className="travel-options" aria-label="Available routes">
+          {view.options.map((option) => (
+            <article className="travel-option" key={option.id}>
+              <img src={option.artSrc} alt={option.artAlt} width={768} height={512} />
+              <div className="travel-option-copy">
+                <h2>{option.label}</h2>
+                <p>{option.detail}</p>
+                <small>{option.consequence}</small>
+              </div>
+              <button type="button" onClick={() => onRoute(option.id)}>{option.label}</button>
+            </article>
+          ))}
+        </div>}
       </section>
     </main>
   );

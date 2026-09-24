@@ -48,6 +48,39 @@ function routeState(overrides: Partial<GameStateV2> = {}) {
 }
 
 describe('Road Tactics reducer', () => {
+  it('continues a later leg without reapplying the opening road tactic', () => {
+    const { content, state } = routeState();
+    const continued: GameStateV2 = { ...state, expedition: {
+      ...state.expedition!, lastTravelAction: 'scout', sceneVisitCounts: { 'fixture-event': 1 },
+      director: { ...state.expedition!.director, threat: 4, tension: 3 },
+    } };
+    const next = reduceGame(continued, { type: 'continue-journey', updatedAt }, content);
+    expect(next.diagnostic).toBeUndefined();
+    expect(next.state.flow.screen).toBe('story');
+    expect(next.state.expedition?.director.threat).toBe(4);
+    expect(next.state.expedition?.director.tension).toBe(3);
+    expect(next.state.expedition?.lastTravelAction).toBe('scout');
+    expect(next.events.some(({ domain }) => domain.type === 'travel_action_taken')).toBe(false);
+  });
+
+  it('clears a junction with zero eligible options before direct continuation', () => {
+    const { content, state } = routeState();
+    (content.routeJunctions as Map<string, unknown>).set('closed-fork', {
+      id: 'closed-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 2 },
+      afterEventId: 'fixture-event', options: [
+        { id: 'sealed', label: 'Sealed path', detail: '', consequence: '', kind: 'story', requiredFlags: ['unavailable-key'], destination: { kind: 'scene', sceneId: 'fixture-event' } },
+      ],
+    });
+    const pending: GameStateV2 = { ...state, expedition: {
+      ...state.expedition!, pendingRouteJunctionId: 'closed-fork', lastTravelAction: 'scout', sceneVisitCounts: { 'fixture-event': 1 },
+    } };
+    const next = reduceGame(pending, { type: 'continue-journey', updatedAt }, content);
+    expect(next.diagnostic).toBeUndefined();
+    expect(next.state.flow.screen).toBe('story');
+    expect(next.state.expedition?.pendingRouteJunctionId).toBeNull();
+    expect(next.state.campaign.flags).toContain('route:junction:closed-fork:resolved');
+  });
+
   it('keeps an authored choice and aftermath continuous until its junction', () => {
     const content = roadContent();
     const base = content.events.get('fixture-event' as EventId)!;

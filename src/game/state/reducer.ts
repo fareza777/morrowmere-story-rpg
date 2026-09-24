@@ -16,7 +16,7 @@ import { isRewardedGoldEligible, shouldShowInterstitial } from '../../native/ads
 import { deriveHeroStats, grantExperience } from '../progression';
 import { campaignPayload, cloneCampaignPayload, initialDirector } from './create';
 import { applyEffectsAtomically } from './effects';
-import { enterTravel, resolveTravelAction } from './road-tactics';
+import { continueJourney, enterTravel, resolveTravelAction } from './road-tactics';
 import { availableDungeonExits, availableRouteOptions, resolveDungeonEncounter, resolveDungeonReward } from '../dungeon/routes';
 import type { DungeonDefinition, DungeonNode, DungeonRunState } from '../dungeon/types';
 import type {
@@ -753,6 +753,18 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     return commit(state, { ...state, campaign, expedition, updatedAt: command.updatedAt }, [{ type: 'notification', message: 'Inventory updated.' }]);
   }
   if (command.type === 'travel-action') return resolveTravelAction(state, command.action, content, command.updatedAt);
+  if (command.type === 'continue-journey') {
+    const pendingId = state.expedition?.pendingRouteJunctionId;
+    if (pendingId) {
+      const junction = content.routeJunctions?.get(pendingId);
+      if (!junction || availableRouteOptions(junction, new Set(state.campaign.flags)).length > 0) return diagnostic(state, 'route_required', 'Choose a route at the active junction.');
+      return continueJourney({ ...state,
+        campaign: { ...state.campaign, flags: [...new Set([...state.campaign.flags, resolvedJunctionFlag(pendingId)])] },
+        expedition: { ...state.expedition!, pendingRouteJunctionId: null },
+      }, content, command.updatedAt);
+    }
+    return continueJourney(state, content, command.updatedAt);
+  }
   if (command.type === 'select-route') {
     const expedition = state.expedition;
     if (!expedition || state.flow.screen !== 'travel' || expedition.currentCombat || expedition.pendingReward || expedition.currentSceneId) return diagnostic(state, 'route_required', 'Choose a route at an active junction.');
@@ -761,7 +773,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
       const node = dungeon?.nodes.find((entry) => entry.id === expedition.dungeonRun!.currentNodeId);
       if (!dungeon || !node || !expedition.dungeonRun.resolvedNodeIds.includes(node.id) || command.junctionId !== node.id) return diagnostic(state, 'route_required', 'That dungeon junction is no longer active.');
       const exits = availableDungeonExits(dungeon, node.id, new Set(state.campaign.flags), expedition.dungeonRun.visitedNodeIds);
-      const exit = exits.length > 1 ? exits.find((entry) => entry.id === command.optionId) : null;
+      const exit = exits.find((entry) => entry.id === command.optionId);
       const target = dungeon.nodes.find((entry) => entry.id === exit?.targetNodeId);
       if (!exit || !target) return diagnostic(state, 'invalid_route', 'That dungeon passage is unavailable.');
       const entered = dungeonNode(state, dungeon, target, content, command.updatedAt);

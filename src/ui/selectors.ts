@@ -10,6 +10,8 @@ import {
 } from '../game/content/schema';
 import { visibleDialogueBeats } from '../game/content/dialogue';
 import { CHRONICLE1_ROUTES } from '../game/content/chronicle1/routes';
+import { availableDungeonExits, availableRouteOptions } from '../game/dungeon/routes';
+import type { DungeonNode } from '../game/dungeon/types';
 import { unavailableChoiceReason } from '../game/director/eligibility';
 import type { EnemyId, EventId, ItemId } from '../game/domain/ids';
 import { inventorySlotUsage, PACK_CAPACITY, type InventoryEntry } from '../game/inventory';
@@ -37,6 +39,7 @@ import type {
   MerchantStockViewModel,
   MerchantViewModel,
   ObjectiveViewModel,
+  RouteProfileOptionViewModel,
   RouteOptionViewModel,
   RouteViewModel,
   StatLineViewModel,
@@ -346,7 +349,7 @@ export function selectCampView(state: GameStateV2, content: ContentIndex): CampV
   };
 }
 
-function routeOption(route: (typeof CHRONICLE1_ROUTES)[number]): RouteOptionViewModel {
+function routeOption(route: (typeof CHRONICLE1_ROUTES)[number]): RouteProfileOptionViewModel {
   return {
     id: route.id,
     label: route.label,
@@ -368,6 +371,24 @@ const TRAVEL_ART: Readonly<Record<TravelAction, { readonly src: string; readonly
   'make-camp': { src: '/assets/chronicle1/travel/travel-road-make-camp.webp', alt: 'Guarded night camp beneath a wagon awning.' },
   companion: { src: '/assets/chronicle1/travel/travel-road-companion.webp', alt: 'A companion directing the convoy at a fork.' },
 };
+
+const ROUTE_ART: Readonly<Record<RouteOptionViewModel['kind'], { readonly src: string; readonly alt: string }>> = {
+  story: TRAVEL_ART.scout,
+  combat: TRAVEL_ART['press-on'],
+  dungeon: TRAVEL_ART.companion,
+  rest: TRAVEL_ART['make-camp'],
+  supply: TRAVEL_ART['make-camp'],
+  shortcut: TRAVEL_ART.scout,
+};
+
+function dungeonRouteKind(node: DungeonNode | undefined): RouteOptionViewModel['kind'] {
+  if (!node) return 'story';
+  if (node.kind === 'combat' || node.kind === 'elite' || node.kind === 'boss') return 'combat';
+  if (node.kind === 'rest') return 'rest';
+  if (node.kind === 'cache') return 'supply';
+  if (node.kind === 'hazard') return 'shortcut';
+  return 'story';
+}
 
 function companionRoadEffect(companionId: string, resourceLabel: HeroHudViewModel['resourceLabel']): string {
   switch (companionId) {
@@ -416,6 +437,26 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
   const expedition = state.expedition;
   if (!expedition) throw new Error('Travel view requires an active expedition.');
   const hero = heroHud(state, content);
+  const flags = new Set(state.campaign.flags);
+  const run = expedition.dungeonRun;
+  const dungeon = run ? content.dungeons?.get(run.dungeonId) : undefined;
+  const junction = expedition.pendingRouteJunctionId ? content.routeJunctions?.get(expedition.pendingRouteJunctionId) : undefined;
+  const mode: TravelViewModel['mode'] = run ? 'dungeon' : expedition.pendingRouteJunctionId ? 'junction'
+    : !expedition.lastTravelAction && Object.keys(expedition.sceneVisitCounts).length === 0 ? 'departure' : 'continuation';
+  const options: readonly RouteOptionViewModel[] = mode === 'junction' && junction
+    ? availableRouteOptions(junction, flags).map((option) => ({
+      id: option.id, label: option.label, detail: option.detail, consequence: option.consequence,
+      kind: option.kind, artSrc: ROUTE_ART[option.kind].src, artAlt: ROUTE_ART[option.kind].alt,
+    }))
+    : mode === 'dungeon' && dungeon && run
+      ? availableDungeonExits(dungeon, run.currentNodeId, flags, run.visitedNodeIds).map((exit) => {
+        const target = dungeon.nodes.find((node) => node.id === exit.targetNodeId);
+        const kind = dungeonRouteKind(target);
+        const consequence = target?.exitKind === 'retreat' ? 'Retreat from this delve.'
+          : target?.exitKind ? 'Complete this delve.' : `Leads to a ${target?.kind ?? 'new'} chamber.`;
+        return { id: exit.id, label: exit.label, detail: exit.detail, consequence, kind,
+          artSrc: ROUTE_ART[kind].src, artAlt: ROUTE_ART[kind].alt };
+      }) : [];
   const companion = travelCompanion(state, content, hero.resourceLabel);
   const scoutReason = hero.resource < 1 ? `Need 1 ${hero.resourceLabel} resource.` : null;
   const companionReason = companion ? null : 'Recruit and activate a companion at camp.';
@@ -446,15 +487,18 @@ export function selectTravelView(state: GameStateV2, content: ContentIndex): Tra
     },
   ];
   return {
+    mode,
+    junctionId: run?.currentNodeId ?? expedition.pendingRouteJunctionId ?? null,
+    options,
     routeLabel: routeLabel(state),
     chapterLabel: hero.chapterLabel,
     legLabel: `Road leg ${expedition.position.slot + 1}`,
     hero,
     threat: expedition.director.threat,
     tension: expedition.director.tension,
-    companion,
-    actions,
-    receipt: travelReceipt(expedition.lastTravelAction),
+    companion: mode === 'departure' ? companion : null,
+    actions: mode === 'departure' ? actions : [],
+    receipt: mode === 'departure' ? travelReceipt(expedition.lastTravelAction) : null,
   };
 }
 

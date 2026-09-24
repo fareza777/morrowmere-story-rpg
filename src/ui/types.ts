@@ -125,7 +125,7 @@ export interface CampViewModel {
   readonly canDepart: boolean;
 }
 
-export interface RouteOptionViewModel {
+export interface RouteProfileOptionViewModel {
   readonly id: RouteProfileId;
   readonly label: string;
   readonly description: string;
@@ -134,7 +134,7 @@ export interface RouteOptionViewModel {
 export interface RouteViewModel {
   readonly hero: HeroHudViewModel;
   readonly objective: ObjectiveViewModel;
-  readonly routes: readonly RouteOptionViewModel[];
+  readonly routes: readonly RouteProfileOptionViewModel[];
 }
 
 export interface TravelActionViewModel {
@@ -154,7 +154,20 @@ export interface TravelReceiptViewModel {
   readonly summary: string;
 }
 
+export interface RouteOptionViewModel {
+  readonly id: string;
+  readonly label: string;
+  readonly detail: string;
+  readonly consequence: string;
+  readonly kind: 'story' | 'combat' | 'dungeon' | 'rest' | 'supply' | 'shortcut';
+  readonly artSrc: string;
+  readonly artAlt: string;
+}
+
 export interface TravelViewModel {
+  readonly mode: 'departure' | 'junction' | 'dungeon' | 'continuation';
+  readonly junctionId: string | null;
+  readonly options: readonly RouteOptionViewModel[];
   readonly routeLabel: string;
   readonly chapterLabel: string;
   readonly legLabel: string;

@@ -121,9 +121,7 @@ describe('Chronicle product integration gate', () => {
     await user.click(await screen.findByRole('button', { name: 'Help the scout' }));
     expect(savedSlotTwo().campaign.flags).toContain('spared-mara');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    expect(savedSlotTwo()).toMatchObject({ flow: { screen: 'travel' }, expedition: { currentSceneId: null } });
-    expect(await screen.findByRole('heading', { name: 'Road Tactics' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Press On', exact: true }));
+    expect(savedSlotTwo()).toMatchObject({ flow: { screen: 'story' }, expedition: { currentSceneId: 'integration-hub' } });
     await user.click(await screen.findByRole('button', { name: 'Prepare the second road' }));
     expect(savedSlotTwo().campaign.flags).toContain('integration-second-road');
 

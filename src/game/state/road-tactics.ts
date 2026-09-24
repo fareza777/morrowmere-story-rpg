@@ -59,7 +59,7 @@ function enqueueAuthoredAftermaths(
   return next;
 }
 
-function completeTravelChapter(state: GameStateV2, director: DirectorState, updatedAt: string, event: DomainEvent): GameTransition {
+function completeTravelChapter(state: GameStateV2, director: DirectorState, updatedAt: string, event: DomainEvent | null): GameTransition {
   const expedition = state.expedition!;
   const chapters = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08'] as const;
   const nextChapter = chapters[chapters.indexOf(state.campaign.chapterId) + 1] ?? null;
@@ -81,7 +81,7 @@ function completeTravelChapter(state: GameStateV2, director: DirectorState, upda
     },
     flow: { ...state.flow, screen: nextChapter ? 'camp' : 'ending', overlay: null, merchant: null },
     updatedAt,
-  }, [event, { type: 'notification', message: nextChapter ? `Chapter ${Number(nextChapter.slice(2))} is ready.` : 'Chronicle I complete.' }]);
+  }, [...(event ? [event] : []), { type: 'notification', message: nextChapter ? `Chapter ${Number(nextChapter.slice(2))} is ready.` : 'Chronicle I complete.' }]);
 }
 
 /** Leaves a resolved scene behind while preserving its receipt for hub banking. */
@@ -106,7 +106,7 @@ function companionEffect(companionId: string, vitals: HeroVitals) {
   }
 }
 
-export function resolveTravelAction(state: GameStateV2, action: TravelAction, content: ContentIndex, updatedAt: string): GameTransition {
+function advanceRoad(state: GameStateV2, action: TravelAction | null, content: ContentIndex, updatedAt: string): GameTransition {
   const expedition = state.expedition;
   if (!expedition || state.flow.screen !== 'travel' || expedition.currentSceneId !== null || expedition.currentCombat || expedition.pendingReward || state.flow.merchant || expedition.pendingRouteJunctionId || expedition.dungeonRun) {
     return { state, events: [], diagnostic: { code: 'travel_required', message: 'Choose a road tactic while travelling.' } };
@@ -115,8 +115,8 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   let vitals = expedition.heroVitals;
   let threat = expedition.director.threat;
   let tension = expedition.director.tension;
-  let boon: string;
-  let roadBias: RoadBias;
+  let boon: string | null = null;
+  let roadBias: RoadBias | undefined;
   if (action === 'scout') {
     if (vitals.resource < 1) return { state, events: [], diagnostic: { code: 'insufficient_resource', message: 'Scout requires one resource.' } };
     vitals = { ...vitals, resource: vitals.resource - 1 };
@@ -133,7 +133,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     tension += 1;
     boon = 'road:rested';
     roadBias = 'make-camp';
-  } else {
+  } else if (action === 'companion') {
     const companion = activeCompanion(state.campaign.companions);
     if (!companion || companion.status !== 'recruited') {
       return { state, events: [], diagnostic: { code: 'companion_required', message: 'Activate a recruited companion before using their road move.' } };
@@ -150,7 +150,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
   const prepared = {
     ...expedition,
     heroVitals: clampVitals(vitals, state, content),
-    temporaryBoons: addRoadBoon(expedition.temporaryBoons, boon!),
+    temporaryBoons: boon ? addRoadBoon(expedition.temporaryBoons, boon) : expedition.temporaryBoons,
     director: { ...expedition.director, threat: Math.max(0, Math.min(10, threat)), tension: Math.max(0, Math.min(10, tension)) },
   };
   const step = selectNextScene(prepared.director, {
@@ -165,7 +165,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     inventory: state.campaign.inventory,
     roadBias,
   }, content, prepared.authoredSceneQueue);
-  const event: DomainEvent = { type: 'travel_action_taken', action };
+  const event: DomainEvent | null = action ? { type: 'travel_action_taken', action } : null;
   if (step.kind !== 'selected') {
     if (step.terminal === 'completed') return completeTravelChapter(state, step.state, updatedAt, event);
     return { state, events: [], diagnostic: { code: 'scene_unavailable', message: step.diagnostic } };
@@ -187,7 +187,7 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     } : null,
     position: { ...step.selectedAt, slot: step.selectedAt.slot + 1 },
     temporaryBoons: consumeRoadBoons(prepared.temporaryBoons),
-    lastTravelAction: action,
+    lastTravelAction: action ?? prepared.lastTravelAction,
   };
   return transition(state, {
     ...state,
@@ -195,5 +195,16 @@ export function resolveTravelAction(state: GameStateV2, action: TravelAction, co
     expedition: selected,
     flow: { ...state.flow, screen: 'story', merchant: null },
     updatedAt,
-  }, [event, ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []), { type: 'notification', message: 'Scene ready.' }]);
+  }, [...(event ? [event] : []), ...(step.diagnostic ? [{ type: 'notification' as const, message: step.diagnostic }] : []), { type: 'notification', message: 'Scene ready.' }]);
+}
+
+export function resolveTravelAction(state: GameStateV2, action: TravelAction, content: ContentIndex, updatedAt: string): GameTransition {
+  return advanceRoad(state, action, content, updatedAt);
+}
+
+export function continueJourney(state: GameStateV2, content: ContentIndex, updatedAt: string): GameTransition {
+  if (!state.expedition || (!state.expedition.lastTravelAction && Object.keys(state.expedition.sceneVisitCounts).length === 0) || state.expedition.dungeonRun || state.expedition.pendingRouteJunctionId) {
+    return { state, events: [], diagnostic: { code: 'travel_required', message: 'A previous road choice is required to continue.' } };
+  }
+  return advanceRoad(state, null, content, updatedAt);
 }

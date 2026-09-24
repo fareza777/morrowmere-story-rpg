@@ -7,10 +7,45 @@ import {
   selectJournalView,
   selectMerchantView,
   selectRouteView,
+  selectTravelView,
 } from '../src/ui/selectors';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
+import type { RouteJunctionDefinition } from '../src/game/dungeon/types';
 
 describe('Chronicle I UI selectors', () => {
+  it('projects exact eligible junction options with authored consequences and art', () => {
+    const state = makeUiGame({ screen: 'travel' });
+    const junction: RouteJunctionDefinition = {
+      id: 'ridge-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 2 },
+      afterEventId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'],
+      options: [
+        { id: 'bridge', label: 'Cross the bridge', detail: 'Open ground under watch.', consequence: 'Threat +1; arrive sooner.', kind: 'shortcut', destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+        { id: 'bank', label: 'Follow the bank', detail: 'Sheltered but slow.', consequence: 'Tension +1; avoid the patrol.', kind: 'story', destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+        { id: 'tunnel', label: 'Use the tunnel', detail: 'An old culvert.', consequence: 'Reach hidden supplies.', kind: 'supply', requiredFlags: ['tunnel-key'], destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+      ],
+    };
+    const content = { ...UI_CONTENT, routeJunctions: new Map([[junction.id, junction]]) };
+    const pending = { ...state, expedition: { ...state.expedition!, pendingRouteJunctionId: junction.id, lastTravelAction: 'scout' as const } };
+    const withoutKey = selectTravelView(pending, content);
+    expect(withoutKey.mode).toBe('junction');
+    expect(withoutKey.actions).toHaveLength(0);
+    expect(withoutKey.options.map(({ id }) => id)).toEqual(['bridge', 'bank']);
+    expect(withoutKey.options[0]).toMatchObject({ label: 'Cross the bridge', detail: 'Open ground under watch.', consequence: 'Threat +1; arrive sooner.', kind: 'shortcut' });
+    expect(withoutKey.options.every(({ artSrc, artAlt }) => artSrc.length > 0 && artAlt.length > 0)).toBe(true);
+    const withKey = selectTravelView({ ...pending, campaign: { ...pending.campaign, flags: [...pending.campaign.flags, 'tunnel-key'] } }, content);
+    expect(withKey.options.map(({ id }) => id)).toEqual(['bridge', 'bank', 'tunnel']);
+  });
+
+  it('keeps departure preparations only before the first travel action', () => {
+    const state = makeUiGame({ screen: 'travel' });
+    const departure = selectTravelView({ ...state, expedition: { ...state.expedition!, sceneVisitCounts: {}, lastTravelAction: null } }, UI_CONTENT);
+    expect(departure.mode).toBe('departure');
+    expect(departure.actions).toHaveLength(4);
+    expect(departure.options).toHaveLength(0);
+    const later = selectTravelView({ ...state, expedition: { ...state.expedition!, lastTravelAction: 'scout' } }, UI_CONTENT);
+    expect(later.actions).toHaveLength(0);
+    expect(later.options).toHaveLength(0);
+  });
   it('projects exact authored scene copy and choices from content', () => {
     const view = selectCurrentScene(makeUiGame({ screen: 'story' }), UI_CONTENT);
 

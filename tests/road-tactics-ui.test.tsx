@@ -4,6 +4,29 @@ import { GameShell } from '../src/components/GameShell';
 import { TravelPanel } from '../src/components/TravelPanel';
 import { selectTravelView } from '../src/ui/selectors';
 import { makeUiGame, UI_CONTENT } from './fixtures/ui';
+import type { RouteJunctionDefinition, DungeonDefinition } from '../src/game/dungeon/types';
+
+const junction: RouteJunctionDefinition = {
+  id: 'orchard-fork', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 2 },
+  afterEventId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'],
+  options: [
+    { id: 'hedge', label: 'Follow the hedge', detail: 'Keep the wagon in sight.', consequence: 'Spend daylight; avoid a fight.', kind: 'story', destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+    { id: 'culvert', label: 'Take the culvert', detail: 'Crawl beneath the road.', consequence: 'Risk an ambush; gain a shortcut.', kind: 'combat', destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+    { id: 'hidden-path', label: 'Use the hidden path', detail: 'Follow Mara’s marked stones.', consequence: 'Save time; spend the marked route.', kind: 'shortcut', requiredFlags: ['mara-marked-path'], destination: { kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'] } },
+  ],
+};
+
+const dungeon: DungeonDefinition = {
+  id: 'orchard-cellar', chapterId: 'ch01', startNodeId: 'cellar-entry', exitNodeIds: ['safe-exit', 'rough-exit'],
+  nodes: [
+    { id: 'cellar-entry', kind: 'scene', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'], exits: [
+      { id: 'safe-passage', targetNodeId: 'safe-exit', label: 'Follow the lanterns', detail: 'A slower path with room to breathe.' },
+      { id: 'rough-passage', targetNodeId: 'rough-exit', label: 'Cross the flooded stones', detail: 'A quick crossing under enemy fire.' },
+    ] },
+    { id: 'safe-exit', kind: 'exit', exitKind: 'complete', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'], exits: [] },
+    { id: 'rough-exit', kind: 'exit', exitKind: 'retreat', sceneId: 'ui-story-event' as RouteJunctionDefinition['afterEventId'], exits: [] },
+  ],
+};
 
 const SETTINGS = {
   textScale: 1, highContrast: false, reducedMotion: false, hapticsEnabled: true, reducedHaptics: false,
@@ -12,7 +35,7 @@ const SETTINGS = {
 };
 
 function routeState(options: { readonly resource?: number } = {}) {
-  const state = makeUiGame();
+  const state = makeUiGame({ screen: 'travel' });
   return {
     ...state,
     expedition: {
@@ -29,8 +52,67 @@ function routeState(options: { readonly resource?: number } = {}) {
 }
 
 describe('Road Tactics UI', () => {
+  it('shows exactly two authored junction choices and dispatches select-route', async () => {
+    const user = userEvent.setup();
+    const dispatch = vi.fn();
+    const state = routeState();
+    const content = { ...UI_CONTENT, routeJunctions: new Map([[junction.id, junction]]) };
+    const atFork = { ...state, expedition: { ...state.expedition!, pendingRouteJunctionId: junction.id, lastTravelAction: 'scout' as const } };
+    render(<GameShell state={atFork} content={content} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+
+    expect(screen.getByRole('button', { name: 'Follow the hedge' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Take the culvert' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Scout' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Use the hidden path' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('article')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Take the culvert' }));
+    expect(dispatch).toHaveBeenCalledWith({ type: 'select-route', junctionId: junction.id, optionId: 'culvert', updatedAt: '2026-09-01T00:00:00.000Z' });
+  });
+
+  it('shows a third junction choice only when its exact flag is present', () => {
+    const state = routeState();
+    const content = { ...UI_CONTENT, routeJunctions: new Map([[junction.id, junction]]) };
+    const atFork = { ...state, campaign: { ...state.campaign, flags: [...state.campaign.flags, 'mara-marked-path'] }, expedition: { ...state.expedition!, pendingRouteJunctionId: junction.id } };
+    render(<TravelPanel view={selectTravelView(atFork, content)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Use the hidden path' })).toBeVisible();
+  });
+
+  it('shows the active dungeon exits rather than road preparation cards', () => {
+    const state = routeState();
+    const content = { ...UI_CONTENT, dungeons: new Map([[dungeon.id, dungeon]]) };
+    const inCellar = { ...state, expedition: { ...state.expedition!, dungeonRun: { dungeonId: dungeon.id, seed: 7, currentNodeId: 'cellar-entry', depth: 1, visitedNodeIds: ['cellar-entry'], resolvedNodeIds: ['cellar-entry'] } } };
+    render(<TravelPanel view={selectTravelView(inCellar, content)} onAction={vi.fn()} onRoute={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Follow the lanterns' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cross the flooded stones' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Press On' })).not.toBeInTheDocument();
+  });
+
+  it('automatically takes an unambiguous single dungeon exit', () => {
+    const dispatch = vi.fn();
+    const state = routeState();
+    const singleExit = { ...dungeon, nodes: [
+      { ...dungeon.nodes[0]!, exits: [dungeon.nodes[0]!.exits[0]!] },
+      ...dungeon.nodes.slice(1),
+    ] };
+    const content = { ...UI_CONTENT, dungeons: new Map([[dungeon.id, singleExit]]) };
+    const inCellar = { ...state, expedition: { ...state.expedition!, dungeonRun: { dungeonId: dungeon.id, seed: 7, currentNodeId: 'cellar-entry', depth: 1, visitedNodeIds: ['cellar-entry'], resolvedNodeIds: ['cellar-entry'] } } };
+    render(<GameShell state={inCellar} content={content} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+    expect(screen.queryByRole('region', { name: 'Choose a Passage' })).not.toBeInTheDocument();
+    expect(dispatch).toHaveBeenCalledWith({ type: 'select-route', junctionId: 'cellar-entry', optionId: 'safe-passage', updatedAt: '2026-09-01T00:00:00.000Z' });
+  });
+
+  it('continues a later road leg with zero route options without showing an empty panel', () => {
+    const dispatch = vi.fn();
+    const state = routeState();
+    const laterLeg = { ...state, expedition: { ...state.expedition!, lastTravelAction: 'scout' as const, sceneVisitCounts: { 'ui-story-event': 1 } } };
+    render(<GameShell state={laterLeg} content={UI_CONTENT} transitionEvents={[]} dispatch={dispatch} onSaveAndExit={vi.fn()} onMainMenu={vi.fn()} onReplayOpening={vi.fn()} settings={SETTINGS} onSettingsChange={vi.fn()} now={() => '2026-09-01T00:00:00.000Z'} />);
+    expect(screen.queryByRole('region', { name: 'Road Tactics' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Scout' })).not.toBeInTheDocument();
+    expect(dispatch).toHaveBeenCalledWith({ type: 'continue-journey', updatedAt: '2026-09-01T00:00:00.000Z' });
+  });
   it('renders four road actions with art, costs, and effect previews', () => {
-    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /Scout/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Press On/i })).toBeInTheDocument();
@@ -40,7 +122,7 @@ describe('Road Tactics UI', () => {
   });
 
   it('explains why scout is disabled at zero resource', () => {
-    render(<TravelPanel view={selectTravelView(routeState({ resource: 0 }), UI_CONTENT)} onAction={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(routeState({ resource: 0 }), UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
 
     expect(screen.getByRole('button', { name: /Scout/i })).toBeDisabled();
     expect(screen.getByText(/Need 1 .* resource/i)).toBeInTheDocument();
@@ -50,10 +132,10 @@ describe('Road Tactics UI', () => {
     const state = makeUiGame({ companionId: 'mara' });
     const travelState = {
       ...state,
-      expedition: { ...state.expedition!, currentSceneId: null, sceneResolution: null },
+      expedition: { ...state.expedition!, currentSceneId: null, sceneResolution: null, sceneVisitCounts: {} },
       flow: { ...state.flow, screen: 'travel' as const, merchant: null },
     };
-    render(<TravelPanel view={selectTravelView(travelState, UI_CONTENT)} onAction={vi.fn()} />);
+    render(<TravelPanel view={selectTravelView(travelState, UI_CONTENT)} onAction={vi.fn()} onRoute={vi.fn()} />);
 
     expect(screen.getByText(/Threat -2.*Scouted/i)).toBeInTheDocument();
   });
@@ -69,15 +151,14 @@ describe('Road Tactics UI', () => {
       },
     };
 
-    render(<TravelPanel view={selectTravelView(withReceipt, UI_CONTENT)} onAction={vi.fn()} />);
-
-    expect(screen.getByText(/Threat reduced and safer leads favored/i)).toBeInTheDocument();
+    expect(selectTravelView(withReceipt, UI_CONTENT).mode).toBe('continuation');
+    expect(selectTravelView(withReceipt, UI_CONTENT).actions).toHaveLength(0);
   });
 
   it('sends one typed travel action for an available card', async () => {
     const user = userEvent.setup();
     const onAction = vi.fn();
-    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={onAction} />);
+    render(<TravelPanel view={selectTravelView(routeState(), UI_CONTENT)} onAction={onAction} onRoute={vi.fn()} />);
 
     await user.click(screen.getByRole('button', { name: /Press On/i }));
     expect(onAction).toHaveBeenCalledOnce();

@@ -9,7 +9,7 @@ async function expectLoadedArtwork(artwork: Locator, source: string) {
   await expect(artwork).toHaveAttribute('src', source);
 }
 
-test('takes a road action before an illustrated scene and returns to travel for the next leg', async ({ page }) => {
+test('takes one departure road action then continues directly into the next illustrated scene', async ({ page }) => {
   const game = new MorrowmerePage(page);
   await game.gotoFresh();
   await expect(game.title).toBeVisible();
@@ -35,14 +35,14 @@ test('takes a road action before an illustrated scene and returns to travel for 
   await page.getByRole('button', { name: 'Leave before traffic', exact: true }).click();
   await expect(page.getByRole('status').filter({ has: page.locator('.outcome-copy') })).toContainText('The wagons clear Dunmere');
   await page.getByRole('button', { name: 'Take the north road', exact: true }).click();
-  await expect(travel.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Blades in the Drainage Ditch', exact: true })).toBeVisible();
+  await expect(travel).toBeHidden();
   await expect(departureArt).toBeHidden();
 
   await page.reload();
   await expect(game.continueChronicle).toBeEnabled();
   await game.continueChronicle.click();
-  await expect(travel.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeVisible();
-  await travel.getByRole('button', { name: 'Press On', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Blades in the Drainage Ditch', exact: true })).toBeVisible();
   await expect(travel).toBeHidden();
   await expect(page.locator('.story-panel h1')).toBeVisible();
   const nextArt = page.locator('.scene-art[data-illustration-id]');

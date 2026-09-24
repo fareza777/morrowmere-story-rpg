@@ -226,6 +226,7 @@ export type GameCommand =
   | { readonly type: 'select-next-scene'; readonly updatedAt: string }
   | { readonly type: 'select-route'; readonly junctionId: string; readonly optionId: string; readonly updatedAt: string }
   | { readonly type: 'travel-action'; readonly action: TravelAction; readonly updatedAt: string }
+  | { readonly type: 'continue-journey'; readonly updatedAt: string }
   | { readonly type: 'combat-turn'; readonly commandId: string; readonly action: CombatAction; readonly updatedAt: string }
   | { readonly type: 'open-merchant'; readonly updatedAt: string }
   | { readonly type: 'close-merchant'; readonly updatedAt: string }
