@@ -52,7 +52,8 @@ export const CH04_MAIN = Object.freeze([
       'Kesh recognizes the relay phrase; Jory Fen\'s Route Seven statement explains the depot code; the paired caches supply matching tools and cloth. Together, the pieces prove one network prepared evidence for each army to find after blood was shed.',
     ],
     eligibility: { minLevel: 6, maxLevel: 8 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
-    followUps: ['ch04-main-before-the-first-charge'], callbackPromises: [], choices: [
+    // The next landmark is chosen at the mill-drain junction.
+    followUps: [], callbackPromises: [], choices: [
       { id: 'ch04-choice-present-the-full-custody-chain', label: 'Present the full custody chain', detail: 'Reveal every witness and sample in public, exposing vulnerable sources but making suppression difficult.', effects: [{ type: 'flag', operation: 'add', flagId: 'false-flag-network-proven' }, { type: 'evidence', operation: 'add', evidenceId: 'matched-redwater-orders' }, { type: 'tension', amount: -2 }], outcome: 'Holt reads each custody name aloud while Roake and Brakka compare the same deliberate errors on both orders.' },
       { id: 'ch04-choice-give-commanders-matched-copies', label: 'Give commanders matched copies', detail: 'Protect witnesses by limiting names, but leave each officer room to question the hidden sources.', effects: [{ type: 'flag', operation: 'add', flagId: 'false-flag-method-proven' }, { type: 'evidence', operation: 'add', evidenceId: 'matched-redwater-orders' }, { type: 'faction', factionId: 'greywatch', amount: 1 }, { type: 'faction', factionId: 'free-host', amount: 1 }], outcome: 'The commanders receive identical packets and discover that neither can defend its orders without defending the other side\'s forgery.' },
     ],

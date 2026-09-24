@@ -7,6 +7,11 @@ import type {
 import { validateChroniclePlayability, validateChronicleSources, validateContent, type ChroniclePlayabilityInput } from '../../src/game/content/validate';
 import { countDialogueSentences } from '../../src/game/content/dialogue';
 import { makeContentIndex } from '../fixtures/game';
+import { CHRONICLE1_CONTENT, CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS } from '../../src/game/content/chronicle1';
+import { availableRouteOptions } from '../../src/game/dungeon/routes';
+import { createCampaign } from '../../src/game/state/create';
+import { reduceGame } from '../../src/game/state/reducer';
+import type { GameStateV2 } from '../../src/game/state/types';
 
 const chronicle: ChronicleDefinition = {
   id: 'fixture-chronicle',
@@ -21,6 +26,102 @@ const routes: readonly ChronicleRouteDefinition[] = [
   { id: 'old-forest', label: 'The Old Forest', description: 'Moss darkens the trees.', danger: 2, recoveryWeight: 1, merchantWeight: 1, companionWeight: 1, relicWeight: 0 },
   { id: 'ruined-pass', label: 'The Ruined Pass', description: 'Cold air crosses the crags.', danger: 3, recoveryWeight: 1, merchantWeight: 1, companionWeight: 1, relicWeight: 0 },
 ];
+
+it('connects each early delve to an authored terminal with distinct cadence and no repeated encounters', () => {
+  const early = CHRONICLE1_DUNGEONS.filter((dungeon) => ['ch01', 'ch02', 'ch03', 'ch04'].includes(dungeon.chapterId));
+  expect(early.map((dungeon) => dungeon.chapterId).sort()).toEqual(['ch01', 'ch02', 'ch03', 'ch04']);
+  const fightCountsByDungeon = new Map<string, number[]>();
+  for (const dungeon of early) {
+    const nodes = new Map(dungeon.nodes.map((node) => [node.id, node]));
+    const pathFightCounts: number[] = [];
+    const visit = (id: string, seen: Set<string>, encounters: Set<string>, fights: number): void => {
+      const node = nodes.get(id);
+      expect(node, `${dungeon.id}/${id}`).toBeDefined();
+      expect(seen.has(id), `${dungeon.id}/${id} cycles`).toBe(false);
+      const nextSeen = new Set([...seen, id]);
+      const nextEncounters = new Set(encounters);
+      if (node!.encounterId) {
+        expect(nextEncounters.has(node!.encounterId), `${dungeon.id}/${node!.encounterId} repeated`).toBe(false);
+        nextEncounters.add(node!.encounterId);
+      }
+      const fightCount = fights + (node!.kind === 'combat' ? 1 : 0);
+      if (node!.kind === 'exit') {
+        expect(fightCount, `${dungeon.id}/${id} fight count`).toBeGreaterThanOrEqual(1);
+        expect(fightCount, `${dungeon.id}/${id} fight count`).toBeLessThanOrEqual(3);
+        pathFightCounts.push(fightCount);
+        return;
+      }
+      expect(node!.exits.length, `${dungeon.id}/${id} stranded`).toBeGreaterThan(0);
+      node!.exits.forEach((edge) => visit(edge.targetNodeId, nextSeen, nextEncounters, fightCount));
+    };
+    visit(dungeon.startNodeId, new Set(), new Set(), 0);
+    fightCountsByDungeon.set(dungeon.chapterId, pathFightCounts);
+  }
+  expect([...new Set(fightCountsByDungeon.get('ch02'))].sort()).toEqual([1, 2]);
+  expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
+  const earlyOptionCounts = CHRONICLE1_ROUTE_JUNCTIONS
+    .filter((junction) => ['ch01', 'ch02', 'ch03', 'ch04'].includes(junction.chapterId))
+    .map((junction) => junction.options.length);
+  expect(earlyOptionCounts).toHaveLength(4);
+  expect(new Set(earlyOptionCounts).size).toBeGreaterThan(1);
+});
+
+it('activates each early junction from a resolved story event and enters its authored dungeon', () => {
+  const earlyJunctions = CHRONICLE1_ROUTE_JUNCTIONS.filter((junction) => ['ch01', 'ch02', 'ch03', 'ch04'].includes(junction.chapterId));
+  const terminalByChapter = new Map([
+    ['ch01', 'ch01-main-the-first-arrow'],
+    ['ch02', 'ch02-main-the-hidden-depot'],
+    ['ch03', 'ch03-main-the-attack-with-two-banners'],
+    ['ch04', 'ch04-main-before-the-first-charge'],
+  ]);
+
+  for (const junction of earlyJunctions) {
+    const updatedAt = '2026-09-24T00:00:00.000Z';
+    const created = createCampaign({ heroClass: 'warden', seed: 17, chapterId: junction.chapterId, updatedAt }, CHRONICLE1_CONTENT);
+    const started = reduceGame(created, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt }, CHRONICLE1_CONTENT).state;
+    const mainAnchors = [...CHRONICLE1_CONTENT.events.values()]
+      .filter((event) => event.chapterId === junction.chapterId && event.type === 'main')
+      .sort((left, right) => (left.anchorOrder ?? 0) - (right.anchorOrder ?? 0));
+    const terminalOrder = mainAnchors.find((event) => event.id === terminalByChapter.get(junction.chapterId))?.anchorOrder;
+    expect(terminalOrder, junction.id).toBeDefined();
+    const priorAnchors = mainAnchors.filter((event) => (event.anchorOrder ?? 0) < terminalOrder!).map((event) => event.id);
+    const seenEventIds = [...new Set([...priorAnchors, junction.afterEventId])];
+    const flags = junction.chapterId === 'ch01' ? ['tollhouse-searched'] : [];
+    const atJunction: GameStateV2 = {
+      ...started,
+      campaign: { ...started.campaign, flags },
+      expedition: {
+        ...started.expedition!,
+        position: junction.position,
+        currentSceneId: junction.afterEventId,
+        sceneResolution: {
+          eventId: junction.afterEventId, choiceId: null, resultKind: 'direct', chance: null, roll: null,
+          outcome: 'The party reaches the route decision.', effectSummary: [], nextSceneId: null, continueLabel: null,
+        },
+        authoredSceneQueue: [],
+        director: { ...started.expedition!.director, usedSceneIds: priorAnchors, seenEventIds },
+      },
+      flow: { ...started.flow, screen: 'story' },
+    };
+
+    const activated = reduceGame(atJunction, { type: 'select-next-scene', updatedAt }, CHRONICLE1_CONTENT);
+    expect(activated.diagnostic, junction.id).toBeUndefined();
+    expect(activated.state.expedition?.pendingRouteJunctionId, junction.id).toBe(junction.id);
+
+    const dungeonOption = availableRouteOptions(junction, new Set(flags)).find((option) => option.kind === 'dungeon');
+    expect(dungeonOption, junction.id).toBeDefined();
+    const selected = reduceGame(activated.state, {
+      type: 'select-route', junctionId: junction.id, optionId: dungeonOption!.id, updatedAt,
+    }, CHRONICLE1_CONTENT);
+    const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.id === dungeonOption!.destination.dungeonId)!;
+    const start = dungeon.nodes.find((node) => node.id === dungeon.startNodeId)!;
+    expect(selected.diagnostic, junction.id).toBeUndefined();
+    expect(selected.state.expedition?.dungeonRun?.dungeonId, junction.id).toBe(dungeon.id);
+    expect(selected.state.expedition?.currentSceneId, junction.id).toBe(start.sceneId);
+    expect(dungeon.nodes.find((node) => dungeon.exitNodeIds.includes(node.id))?.sceneId, junction.id)
+      .toBe(terminalByChapter.get(junction.chapterId));
+  }
+});
 
 function scene(id: string, slot: number): Chronicle1Event {
   return {

@@ -304,8 +304,6 @@ export const CH01_LIVING_AMBUSH = Object.freeze([
           { type: 'threat', amount: 1 },
         ],
         outcome: 'The travelers crouch between medicine cases while every guard takes a wagon corner.',
-        nextSceneId: 'ch01-main-the-first-arrow',
-        continueLabel: 'Advance in formation',
       },
     ],
   }),

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CH02_SCENES } from '../../src/game/content/chronicle1/chapters/ch02';
 import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes, chronicleCheckBranches } from '../../src/game/content/schema';
+import { CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS } from '../../src/game/content/chronicle1';
+import { availableRouteOptions } from '../../src/game/dungeon/routes';
 
 const CH01_ANCHORS = [
   'ch01-main-three-days-to-greywatch',
@@ -23,6 +25,46 @@ const CH02_ANCHORS = [
   'ch02-main-greywatch-council',
   'ch02-main-the-hidden-depot',
 ] as const;
+
+it('offers the tollhouse cellar only after searching and exits at the first arrow', () => {
+  const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.id === 'ch01-tollhouse-crossroads')!;
+  const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.id === 'ch01-tollhouse-culvert')!;
+  expect(junction.afterEventId).toBe('ch01-living-smoke-verge-aftermath');
+  expect(availableRouteOptions(junction, new Set(['tollhouse-bypassed'])).map((option) => option.id)).toEqual(['ch01-stay-with-wagons']);
+  expect(availableRouteOptions(junction, new Set(['tollhouse-searched'])).map((option) => option.id)).toEqual(['ch01-stay-with-wagons', 'ch01-descend-cellar']);
+  expect(dungeon.nodes.length).toBeGreaterThanOrEqual(3);
+  expect(dungeon.nodes.length).toBeLessThanOrEqual(6);
+  expect(dungeon.nodes.find((node) => node.id === dungeon.startNodeId)?.sceneId).toBe('ch01-journey-the-tollhouse-cellar');
+  expect(dungeon.nodes.find((node) => node.id === dungeon.exitNodeIds[0])?.sceneId).toBe('ch01-main-the-first-arrow');
+  expect(dungeon.nodes.filter((node) => node.kind === 'combat')).toHaveLength(1);
+});
+
+it('finishes the tollhouse aftermath before its route junction instead of jumping to the first arrow', () => {
+  const smoke = CH01_SCENES.find((scene) => scene.id === 'ch01-living-smoke-verge-aftermath')!;
+  const armorChoice = CH01_SCENES.find((scene) => scene.id === 'ch01-living-armor-that-knelt-test')!;
+  const armor = CH01_SCENES.find((scene) => scene.id === 'ch01-living-armor-that-knelt-aftermath')!;
+  expect(smoke.choices.find((choice) => choice.id === 'ch01-choice-send-the-travelers-south')?.nextSceneId)
+    .toBe('ch01-living-armor-that-knelt');
+  expect(smoke.choices.find((choice) => choice.id === 'ch01-choice-keep-the-travelers-inside-the-wagons')?.nextSceneId)
+    .toBeUndefined();
+  expect(armorChoice.choices.find((choice) => choice.id === 'ch01-choice-armor-pass-without-opening')?.nextSceneId)
+    .toBeUndefined();
+  expect(armor.choices.every((choice) => choice.nextSceneId !== 'ch01-main-the-first-arrow')).toBe(true);
+});
+
+it('makes the Greywatch underwall approach branch into infiltration and confrontation', () => {
+  const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.id === 'ch02-depot-approach')!;
+  const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.id === 'ch02-underwall-depot')!;
+  expect(junction.afterEventId).toBe('ch02-main-greywatch-council');
+  expect(dungeon.nodes.length).toBeGreaterThanOrEqual(3);
+  expect(dungeon.nodes.length).toBeLessThanOrEqual(6);
+  expect(dungeon.nodes.some((node) => node.sceneId === 'ch02-journey-the-underwall-conduit')).toBe(true);
+  expect(dungeon.nodes.some((node) => node.sceneId === 'ch02-journey-the-depot-cistern')).toBe(true);
+  expect(dungeon.nodes.find((node) => node.id === dungeon.exitNodeIds[0])?.sceneId).toBe('ch02-main-the-hidden-depot');
+  expect(dungeon.nodes.some((node) => node.exits.length >= 2)).toBe(true);
+  expect(availableRouteOptions(junction, new Set(['stolen-greywatch-cloaks-found'])).length)
+    .toBeGreaterThan(availableRouteOptions(junction, new Set()).length);
+});
 
 type Scene = (typeof CH01_SCENES)[number] | (typeof CH02_SCENES)[number];
 
@@ -152,7 +194,7 @@ it('keeps living-road rewards aligned with the choice that produced them', () =>
     .find((entry) => entry.id === choiceId)!;
 
   const bypassArmor = choice('ch01-choice-armor-pass-without-opening');
-  expect(bypassArmor.nextSceneId).toBe('ch01-main-the-first-arrow');
+  expect(bypassArmor.nextSceneId).toBeUndefined();
   expect(chronicle1ChoiceEffects(bypassArmor)).toContainEqual({
     type: 'flag',
     operation: 'add',

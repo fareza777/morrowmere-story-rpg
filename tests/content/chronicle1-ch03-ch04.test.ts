@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { CH03_SCENES } from '../../src/game/content/chronicle1/chapters/ch03';
 import { CH04_SCENES } from '../../src/game/content/chronicle1/chapters/ch04';
 import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes } from '../../src/game/content/schema';
+import { CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS } from '../../src/game/content/chronicle1';
+import { availableRouteOptions } from '../../src/game/dungeon/routes';
 
 const CH03_ANCHORS = [
   'ch03-main-orders-for-redwater',
@@ -23,6 +25,36 @@ const CH04_ANCHORS = [
   'ch04-main-terms-at-redwater',
   'ch04-main-what-the-river-carried-away',
 ] as const;
+
+it('turns the flooded toll archive into a mechanism and evidence route before the two-banner attack', () => {
+  const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.id === 'ch03-archive-crossing')!;
+  const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.id === 'ch03-flooded-toll-archive')!;
+  expect(junction.afterEventId).toBe('ch03-main-evidence-on-both-sides');
+  expect(dungeon.nodes.length).toBeGreaterThanOrEqual(3);
+  expect(dungeon.nodes.length).toBeLessThanOrEqual(6);
+  expect(dungeon.nodes.find((node) => node.id === dungeon.startNodeId)?.sceneId).toBe('ch03-journey-the-flooded-toll-archive');
+  expect(dungeon.nodes.find((node) => node.id === dungeon.exitNodeIds[0])?.sceneId).toBe('ch03-main-the-attack-with-two-banners');
+  expect(dungeon.nodes.some((node) => node.kind === 'combat')).toBe(true);
+  expect(dungeon.nodes.some((node) => node.kind === 'cache' || node.kind === 'rest')).toBe(true);
+});
+
+it('makes pursuit or rescue affect the warehouse route without erasing the first-charge landmark', () => {
+  const junction = CHRONICLE1_ROUTE_JUNCTIONS.find((entry) => entry.id === 'ch04-mill-warehouse')!;
+  const dungeon = CHRONICLE1_DUNGEONS.find((entry) => entry.id === 'ch04-mill-drains-warehouse')!;
+  expect(junction.afterEventId).toBe('ch04-main-orders-written-to-be-found');
+  expect(dungeon.nodes.length).toBeGreaterThanOrEqual(3);
+  expect(dungeon.nodes.length).toBeLessThanOrEqual(6);
+  expect(dungeon.nodes.some((node) => node.sceneId === 'ch04-journey-beneath-the-mill-drains')).toBe(true);
+  expect(dungeon.nodes.some((node) => node.sceneId === 'ch04-journey-the-north-warehouse-cellar')).toBe(true);
+  expect(dungeon.nodes.find((node) => node.id === dungeon.exitNodeIds[0])?.sceneId).toBe('ch04-main-before-the-first-charge');
+  expect(dungeon.nodes.some((node) => node.exits.length >= 2)).toBe(true);
+  expect(dungeon.nodes.find((node) => node.id === 'ch04-warehouse-fire')?.exits.map((edge) => edge.label))
+    .toContain('Search for the missing bakers');
+  expect(junction.options.find((option) => option.id === 'ch04-follow-mill-drains')?.consequence)
+    .toContain('locating the missing bakers');
+  expect(availableRouteOptions(junction, new Set(['archive-sluice-tampering-recorded'])).length)
+    .toBeGreaterThan(availableRouteOptions(junction, new Set()).length);
+});
 
 const RUKHAR_CALLBACKS = [
   'ch03-companion-courier-testimony',

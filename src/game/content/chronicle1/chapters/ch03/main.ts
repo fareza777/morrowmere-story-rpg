@@ -70,7 +70,8 @@ export const CH03_MAIN = Object.freeze([
       'The matching packing knots and inventory hand turn suspicion into a physical pattern. The paired-cache kit can prove coordinated manipulation if it reaches Redwater with its custody intact.',
     ],
     eligibility: { minLevel: 4, maxLevel: 6 }, requirements: [], exclusions: [], cooldownRuns: 0, oneShot: true,
-    followUps: ['ch03-main-the-attack-with-two-banners'], callbackPromises: [],
+    // The next landmark is chosen at the flooded-archive junction.
+    followUps: [], callbackPromises: [],
     choices: [
       { id: 'ch03-choice-carry-paired-cache-kit', label: 'Carry samples from both caches', detail: 'Accept slower travel and make yourself the obvious target, but preserve credible comparative proof.', effects: [{ type: 'evidence', operation: 'add', evidenceId: 'paired-cache-kit' }, { type: 'flag', operation: 'add', flagId: 'peace-evidence-carried' }, { type: 'threat', amount: 2 }], outcome: 'Rukhar and your Greywatch escort sign the same custody strip. Neither can later deny what was packed beside their own colors.' },
       { id: 'ch03-choice-send-cache-rubbings-ahead', label: 'Send rubbings to Redwater', detail: 'Move faster with weaker proof that hostile officers may dismiss as copies.', effects: [{ type: 'flag', operation: 'add', flagId: 'paired-cache-rubbings' }, { type: 'faction', factionId: 'border-council', amount: 1 }], outcome: 'The rubbings leave by skiff. You keep the matching wax and knots, but not the full cache kit.' },
