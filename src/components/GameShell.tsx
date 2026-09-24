@@ -11,6 +11,7 @@ import { selectCampView, selectCombatView, selectCurrentScene, selectInventoryVi
 import { feedbackForTransition } from '../ui/feedback';
 import type { GameShellProps as BaseGameShellProps, ItemRowViewModel, UiSettings } from '../ui/types';
 import { CampScreen } from './CampScreen';
+import { BattlefieldArt } from './BattlefieldArt';
 import { ChoiceList } from './ChoiceList';
 import { CombatPanel } from './CombatPanel';
 import { CompanionPanel } from './CompanionPanel';
@@ -261,7 +262,18 @@ export function GameShell({ state, content, transitionEvents, dispatch, onSaveAn
   } else if (state.flow.screen === 'story') {
     body = <main className="loading-screen" aria-live="polite"><p>Preparing the next road…</p></main>;
   } else if (state.flow.screen === 'combat' && combat) {
-    body = <>{scene && <SceneArt key={`combat-art-${scene.id}`} illustrationId={scene.illustrationId} alt={scene.illustrationAlt} />}{currentTutorial === 'combat' && <TutorialCallout kind="combat" onDismiss={() => dismissTutorial('combat')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><CombatPanel view={combat} inventory={inventory} transitionEvents={transitionEvents} onAction={combatAction} /></main></>;
+    const encounterId = state.expedition?.currentCombat?.encounterId;
+    const encounter = encounterId ? content.encounters.get(encounterId) : undefined;
+    const hasBattlefieldArt = Boolean(encounter?.battlefieldArtId && encounter.battlefieldArtAlt);
+    body = <>{hasBattlefieldArt
+      ? <BattlefieldArt
+          key={`battlefield-art-${encounter!.battlefieldArtId}`}
+          illustrationId={encounter!.battlefieldArtId!}
+          alt={encounter!.battlefieldArtAlt!}
+          fallbackIllustrationId={scene?.illustrationId}
+          fallbackAlt={scene?.illustrationAlt}
+        />
+      : scene && <SceneArt key={`combat-art-${scene.id}`} illustrationId={scene.illustrationId} alt={scene.illustrationAlt} />}{currentTutorial === 'combat' && <TutorialCallout kind="combat" onDismiss={() => dismissTutorial('combat')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><CombatPanel view={combat} inventory={inventory} transitionEvents={transitionEvents} onAction={combatAction} /></main></>;
   } else if (state.flow.screen === 'reward' && rewardView) {
     body = <>{scene && <SceneArt key={`reward-art-${scene.id}`} illustrationId={scene.illustrationId} alt={scene.illustrationAlt} />}{currentTutorial === 'loot' && <TutorialCallout kind="loot" onDismiss={() => dismissTutorial('loot')} onSkipAll={() => setTutorialsSkipped(true)} />}<main className="game-main"><RewardPanel view={rewardView} onClaim={(itemId) => issue({ type: 'claim-rewards', rewardId: rewardView.rewardId, itemId: itemId as ItemId | null })} onRequestBonus={onRequestRewardedGold ? () => onRequestRewardedGold(rewardReceipt!.rewardOfferId) : undefined} onDismissBonus={onDismissRewardedGold ? () => onDismissRewardedGold(rewardReceipt!.rewardOfferId) : undefined} /></main></>;
   } else if (state.flow.screen === 'merchant') {
