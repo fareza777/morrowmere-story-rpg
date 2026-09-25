@@ -125,6 +125,12 @@ describe('Chronicle I enemy catalog', () => {
 });
 
 describe('Chronicle I encounter catalog', () => {
+  it('keeps the Cinder-Heart bodyguard threatening without matching the boss in rank', () => {
+    const encounter = CHRONICLE1_ENCOUNTERS.find((entry) => entry.id === 'enc-ch05-cinder-heart-regulator');
+    expect(encounter?.enemyIds).toEqual(['boss-embervault-cinder-heart-regulator', 'black-banner-06']);
+    expect(encounter?.threatBudget).toBe(20);
+  });
+
   it('keeps scene encounters mapped and adds nineteen dungeon-only encounter variants', () => {
     const sceneEncounterIds = [...new Set(CHRONICLE1_SCENES.flatMap((scene) => [
       ...(scene.encounterId ? [scene.encounterId] : []),

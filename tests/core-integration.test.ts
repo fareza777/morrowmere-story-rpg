@@ -6,6 +6,7 @@ import {
   type GameStateV2,
 } from '../src/game/state';
 import { applyCompanionEffect, recruitCompanion } from '../src/game/companions';
+import { applyInventoryCommand } from '../src/game/inventory';
 import type { ContentIndex, ChronicleEvent, EncounterDefinition } from '../src/game/content/schema';
 import type { ChoiceId, CompanionId, EncounterId, EnemyId, EventId, ItemId, MerchantId } from '../src/game/domain/ids';
 import { createSaveRepository } from '../src/game/persistence';
@@ -260,5 +261,26 @@ describe('Chronicle I public core integration', () => {
     expect(state.expedition?.pendingReward).toBeNull();
     expect(state.campaign.hero.xp).toBe(0);
     expect(state.expedition?.unbankedGold).toBe(0);
+  });
+
+  it('allows field recovery at a safe travel junction between battles', () => {
+    const content = makeContent();
+    let state = createCampaign({ heroClass: 'warden', seed: 3, updatedAt: at(0) }, content);
+    state = dispatch(state, { type: 'start-expedition', routeProfile: 'kings-road', updatedAt: at(1) }, content);
+    const added = applyInventoryCommand(state.campaign.inventory, { type: 'add', itemId: asItem('red-mercy'), quantity: 1 }, content.items);
+    if (!added.ok) throw new Error(`Could not prepare the recovery test potion: ${added.error.message}`);
+    const entry = added.value.pack.find((candidate) => candidate.itemId === asItem('red-mercy'))!;
+    const healthBefore = state.expedition!.heroVitals.health - 12;
+    state = {
+      ...state,
+      campaign: { ...state.campaign, inventory: added.value },
+      expedition: { ...state.expedition!, heroVitals: { ...state.expedition!.heroVitals, health: healthBefore } },
+    };
+
+    const healed = reduceGame(state, { type: 'use-item', entryId: entry.id, updatedAt: at(2) }, content);
+    expect(healed.diagnostic).toBeUndefined();
+    expect(healed.state.flow.screen).toBe('travel');
+    expect(healed.state.expedition?.heroVitals.health).toBe(healthBefore + 12);
+    expect(healed.state.campaign.inventory.pack.some((candidate) => candidate.id === entry.id)).toBe(false);
   });
 });

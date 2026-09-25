@@ -4,7 +4,8 @@ import { relative, resolve } from 'node:path';
 import { createServer } from 'vite';
 
 const EXPECTED_SCENE_COUNT = 403;
-const EXPECTED_BATTLEFIELD_COUNT = 24;
+const EXPECTED_DUNGEON_ENCOUNTER_COUNT = 24;
+const EXPECTED_BATTLEFIELD_COUNT = 76;
 const EXPECTED_WIDTH = 1536;
 const EXPECTED_HEIGHT = 1024;
 const MIN_FILE_BYTES = 32 * 1024;
@@ -219,17 +220,31 @@ const main = async () => {
       ),
     ),
   ];
-  if (dungeonEncounterIds.length !== EXPECTED_BATTLEFIELD_COUNT) {
+  if (dungeonEncounterIds.length !== EXPECTED_DUNGEON_ENCOUNTER_COUNT) {
     errors.push(
-      `expected ${EXPECTED_BATTLEFIELD_COUNT} distinct dungeon encounters, found ${dungeonEncounterIds.length}`,
+      `expected ${EXPECTED_DUNGEON_ENCOUNTER_COUNT} distinct dungeon encounters, found ${dungeonEncounterIds.length}`,
+    );
+  }
+
+  const battlefieldEncounterIds = [
+    ...new Set([
+      ...dungeonEncounterIds,
+      ...[...encounters.values()]
+        .filter((encounter) => typeof encounter.battlefieldArtId === 'string')
+        .map((encounter) => encounter.id),
+    ]),
+  ];
+  if (battlefieldEncounterIds.length !== EXPECTED_BATTLEFIELD_COUNT) {
+    errors.push(
+      `expected ${EXPECTED_BATTLEFIELD_COUNT} distinct battlefield scenes, found ${battlefieldEncounterIds.length}`,
     );
   }
 
   const battlefieldArtIds = new Set();
-  for (const encounterId of dungeonEncounterIds) {
+  for (const encounterId of battlefieldEncounterIds) {
     const encounter = encounters.get(encounterId);
     if (!encounter) {
-      errors.push(`dungeon encounter "${encounterId}" has no Chronicle encounter definition`);
+      errors.push(`battlefield encounter "${encounterId}" has no Chronicle encounter definition`);
       continue;
     }
 
@@ -238,19 +253,17 @@ const main = async () => {
       typeof battlefieldArtId !== 'string' ||
       !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(battlefieldArtId)
     ) {
-      errors.push(`dungeon encounter "${encounterId}" has a missing or unsafe battlefield art id`);
+      errors.push(`battlefield encounter "${encounterId}" has a missing or unsafe battlefield art id`);
       continue;
     }
     if (battlefieldArtId !== encounterId) {
-      errors.push(
-        `dungeon encounter "${encounterId}" must use its encounter-derived battlefield art id`,
-      );
+      errors.push(`battlefield encounter "${encounterId}" must use its encounter-derived battlefield art id`);
     }
     if (typeof battlefieldArtAlt !== 'string' || battlefieldArtAlt.trim().length < 20 || !battlefieldArtAlt.endsWith('.')) {
-      errors.push(`dungeon encounter "${encounterId}" has missing or undescriptive battlefield alt text`);
+      errors.push(`battlefield encounter "${encounterId}" has missing or undescriptive battlefield alt text`);
     }
     if (battlefieldArtIds.has(battlefieldArtId)) {
-      errors.push(`battlefield art id "${battlefieldArtId}" is used by multiple dungeon encounters`);
+      errors.push(`battlefield art id "${battlefieldArtId}" is used by multiple encounters`);
     }
     battlefieldArtIds.add(battlefieldArtId);
 

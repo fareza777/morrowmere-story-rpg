@@ -46,7 +46,10 @@ it('connects each early delve to an authored terminal with distinct cadence and 
       }
       const fightCount = fights + (node!.kind === 'combat' ? 1 : 0);
       if (node!.kind === 'exit') {
-        expect(fightCount, `${dungeon.id}/${id} fight count`).toBeGreaterThanOrEqual(1);
+        const safeCellarExit = dungeon.id === 'ch01-tollhouse-culvert'
+          && id === 'ch01-orchard-emergence'
+          && nextSeen.has('ch01-culvert-tracks');
+        expect(fightCount, `${dungeon.id}/${id} fight count`).toBeGreaterThanOrEqual(safeCellarExit ? 0 : 1);
         expect(fightCount, `${dungeon.id}/${id} fight count`).toBeLessThanOrEqual(3);
         pathFightCounts.push(fightCount);
         return;
@@ -57,6 +60,7 @@ it('connects each early delve to an authored terminal with distinct cadence and 
     visit(dungeon.startNodeId, new Set(), new Set(), 0);
     fightCountsByDungeon.set(dungeon.chapterId, pathFightCounts);
   }
+  expect([...new Set(fightCountsByDungeon.get('ch01'))].sort()).toEqual([0, 1]);
   expect([...new Set(fightCountsByDungeon.get('ch02'))].sort()).toEqual([1, 2]);
   expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
   const earlyOptionCounts = CHRONICLE1_ROUTE_JUNCTIONS

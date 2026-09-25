@@ -6,7 +6,20 @@ import type { CombatState, EnemyCombatant, HeroCombatant } from './types';
 
 function combatant(enemy: EnemyDefinition, isBoss: boolean): EnemyCombatant {
   const role = roleForEnemy(enemy);
-  return { ...enemy, health: enemy.maxHealth, guarding: false, isBoss, statuses: [], role, evasion: role === 'assassin' ? 12 : 0, blockChance: role === 'defender' ? 30 : 0, parryChance: role === 'assassin' ? 10 : 0, phase: 1, roleUses: role === 'summoner' ? 1 : 0 };
+  const trainedAssassin = role === 'assassin' && enemy.rank >= 4;
+  return {
+    ...enemy,
+    health: enemy.maxHealth,
+    guarding: false,
+    isBoss,
+    statuses: [],
+    role,
+    evasion: role === 'assassin' ? (trainedAssassin ? 12 : 6) : 0,
+    blockChance: role === 'defender' ? 30 : 0,
+    parryChance: trainedAssassin ? 10 : 0,
+    phase: 1,
+    roleUses: role === 'summoner' ? 1 : 0,
+  };
 }
 
 export function calculateCompanionSupportCeiling(

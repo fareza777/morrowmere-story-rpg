@@ -98,7 +98,7 @@ describe('Road Tactics artwork', () => {
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('403/403 unique 1536x1024 WebP scene assets');
     expect(result.stdout).toContain('4/4 unique 1536x1024 WebP action-card assets');
-    expect(result.stdout).toContain('24/24 unique 1536x1024 WebP battlefield assets');
+    expect(result.stdout).toContain('76/76 unique 1536x1024 WebP battlefield assets');
   }, 60_000);
 
   it('keeps every canonical encounter and action-card asset present, valid, and distinct', () => {
@@ -148,5 +148,56 @@ describe('Road Tactics artwork', () => {
     });
     expect(new Set(artIds).size).toBe(24);
     expect(battlefieldHashes.size).toBe(24);
+  });
+
+  it('maps the opening road, orchard, and cellar battles to distinct generated scenes', () => {
+    const openingEncounterIds = [
+      'enc-ch01-ditch-road-cutters',
+      'enc-ch01-orchard-volley',
+      'enc-ch01-tollhouse-cellar',
+    ];
+    const battlefieldHashes = new Set<string>();
+
+    for (const id of openingEncounterIds) {
+      const encounter = CHRONICLE1_CONTENT.encounters.get(id);
+      expect(encounter, id).toBeDefined();
+      expect(encounter?.battlefieldArtId, id).toBe(id);
+      expect(encounter?.battlefieldArtAlt, id).toMatch(/^.+\.$/u);
+
+      const relativePath = `public/assets/chronicle1/battles/${id}.webp`;
+      const assetPath = resolve(root, relativePath);
+      expect(existsSync(assetPath), relativePath).toBe(true);
+      const bytes = readFileSync(assetPath);
+      expect(bytes.length, relativePath).toBeGreaterThanOrEqual(32 * 1024);
+      expect(bytes.toString('ascii', 0, 4), relativePath).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12), relativePath).toBe('WEBP');
+      expect(readWebpDimensions(bytes), relativePath).toEqual(EXPECTED_DIMENSIONS);
+      battlefieldHashes.add(createHash('sha256').update(bytes).digest('hex'));
+    }
+
+    expect(battlefieldHashes.size).toBe(openingEncounterIds.length);
+  });
+
+  it('gives every Chronicle encounter its own generated battlefield art', () => {
+    const encounterIds = [...CHRONICLE1_CONTENT.encounters.keys()];
+    expect(encounterIds).toHaveLength(76);
+
+    const battlefieldHashes = new Set<string>();
+    for (const id of encounterIds) {
+      const encounter = CHRONICLE1_CONTENT.encounters.get(id);
+      expect(encounter?.battlefieldArtId, id).toBe(id);
+      expect(encounter?.battlefieldArtAlt, id).toMatch(/^.+\.$/u);
+
+      const relativePath = `public/assets/chronicle1/battles/${id}.webp`;
+      const assetPath = resolve(root, relativePath);
+      expect(existsSync(assetPath), relativePath).toBe(true);
+      const bytes = readFileSync(assetPath);
+      expect(bytes.length, relativePath).toBeGreaterThanOrEqual(32 * 1024);
+      expect(bytes.toString('ascii', 0, 4), relativePath).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12), relativePath).toBe('WEBP');
+      expect(readWebpDimensions(bytes), relativePath).toEqual(EXPECTED_DIMENSIONS);
+      battlefieldHashes.add(createHash('sha256').update(bytes).digest('hex'));
+    }
+    expect(battlefieldHashes.size).toBe(encounterIds.length);
   });
 });

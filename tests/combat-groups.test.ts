@@ -75,6 +75,16 @@ describe('group combat', () => {
     expect(result.combat.enemies.find((candidate) => candidate.id === 'rear')?.health).toBeLessThan(30);
   });
 
+  it('reserves reliable evasion and parries for trained assassin ranks', () => {
+    const novice = enemy('novice', ['Quick Hands']);
+    const veteran = { ...enemy('veteran', ['Quick Hands']), rank: 4 };
+    const noviceCombat = createEncounter(hero, encounter('novice', ['novice']), { enemies: new Map([['novice' as never, novice]]) }, 7);
+    const veteranCombat = createEncounter(hero, encounter('veteran', ['veteran']), { enemies: new Map([['veteran' as never, veteran]]) }, 7);
+
+    expect(noviceCombat.enemy).toMatchObject({ evasion: 6, parryChance: 0 });
+    expect(veteranCombat.enemy).toMatchObject({ evasion: 12, parryChance: 10 });
+  });
+
   it('uses a combat consumable atomically and spends the turn', () => {
     const combat = createEncounter(hero, encounter('solo', ['front']), { enemies: new Map([['front' as never, enemy('front')]]) }, 7);
     const wounded: CombatState = { ...combat, player: { ...combat.player, health: 20 } };

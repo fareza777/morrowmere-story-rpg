@@ -4,7 +4,7 @@ import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CH02_SCENES } from '../../src/game/content/chronicle1/chapters/ch02';
 import { chronicle1ChoiceEffects, chronicle1ChoiceOutcomes, chronicleCheckBranches } from '../../src/game/content/schema';
 import { CHRONICLE1_DUNGEONS, CHRONICLE1_ROUTE_JUNCTIONS } from '../../src/game/content/chronicle1';
-import { availableRouteOptions } from '../../src/game/dungeon/routes';
+import { availableDungeonExits, availableRouteOptions } from '../../src/game/dungeon/routes';
 
 const CH01_ANCHORS = [
   'ch01-main-three-days-to-greywatch',
@@ -34,9 +34,24 @@ it('offers the tollhouse cellar only after searching and exits at the first arro
   expect(availableRouteOptions(junction, new Set(['tollhouse-searched'])).map((option) => option.id)).toEqual(['ch01-stay-with-wagons', 'ch01-descend-cellar']);
   expect(dungeon.nodes.length).toBeGreaterThanOrEqual(3);
   expect(dungeon.nodes.length).toBeLessThanOrEqual(6);
-  expect(dungeon.nodes.find((node) => node.id === dungeon.startNodeId)?.sceneId).toBe('ch01-journey-the-tollhouse-cellar');
+  const start = dungeon.nodes.find((node) => node.id === dungeon.startNodeId)!;
+  expect(start.sceneId).toBe('ch01-living-below-toll-desk-entry');
+  expect(availableDungeonExits(dungeon, start.id, new Set(['stolen-greywatch-cloaks-found']), []).map((exit) => exit.id))
+    .toEqual(['ch01-enter-the-lookouts']);
+  expect(availableDungeonExits(dungeon, start.id, new Set(['tollhouse-tunnel-collapsed']), []).map((exit) => exit.id))
+    .toEqual(['ch01-leave-by-the-tollhouse-stair']);
   expect(dungeon.nodes.find((node) => node.id === dungeon.exitNodeIds[0])?.sceneId).toBe('ch01-main-the-first-arrow');
   expect(dungeon.nodes.filter((node) => node.kind === 'combat')).toHaveLength(1);
+  expect(dungeon.nodes.some((node) => node.sceneId === 'ch01-journey-the-tollhouse-cellar')).toBe(false);
+  const cellar = CH01_SCENES.find((scene) => scene.id === 'ch01-living-below-toll-desk-entry')!;
+  const search = cellar.choices.find((choice) => choice.id === 'ch01-choice-search-the-cellar-uniforms')!;
+  const seal = cellar.choices.find((choice) => choice.id === 'ch01-choice-seal-the-cellar-culvert')!;
+  expect(search.effects).toContainEqual({ type: 'flag', operation: 'add', flagId: 'stolen-greywatch-cloaks-found' });
+  expect(search.effects).toContainEqual({ type: 'vitals', health: 6, resource: 2 });
+  expect(seal.effects).toContainEqual({ type: 'flag', operation: 'add', flagId: 'tollhouse-tunnel-collapsed' });
+  expect(cellar.eligibility.requiredFlags).toContain('tollhouse-dungeon-route-chosen');
+  expect(junction.options.find((option) => option.id === 'ch01-descend-cellar')?.effects)
+    .toContainEqual({ type: 'flag', operation: 'add', flagId: 'tollhouse-dungeon-route-chosen' });
 });
 
 it('finishes the tollhouse aftermath before its route junction instead of jumping to the first arrow', () => {

@@ -195,6 +195,8 @@ function validHydratedPlayer(value: CombatDto['player'], campaign: CampaignDto, 
     will: base.will + value.modifiers.will,
   };
   return Object.values(player).every(finite)
+    && (value.modifiers.attackAccuracy === undefined || value.modifiers.attackAccuracy <= 100)
+    && (value.modifiers.criticalChance === undefined || value.modifiers.criticalChance <= 100)
     && player.attackBonus >= 0 && player.armor >= 0 && player.ward >= 0
     && player.maxHealth >= 1 && player.maxFocus >= 0
     && player.strength >= 0 && player.cunning >= 0 && player.will >= 0
@@ -477,9 +479,13 @@ function basePlayer(campaign: CampaignState, content: ContentIndex): HeroCombata
 }
 
 function playerModifiers(player: HeroCombatant, base: HeroCombatant): PlayerModifierDto | null {
-  if (!exactOptional(player, ['class', 'name', 'level', 'xp', 'health', 'maxHealth', 'focus', 'maxFocus', 'strength', 'cunning', 'will', 'armor', 'ward', 'attackBonus', 'guarding', 'statuses', 'inventory', 'equipment'], ['attackAccuracy', 'criticalChance']) || player.attackAccuracy !== undefined || player.criticalChance !== undefined || player.class !== base.class || player.name !== base.name || player.level !== base.level || player.xp !== base.xp || !finite(player.health) || !finite(player.maxHealth) || !finite(player.focus) || !finite(player.maxFocus) || player.maxHealth < 1 || player.maxFocus < 0 || player.health < 0 || player.health > player.maxHealth || player.focus < 0 || player.focus > player.maxFocus || typeof player.guarding !== 'boolean' || !strings(player.inventory) || !sameArray(player.inventory, base.inventory) || !exact(player.equipment, ['weapon', 'armor', 'charms']) || player.equipment.weapon !== base.equipment.weapon || player.equipment.armor !== base.equipment.armor || !strings(player.equipment.charms) || !sameArray(player.equipment.charms, base.equipment.charms)) return null;
+  if (!exactOptional(player, ['class', 'name', 'level', 'xp', 'health', 'maxHealth', 'focus', 'maxFocus', 'strength', 'cunning', 'will', 'armor', 'ward', 'attackBonus', 'guarding', 'statuses', 'inventory', 'equipment'], ['attackAccuracy', 'criticalChance']) || player.class !== base.class || player.name !== base.name || player.level !== base.level || player.xp !== base.xp || !finite(player.health) || !finite(player.maxHealth) || !finite(player.focus) || !finite(player.maxFocus) || player.maxHealth < 1 || player.maxFocus < 0 || player.health < 0 || player.health > player.maxHealth || player.focus < 0 || player.focus > player.maxFocus || typeof player.guarding !== 'boolean' || !strings(player.inventory) || !sameArray(player.inventory, base.inventory) || !exact(player.equipment, ['weapon', 'armor', 'charms']) || player.equipment.weapon !== base.equipment.weapon || player.equipment.armor !== base.equipment.armor || !strings(player.equipment.charms) || !sameArray(player.equipment.charms, base.equipment.charms) || (player.attackAccuracy !== undefined && (!finite(player.attackAccuracy) || player.attackAccuracy > 100)) || (player.criticalChance !== undefined && (!finite(player.criticalChance) || player.criticalChance > 100))) return null;
   const modifiers = { attackBonus: player.attackBonus - base.attackBonus, armor: player.armor - base.armor, ward: player.ward - base.ward, maxHealth: player.maxHealth - base.maxHealth, maxFocus: player.maxFocus - base.maxFocus, strength: player.strength - base.strength, cunning: player.cunning - base.cunning, will: player.will - base.will };
-  return Object.values(modifiers).every(finite) ? modifiers : null;
+  return Object.values(modifiers).every(finite) ? {
+    ...modifiers,
+    ...(player.attackAccuracy === undefined ? {} : { attackAccuracy: player.attackAccuracy }),
+    ...(player.criticalChance === undefined ? {} : { criticalChance: player.criticalChance }),
+  } : null;
 }
 
 function catalogSource(enemy: EnemyCombatant, content: ContentIndex): { readonly source: EnemySourceDto; readonly definition: EnemyDefinition; readonly smoke: boolean } | null {
@@ -613,7 +619,7 @@ function decodeEnemy(value: EnemyCombatDto, content: ContentIndex): EnemyCombata
 function intentText(intent: string): string { return intent; }
 function decodeCombat(value: CombatDto, campaign: CampaignState, encounter: EncounterDefinition, content: ContentIndex): CombatState | null {
   const base = basePlayer(campaign, content);
-  const player: HeroCombatant = { ...base, attackBonus: base.attackBonus + value.player.modifiers.attackBonus, armor: base.armor + value.player.modifiers.armor, ward: base.ward + value.player.modifiers.ward, maxHealth: base.maxHealth + value.player.modifiers.maxHealth, maxFocus: base.maxFocus + value.player.modifiers.maxFocus, strength: base.strength + value.player.modifiers.strength, cunning: base.cunning + value.player.modifiers.cunning, will: base.will + value.player.modifiers.will, health: value.player.health, focus: value.player.focus, guarding: value.player.guarding, statuses: decodeStatuses(value.player.statuses) };
+  const player: HeroCombatant = { ...base, attackBonus: base.attackBonus + value.player.modifiers.attackBonus, armor: base.armor + value.player.modifiers.armor, ward: base.ward + value.player.modifiers.ward, maxHealth: base.maxHealth + value.player.modifiers.maxHealth, maxFocus: base.maxFocus + value.player.modifiers.maxFocus, strength: base.strength + value.player.modifiers.strength, cunning: base.cunning + value.player.modifiers.cunning, will: base.will + value.player.modifiers.will, ...(value.player.modifiers.attackAccuracy === undefined ? {} : { attackAccuracy: value.player.modifiers.attackAccuracy }), ...(value.player.modifiers.criticalChance === undefined ? {} : { criticalChance: value.player.modifiers.criticalChance }), health: value.player.health, focus: value.player.focus, guarding: value.player.guarding, statuses: decodeStatuses(value.player.statuses) };
   if (![player.attackBonus, player.armor, player.ward, player.maxHealth, player.maxFocus, player.strength, player.cunning, player.will, player.health, player.focus].every(finite) || player.maxHealth < 1 || player.maxFocus < 0 || player.health < 0 || player.health > player.maxHealth || player.focus < 0 || player.focus > player.maxFocus) return null;
   const enemies = value.enemies.map((entry) => decodeEnemy(entry, content));
   if (enemies.some((entry) => entry === null)) return null;

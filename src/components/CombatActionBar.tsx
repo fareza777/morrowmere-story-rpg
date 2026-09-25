@@ -45,7 +45,10 @@ export function CombatActionBar({ view, selectedTargetId, consumables, onAction 
       <p className="combat-turn-warning"><Heart size={16} aria-hidden="true" />Using an item spends this turn.</p>
       {showConsumables && (
         <div className="combat-consumables" aria-label="Choose a consumable">
-          {consumables.length === 0 ? <p>No usable consumables are in the pack.</p> : consumables.map((item) => <button key={item.entryId ?? item.itemId} type="button" onClick={() => item.entryId && onAction({ type: 'consumable', instanceId: item.entryId })}><strong>{item.name}</strong><span>Quantity {item.quantity} · {item.description}</span></button>)}
+          {consumables.length === 0 ? <p>No usable consumables are in the pack.</p> : consumables.map((item) => <button key={item.entryId ?? item.itemId} type="button" onClick={() => {
+            setShowConsumables(false);
+            if (item.entryId) onAction({ type: 'consumable', instanceId: item.entryId });
+          }}><strong>{item.name}</strong><span>Quantity {item.quantity} · {item.description}</span></button>)}
         </div>
       )}
     </section>

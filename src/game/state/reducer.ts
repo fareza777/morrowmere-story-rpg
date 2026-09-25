@@ -244,9 +244,25 @@ function applyAuthoredCombatOpening(
   const has = (flagId: string) => flags.has(flagId);
   let player = combat.player;
   let enemies = combat.enemies;
+  let enemyIntents = combat.enemyIntents;
   const openingLog: string[] = [];
 
   if (encounterId === 'enc-ch01-ditch-road-cutters') {
+    if (has('combat-ch01-ditch-formation')) {
+      player = { ...player, guarding: true };
+      openingLog.push('The wagon line turns the first exchange into a guarded stand.');
+    }
+    if (has('combat-ch01-ditch-rush')) {
+      player = { ...player, attackAccuracy: Math.min(95, Math.max(player.attackAccuracy ?? 0, 82 + player.cunning) + 8) };
+      const reaver = enemies.find((enemy) => enemy.id === 'black-banner-01');
+      if (reaver) {
+        enemies = enemies.map((enemy) => enemy.id === reaver.id ? { ...enemy, evasion: 0, parryChance: 0 } : enemy);
+        enemyIntents = enemyIntents.map((intent) => intent.enemyId === reaver.id
+          ? { ...intent, intent: 'guard', text: 'The reaver ducks behind the culvert bank.' }
+          : intent);
+        openingLog.push('Your rush knocks the reaver off the firing line and exposes the retreating target.');
+      }
+    }
     if (has('chalk-rear-brake-held')) {
       player = { ...player, guarding: true };
       openingLog.push('The locked rear brake gives you a firm wagon line.');
@@ -279,6 +295,17 @@ function applyAuthoredCombatOpening(
   if (encounterId === 'enc-ch01-tollhouse-cellar' && has('tollhouse-yard-secured')) {
     player = { ...player, guarding: true };
     openingLog.push('The secured yard leaves the tunnel raiders no path to the wagons.');
+  }
+
+  if (encounterId === 'enc-ch01-tollhouse-lookouts' && has('tollhouse-cellar-tripwire-set')) {
+    const deserter = enemies.find((enemy) => enemy.id === 'iron-deserter-01');
+    if (deserter) {
+      enemies = enemies.map((enemy) => enemy.id === deserter.id ? { ...enemy, health: Math.max(1, enemy.health - 12) } : enemy);
+      enemyIntents = enemyIntents.map((intent) => intent.enemyId === deserter.id
+        ? { ...intent, intent: 'guard', text: 'The deserter is caught on the cellar tripwire and braces to break free.' }
+        : intent);
+      openingLog.push('The reset tripwire catches the deserter at the ankle, leaving the shield line open for one exchange.');
+    }
   }
 
   if (encounterId === 'enc-ch01-orchard-volley') {
@@ -353,11 +380,15 @@ function applyAuthoredCombatOpening(
   }
 
   const primary = enemies.find((enemy) => enemy.id === combat.enemy.id) ?? enemies[0]!;
+  const primaryIntent = enemyIntents.find((intent) => intent.enemyId === primary.id);
   return {
     ...combat,
     player,
     enemies,
     enemy: primary,
+    enemyIntents,
+    enemyIntent: primaryIntent?.intent ?? combat.enemyIntent,
+    intentText: primaryIntent?.text ?? combat.intentText,
     log: [...combat.log, ...openingLog].slice(-8),
   };
 }
@@ -838,6 +869,16 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     const current = currentScene(state, content);
     if (current && state.expedition.sceneResolution?.eventId === current.id) {
       if (state.expedition.dungeonRun) return advanceDungeon(state, content, command.updatedAt);
+      const anchoredJunction = [...(content.routeJunctions?.values() ?? [])].find((entry) =>
+        entry.chapterId === state.campaign.chapterId
+        && entry.afterEventId === current.id
+        && state.expedition!.sceneResolution?.nextSceneId === null
+        && !state.campaign.flags.includes(resolvedJunctionFlag(entry.id))
+        && state.expedition!.director.seenEventIds.includes(entry.afterEventId));
+      if (anchoredJunction && availableRouteOptions(anchoredJunction, new Set(state.campaign.flags)).length > 0) {
+        const pending = enterTravel({ ...state, expedition: { ...state.expedition, pendingRouteJunctionId: anchoredJunction.id } }, command.updatedAt);
+        return commit(state, pending, [{ type: 'notification', message: 'Choose your route.' }]);
+      }
       if (state.expedition.authoredSceneQueue.length) {
         const step = selectNextScene(state.expedition.director, { position: state.expedition.position, level: state.campaign.hero.level, flags: state.campaign.flags, inventoryTags: inventoryTags(state, content), routeProfile: state.expedition.routeProfile, bankedGold: state.campaign.bankedGold, unbankedGold: state.expedition.unbankedGold, inventory: state.campaign.inventory }, content, state.expedition.authoredSceneQueue);
         if (step.kind === 'selected' && step.reason === 'authored') {
@@ -1056,7 +1097,7 @@ export function reduceGame(state: GameStateV2, command: GameCommand, content: Co
     return commit(state, { ...state, campaign: applied.value.campaign, expedition, checkpoints, updatedAt: command.updatedAt }, events);
   }
   if (command.type === 'use-item') {
-    if (!state.expedition || state.flow.screen !== 'story' || state.expedition.currentCombat) return diagnostic(state, 'field_required', 'Use that item while travelling outside combat.');
+    if (!state.expedition || !['story', 'travel'].includes(state.flow.screen) || state.expedition.currentCombat) return diagnostic(state, 'field_required', 'Use that item at a safe story or travel point, outside combat.');
     const entry = state.campaign.inventory.pack.find((candidate) => candidate.id === command.entryId);
     const item = entry ? content.items.get(entry.itemId) : undefined;
     if (!entry || !item) return diagnostic(state, 'entry_not_found', 'That item is not in your pack.');

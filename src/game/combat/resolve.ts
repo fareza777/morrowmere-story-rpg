@@ -138,7 +138,10 @@ export function resolveCombatTurn(state: CombatState, action: CombatAction, inve
     return finalize(state, player, enemies, rngState, [{ type: 'flee_resolved', escaped: false }], inventory, true);
   }
 
-  if (action.type === 'guard') { player = { ...player, guarding: true }; return finalize(state, player, enemies, rngState, events, inventory, true); }
+  if (action.type === 'guard') {
+    player = { ...player, guarding: true, focus: Math.min(player.maxFocus, player.focus + 2) };
+    return finalize(state, player, enemies, rngState, events, inventory, true);
+  }
   if (action.type === 'consumable' || action.type === 'item') {
     const instanceId = action.type === 'consumable' ? action.instanceId : action.itemId;
     const used = useItem(inventory, instanceId, 'combat', content.items as never);

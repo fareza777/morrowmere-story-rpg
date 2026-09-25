@@ -67,7 +67,7 @@ const AUTHORED_CHRONICLE1_ROUTE_JUNCTIONS = [
     id: 'ch01-tollhouse-crossroads', chapterId: 'ch01', position: { chapterId: 'ch01', slot: 43 }, afterEventId: 'ch01-living-smoke-verge-aftermath',
     options: [
       { id: 'ch01-stay-with-wagons', label: 'Stay with the medicine wagons', detail: 'Keep the load moving toward the orchard while Jory records the abandoned tollhouse.', consequence: 'The missing collector and the cellar remain unsearched; the convoy reaches the first arrow sooner.', kind: 'story', destination: { kind: 'scene', sceneId: 'ch01-main-the-first-arrow' } },
-      { id: 'ch01-descend-cellar', label: 'Descend into the tollhouse cellar', detail: 'The key and fresh boot scrape from your search lead below the desk into a short culvert.', consequence: 'Risk a fight beneath the post to recover the thieves\' trail before rejoining the wagons.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch01-tollhouse-culvert' }, requiredFlags: ['tollhouse-searched'] },
+      { id: 'ch01-descend-cellar', label: 'Descend into the tollhouse cellar', detail: 'The key and fresh boot scrape from your search lead below the desk into a short culvert.', consequence: 'Risk a fight beneath the post to recover the thieves\' trail before rejoining the wagons.', kind: 'dungeon', destination: { kind: 'dungeon', dungeonId: 'ch01-tollhouse-culvert' }, requiredFlags: ['tollhouse-searched'], effects: [{ type: 'flag', operation: 'add', flagId: 'tollhouse-dungeon-route-chosen' }] },
     ],
   },
   {

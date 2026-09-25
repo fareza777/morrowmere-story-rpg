@@ -198,13 +198,6 @@
       "type": "journey"
     },
     {
-      "id": "scene-ch01-journey-the-tollhouse-cellar",
-      "sceneId": "ch01-journey-the-tollhouse-cellar",
-      "title": "The Tollhouse Cellar",
-      "chapterId": "ch01",
-      "type": "journey"
-    },
-    {
       "id": "scene-ch01-journey-the-wagon-or-the-rope",
       "sceneId": "ch01-journey-the-wagon-or-the-rope",
       "title": "The Wagon or the Rope",
@@ -320,6 +313,13 @@
       "id": "scene-ch01-living-below-desk-setup",
       "sceneId": "ch01-living-below-desk-setup",
       "title": "The Square Trapdoor",
+      "chapterId": "ch01",
+      "type": "journey"
+    },
+    {
+      "id": "scene-ch01-living-below-toll-desk-entry",
+      "sceneId": "ch01-living-below-toll-desk-entry",
+      "title": "Below the Toll Desk",
       "chapterId": "ch01",
       "type": "journey"
     },

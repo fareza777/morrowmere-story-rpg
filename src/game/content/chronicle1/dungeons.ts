@@ -6,8 +6,9 @@ const AUTHORED_CHRONICLE1_DUNGEONS = [
   {
     id: 'ch01-tollhouse-culvert', chapterId: 'ch01', startNodeId: 'ch01-cellar-stair', exitNodeIds: ['ch01-orchard-emergence'],
     nodes: [
-      { id: 'ch01-cellar-stair', kind: 'scene', sceneId: 'ch01-journey-the-tollhouse-cellar', exits: [
-        { id: 'ch01-follow-boot-scrapes', targetNodeId: 'ch01-tollhouse-lookouts', label: 'Follow the boot scrapes', detail: 'Descend through the cellar and meet whoever still guards the orchard culvert.' },
+      { id: 'ch01-cellar-stair', kind: 'scene', sceneId: 'ch01-living-below-toll-desk-entry', exits: [
+        { id: 'ch01-enter-the-lookouts', targetNodeId: 'ch01-tollhouse-lookouts', label: 'Follow the boot scrapes', detail: 'Take the badge proof and meet the lookouts guarding the orchard culvert.', requiredFlags: ['stolen-greywatch-cloaks-found'] },
+        { id: 'ch01-leave-by-the-tollhouse-stair', targetNodeId: 'ch01-culvert-tracks', label: 'Leave by the tollhouse stair', detail: 'Seal the hidden approach and return to the road without risking a fight.', requiredFlags: ['tollhouse-tunnel-collapsed'] },
       ] },
       { id: 'ch01-tollhouse-lookouts', kind: 'combat', encounterId: 'enc-ch01-tollhouse-lookouts', exits: [
         { id: 'ch01-crawl-through-culvert', targetNodeId: 'ch01-culvert-tracks', label: 'Crawl through the culvert', detail: 'Leave the cleared lookout post by the low drain where the smaller tracks continue.' },
@@ -82,6 +83,7 @@ const AUTHORED_CHRONICLE1_DUNGEONS = [
       'ch05-underworks-retreat-after-lift',
       'ch05-underworks-retreat-from-smelter',
       'ch05-underworks-retreat-from-quench',
+      'ch05-underworks-retreat-after-sentinel',
     ],
     nodes: [
       { id: 'ch05-underworks-lift-watch', kind: 'combat', encounterVariants: ['enc-ch05-underworks-lift-watch-a', 'enc-ch05-underworks-lift-watch-b'], exits: [
@@ -98,12 +100,12 @@ const AUTHORED_CHRONICLE1_DUNGEONS = [
         { id: 'ch05-retreat-from-quench-cut', targetNodeId: 'ch05-underworks-retreat-from-quench', label: 'Retreat along the drain', detail: 'Return by the flooded cut before the shutters close, securing only part of the unbanked haul.' },
       ] },
       { id: 'ch05-underworks-breakpoint', kind: 'hazard', exits: [
-        { id: 'ch05-take-a-breather', targetNodeId: 'ch05-underworks-rest-niche', label: 'Rest in the valve niche', detail: 'Catch your breath beside the cooling pipes and restore the resource your chosen run currently lacks.' },
+        { id: 'ch05-take-a-breather', targetNodeId: 'ch05-underworks-rest-niche', label: 'Rest in the valve niche', detail: 'Take a proper breather beside the cooling pipes: choose a stronger health recovery or a deeper focus reserve.' },
         { id: 'ch05-claim-the-supply-crate', targetNodeId: 'ch05-underworks-supply-cache', label: 'Take the sealed supply crate', detail: 'Keep moving without a full rest, but recover a small reserve for the final pressure rooms.' },
       ] },
       { id: 'ch05-underworks-rest-niche', kind: 'rest', rewardVariants: [
-        { id: 'ch05-rest-water-and-bandage', effects: [{ type: 'vitals', health: 8, resource: 1 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-at-valve' }] },
-        { id: 'ch05-rest-focus-tonic', effects: [{ type: 'vitals', health: 3, resource: 4 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-at-valve' }] },
+        { id: 'ch05-rest-water-and-bandage', effects: [{ type: 'vitals', health: 18, resource: 2 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-at-valve' }] },
+        { id: 'ch05-rest-focus-tonic', effects: [{ type: 'vitals', health: 10, resource: 4 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-at-valve' }] },
       ], exits: [
         { id: 'ch05-continue-to-rivet-guard-from-rest', targetNodeId: 'ch05-rivet-guard', label: 'Move past the rivet guard', detail: 'Leave the niche before the pressure cycle resets and blocks the route to the records platform.' },
       ] },
@@ -124,13 +126,33 @@ const AUTHORED_CHRONICLE1_DUNGEONS = [
         { id: 'ch05-open-the-worker-cages', targetNodeId: 'ch05-worker-path-rescue', label: 'Open the worker cages', detail: 'Use the hidden shift roll to reach the occupied cages, where a different patrol guards the release levers.' },
       ] },
       { id: 'ch05-ledger-path-ambush', kind: 'combat', encounterVariants: ['enc-ch05-ledger-gallery-watch-a', 'enc-ch05-ledger-gallery-watch-b'], exits: [
-        { id: 'ch05-ledger-path-to-sentinel', targetNodeId: 'ch05-vault-gargoyle-sentinel', label: 'Press on to the sentinel', detail: 'Keep the authorization rubbing dry as the final vault guardian wakes beyond the relay arch.' },
+        { id: 'ch05-ledger-path-to-recovery', targetNodeId: 'ch05-underworks-bulkhead-rest', label: 'Bind wounds at the bulkhead', detail: 'Spend a moment treating the cuts before the vault sentinel notices the gallery has gone quiet.' },
+        { id: 'ch05-ledger-path-rush-sentinel', targetNodeId: 'ch05-vault-gargoyle-sentinel', label: 'Rush the vault sentinel', detail: 'Keep the gallery alarm from spreading, but face the sentinel without a pause to recover.' },
       ] },
       { id: 'ch05-worker-path-rescue', kind: 'combat', encounterVariants: ['enc-ch05-worker-cage-patrol-a', 'enc-ch05-worker-cage-patrol-b'], exits: [
-        { id: 'ch05-worker-path-to-sentinel', targetNodeId: 'ch05-vault-gargoyle-sentinel', label: 'Press on to the sentinel', detail: 'Get the freed shift behind the bulkhead before the last guardian turns its firing perch toward them.' },
+        { id: 'ch05-worker-path-to-recovery', targetNodeId: 'ch05-underworks-bulkhead-rest', label: 'Treat the rescued miners and regroup', detail: 'Let the freed workers help bind wounds before the last guardian turns its firing perch toward them.' },
+        { id: 'ch05-worker-path-rush-sentinel', targetNodeId: 'ch05-vault-gargoyle-sentinel', label: 'Reach the sentinel before the alarm', detail: 'Move the workers out quickly, but give up the chance to recover before the vault guardian.' },
+      ] },
+      { id: 'ch05-underworks-bulkhead-rest', kind: 'rest', rewardVariants: [
+        { id: 'ch05-bulkhead-field-dressing', effects: [{ type: 'vitals', health: 36, resource: 2 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-before-vault' }] },
+        { id: 'ch05-bulkhead-focus-tonic', effects: [{ type: 'vitals', health: 24, resource: 4 }, { type: 'flag', operation: 'add', flagId: 'underworks-rested-before-vault' }] },
+      ], exits: [
+        { id: 'ch05-bulkhead-rest-to-sentinel', targetNodeId: 'ch05-vault-gargoyle-sentinel', label: 'Climb to the vault sentinel', detail: 'The party is steadier now; the sentinel still owns the narrow stair above.' },
       ] },
       { id: 'ch05-vault-gargoyle-sentinel', kind: 'elite', encounterId: 'enc-ch05-vault-gargoyle-elite', exits: [
         { id: 'ch05-enter-the-regulator-vault', targetNodeId: 'ch05-cinder-heart-regulator', label: 'Enter the regulator vault', detail: 'The pressure core is exposed beyond the sentinel; choose your stance before its shutters begin to move.' },
+        { id: 'ch05-search-pressure-medic-cache', targetNodeId: 'ch05-underworks-pressure-medic-cache', label: 'Search the pressure medic’s cache', detail: 'Take a short detour through the sentinel’s service bay; sealed tonic and salvage wait behind its armor rack.' },
+        { id: 'ch05-withdraw-before-regulator', targetNodeId: 'ch05-underworks-retreat-after-sentinel', label: 'Withdraw with the recovered evidence', detail: 'Carry the docket and worker testimony back to the lift, but leave the regulator running below.' },
+      ] },
+      { id: 'ch05-underworks-pressure-medic-cache', kind: 'cache', rewardVariants: [
+        { id: 'ch05-pressure-medic-tonic', effects: [
+          { type: 'vitals', health: 28, resource: 2 },
+          { type: 'item', operation: 'grant', itemId: 'consumable-burn-paste', quantity: 2, destination: 'pack' },
+          { type: 'gold', scope: 'unbanked', amount: 8 },
+          { type: 'flag', operation: 'add', flagId: 'underworks-pressure-medic-cache-opened' },
+        ] },
+      ], exits: [
+        { id: 'ch05-cache-to-regulator', targetNodeId: 'ch05-cinder-heart-regulator', label: 'Descend to the regulator', detail: 'The tonic steadies your hands; the damaged pressure core is still waiting below.' },
       ] },
       { id: 'ch05-cinder-heart-regulator', kind: 'boss', encounterId: 'enc-ch05-cinder-heart-regulator', exits: [
         { id: 'ch05-emerge-at-the-hidden-forge', targetNodeId: 'ch05-underworks-forge-exit', label: 'Reach the hidden forge', detail: 'Secure the engine room and climb into the forge behind the false wall.' },
@@ -139,6 +161,7 @@ const AUTHORED_CHRONICLE1_DUNGEONS = [
       { id: 'ch05-underworks-retreat-after-lift', kind: 'exit', exitKind: 'retreat', sceneId: 'ch05-journey-the-underworks-retreat', exits: [] },
       { id: 'ch05-underworks-retreat-from-smelter', kind: 'exit', exitKind: 'retreat', sceneId: 'ch05-journey-the-underworks-retreat', exits: [] },
       { id: 'ch05-underworks-retreat-from-quench', kind: 'exit', exitKind: 'retreat', sceneId: 'ch05-journey-the-underworks-retreat', exits: [] },
+      { id: 'ch05-underworks-retreat-after-sentinel', kind: 'exit', exitKind: 'retreat', sceneId: 'ch05-journey-the-underworks-retreat', exits: [] },
     ],
   },
   {

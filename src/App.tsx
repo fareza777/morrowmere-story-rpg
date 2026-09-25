@@ -73,6 +73,8 @@ const CONTENT: ContentIndex = Object.freeze({
   encounters: partialContent.encounters ?? new Map(),
   companions: partialContent.companions ?? new Map(),
   merchants: partialContent.merchants ?? new Map(),
+  dungeons: partialContent.dungeons ?? new Map(),
+  routeJunctions: partialContent.routeJunctions ?? new Map(),
   artIds: partialContent.artIds ?? new Set(),
   audioIds: partialContent.audioIds ?? new Set(),
 });

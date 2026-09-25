@@ -35,11 +35,11 @@ interface EncounterSpec {
 }
 
 const ENCOUNTER_SPECS: readonly EncounterSpec[] = [
-  { id: 'enc-ch01-ditch-road-cutters', enemyIds: ['goblin-cutpurse-01', 'goblin-cutpurse-01', 'black-banner-01'], threatBudget: 9, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Hold the wagon gap to contain both knives, or cross the open ditch to remove the heavier reaver first.' },
-  { id: 'enc-ch01-tollhouse-lookouts', battlefieldArtId: 'enc-ch01-tollhouse-lookouts', battlefieldArtAlt: 'A battered human shieldman and a hooded goblin cutpurse face each other in the flooded tollhouse culvert.', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile'], counterplay: 'Break the lone shield before chasing the rooftop skirmisher, or guard until the skirmisher descends.' },
-  { id: 'enc-ch01-orchard-volley', enemyIds: ['goblin-torchling-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['ranged', 'mobile'], counterplay: 'Use wagon cover against the cinder shot, then close on the reaver before the pair can trade positions.' },
+  { id: 'enc-ch01-ditch-road-cutters', battlefieldArtId: 'enc-ch01-ditch-road-cutters', battlefieldArtAlt: 'A hooded goblin cutpurse and black-cloaked reaver corner an adventurer beside a rain-soaked produce wagon in Gloamwood.', enemyIds: ['goblin-cutpurse-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Hold the wagon gap to contain the knife fighter, or cross the open ditch to expose the heavier reaver first.' },
+  { id: 'enc-ch01-tollhouse-lookouts', battlefieldArtId: 'enc-ch01-tollhouse-lookouts', battlefieldArtAlt: 'A battered human shieldman and a hooded goblin cutpurse face each other in the flooded tollhouse culvert.', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile'], counterplay: 'Guard the deserter’s announced heavy blow, then spend focus to break its armor before the cutpurse can circle.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-lamp-oil'] } },
+  { id: 'enc-ch01-orchard-volley', battlefieldArtId: 'enc-ch01-orchard-volley', battlefieldArtAlt: 'A goblin torchling hurls an ember flask from among the apple trees as a black-cloaked reaver closes on the road.', enemyIds: ['goblin-torchling-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['ranged', 'mobile'], counterplay: 'Use wagon cover against the cinder shot, then close on the reaver before the pair can trade positions.' },
   { id: 'enc-ch01-verge-signalers', enemyIds: ['black-banner-01', 'goblin-torchling-01'], threatBudget: 6, compatibilityTags: ['ranged', 'mobile', 'false-flag', 'fire'], counterplay: 'Use the hedge against the cinder throw, then prevent the reaver from reaching the signal pot.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-smoke-bomb'] } },
-  { id: 'enc-ch01-tollhouse-cellar', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile', 'false-flag'], counterplay: 'Hold the stair so the cutpurse cannot reach Jory, then break the deserter’s guard in the low tunnel.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-lamp-oil'] } },
+  { id: 'enc-ch01-tollhouse-cellar', battlefieldArtId: 'enc-ch01-tollhouse-cellar', battlefieldArtAlt: 'A shield-bearing deserter blocks a flooded stone stair while a hooded goblin cutpurse lunges through the tollhouse cellar.', enemyIds: ['iron-deserter-01', 'goblin-cutpurse-01'], threatBudget: 6, compatibilityTags: ['frontline', 'mobile', 'false-flag'], counterplay: 'Hold the stair so the cutpurse cannot reach Jory, then break the deserter’s guard in the low tunnel.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-lamp-oil'] } },
   { id: 'enc-ch01-smoke-on-the-bridge', enemyIds: ['boss-rattlehook-bridge-chief', 'goblin-cutpurse-01'], threatBudget: 10, compatibilityTags: ['elite', 'mobile'], counterplay: 'Read Rattlehook’s rail taps, protect the escape rope, and remove his lone knife fighter before the second phase.', kind: 'boss', bossEnemyId: 'boss-rattlehook-bridge-chief' },
   { id: 'enc-ch01-reedbank-pursuers', enemyIds: ['black-banner-01', 'black-banner-01'], threatBudget: 6, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Force the riders into the narrow road and focus one pursuer; spreading damage lets both keep circling.' },
   { id: 'enc-ch01-recover-the-false-banner', enemyIds: ['black-banner-01', 'goblin-cutpurse-02'], threatBudget: 6, compatibilityTags: ['mobile', 'false-flag'], counterplay: 'Guard the evidence carrier through the hooked-pole swing, then mark the cutpurse before it changes targets.', reward: { xp: 34, gold: 16, itemChoices: ['consumable-smoke-bomb'] } },
@@ -85,12 +85,12 @@ const ENCOUNTER_SPECS: readonly EncounterSpec[] = [
   { id: 'enc-ch05-quench-corridor-team-a', battlefieldArtId: 'enc-ch05-quench-corridor-team-a', battlefieldArtAlt: 'A massive cinder troll and ember-flask goblin hold the steaming valve lane of Embervault’s quench corridor.', enemyIds: ['cinder-troll-06', 'goblin-torchling-07'], threatBudget: 15, compatibilityTags: ['frontline', 'specialist', 'ranged', 'fire'], counterplay: 'Leave the marked quench lane before the troll commits, then stop the torchling’s flask from reaching the valve.', reward: { xp: 45, gold: 18, itemChoices: [] } },
   { id: 'enc-ch05-quench-corridor-team-b', battlefieldArtId: 'enc-ch05-quench-corridor-team-b', battlefieldArtAlt: 'An iron-shielded veteran faces a spread-winged vault gargoyle beneath a low, steam-wet stone passage.', enemyIds: ['iron-deserter-08', 'vault-gargoyle-08'], threatBudget: 16, compatibilityTags: ['frontline', 'ranged', 'construct'], counterplay: 'Keep the deserter from pinning you beneath the perch and stagger the gargoyle when it spreads its wings.', reward: { xp: 48, gold: 22, itemChoices: [] } },
   { id: 'enc-ch05-cinder-troll-elite', battlefieldArtId: 'enc-ch05-cinder-troll-elite', battlefieldArtAlt: 'An ember-cracked cinder troll fills a low quench corridor of dark wet stone and steaming iron vents.', enemyIds: ['cinder-troll-08'], threatBudget: 9, compatibilityTags: ['elite', 'specialist', 'fire'], counterplay: 'Guard its announced molten charge, then attack the cracked flank while the troll catches its breath.', kind: 'lieutenant', reward: { xp: 58, gold: 26, itemChoices: [] } },
-  { id: 'enc-ch05-ledger-gallery-watch-a', battlefieldArtId: 'enc-ch05-ledger-gallery-watch-a', battlefieldArtAlt: 'A black-cloaked reaver and hooded ash magus confront intruders among Embervault’s ironbound ledger shelves.', enemyIds: ['black-banner-08', 'ash-magus-08'], threatBudget: 17, compatibilityTags: ['mobile', 'support', 'fire', 'false-flag'], counterplay: 'Stop the magus’s focus drain before the reaver reaches the records case, then counter the exposed hex.', reward: { xp: 50, gold: 25, itemChoices: [] } },
-  { id: 'enc-ch05-ledger-gallery-watch-b', battlefieldArtId: 'enc-ch05-ledger-gallery-watch-b', battlefieldArtAlt: 'An iron-shielded deserter and goblin torchling guard a pillar-lined Embervault records aisle.', enemyIds: ['iron-deserter-08', 'goblin-torchling-08'], threatBudget: 16, compatibilityTags: ['frontline', 'ranged', 'fire', 'false-flag'], counterplay: 'Use a pillar to break the torchling’s firing lane, then guard-break the veteran before it traps the case.', reward: { xp: 52, gold: 23, itemChoices: [] } },
+  { id: 'enc-ch05-ledger-gallery-watch-a', battlefieldArtId: 'enc-ch05-ledger-gallery-watch-a', battlefieldArtAlt: 'A black-cloaked reaver and hooded ash magus confront intruders among Embervault’s ironbound ledger shelves.', enemyIds: ['black-banner-06', 'ash-magus-06'], threatBudget: 17, compatibilityTags: ['mobile', 'support', 'fire', 'false-flag'], counterplay: 'Break the magus’s ward before its reaver reaches the records case; guard only when both lanes threaten a killing blow.', reward: { xp: 50, gold: 25, itemChoices: [] } },
+  { id: 'enc-ch05-ledger-gallery-watch-b', battlefieldArtId: 'enc-ch05-ledger-gallery-watch-b', battlefieldArtAlt: 'An iron-shielded deserter and goblin torchling guard a pillar-lined Embervault records aisle.', enemyIds: ['iron-deserter-06', 'goblin-torchling-06'], threatBudget: 16, compatibilityTags: ['frontline', 'ranged', 'fire', 'false-flag'], counterplay: 'Use a pillar to break the torchling’s firing lane, then pressure the veteran while the goblin resets its flask.', reward: { xp: 52, gold: 23, itemChoices: [] } },
   { id: 'enc-ch05-worker-cage-patrol-a', battlefieldArtId: 'enc-ch05-worker-cage-patrol-a', battlefieldArtAlt: 'A dark-furred warg and black-cloaked reaver guard barred worker cages, with captives behind iron bars.', enemyIds: ['gloam-warg-08', 'black-banner-09'], threatBudget: 17, compatibilityTags: ['beast', 'mobile', 'false-flag'], counterplay: 'Hold the cage gate so the warg cannot flank the witness, then mark the reaver during its recovery.', reward: { xp: 55, gold: 20, itemChoices: [] } },
   { id: 'enc-ch05-worker-cage-patrol-b', battlefieldArtId: 'enc-ch05-worker-cage-patrol-b', battlefieldArtAlt: 'A stone gargoyle perches over an open cage gate as a black-cloaked reaver blocks the escape lane.', enemyIds: ['vault-gargoyle-08', 'black-banner-08'], threatBudget: 16, compatibilityTags: ['construct', 'ranged', 'mobile', 'false-flag'], counterplay: 'Move out of the gargoyle’s marked firing lane and keep the reaver away from the open worker cages.', reward: { xp: 49, gold: 28, itemChoices: [] } },
-  { id: 'enc-ch05-vault-gargoyle-elite', battlefieldArtId: 'enc-ch05-vault-gargoyle-elite', battlefieldArtAlt: 'An enormous stone gargoyle spreads its wings above the steep, broken approach to the Embervault vault.', enemyIds: ['vault-gargoyle-09'], threatBudget: 10, compatibilityTags: ['elite', 'construct', 'ranged'], counterplay: 'Stagger the fixed sentinel as it spreads its wings, then break its stone plate before it regains height.', kind: 'lieutenant', reward: { xp: 62, gold: 24, itemChoices: [] } },
-  { id: 'enc-ch05-cinder-heart-regulator', battlefieldArtId: 'enc-ch05-cinder-heart-regulator', battlefieldArtAlt: 'The towering iron Cinder-Heart Regulator and its black-cloaked reaver guard the valve lane inside the furnace hall.', enemyIds: ['boss-embervault-cinder-heart-regulator', 'black-banner-09'], threatBudget: 23, compatibilityTags: ['unique', 'construct', 'specialist', 'mobile', 'frontline'], counterplay: 'Read the regulator’s marked valve lane, interrupt the relay during its pressure reset, and keep the reaver off the control rail.', kind: 'boss', bossEnemyId: 'boss-embervault-cinder-heart-regulator', reward: { xp: 92, gold: 42, itemChoices: [] } },
+  { id: 'enc-ch05-vault-gargoyle-elite', battlefieldArtId: 'enc-ch05-vault-gargoyle-elite', battlefieldArtAlt: 'An enormous stone gargoyle spreads its wings above the steep, broken approach to the Embervault vault.', enemyIds: ['vault-gargoyle-07'], threatBudget: 10, compatibilityTags: ['elite', 'construct', 'ranged'], counterplay: 'Keep moving under the marked firing lane; its opened wings leave a brief chance to strike before it regains height.', kind: 'lieutenant', reward: { xp: 62, gold: 24, itemChoices: [] } },
+  { id: 'enc-ch05-cinder-heart-regulator', battlefieldArtId: 'enc-ch05-cinder-heart-regulator', battlefieldArtAlt: 'The towering iron Cinder-Heart Regulator and its black-cloaked reaver guard the valve lane inside the furnace hall.', enemyIds: ['boss-embervault-cinder-heart-regulator', 'black-banner-06'], threatBudget: 20, compatibilityTags: ['unique', 'construct', 'specialist', 'mobile', 'frontline'], counterplay: 'Read the regulator’s marked valve lane, interrupt the relay during its pressure reset, and keep the reaver off the control rail.', kind: 'boss', bossEnemyId: 'boss-embervault-cinder-heart-regulator', reward: { xp: 92, gold: 42, itemChoices: [] } },
 
   { id: 'enc-ch06-evidence-road-riders', enemyIds: ['black-banner-07', 'iron-deserter-07', 'vault-gargoyle-07'], threatBudget: 18, compatibilityTags: ['mobile', 'frontline', 'ranged'], counterplay: 'Form around the witnesses until the fixed shooter fires, then break the shield and isolate the circling reaver.' },
   { id: 'enc-ch06-outer-ditch-screen', enemyIds: ['barrow-soldier-07', 'vault-gargoyle-07'], threatBudget: 13, compatibilityTags: ['leader', 'ranged', 'undead'], counterplay: 'Stop the soldier’s drill call before crossing the ditch, then stagger the gargoyle off its prepared firing perch.' },
@@ -121,6 +121,58 @@ const ENCOUNTER_SPECS: readonly EncounterSpec[] = [
   { id: 'enc-ch08-regulator-control-crew', battlefieldArtId: 'enc-ch08-regulator-control-crew', battlefieldArtAlt: 'An ash magus, bell apostle, and black-banner reaver spread across the regulator lever and signal bell gallery.', enemyIds: ['ash-magus-10', 'bell-apostle-09', 'black-banner-10'], threatBudget: 23, compatibilityTags: ['support', 'hard-control', 'mobile', 'fire'], counterplay: 'Jam the pressure lever during the magus’s vent, silence the bell signal, and mark the runner before it reaches the platform flags.', kind: 'lieutenant', reward: { xp: 112, gold: 34, itemChoices: ['consumable-field-bandage'] } },
 ];
 
+const ADDITIONAL_BATTLEFIELD_ART_ALTS: Readonly<Record<string, string>> = deepFreeze({
+  'enc-ch01-verge-signalers': 'A black-cloaked reaver and ember-flask goblin guard a signal pot beside a rain-dark hedge in Gloamwood.',
+  'enc-ch01-smoke-on-the-bridge': 'Rattlehook and a hooded cutpurse hold a smoke-veiled rope bridge above a wooded ravine.',
+  'enc-ch01-reedbank-pursuers': 'Two black-cloaked riders wait among reed beds beside a flooded Gloamwood bank.',
+  'enc-ch01-recover-the-false-banner': 'A black-banner raider and hooded cutpurse guard a captured false banner at a muddy trail fork.',
+  'enc-ch01-millers-cart-raiders': 'A reaver and knife-bearing goblin flank a loaded miller cart on the narrow millrace path.',
+  'enc-ch01-warning-tree-penitents': 'A masked thorn penitent and black-cloaked reaver stand near a warning tree bound in thorn branches.',
+  'enc-ch01-kneeling-harness': 'An undead barrow soldier kneels beside a sealed iron harness among misty Gloamwood grave markers.',
+  'enc-ch01-war-camp-wargs': 'Two dark-furred wargs prowl at the edge of a rough forest camp and its provision sacks.',
+  'enc-ch01-grave-tithe-warden': 'An armored barrow warden stands beside grave-tithe markers in a misty churchyard.',
+  'enc-ch01-shrine-warg': 'A gray warg watches the wagon trail from beside a weathered roadside shrine in the forest.',
+  'enc-ch01-siege-cart-maw': 'A chain-armored siege-cart maw blocks the wagon track at the Gloamwood treeline.',
+  'enc-ch02-north-wall-ladders': 'Captain Oren Dusk and a torchling archer defend assault ladders beneath Greywatch north wall.',
+  'enc-ch02-granary-fire-team': 'An ember goblin and ash magus hold the granary floor beside stacked grain and a bucket line.',
+  'enc-ch02-south-gate-sapper': 'An armored gatebreaker and hooded cutpurse defend a powder cart beneath the south gate.',
+  'enc-ch02-council-passage-assassins': 'A black-banner reaver and goblin assassin guard a narrow council passage between stone pillars.',
+  'enc-ch03-flooded-orchard': 'A mire witch and plated marsh crawler face the party across a flooded orchard lane.',
+  'enc-ch03-black-skiffs': 'A ferry reaver and hooded cutpurse hold opposite ends of a narrow black skiff on rain-dark water.',
+  'enc-ch03-marsh-hounds': 'Two marsh hounds face the party across a flooded gangplank between reed-covered banks.',
+  'enc-ch03-borrowed-faces': 'A shielded deserter and black-cloaked reaver hold a marsh signal post beside a flare basket.',
+  'enc-ch03-two-banner-rearguard': 'A banner reaver and orc freeblade contest a rain-soaked road fork beneath two signal banners.',
+  'enc-ch04-parley-rope': 'A war chief and shielded deserter face the party across a rope-bound parley circle in river fog.',
+  'enc-ch04-millrace-knives': 'A black-banner knife fighter and rain wraith hold a narrow millrace bridge beneath wet timber beams.',
+  'enc-ch04-south-tower-provocateurs': 'A Redwater provocateur and goblin archer defend a signal platform in the south tower.',
+  'enc-ch04-panicked-war-oxen': 'A marsh crawler and hulking bridge troll block a muddy lane as war oxen wait behind ropes.',
+  'enc-ch04-north-road-rearguard': 'A deserter, reaver, and torchling contest a quarry-road bend beside a covered evidence cart.',
+  'enc-ch05-chained-gate-veterans': 'A shielded veteran, black-banner reaver, and winged gargoyle defend Embervault’s chained gate.',
+  'enc-ch05-missing-shift-jailers': 'A black-cloaked reaver and dark warg hold an empty ore bay beside barred worker cages.',
+  'enc-ch05-black-banner-forgemaster': 'Embervault’s forgemaster and a cinder troll face the party beside the furnace quenching channel.',
+  'enc-ch05-ledger-vault-cutters': 'A reaver and ash magus guard a sealed ledger vault beneath ironbound record shelves.',
+  'enc-ch05-twin-armory-convoy': 'A royal armory golem and black-banner reaver defend a twin-cart convoy along Embervault rails.',
+  'enc-ch05-cinder-shaft-demolition': 'An ash magus, shielded deserter, and torchling guard a blasting lane beside the cinder-shaft ladder.',
+  'enc-ch06-evidence-road-riders': 'A reaver, shielded deserter, and winged gargoyle face the party beside a witness cart on the King’s Road.',
+  'enc-ch06-outer-ditch-screen': 'An undead drill leader and winged gargoyle hold a prepared firing perch above a road ditch.',
+  'enc-ch06-chapel-hostage-jailers': 'A bell apostle and shielded veteran hold a chapel stair beside a warning bell and smoke lever.',
+  'enc-ch06-covered-siege-ram': 'Siege engineer Malrec and an ash magus defend a covered ram at the west-wall approach.',
+  'enc-ch06-west-wall-breach': 'A reaver, armored deserter, and torchling hold a breach among fallen Greywatch masonry.',
+  'enc-ch06-last-rear-guard': 'The Black Banner commander and a reaver hold the broken west wall beneath a dark signal standard.',
+  'enc-ch07-kingroad-wagon-cutters': 'A reaver, shielded deserter, and winged gargoyle block a loaded wagon on the rain-dark King’s Road.',
+  'enc-ch07-duplicate-patrol': 'An undead drill leader and black-cloaked reaver guard the remount rail beside a false patrol standard.',
+  'enc-ch07-quarry-crossbows': 'Two winged gargoyles and a shielded deserter control crossfire around a quarry crane.',
+  'enc-ch07-postern-sappers': 'An ash magus and shielded deserter guard a slow fuse beside the Crownless Keep postern hatch.',
+  'enc-ch07-counterweight-house': 'The Crownless Gate Warden and a reaver stand by the brake key beneath immense counterweight chains.',
+  'enc-ch07-voss-last-champion': 'Elian Roake and an armored deserter hold the narrow record-stair beneath Crownless Keep banners.',
+  'enc-ch08-guest-guard-rotation': 'A key-bearing captain and armored guards block the service stair as delegates leave the guest rooms.',
+  'enc-ch08-seal-case-wardens': 'An iron golem and undead warden defend seal cases suspended above the archive document well.',
+  'enc-ch08-archive-furnace-detail': 'An ash magus and reaver guard the iron furnace between oil jars and archive records.',
+  'enc-ch08-coronation-engine': 'Marshal Voss and the immense iron coronation engine command a hall of chains, shutters, and portcullis.',
+  'enc-ch08-upper-courtyard-loyalists': 'A loyalist line with a bell standard holds a rain-soaked courtyard between an archive cart and infirmary.',
+  'enc-ch08-record-wing-holdouts': 'A reaver and ash magus defend a cipher chest among sealed trial records in the private archive wing.',
+});
+
 function chapterFromEncounterId(id: string): ChapterId {
   const chapterId = id.slice(4, 8) as ChapterId;
   if (!(chapterId in CHAPTER_THREAT_BUDGETS)) throw new Error(`Encounter ${id} has no Chronicle I chapter budget.`);
@@ -131,6 +183,8 @@ function buildEncounter(spec: EncounterSpec, sequence: number): Chronicle1Encoun
   const chapterId = chapterFromEncounterId(spec.id);
   const chapter = CHAPTER_THREAT_BUDGETS[chapterId];
   const kind = spec.kind ?? 'regular';
+  const battlefieldArtAlt = spec.battlefieldArtAlt ?? ADDITIONAL_BATTLEFIELD_ART_ALTS[spec.id];
+  if (!battlefieldArtAlt) throw new Error(`Encounter ${spec.id} has no battlefield art alt text.`);
   return {
     id: spec.id as EncounterId,
     chapterId,
@@ -140,10 +194,8 @@ function buildEncounter(spec: EncounterSpec, sequence: number): Chronicle1Encoun
     kind,
     enemyIds: spec.enemyIds as readonly EnemyId[],
     bossEnemyId: spec.bossEnemyId as EnemyId | undefined,
-    ...(spec.battlefieldArtId && spec.battlefieldArtAlt ? {
-      battlefieldArtId: spec.battlefieldArtId,
-      battlefieldArtAlt: spec.battlefieldArtAlt,
-    } : {}),
+    battlefieldArtId: spec.battlefieldArtId ?? spec.id,
+    battlefieldArtAlt,
     threatBudget: spec.threatBudget,
     openingDamageCap: chapter.maxOpeningDamage,
     compatibilityTags: spec.compatibilityTags,

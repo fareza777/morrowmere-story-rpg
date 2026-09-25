@@ -8,6 +8,19 @@ const next = (sceneId: string, choiceId: string) => {
 };
 
 describe('Chapter 1 living encounter seams', () => {
+  it('lets the convoy tend the horses and recover without forcing a second ambush', () => {
+    const aftermath = scene('ch01-living-hooves-chalk-aftermath');
+    const tendHorses = aftermath.choices.find((choice) => choice.id === 'ch01-choice-tend-the-horses-first')!;
+    const markTracks = aftermath.choices.find((choice) => choice.id === 'ch01-choice-mark-the-paired-tracks')!;
+
+    expect(tendHorses.effects).toEqual(expect.arrayContaining([
+      { type: 'vitals', resource: 2 },
+      { type: 'flag', operation: 'add', flagId: 'chalk-horses-tended' },
+    ]));
+    expect(tendHorses.effects.some((effect) => effect.type === 'combat')).toBe(false);
+    expect(markTracks.effects.some((effect) => effect.type === 'combat')).toBe(true);
+  });
+
   it('joins departure through Mara, the warning tree, and the tollhouse search fork', () => {
     expect(next('ch01-main-three-days-to-greywatch', 'ch01-choice-inspect-the-wagons')).toBe('ch01-living-bent-axle-setup');
     expect(next('ch01-main-medicine-for-the-north', 'ch01-choice-brace-the-medicine-cases')).toBe('ch01-living-hooves-chalk-setup');

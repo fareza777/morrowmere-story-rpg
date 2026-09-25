@@ -6,8 +6,8 @@ export const CH01_COMBAT = Object.freeze([
     type: 'combat', family: 'roadside-ambush', weight: 14, pacing: 'danger', threatChange: 2,
     encounterId: 'enc-ch01-ditch-road-cutters', illustrationId: 'scene-ch01-combat-ditch-road-cutters', title: 'Blades in the Drainage Ditch',
     narrative: [
-      'Before the repaired wheel completes its second mile, two goblin cutpurses rise from the drainage ditch and hook at the lead reins. A human reaver in a stripped border cloak steps behind the rear wagon with a short bow.',
-      'They want the horses alive and the medicine guard divided. The stone culvert offers cover from the bow, but reaching it leaves the rear wagon open to both goblins.',
+      'Before the repaired wheel completes its second mile, a goblin cutpurse rises from the drainage ditch and hooks at the lead reins. A human reaver in a stripped border cloak steps behind the rear wagon with a short bow.',
+      'They want the horses alive and the medicine guard divided. The stone culvert offers cover from the bow, but reaching it leaves the rear wagon open to the knife fighter.',
     ],
     eligibility: {
       routes: ['kings-road', 'old-forest', 'ruined-pass'],

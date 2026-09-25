@@ -176,7 +176,7 @@ describe('Road Tactics reducer', () => {
     expect(repeated.state.expedition?.pendingRouteJunctionId).toBeNull();
   });
 
-  it('defers a junction while a future-slot authored continuation remains queued', () => {
+  it('shows the anchored route before independent future-slot continuations', () => {
     const content = roadContent();
     const base = content.events.get('fixture-event' as EventId)!;
     const blocked = 'fixture-locked-follow-up' as EventId;
@@ -218,7 +218,7 @@ describe('Road Tactics reducer', () => {
 
     expect(result.diagnostic).toBeUndefined();
     expect(result.state.flow.screen).toBe('travel');
-    expect(result.state.expedition?.pendingRouteJunctionId).toBeNull();
+    expect(result.state.expedition?.pendingRouteJunctionId).toBe('deferred-fork');
     expect(result.state.expedition?.authoredSceneQueue.map((entry) => entry.sceneId)).toContain(later);
   });
 

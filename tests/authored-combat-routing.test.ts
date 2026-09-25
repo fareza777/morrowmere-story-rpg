@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHRONICLE1_CONTENT } from '../src/game/content/chronicle1';
 import { createCampaign, reduceGame, type GameStateV2 } from '../src/game/state';
 import type { ChoiceId, EventId } from '../src/game/domain/ids';
-import { encodeSaveState } from '../src/game/persistence/codec';
+import { decodeSaveState, encodeSaveState } from '../src/game/persistence/codec';
 
 const updatedAt = '2026-09-01T00:00:00.000Z';
 
@@ -74,6 +74,65 @@ describe('authored combat scene routing', () => {
     expect(advanced.state.flow.screen).toBe('combat');
     expect(result.state.expedition?.currentCombat?.encounterId).toBe(scene!.encounterId);
     expect(result.state.campaign.flags).toContain('combat-ch01-ditch-formation');
+    const combat = advanced.state.expedition?.currentCombat?.combat;
+    expect(combat?.player.guarding).toBe(true);
+  });
+
+  it('turns the culvert rush into a real opening against the reaver', () => {
+    const sceneId = 'ch01-combat-ditch-road-cutters' as EventId;
+    const prepared = stateAtCombatScene(sceneId);
+    const setup = {
+      ...prepared,
+      expedition: { ...prepared.expedition!, dialogueBeatIndex: 2, sceneVisitCounts: { [sceneId]: 1 } },
+    } as GameStateV2;
+    const resolved = reduceGame(setup, {
+      type: 'resolve-choice',
+      eventId: sceneId,
+      choiceId: 'ch01-choice-rush-the-culvert-archer' as ChoiceId,
+      updatedAt,
+    }, CHRONICLE1_CONTENT);
+    const started = reduceGame(resolved.state, { type: 'select-next-scene', updatedAt }, CHRONICLE1_CONTENT).state;
+    const combat = started.expedition?.currentCombat?.combat;
+    const reaver = combat?.enemies.find((enemy) => enemy.id === 'black-banner-01');
+
+    expect(combat?.player.guarding).toBe(false);
+    expect(combat?.player.attackAccuracy).toBeGreaterThan(82 + (combat?.player.cunning ?? 0));
+    expect(reaver).toMatchObject({ maxHealth: 28, health: 28, evasion: 0, parryChance: 0 });
+    expect(combat?.enemyIntents.find((intent) => intent.enemyId === reaver?.id)?.intent).toBe('guard');
+    const saved = encodeSaveState(started, CHRONICLE1_CONTENT);
+    expect(saved).not.toBeNull();
+    expect(decodeSaveState(saved, CHRONICLE1_CONTENT)?.expedition?.currentCombat?.combat?.player.attackAccuracy).toBe(combat?.player.attackAccuracy);
+  });
+
+  it('lets a cellar-search tripwire blunt the first exchange in the culvert', () => {
+    const base = stateAtCombatScene('ch01-combat-ditch-road-cutters' as EventId);
+    const prepared = {
+      ...base,
+      campaign: { ...base.campaign, flags: ['stolen-greywatch-cloaks-found', 'tollhouse-cellar-tripwire-set'] },
+      expedition: {
+        ...base.expedition!,
+        currentSceneId: null,
+        currentCombat: null,
+        dungeonRun: {
+          dungeonId: 'ch01-tollhouse-culvert', seed: 91, currentNodeId: 'ch01-cellar-stair', depth: 1,
+          visitedNodeIds: ['ch01-cellar-stair'], resolvedNodeIds: ['ch01-cellar-stair'],
+        },
+      },
+      flow: { ...base.flow, screen: 'travel' as const, merchant: null },
+    } as GameStateV2;
+    const entered = reduceGame(prepared, {
+      type: 'select-route', junctionId: 'ch01-cellar-stair', optionId: 'ch01-enter-the-lookouts', updatedAt,
+    }, CHRONICLE1_CONTENT);
+    const combat = entered.state.expedition?.currentCombat?.combat;
+    const deserter = combat?.enemies.find((enemy) => enemy.id === 'iron-deserter-01');
+
+    expect(entered.diagnostic).toBeUndefined();
+    expect(entered.state.flow.screen).toBe('combat');
+    expect(deserter?.health).toBe(17);
+    expect(combat?.enemyIntents.find((intent) => intent.enemyId === deserter?.id)).toMatchObject({
+      intent: 'guard', text: expect.stringMatching(/tripwire/iu),
+    });
+    expect(combat?.log.join(' ')).toMatch(/tripwire/iu);
   });
 
   it('routes every authored combat scene with an encounterId into combat', () => {

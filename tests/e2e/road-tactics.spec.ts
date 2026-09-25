@@ -25,15 +25,18 @@ test('takes one departure road action then continues directly into the next illu
   });
   await expectLoadedArtwork(scoutCard.locator('img'), '/assets/chronicle1/travel/travel-road-scout.webp');
   await expect(page.locator('.scene-art[data-illustration-id]')).toBeHidden();
+  await expect(page.getByRole('region', { name: 'Road Tactics', exact: true })).toBeVisible();
 
   await travel.getByRole('button', { name: 'Scout', exact: true }).click();
   await expect(travel).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Three Days to Greywatch', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeHidden();
   const departureArt = page.locator('.scene-art[data-illustration-id="scene-ch01-main-three-days-to-greywatch"]');
   await expectLoadedArtwork(departureArt.locator('img'), '/assets/chronicle1/scenes/ch01/scene-ch01-main-three-days-to-greywatch.webp');
 
   await page.getByRole('button', { name: 'Leave before traffic', exact: true }).click();
   await expect(page.getByRole('status').filter({ has: page.locator('.outcome-copy') })).toContainText('The wagons clear Dunmere');
+  await expect(page.getByRole('heading', { name: 'Road Tactics', exact: true })).toBeHidden();
   await page.getByRole('button', { name: 'Take the north road', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Blades in the Drainage Ditch', exact: true })).toBeVisible();
   await expect(travel).toBeHidden();

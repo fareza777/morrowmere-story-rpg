@@ -28,12 +28,13 @@ export const CH01_MAIN = Object.freeze([
       {
         id: 'ch01-choice-inspect-the-wagons',
         label: 'Inspect the wagons',
-        detail: 'Spend the cool morning checking wheels and seals, but surrender the caravan\'s early start.',
+        detail: 'Spend the cool morning checking wheels and seals, and pack two clean bandages for the guard; the caravan loses its early start.',
         effects: [
           { type: 'flag', operation: 'add', flagId: 'medicine-wagons-inspected' },
           { type: 'tension', amount: -1 },
+          { type: 'item', operation: 'grant', itemId: 'consumable-field-bandage', quantity: 2, destination: 'pack' },
         ],
-        outcome: 'You tighten a loose axle pin and record every crate before the drivers take the north road.',
+        outcome: 'You tighten a loose axle pin, pack two of Eda’s clean field bandages, and record every crate before the drivers take the north road.',
         nextSceneId: 'ch01-living-bent-axle-setup',
         continueLabel: 'Inspect the rear wheel',
       },

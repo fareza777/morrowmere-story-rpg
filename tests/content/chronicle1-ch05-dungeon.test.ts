@@ -64,19 +64,19 @@ describe('Chapter 5 Embervault expedition', () => {
     expect(validateContent(CHRONICLE1_CONTENT)).toEqual([]);
   });
 
-  it('gives every full entrance-to-forge run 10–12 rooms, 6–8 fights, and one boss', () => {
+  it('gives every full entrance-to-forge run 10–13 rooms, 6–8 fights, and one boss', () => {
     expect(dungeon).toBeDefined();
     if (!dungeon) return;
 
     for (const seed of [3, 17, 41]) {
       const runs = pathsForSeed(dungeon, seed);
       const complete = runs.filter((path) => path.exit.exitKind === 'complete');
-      expect(complete).toHaveLength(8);
+      expect(complete).toHaveLength(32);
 
       for (const path of complete) {
         const fights = combatNodes(path);
         expect(path.nodes.length, path.nodes.map((node) => node.id).join(' → ')).toBeGreaterThanOrEqual(10);
-        expect(path.nodes.length, path.nodes.map((node) => node.id).join(' → ')).toBeLessThanOrEqual(12);
+        expect(path.nodes.length, path.nodes.map((node) => node.id).join(' → ')).toBeLessThanOrEqual(13);
         expect(fights.length).toBeGreaterThanOrEqual(6);
         expect(fights.length).toBeLessThanOrEqual(8);
         const eliteCount = fights.filter((node) => node.kind === 'elite').length;
@@ -117,6 +117,27 @@ describe('Chapter 5 Embervault expedition', () => {
     const branchRewards = branchEncounterIds.map((id) => CHRONICLE1_ENCOUNTERS.find((entry) => entry.id === id)?.reward);
     expect(branchRewards.every(Boolean)).toBe(true);
     expect(new Set(branchRewards.map((reward) => `${reward?.xp}/${reward?.gold}/${reward?.itemChoices.join(',')}`)).size).toBeGreaterThan(1);
+  });
+
+  it('offers an optional medic-cache detour between the sentinel and the regulator', () => {
+    expect(dungeon).toBeDefined();
+    if (!dungeon) return;
+
+    const sentinelId = 'ch05-vault-gargoyle-sentinel';
+    const cacheId = 'ch05-underworks-pressure-medic-cache';
+    const exits = availableDungeonExits(dungeon, sentinelId, new Set(), [sentinelId]);
+    expect(exits.map((exit) => exit.targetNodeId)).toContain(cacheId);
+    expect(exits.map((exit) => exit.targetNodeId)).toContain('ch05-cinder-heart-regulator');
+    expect(exits.map((exit) => exit.targetNodeId)).toContain('ch05-underworks-retreat-after-sentinel');
+
+    const cache = dungeon.nodes.find((node) => node.id === cacheId);
+    expect(cache?.kind).toBe('cache');
+    expect(cache?.exits.map((exit) => exit.targetNodeId)).toEqual(['ch05-cinder-heart-regulator']);
+    expect(resolveDungeonReward(cache!, 41)?.effects).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'vitals', health: 28, resource: 2 }),
+      expect.objectContaining({ type: 'gold', scope: 'unbanked', amount: 8 }),
+      expect.objectContaining({ type: 'item', operation: 'grant', itemId: 'consumable-burn-paste', quantity: 2, destination: 'pack' }),
+    ]));
   });
 
   it('has reachable early retreats that settle without claiming the forge landmark', () => {

@@ -3,10 +3,11 @@ import { CH01_SCENES } from '../../src/game/content/chronicle1/chapters/ch01';
 import { CHRONICLE1_ENCOUNTERS } from '../../src/game/content/chronicle1/enemies';
 
 describe('Chapter 1 living encounter packets 1 through 18', () => {
-  it('adds the exact 54 early-road scenes and their two new encounters', () => {
+  it('adds the exact 55 early-road scenes and their two new encounters', () => {
     const living = CH01_SCENES.filter((scene) => scene.id.startsWith('ch01-living-'));
-    expect(living).toHaveLength(54);
+    expect(living).toHaveLength(55);
     expect(CH01_SCENES).toHaveLength(99);
+    expect(living.map((scene) => scene.id)).toContain('ch01-living-below-toll-desk-entry');
     expect(CHRONICLE1_ENCOUNTERS.filter((encounter) => encounter.id.startsWith('enc-ch01-'))).toContainEqual(
       expect.objectContaining({ id: 'enc-ch01-verge-signalers', reward: expect.objectContaining({ xp: 34, gold: 16 }) }),
     );

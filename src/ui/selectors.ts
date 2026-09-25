@@ -620,7 +620,7 @@ function combatActions(
   const inactiveReason = active ? null : 'This battle has ended.';
   return [
     { id: 'attack', label: 'Attack', available: active, unavailableReason: inactiveReason, turnCostLabel: null },
-    { id: 'guard', label: 'Guard', available: active, unavailableReason: inactiveReason, turnCostLabel: null },
+    { id: 'guard', label: 'Guard', available: active, unavailableReason: inactiveReason, turnCostLabel: 'Halves most incoming damage · restores 2 Focus' },
     {
       id: 'technique',
       label: 'Technique',
@@ -706,8 +706,9 @@ export function selectCombatView(state: GameStateV2, content: ContentIndex): Com
     .filter((enemy) => enemy.health > 0)
     .map((enemy) => combatEnemy(enemy, combat, content))
     .filter((enemy): enemy is EnemyCombatViewModel => enemy !== null);
-    const attackProfile = heroAttackProfile(combat.player, { type: 'attack' });
-    const attackForecasts = Object.fromEntries(combat.enemies
+  const attackProfile = heroAttackProfile(combat.player, { type: 'attack' });
+  const attackForecasts = Object.fromEntries(
+    combat.enemies
       .filter((enemy) => enemy.health > 0)
       .map((target) => {
         const forecast = previewAttack({
@@ -721,7 +722,8 @@ export function selectCombatView(state: GameStateV2, content: ContentIndex): Com
           outcomeChances: forecast.outcomeChances,
           damageRange: forecast.damageRange,
         }];
-      }));
+      }),
+  );
   const companionDefinition = combat.companion
     ? content.companions.get(combat.companion.companionId)
     : undefined;
@@ -749,7 +751,7 @@ export function selectCombatView(state: GameStateV2, content: ContentIndex): Com
     companion,
     enemies,
     selectedTargetId: enemies[0]?.id ?? '',
-      attackForecasts,
+    attackForecasts,
     actions: combatActions(state, content),
     log: [...combat.log],
   };

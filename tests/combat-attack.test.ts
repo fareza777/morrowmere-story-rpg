@@ -82,6 +82,15 @@ describe('deterministic attack outcomes', () => {
     expect(result.combat.rngState).not.toBe(42);
   });
 
+  it('recovers two focus while guarding without exceeding the hero maximum', () => {
+    const combat = combatFixtureForOutcome('hit');
+    const result = resolveCombatTurn({ ...combat, player: { ...combat.player, focus: 2 } }, { type: 'guard' }, emptyInventory(), { items: new Map() });
+    const capped = resolveCombatTurn(combat, { type: 'guard' }, emptyInventory(), { items: new Map() });
+
+    expect(result.combat.player.focus).toBe(4);
+    expect(capped.combat.player.focus).toBe(combat.player.maxFocus);
+  });
+
   it('uses bounded saved power variation for enemy attacks too', () => {
     const combat = combatFixtureForOutcome('hit');
     const state: CombatState = {
